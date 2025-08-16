@@ -1,0 +1,38 @@
+{
+	"schemaVersion": 1,
+	"id": "imyvmworldgeo",
+	"version": "${version}",
+	"name": "ImyvmWorldGeo",
+	"description": "This is a mod to provide a geography for Imyvm server players and groups.",
+	"authors": [
+		"Doohaey Re"
+	],
+	"contact": {
+		"homepage": "https://fabricmc.net/",
+		"sources": "https://github.com/FabricMC/fabric-example-mod"
+	},
+	"license": "GPL-3",
+	"icon": "assets/imyvmworldgeo/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": [
+			{
+				"value": "com.imyvm.iwg.ImyvmWorldGeo",
+				"adapter": "kotlin"
+			}
+		]
+	},
+	"mixins": [
+		"imyvmworldgeo.mixins.json"
+	],
+	"depends": {
+		"fabricloader": ">=0.16.9",
+		"minecraft": "~1.21",
+		"java": ">=21",
+		"fabric-api": "*",
+		"fabric-language-kotlin": "*"
+	},
+	"suggests": {
+		"another-mod": "*"
+	}
+}
