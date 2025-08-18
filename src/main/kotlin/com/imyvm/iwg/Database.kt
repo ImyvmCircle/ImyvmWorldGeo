@@ -1,5 +1,6 @@
 package com.imyvm.iwg
 
+import net.fabricmc.loader.api.FabricLoader
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -28,8 +29,8 @@ class RegionDatabase {
     }
 
     @Throws(IOException::class)
-    fun save(path: Path) {
-        val file = path.resolve(DATABASE_FILENAME)
+    fun save() {
+        val file = this.getDatabasePath()
         DataOutputStream(file.outputStream()).use { stream ->
             stream.writeInt(regions.size)
             for (region in regions) {
@@ -41,8 +42,8 @@ class RegionDatabase {
     }
 
     @Throws(IOException::class)
-    fun load(path: Path) {
-        val file = path.resolve(DATABASE_FILENAME)
+    fun load() {
+        val file = this.getDatabasePath()
         if (!file.exists()) {
             regions = mutableListOf()
             return
@@ -61,5 +62,9 @@ class RegionDatabase {
                 regions.add(region)
             }
         }
+    }
+
+    private fun getDatabasePath(): Path{
+        return FabricLoader.getInstance().gameDir.resolve("world").resolve(DATABASE_FILENAME)
     }
 }

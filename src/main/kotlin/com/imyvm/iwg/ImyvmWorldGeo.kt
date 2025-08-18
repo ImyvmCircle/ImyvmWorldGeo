@@ -2,14 +2,36 @@ package com.imyvm.iwg
 
 import net.fabricmc.api.ModInitializer
 import org.slf4j.LoggerFactory
+import org.slf4j.Logger
 
-object ImyvmWorldGeo : ModInitializer {
-    private val logger = LoggerFactory.getLogger("imyvmworldgeo")
+class ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
-		// This code runs as soon as Minecraft is in a mod-load-ready state.
-		// However, some things (like resources) may still be uninitialized.
-		// Proceed with mild caution.
-		logger.info("Hello Fabric world!")
+		dataLoad()
+
+		dataSave()
+		logger.info("Imyvm World Geo initialized.")
+	}
+
+	companion object {
+		const val MOD_ID = "imyvm-world-geo"
+		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
+		val data : RegionDatabase = RegionDatabase()
+
+		fun dataLoad() {
+			try {
+				data.load()
+			} catch (e: Exception) {
+				logger.error("Failed to load region database: ${e.message}", e)
+			}
+		}
+
+		fun dataSave() {
+			try {
+				data.save()
+			} catch (e: Exception) {
+				logger.error("Failed to save region database: ${e.message}", e)
+			}
+		}
 	}
 }
