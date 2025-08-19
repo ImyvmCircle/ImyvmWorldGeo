@@ -1,6 +1,8 @@
 package com.imyvm.iwg
 
+import com.imyvm.iwg.commands.register
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
@@ -8,6 +10,10 @@ import org.slf4j.Logger
 class ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
+		CommandRegistrationCallback.EVENT.register { dispatcher, registryAccess, _ ->
+			register(dispatcher, registryAccess)
+		}
+
 		dataLoad()
 
 		dataSave()
