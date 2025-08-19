@@ -18,6 +18,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
 }
 
 private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
-    return 1
+    TODO("Implement help command logic here")
 }
 

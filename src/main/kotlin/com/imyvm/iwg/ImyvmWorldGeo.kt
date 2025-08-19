@@ -1,21 +1,25 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.commands.register
+import com.imyvm.iwg.useblock.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
 class ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
+
 		CommandRegistrationCallback.EVENT.register { dispatcher, registryAccess, _ ->
 			register(dispatcher, registryAccess)
 		}
 
-		dataLoad()
+		UseBlockCallback.EVENT.register(UseBlockCommandsHandler())
 
+		dataLoad()
 		dataSave()
 
 		logger.info("Imyvm World Geo initialized.")
