@@ -1,6 +1,7 @@
 package com.imyvm.iwg
 
 import net.fabricmc.api.ModInitializer
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 
@@ -10,6 +11,7 @@ class ImyvmWorldGeo : ModInitializer {
 		dataLoad()
 
 		dataSave()
+
 		logger.info("Imyvm World Geo initialized.")
 	}
 
@@ -27,11 +29,14 @@ class ImyvmWorldGeo : ModInitializer {
 		}
 
 		fun dataSave() {
-			try {
-				data.save()
-			} catch (e: Exception) {
-				logger.error("Failed to save region database: ${e.message}", e)
+			ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
+				try {
+					data.save()
+				} catch (e: Exception) {
+					logger.error("Failed to save region database: ${e.message}", e)
+				}
 			}
+
 		}
 	}
 }
