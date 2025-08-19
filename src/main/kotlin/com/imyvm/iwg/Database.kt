@@ -12,8 +12,6 @@ import kotlin.io.path.outputStream
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
 class RegionDatabase {
-    private val DATABASE_FILENAME = "iwg_regions.db"
-    private lateinit var regions: MutableList<Region>
 
     fun getRegionByName(name: String): Region {
         return regions.find { it.name == name }
@@ -99,5 +97,10 @@ class RegionDatabase {
 
     private fun getDatabasePath(): Path {
         return FabricLoader.getInstance().gameDir.resolve("world").resolve(DATABASE_FILENAME)
+    }
+
+    companion object{
+        private const val DATABASE_FILENAME = "iwg_regions.db"
+        private lateinit var regions: MutableList<Region>
     }
 }
