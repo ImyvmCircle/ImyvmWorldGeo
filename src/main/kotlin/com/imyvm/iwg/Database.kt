@@ -8,6 +8,7 @@ import java.nio.file.Path
 import kotlin.io.path.exists
 import kotlin.io.path.inputStream
 import kotlin.io.path.outputStream
+
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
 class RegionDatabase {
@@ -36,7 +37,23 @@ class RegionDatabase {
             for (region in regions) {
                 stream.writeUTF(region.name)
                 stream.writeInt(region.numberID)
-                stream.writeInt(region.geometryScope.scopeId)
+
+                stream.writeInt(region.geometryScope.size)
+                for (scope in region.geometryScope) {
+                    stream.writeUTF(scope.scopeName)
+
+                    val shape = scope.geoShape
+                    if (shape == null) {
+                        stream.writeBoolean(false)
+                    } else {
+                        stream.writeBoolean(true)
+                        stream.writeInt(shape.geoShapeType.ordinal)
+                        stream.writeInt(shape.shapeParameter.size)
+                        for (p in shape.shapeParameter) {
+                            stream.writeInt(p)
+                        }
+                    }
+                }
             }
         }
     }
@@ -56,15 +73,31 @@ class RegionDatabase {
                 val region = Region()
                 region.name = stream.readUTF()
                 region.numberID = stream.readInt()
-                val scope = region.geometryScope
-                scope.scopeId = stream.readInt()
-                region.geometryScope = scope
+
+                val scopeCount = stream.readInt()
+                for (s in 0 until scopeCount) {
+                    val scope = Region.Companion.GeoScope()
+                    scope.scopeName = stream.readUTF()
+
+                    val hasShape = stream.readBoolean()
+                    if (hasShape) {
+                        val shape = Region.Companion.GeoShape()
+                        shape.geoShapeType =
+                            Region.Companion.GeoShapeType.entries.toTypedArray()[stream.readInt()]
+                        val paramSize = stream.readInt()
+                        shape.shapeParameter = MutableList(paramSize) { stream.readInt() }
+                        scope.geoShape = shape
+                    }
+
+                    region.geometryScope.add(scope)
+                }
+
                 regions.add(region)
             }
         }
     }
 
-    private fun getDatabasePath(): Path{
+    private fun getDatabasePath(): Path {
         return FabricLoader.getInstance().gameDir.resolve("world").resolve(DATABASE_FILENAME)
     }
 }
