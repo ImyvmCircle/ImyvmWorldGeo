@@ -23,6 +23,10 @@ class RegionDatabase {
             ?: throw RegionNotFoundException("Region with ID '$id' not found.")
     }
 
+    fun getRegionList(): List<Region> {
+        return regions
+    }
+
     fun addRegion(region: Region) {
         regions.add(region)
     }
@@ -101,6 +105,6 @@ class RegionDatabase {
 
     companion object{
         private const val DATABASE_FILENAME = "iwg_regions.db"
-        private lateinit var regions: MutableList<Region>
+        lateinit var regions: MutableList<Region>
     }
 }
