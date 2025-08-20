@@ -1,4 +1,4 @@
-package com.imyvm.iwg
+package com.imyvm.iwg.region
 
 import net.fabricmc.loader.api.FabricLoader
 import java.io.DataInputStream

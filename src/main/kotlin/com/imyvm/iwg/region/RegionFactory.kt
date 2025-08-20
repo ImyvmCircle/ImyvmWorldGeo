@@ -1,4 +1,4 @@
-package com.imyvm.iwg
+package com.imyvm.iwg.region
 
 import net.minecraft.util.math.BlockPos
 import kotlin.math.sqrt

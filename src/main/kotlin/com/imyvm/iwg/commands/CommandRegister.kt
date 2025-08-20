@@ -1,10 +1,10 @@
 package com.imyvm.iwg.commands
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.CreationError
-import com.imyvm.iwg.Result
-import com.imyvm.iwg.Region
-import com.imyvm.iwg.RegionFactory
+import com.imyvm.iwg.region.CreationError
+import com.imyvm.iwg.region.Result
+import com.imyvm.iwg.region.Region
+import com.imyvm.iwg.region.RegionFactory
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import net.minecraft.command.CommandRegistryAccess

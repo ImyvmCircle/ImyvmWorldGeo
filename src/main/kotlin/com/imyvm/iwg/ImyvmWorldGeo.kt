@@ -1,6 +1,7 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.commands.register
+import com.imyvm.iwg.region.RegionDatabase
 import com.imyvm.iwg.useblock.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback

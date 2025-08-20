@@ -1,4 +1,4 @@
-package com.imyvm.iwg
+package com.imyvm.iwg.region
 
 class Region {
     var name: String = ""
