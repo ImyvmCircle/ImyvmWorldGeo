@@ -23,9 +23,9 @@ class UseBlockCommandsHandler: UseBlockCallback {
                 val clickedPos = hitResult.blockPos
                 ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]?.add(clickedPos)
 
-                ImyvmWorldGeo.logger.info("Player $playerUUID selected position $clickedPos")
+                ImyvmWorldGeo.logger.info("Player $playerUUID selected position $clickedPos,\n all their current selected positions: ${ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]}")
                 player.sendMessage(
-                    Text.literal("Selected position: $clickedPos" + "All selected position: ${ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]}")
+                    Text.literal("Selecting position: $clickedPos, All current selected position: ${ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]}")
                         .formatted(net.minecraft.util.Formatting.GREEN),
                     false
                 )

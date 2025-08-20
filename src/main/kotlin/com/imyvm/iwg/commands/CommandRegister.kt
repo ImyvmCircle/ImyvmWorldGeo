@@ -26,7 +26,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                     )
             )
     )
-
 }
 
 private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
@@ -39,6 +38,8 @@ private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
         val playerUUID = player.uuid
         return if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
             ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
+
+            ImyvmWorldGeo.logger.info("Player $playerUUID has started selection mode, players in selection mod: ${ImyvmWorldGeo.commandlySelectingPlayers.keys}")
             player.sendMessage(
                 net.minecraft.text.Text.literal("Selection mode started. Use a golden hoe to select positions."),
             )
@@ -54,5 +55,23 @@ private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
 }
 
 private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
-    TODO("Implement stop selection command logic here")
+    val player = context.source.player
+    if (player != null) {
+        val playerUUID = player.uuid
+        return if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
+            ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
+
+            ImyvmWorldGeo.logger.info("Player $playerUUID has stopped selection mode, players in selection mod: ${ImyvmWorldGeo.commandlySelectingPlayers.keys}")
+            player.sendMessage(
+                net.minecraft.text.Text.literal("Selection mode stopped."),
+            )
+            1
+        } else {
+            player.sendMessage(
+                net.minecraft.text.Text.literal("You are not in selection mode."),
+            )
+            0
+        }
+    }
+    return 0
 }
