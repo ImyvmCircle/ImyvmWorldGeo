@@ -37,7 +37,7 @@ private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player
     if (player != null) {
         val playerUUID = player.uuid
-        return if (!ImyvmWorldGeo.commandlySelectingPlayers.contains(playerUUID)) {
+        return if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
             ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
             player.sendMessage(
                 net.minecraft.text.Text.literal("Selection mode started. Use a golden hoe to select positions."),

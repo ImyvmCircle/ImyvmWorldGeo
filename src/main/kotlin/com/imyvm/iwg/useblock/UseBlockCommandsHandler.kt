@@ -19,13 +19,14 @@ class UseBlockCommandsHandler: UseBlockCallback {
         val itemStack = player.getStackInHand(hand)
         if (itemStack.item == Items.GOLDEN_HOE) {
             val playerUUID = player.uuid
-            if (ImyvmWorldGeo.commandlySelectingPlayers.contains(playerUUID)) {
+            if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
                 val clickedPos = hitResult.blockPos
                 ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]?.add(clickedPos)
 
                 ImyvmWorldGeo.logger.info("Player $playerUUID selected position $clickedPos")
                 player.sendMessage(
-                    Text.literal("Selected position: $clickedPos"),
+                    Text.literal("Selected position: $clickedPos" + "All selected position: ${ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]}")
+                        .formatted(net.minecraft.util.Formatting.GREEN),
                     false
                 )
                 return ActionResult.SUCCESS
