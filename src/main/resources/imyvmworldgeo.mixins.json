@@ -1,6 +1,6 @@
 {
 	"required": true,
-	"package": "com.imyvm.imyvmworldgeo.mixin",
+	"package": "com.imyvm.iwg.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
 		"ExampleMixin"
