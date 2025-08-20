@@ -1,8 +1,10 @@
 package com.imyvm.iwg.useblock
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Items
+import net.minecraft.text.Text
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.hit.BlockHitResult
@@ -17,11 +19,18 @@ class UseBlockCommandsHandler: UseBlockCallback {
         val itemStack = player.getStackInHand(hand)
         if (itemStack.item == Items.GOLDEN_HOE) {
             val playerUUID = player.uuid
-            val clickedPos = hitResult.blockPos
-            TODO("Handle golden hoe interaction at $clickedPos by player $playerUUID")
-        }
+            if (ImyvmWorldGeo.commandlySelectingPlayers.contains(playerUUID)) {
+                val clickedPos = hitResult.blockPos
+                ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]?.add(clickedPos)
 
+                ImyvmWorldGeo.logger.info("Player $playerUUID selected position $clickedPos")
+                player.sendMessage(
+                    Text.literal("Selected position: $clickedPos"),
+                    false
+                )
+                return ActionResult.SUCCESS
+            }
+        }
         return ActionResult.PASS
     }
-
 }

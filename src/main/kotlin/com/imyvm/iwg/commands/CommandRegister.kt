@@ -1,5 +1,6 @@
 package com.imyvm.iwg.commands
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import net.minecraft.command.CommandRegistryAccess
@@ -13,6 +14,17 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("help")
                     .executes { runHelp(it) }
             )
+            .then(
+                literal("select")
+                    .then(
+                        literal("start")
+                            .executes { runStartSelect(it) }
+                    )
+                    .then(
+                        literal("stop")
+                            .executes { runStopSelect(it) }
+                    )
+            )
     )
 
 }
@@ -21,3 +33,26 @@ private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
     TODO("Implement help command logic here")
 }
 
+private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player
+    if (player != null) {
+        val playerUUID = player.uuid
+        return if (!ImyvmWorldGeo.commandlySelectingPlayers.contains(playerUUID)) {
+            ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
+            player.sendMessage(
+                net.minecraft.text.Text.literal("Selection mode started. Use a golden hoe to select positions."),
+            )
+            1
+        } else {
+            player.sendMessage(
+                net.minecraft.text.Text.literal("You are already in selection mode."),
+            )
+            0
+        }
+    }
+    return 0
+}
+
+private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
+    TODO("Implement stop selection command logic here")
+}
