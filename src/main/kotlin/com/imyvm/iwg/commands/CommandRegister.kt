@@ -72,7 +72,24 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
 }
 
 private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
-    TODO("Implement help command logic here")
+    val player = context.source.player
+    player?.sendMessage(
+        Text.literal(
+            """
+            |Imyvm World Geo Commands:
+            |/imyvm-world-geo help - Show this help message.
+            |/imyvm-world-geo select start - Start selecting positions with a golden hoe.
+            |/imyvm-world-geo select stop - Stop selection mode.
+            |/imyvm-world-geo create rectangle - Create a rectangular region from selected positions.
+            |/imyvm-world-geo create circle - Create a circular region from selected positions.
+            |/imyvm-world-geo create polygon - Create a polygonal region from selected positions.
+            |/imyvm-world-geo delete id <id> - Delete a region by its ID.
+            |/imyvm-world-geo delete name <name> - Delete a region by its name.
+            |/imyvm-world-geo list - List all regions.
+            """.trimMargin()
+        )
+    )
+    return 1
 }
 
 private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
@@ -200,7 +217,7 @@ private fun runlistRegions(context: CommandContext<ServerCommandSource>): Int {
         return 0
     }
 
-    val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}, Scopes: ${it.geometryScope.size}" }
+    val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}" }
     player.sendMessage(Text.literal("Regions:\n$regionList"))
     return 1
 }
