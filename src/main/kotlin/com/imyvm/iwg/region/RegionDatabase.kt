@@ -107,6 +107,20 @@ class RegionDatabase {
         regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
     }
 
+    fun getRegionAt(x: Int, z: Int): Region? {
+        for (region in regions) {
+            for (scope in region.geometryScope) {
+                val geoShape = scope.geoShape
+                if (geoShape != null) {
+                    if (geoShape.isInside(x, z)) {
+                        return region
+                    }
+                }
+            }
+        }
+        return null
+    }
+
     companion object{
         private const val DATABASE_FILENAME = "iwg_regions.db"
         lateinit var regions: MutableList<Region>
