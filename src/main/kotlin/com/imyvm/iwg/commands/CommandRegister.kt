@@ -7,8 +7,11 @@ import com.imyvm.iwg.region.Region
 import com.imyvm.iwg.region.RegionFactory
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
+import com.mojang.brigadier.arguments.StringArgumentType
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
+import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.text.Text
 
@@ -44,6 +47,21 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         literal("polygon")
                             .executes { runCreateRegion(it, Region.Companion.GeoShapeType.POLYGON) }
                     )
+            )
+            .then(
+                literal("delete")
+                    .then(
+                        argument("name", StringArgumentType.string())
+                            .executes { runDeleteRegionsByName(it) }
+                    )
+                    .then(
+                        argument("id", IntegerArgumentType.integer())
+                            .executes { runDeleteRegionsById(it) }
+                    )
+            )
+            .then(
+                literal("list")
+                    .executes { runlistRegions(it) }
             )
     )
 }
@@ -134,4 +152,51 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>, shapeT
             return 0
         }
     }
+}
+
+private fun runDeleteRegionsByName(context: CommandContext<ServerCommandSource>): Int {
+    val regionName = context.getArgument("name", String::class.java)
+    val notFoundMessage = Text.literal("Region '$regionName' not found.")
+    return runDeleteRegions(context, { it.name.equals(regionName, ignoreCase = true) }, notFoundMessage)
+}
+
+private fun runDeleteRegionsById(context: CommandContext<ServerCommandSource>): Int {
+    val regionId = context.getArgument("id", Int::class.java)
+    val notFoundMessage = Text.literal("Region with ID '$regionId' not found.")
+    return runDeleteRegions(context, { it.numberID == regionId }, notFoundMessage)
+}
+
+private fun runDeleteRegions(context: CommandContext<ServerCommandSource>, findPredicate: (Region) -> Boolean, notFoundMessage: Text): Int {
+    val player = context.source.player ?: return 0
+
+    val regions = ImyvmWorldGeo.data.getRegionList()
+    if (regions.isEmpty()) {
+        player.sendMessage(Text.literal("No regions found."))
+        return 0
+    }
+
+    val regionToDelete = regions.find { findPredicate(it) }
+
+    return if (regionToDelete != null) {
+        ImyvmWorldGeo.data.removeRegion(regionToDelete)
+        player.sendMessage(Text.literal("Region '${regionToDelete.name}' deleted successfully!"))
+        1
+    } else {
+        player.sendMessage(notFoundMessage)
+        0
+    }
+}
+
+private fun runlistRegions(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+
+    val regions = ImyvmWorldGeo.data.getRegionList()
+    if (regions.isEmpty()) {
+        player.sendMessage(Text.literal("No regions found."))
+        return 0
+    }
+
+    val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}, Scopes: ${it.geometryScope.size}" }
+    player.sendMessage(Text.literal("Regions:\n$regionList"))
+    return 1
 }

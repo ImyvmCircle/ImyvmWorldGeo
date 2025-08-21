@@ -13,24 +13,6 @@ class RegionNotFoundException(message: String) : RuntimeException(message)
 
 class RegionDatabase {
 
-    fun getRegionByName(name: String): Region {
-        return regions.find { it.name == name }
-            ?: throw RegionNotFoundException("Region with name '$name' not found.")
-    }
-
-    fun getRegionByNumberId(id: Int): Region {
-        return regions.find { it.numberID == id }
-            ?: throw RegionNotFoundException("Region with ID '$id' not found.")
-    }
-
-    fun getRegionList(): List<Region> {
-        return regions
-    }
-
-    fun addRegion(region: Region) {
-        regions.add(region)
-    }
-
     @Throws(IOException::class)
     fun save() {
         val file = this.getDatabasePath()
@@ -101,6 +83,28 @@ class RegionDatabase {
 
     private fun getDatabasePath(): Path {
         return FabricLoader.getInstance().gameDir.resolve("world").resolve(DATABASE_FILENAME)
+    }
+
+    fun getRegionByName(name: String): Region {
+        return regions.find { it.name == name }
+            ?: throw RegionNotFoundException("Region with name '$name' not found.")
+    }
+
+    fun getRegionByNumberId(id: Int): Region {
+        return regions.find { it.numberID == id }
+            ?: throw RegionNotFoundException("Region with ID '$id' not found.")
+    }
+
+    fun getRegionList(): List<Region> {
+        return regions
+    }
+
+    fun addRegion(region: Region) {
+        regions.add(region)
+    }
+
+    fun removeRegion(regionToDelete: Region) {
+        regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
     }
 
     companion object{
