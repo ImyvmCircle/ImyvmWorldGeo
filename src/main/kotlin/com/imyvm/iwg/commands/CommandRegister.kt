@@ -37,6 +37,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         literal("stop")
                             .executes { runStopSelect(it) }
                     )
+                    .then(
+                        literal("reset")
+                            .executes { runResetSelect(it) }
+                    )
             )
             .then(
                 literal("create")
@@ -80,6 +84,7 @@ private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
             |/imyvm-world-geo help - Show this help message.
             |/imyvm-world-geo select start - Start selecting positions with a golden hoe.
             |/imyvm-world-geo select stop - Stop selection mode.
+            |/imyvm-world-geo select reset - Clear all selected points but keep selection mode active.
             |/imyvm-world-geo create rectangle - Create a rectangular region from selected positions.
             |/imyvm-world-geo create circle - Create a circular region from selected positions.
             |/imyvm-world-geo create polygon - Create a polygonal region from selected positions.
@@ -134,6 +139,22 @@ private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
         }
     }
     return 0
+}
+
+private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val playerUUID = player.uuid
+
+    return if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
+        ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
+
+        ImyvmWorldGeo.logger.info("Player $playerUUID has reset their selection points.")
+        player.sendMessage(Text.literal("Your selection points have been reset. You are still in selection mode."))
+        1
+    } else {
+        player.sendMessage(Text.literal("You are not in selection mode. Use /imyvm-world-geo select start first."))
+        0
+    }
 }
 
 private fun runCreateRegion(
