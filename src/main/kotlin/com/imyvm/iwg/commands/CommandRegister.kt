@@ -1,6 +1,14 @@
 package com.imyvm.iwg.commands
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.commands.ErrorMessages.ERR_CIRCLE_TOO_SMALL
+import com.imyvm.iwg.commands.ErrorMessages.ERR_COINCIDENT_POINTS
+import com.imyvm.iwg.commands.ErrorMessages.ERR_DUPLICATED_POINTS
+import com.imyvm.iwg.commands.ErrorMessages.ERR_GENERIC_TOO_SMALL
+import com.imyvm.iwg.commands.ErrorMessages.ERR_INSUFFICIENT_POINTS
+import com.imyvm.iwg.commands.ErrorMessages.ERR_NOT_CONVEX
+import com.imyvm.iwg.commands.ErrorMessages.ERR_POLYGON_TOO_SMALL
+import com.imyvm.iwg.commands.ErrorMessages.ERR_RECTANGLE_TOO_SMALL
 import com.imyvm.iwg.region.*
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
@@ -111,7 +119,10 @@ private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
     return 0
 }
 
-private fun runCreateRegion(context: CommandContext<ServerCommandSource>, shapeType: Region.Companion.GeoShapeType): Int {
+private fun runCreateRegion(
+    context: CommandContext<ServerCommandSource>,
+    shapeType: Region.Companion.GeoShapeType
+): Int {
     val player = context.source.player ?: return 0
 
     val playerUUID = player.uuid
@@ -132,19 +143,16 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>, shapeT
         is Result.Ok -> {
             val newRegion = creationResult.value
             ImyvmWorldGeo.data.addRegion(newRegion)
-            ImyvmWorldGeo.logger.info("Created new region '${newRegion.name}' with positions: ${newRegion.geometryScope}")
+            ImyvmWorldGeo.logger.info(
+                "Created new region '${newRegion.name}' with positions: ${newRegion.geometryScope}"
+            )
             player.sendMessage(Text.literal("Region '${newRegion.name}' created successfully!"))
             ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
             return 1
         }
+
         is Result.Err -> {
-            val errorMsg = when (creationResult.error) {
-                CreationError.DuplicatedPoints -> "Cannot create a region with duplicated points."
-                CreationError.InsufficientPoints -> "You must select enough points for a ${shapeType.name.lowercase()} region."
-                CreationError.CoincidentPoints -> "For a rectangle, points must not share an X or Z coordinate."
-                CreationError.UnderSizeLimit -> "The region is too small. It must be at least 1x1 area for a rectangle or have a radius of at least 1 for a circle."
-                CreationError.NotConvex -> "The polygon must be convex."
-            }
+            val errorMsg = errorMessage(creationResult.error, shapeType)
             player.sendMessage(Text.literal(errorMsg))
             return 0
         }
@@ -195,4 +203,46 @@ private fun runlistRegions(context: CommandContext<ServerCommandSource>): Int {
     val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}, Scopes: ${it.geometryScope.size}" }
     player.sendMessage(Text.literal("Regions:\n$regionList"))
     return 1
+}
+
+private fun errorMessage(
+    error: CreationError,
+    shapeType: Region.Companion.GeoShapeType
+): String = when (error) {
+    CreationError.DuplicatedPoints -> ERR_DUPLICATED_POINTS
+    CreationError.InsufficientPoints -> ERR_INSUFFICIENT_POINTS.replace("{shape}", shapeType.name.lowercase())
+    CreationError.CoincidentPoints -> ERR_COINCIDENT_POINTS
+    CreationError.UnderSizeLimit -> when (shapeType) {
+        Region.Companion.GeoShapeType.RECTANGLE -> ERR_RECTANGLE_TOO_SMALL
+        Region.Companion.GeoShapeType.CIRCLE -> ERR_CIRCLE_TOO_SMALL
+        Region.Companion.GeoShapeType.POLYGON -> ERR_POLYGON_TOO_SMALL
+        else -> ERR_GENERIC_TOO_SMALL
+    }
+    CreationError.NotConvex -> ERR_NOT_CONVEX
+}
+
+private object ErrorMessages {
+    const val ERR_DUPLICATED_POINTS =
+        "Cannot create a region with duplicated points."
+
+    const val ERR_INSUFFICIENT_POINTS =
+        "You must select enough points for a {shape} region."
+
+    const val ERR_COINCIDENT_POINTS =
+        "For a rectangle, the first two points must not share the same X or Z coordinate."
+
+    const val ERR_RECTANGLE_TOO_SMALL =
+        "The rectangle is too small. It must meet the minimum side length and area requirements."
+
+    const val ERR_CIRCLE_TOO_SMALL =
+        "The circle is too small. The radius must be at least the minimum size."
+
+    const val ERR_POLYGON_TOO_SMALL =
+        "The polygon is too small. The area must be at least the minimum size."
+
+    const val ERR_GENERIC_TOO_SMALL =
+        "The region is too small."
+
+    const val ERR_NOT_CONVEX =
+        "The polygon must be convex."
 }
