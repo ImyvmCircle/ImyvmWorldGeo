@@ -95,7 +95,7 @@ class ImyvmWorldGeo : ModInitializer {
 			if ((tickCounter % 20).toInt() != 0) return
 
 			val scoreboard = server.scoreboard ?: return
-			val objective: ScoreboardObjective = scoreboard.getNullableObjective("iwg_region") ?: return
+			val objective: ScoreboardObjective = scoreboard.getNullableObjective("${MOD_ID}_region") ?: return
 
 			val activeRegions = mutableSetOf<String>()
 
