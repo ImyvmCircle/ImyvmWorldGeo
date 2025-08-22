@@ -41,7 +41,7 @@ class ImyvmWorldGeo : ModInitializer {
 			updateGeographicScoreboardPlayers(server)
 		}
 
-		logger.info("Imyvm World Geo initialized.")
+		logger.info("$MOD_ID initialized.")
 	}
 
 	companion object {
@@ -73,7 +73,7 @@ class ImyvmWorldGeo : ModInitializer {
 		}
 
 		fun initializeGeographicScoreboard(scoreboard: Scoreboard) {
-			val objectName = "iwg_region"
+			val objectName = "${MOD_ID}_region"
 			val displayName = Text.of("Current Region")
 
 			val objective = scoreboard.getNullableObjective(objectName)
@@ -98,7 +98,7 @@ class ImyvmWorldGeo : ModInitializer {
 		fun updateGeographicScoreboardPlayers(server: net.minecraft.server.MinecraftServer) {
 			if ((tickCounter % 20).toInt() == 0) {
 				val scoreboard = server.scoreboard
-				val objective: ScoreboardObjective = scoreboard.getNullableObjective("iwg_region")
+				val objective: ScoreboardObjective = scoreboard.getNullableObjective("${MOD_ID}_region")
 					?: return
 
 				for (player in server.playerManager.playerList) {
