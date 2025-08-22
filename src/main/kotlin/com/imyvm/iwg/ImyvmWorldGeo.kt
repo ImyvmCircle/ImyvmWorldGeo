@@ -87,7 +87,7 @@ class ImyvmWorldGeo : ModInitializer {
 					true,
 					null
 				)
-				newObjective.scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, objective)
+				newObjective.scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, newObjective)
 				logger.info("Geographic scoreboard created and set for display.")
 			} else {
 				scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, objective)
