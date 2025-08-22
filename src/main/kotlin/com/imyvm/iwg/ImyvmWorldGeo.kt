@@ -8,11 +8,7 @@ import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
-import net.minecraft.scoreboard.ScoreHolder
-import net.minecraft.scoreboard.Scoreboard
-import net.minecraft.scoreboard.ScoreboardCriterion
-import net.minecraft.scoreboard.ScoreboardDisplaySlot
-import net.minecraft.scoreboard.ScoreboardObjective
+import net.minecraft.scoreboard.*
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
@@ -96,23 +92,41 @@ class ImyvmWorldGeo : ModInitializer {
 		}
 
 		fun updateGeographicScoreboardPlayers(server: net.minecraft.server.MinecraftServer) {
-			if ((tickCounter % 20).toInt() == 0) {
-				val scoreboard = server.scoreboard
-				val objective: ScoreboardObjective = scoreboard.getNullableObjective("${MOD_ID}_region")
-					?: return
+			if ((tickCounter % 20).toInt() != 0) return
 
-				for (player in server.playerManager.playerList) {
-					val playerX = player.blockX
-					val playerZ = player.blockZ
+			val scoreboard = server.scoreboard ?: return
+			val objective: ScoreboardObjective = scoreboard.getNullableObjective("iwg_region") ?: return
 
-					val region = data.getRegionAt(playerX, playerZ)
-					val regionName = region?.name ?: "-wilderness-"
+			val activeRegions = mutableSetOf<String>()
 
-					val scoreHolder: ScoreHolder = ScoreHolder.fromName(regionName)
-					val score = scoreboard.getOrCreateScore(scoreHolder, objective)
-					score.score = 0
+			for (player in server.playerManager.playerList) {
+				val playerX = player.blockX
+				val playerZ = player.blockZ
+
+				val region = data.getRegionAt(playerX, playerZ)
+				val regionName = region?.name ?: "-wilderness-"
+				activeRegions.add(regionName)
+
+				val scoreHolder: ScoreHolder = ScoreHolder.fromName(regionName)
+				val score = scoreboard.getOrCreateScore(scoreHolder, objective)
+				score.score = 0
+			}
+
+			val toRemove = mutableListOf<String>()
+			for (score in scoreboard.getScoreboardEntries(objective)) {
+				val playerName = score.owner
+				if (!activeRegions.contains(playerName)) {
+					toRemove.add(playerName)
 				}
 			}
+
+			toRemove.forEach { playerName ->
+				val scoreHolder = ScoreHolder.fromName(playerName)
+				scoreboard.removeScore(scoreHolder, objective)
+			}
+
+			scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, objective)
 		}
+
 	}
 }
