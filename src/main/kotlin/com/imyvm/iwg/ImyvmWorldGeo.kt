@@ -1,6 +1,7 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.commands.register
+import com.imyvm.iwg.region.PlayerRegionChecker
 import com.imyvm.iwg.region.RegionDatabase
 import com.imyvm.iwg.useblock.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
@@ -28,12 +29,12 @@ class ImyvmWorldGeo : ModInitializer {
 		dataLoad()
 		dataSave()
 
-		ServerLifecycleEvents.SERVER_STARTED.register{
-			server -> initializeGeographicScoreboard(server.scoreboard)
+		ServerLifecycleEvents.SERVER_STARTED.register { server ->
+			initializeGeographicScoreboard(server.scoreboard)
 		}
-		ServerTickEvents.END_SERVER_TICK.register{
-			server ->
+		ServerTickEvents.END_SERVER_TICK.register { server ->
 			tickCounter++
+			playerRegionChecker.tick(server)
 			updateGeographicScoreboardPlayers(server)
 		}
 
@@ -44,9 +45,9 @@ class ImyvmWorldGeo : ModInitializer {
 		const val MOD_ID = "imyvm-world-geo"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 		val data: RegionDatabase = RegionDatabase()
-
 		var tickCounter: Long = 0L
 
+		val playerRegionChecker: PlayerRegionChecker = PlayerRegionChecker()
 		val commandlySelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
 
 		fun dataLoad() {
@@ -65,7 +66,6 @@ class ImyvmWorldGeo : ModInitializer {
 					logger.error("Failed to save region database: ${e.message}", e)
 				}
 			}
-
 		}
 
 		fun initializeGeographicScoreboard(scoreboard: Scoreboard) {
@@ -99,11 +99,7 @@ class ImyvmWorldGeo : ModInitializer {
 
 			val activeRegions = mutableSetOf<String>()
 
-			for (player in server.playerManager.playerList) {
-				val playerX = player.blockX
-				val playerZ = player.blockZ
-
-				val region = data.getRegionAt(playerX, playerZ)
+			for ((uuid, region) in playerRegionChecker.getAllRegions()) {
 				val regionName = region?.name ?: "-wilderness-"
 				activeRegions.add(regionName)
 
@@ -127,6 +123,5 @@ class ImyvmWorldGeo : ModInitializer {
 
 			scoreboard.setObjectiveSlot(ScoreboardDisplaySlot.SIDEBAR, objective)
 		}
-
 	}
 }
