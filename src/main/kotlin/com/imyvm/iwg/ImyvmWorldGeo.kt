@@ -45,7 +45,7 @@ class ImyvmWorldGeo : ModInitializer {
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 		val data: RegionDatabase = RegionDatabase()
 
-		private var tickCounter: Long = 0L
+		var tickCounter: Long = 0L
 
 		val commandlySelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
 
