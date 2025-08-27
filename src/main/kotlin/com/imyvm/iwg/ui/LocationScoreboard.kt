@@ -6,7 +6,7 @@ import net.minecraft.text.Text
 
 fun initializeGeographicScoreboard(scoreboard: Scoreboard) {
     val objectName = "${ImyvmWorldGeo.MOD_ID}_region"
-    val displayName = Text.of("Current Region")
+    val displayName = Translator.tr("scoreboard.display-name")
 
     val objective = scoreboard.getNullableObjective(objectName)
 
@@ -36,7 +36,9 @@ fun updateGeographicScoreboardPlayers(server: net.minecraft.server.MinecraftServ
     val activeRegions = mutableSetOf<String>()
 
     for ((uuid, region) in ImyvmWorldGeo.playerRegionChecker.getAllRegions()) {
-        val regionName = region?.name ?: "-wilderness-"
+        val regionName: String = region?.name?.takeIf { it.isNotBlank() }
+            ?: Translator.tr("scoreboard.region.none.name").string ?: "-wilderness-"
+
         activeRegions.add(regionName)
 
         val scoreHolder: ScoreHolder = ScoreHolder.fromName(regionName)
