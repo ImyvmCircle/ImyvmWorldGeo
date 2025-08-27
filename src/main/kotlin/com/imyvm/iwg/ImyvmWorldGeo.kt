@@ -42,7 +42,7 @@ class ImyvmWorldGeo : ModInitializer {
 	}
 
 	companion object {
-		const val MOD_ID = "imyvm-world-geo"
+		const val MOD_ID = "imyvmworldgeo"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 		val data: RegionDatabase = RegionDatabase()
 		var tickCounter: Long = 0L

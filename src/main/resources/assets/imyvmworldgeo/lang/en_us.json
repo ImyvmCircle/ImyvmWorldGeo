@@ -1,0 +1,26 @@
+{
+  "command.help": "Imyvm World Geo Commands:\n/imyvm-world-geo help - Show this help message.\n/imyvm-world-geo select start - Start selecting positions with a golden hoe.\n/imyvm-world-geo select stop - Stop selection mode.\n/imyvm-world-geo select reset - Clear all selected points but keep selection mode active.\n/imyvm-world-geo create rectangle - Create a rectangular region from selected positions.\n/imyvm-world-geo create circle - Create a circular region from selected positions.\n/imyvm-world-geo create polygon - Create a polygonal region from selected positions.\n/imyvm-world-geo delete id <id> - Delete a region by its ID.\n/imyvm-world-geo delete name <name> - Delete a region by its name.\n/imyvm-world-geo list - List all regions.",
+
+  "command.select.start": "Selection mode started. Use a golden hoe to select positions.",
+  "command.select.already": "You are already in selection mode.",
+  "command.select.stop": "Selection mode stopped.",
+  "command.select.not_in_mode": "You are not in selection mode. Use /imyvm-world-geo select start first.",
+  "command.select.reset": "Your selection points have been reset. You are still in selection mode.",
+
+  "command.create.success": "Region '{0}' created successfully!",
+
+  "command.delete.success.name": "Region '{0}' deleted successfully!",
+  "command.delete.success.id": "Region with ID '{0}' deleted successfully!",
+
+  "command.list.empty": "No regions found.",
+  "command.list.header": "Regions:\n{0}",
+
+  "error.duplicated_points": "Cannot create a region with duplicated points.",
+  "error.insufficient_points": "You must select enough points for a {0} region.",
+  "error.coincident_points": "For a rectangle, the first two points must not share the same X or Z coordinate.",
+  "error.rectangle_too_small": "The rectangle is too small. It must meet the minimum side length and area requirements.",
+  "error.circle_too_small": "The circle is too small. The radius must be at least the minimum size.",
+  "error.polygon_too_small": "The polygon is too small. The area must be at least the minimum size.",
+  "error.generic_too_small": "The region is too small.",
+  "error.not_convex": "The polygon must be convex."
+}
