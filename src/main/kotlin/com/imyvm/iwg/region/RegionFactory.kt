@@ -1,6 +1,6 @@
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.region.Region
-import com.imyvm.iwg.util.checkIntersection
+import com.imyvm.iwg.util.*
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -20,11 +20,6 @@ sealed class Result<out T, out E> {
 }
 
 object RegionFactory {
-
-    private const val MIN_RECTANGLE_AREA = 100.0
-    private const val MIN_SIDE_LENGTH = 10.0
-    private const val MIN_CIRCLE_RADIUS = 5.0
-    private const val MIN_POLYGON_AREA = 100.0
 
     fun createRegion(
         name: String,
@@ -134,32 +129,6 @@ object RegionFactory {
                 shapeParameter = positions.flatMap { listOf(it.x, it.z) }.toMutableList()
             }
         )
-    }
-
-    private fun checkRectangleSize(width: Int, length: Int): Boolean {
-        val area = width * length
-        return width >= MIN_SIDE_LENGTH && length >= MIN_SIDE_LENGTH && area >= MIN_RECTANGLE_AREA
-    }
-
-    private fun checkCircleSize(radius: Double) = radius >= MIN_CIRCLE_RADIUS
-    private fun checkPolygonSize(area: Double) = area >= MIN_POLYGON_AREA
-
-    private fun isConvex(positions: List<BlockPos>): Boolean {
-        if (positions.size < 3) return false
-        var sign = 0
-        val n = positions.size
-        for (i in 0 until n) {
-            val p1 = positions[i]
-            val p2 = positions[(i + 1) % n]
-            val p3 = positions[(i + 2) % n]
-            val cross = (p2.x - p1.x) * (p3.z - p2.z) - (p2.z - p1.z) * (p3.x - p2.x)
-            if (cross != 0) {
-                val currentSign = if (cross > 0) 1 else -1
-                if (sign == 0) sign = currentSign
-                else if (sign != currentSign) return false
-            }
-        }
-        return true
     }
 
     private fun polygonArea(positions: List<BlockPos>): Double {
