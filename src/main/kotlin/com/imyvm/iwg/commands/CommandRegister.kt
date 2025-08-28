@@ -11,6 +11,7 @@ import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.text.Text
 
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
     dispatcher.register(
@@ -58,6 +59,17 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                     .then(
                         argument("name", StringArgumentType.string())
                             .executes { runDeleteRegionsByName(it) }
+                    )
+            )
+            .then(
+                literal("query")
+                    .then(
+                        argument("id", IntegerArgumentType.integer())
+                            .executes{ runQueryRegionById(it) }
+                    )
+                    .then(
+                        argument("name", StringArgumentType.string())
+                            .executes{ runQueryRegionByName(it) }
                     )
             )
             .then(
@@ -152,6 +164,20 @@ private fun runCreateRegion(
     }
 }
 
+private fun runDeleteRegionsById(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = context.getArgument("id", Int::class.java)
+    return try {
+        val regionToDelete = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+        ImyvmWorldGeo.data.removeRegion(regionToDelete)
+        player.sendMessage(Translator.tr("command.delete.success.id", regionId))
+        1
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.delete.not_found_id", regionId))
+        0
+    }
+}
+
 private fun runDeleteRegionsByName(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionName = context.getArgument("name", String::class.java)
@@ -166,17 +192,39 @@ private fun runDeleteRegionsByName(context: CommandContext<ServerCommandSource>)
     }
 }
 
-private fun runDeleteRegionsById(context: CommandContext<ServerCommandSource>): Int {
+private fun runQueryRegionById(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionId = context.getArgument("id", Int::class.java)
     return try {
-        val regionToDelete = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        ImyvmWorldGeo.data.removeRegion(regionToDelete)
-        player.sendMessage(Translator.tr("command.delete.success.id", regionId))
+        val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+        displayRegionInfo(context.source, region)
         1
     } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.delete.not_found_id", regionId))
+        player.sendMessage(Translator.tr("command.query.not_found_id", regionId.toString()))
         0
+    }
+}
+
+private fun runQueryRegionByName(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionName = context.getArgument("name", String::class.java)
+    return try {
+        val region = ImyvmWorldGeo.data.getRegionByName(regionName)
+        displayRegionInfo(context.source, region)
+        1
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.query.not_found_name", regionName))
+        0
+    }
+}
+
+private fun displayRegionInfo(source: ServerCommandSource, region: Region) {
+    val player = source.player ?: return
+    player.sendMessage(Translator.tr("command.query.result", region.name, region.numberID.toString()))
+    region.geometryScope.forEach { geoScope ->
+        geoScope.geoShape?.let { geoShape ->
+            player.sendMessage(geoShape.getShapeInfo())
+        }
     }
 }
 
