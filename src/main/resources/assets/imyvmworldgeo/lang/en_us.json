@@ -14,7 +14,7 @@
 
   "command.query.not_found_id": "Error: Region with ID '{0}' not found.",
   "command.query.not_found_name": "Error: Region with name '{0}' not found.",
-  "command.query.result": "Query successful! Showing information for Region: {0} (ID: {1})",
+  "command.query.result": "Query successful! Showing information for Region: \n{0} (ID: {1})",
 
   "command.list.empty": "No regions found.",
   "command.list.header": "Regions:\n{0}",
@@ -32,5 +32,5 @@
   "scoreboard.display-name": "Current Region",
   "scoreboard.region.none.name": "-wilderness-",
 
-  "geoshape.info": "Type of shape: {0}, Coordinates: {1}, Area: {2} m²."
+  "geoshape.info": "Type of shape: {0}, \nCoordinates: {1}, \nArea: {2} m²."
 }
