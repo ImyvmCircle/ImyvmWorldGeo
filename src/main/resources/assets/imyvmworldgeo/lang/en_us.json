@@ -27,6 +27,8 @@
   "error.polygon_too_small": "The polygon is too small. The area must be at least the minimum size.",
   "error.generic_too_small": "The region is too small.",
   "error.not_convex": "The polygon must be convex.",
+  "error.intersection_between_scopes": "The new region intersects with an existing region's scope.",
+  "error.unknown": "An unknown error occurred.",
 
 
   "scoreboard.display-name": "Current Region",

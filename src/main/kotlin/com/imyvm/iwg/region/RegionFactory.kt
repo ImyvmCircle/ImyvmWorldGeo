@@ -1,8 +1,9 @@
-package com.imyvm.iwg.region
-
+import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.region.Region
+import com.imyvm.iwg.util.checkIntersection
 import net.minecraft.util.math.BlockPos
-import kotlin.math.sqrt
 import kotlin.math.abs
+import kotlin.math.sqrt
 
 sealed class CreationError {
     data object DuplicatedPoints : CreationError()
@@ -10,6 +11,7 @@ sealed class CreationError {
     data object CoincidentPoints : CreationError()
     data object UnderSizeLimit : CreationError()
     data object NotConvex : CreationError()
+    data object IntersectionBetweenScopes : CreationError()
 }
 
 sealed class Result<out T, out E> {
@@ -36,20 +38,27 @@ object RegionFactory {
             return Result.Err(CreationError.InsufficientPoints)
         }
 
-        val geoShape = when (shapeType) {
+        val geoShapeResult = when (shapeType) {
             Region.Companion.GeoShapeType.RECTANGLE -> createRectangle(selectedPositions)
             Region.Companion.GeoShapeType.CIRCLE -> createCircle(selectedPositions)
             Region.Companion.GeoShapeType.POLYGON -> createPolygon(selectedPositions)
             else -> Result.Err(CreationError.InsufficientPoints)
         }
 
-        if (geoShape is Result.Err) {
-            return geoShape
+        if (geoShapeResult is Result.Err) {
+            return geoShapeResult
+        }
+
+        val geoShape = (geoShapeResult as Result.Ok).value
+
+        val existingScopes = ImyvmWorldGeo.data.getRegionList().flatMap { it.geometryScope }
+        if (checkIntersection(geoShape, existingScopes)) {
+            return Result.Err(CreationError.IntersectionBetweenScopes)
         }
 
         val geoScope = Region.Companion.GeoScope().apply {
             scopeName = "main_scope"
-            this.geoShape = (geoShape as Result.Ok).value
+            this.geoShape = geoShape
         }
 
         val newRegion = Region().apply {
@@ -60,7 +69,6 @@ object RegionFactory {
 
         return Result.Ok(newRegion)
     }
-
 
     private fun requiredPoints(shapeType: Region.Companion.GeoShapeType): Int =
         when (shapeType) {
@@ -80,9 +88,7 @@ object RegionFactory {
         val width = abs(pos1.x - pos2.x)
         val length = abs(pos1.z - pos2.z)
 
-        if (!checkRectangleSize(width, length)) {
-            return Result.Err(CreationError.UnderSizeLimit)
-        }
+        if (!checkRectangleSize(width, length)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
             Region.Companion.GeoShape().apply {
@@ -105,9 +111,7 @@ object RegionFactory {
         val dz = circumference.z - center.z
         val radius = sqrt((dx * dx + dz * dz).toDouble())
 
-        if (!checkCircleSize(radius)) {
-            return Result.Err(CreationError.UnderSizeLimit)
-        }
+        if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
             Region.Companion.GeoShape().apply {
@@ -119,18 +123,10 @@ object RegionFactory {
 
     private fun createPolygon(positions: List<BlockPos>): Result<Region.Companion.GeoShape, CreationError> {
         val distinct = positions.distinct()
-        if (distinct.size != positions.size) {
-            return Result.Err(CreationError.DuplicatedPoints)
-        }
-
-        if (!isConvex(positions)) {
-            return Result.Err(CreationError.NotConvex)
-        }
-
+        if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
+        if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
         val area = polygonArea(positions)
-        if (!checkPolygonSize(area)) {
-            return Result.Err(CreationError.UnderSizeLimit)
-        }
+        if (!checkPolygonSize(area)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
             Region.Companion.GeoShape().apply {
@@ -140,17 +136,13 @@ object RegionFactory {
         )
     }
 
-
     private fun checkRectangleSize(width: Int, length: Int): Boolean {
         val area = width * length
         return width >= MIN_SIDE_LENGTH && length >= MIN_SIDE_LENGTH && area >= MIN_RECTANGLE_AREA
     }
 
-    private fun checkCircleSize(radius: Double): Boolean =
-        radius >= MIN_CIRCLE_RADIUS
-
-    private fun checkPolygonSize(area: Double): Boolean =
-        area >= MIN_POLYGON_AREA
+    private fun checkCircleSize(radius: Double) = radius >= MIN_CIRCLE_RADIUS
+    private fun checkPolygonSize(area: Double) = area >= MIN_POLYGON_AREA
 
     private fun isConvex(positions: List<BlockPos>): Boolean {
         if (positions.size < 3) return false
@@ -160,8 +152,7 @@ object RegionFactory {
             val p1 = positions[i]
             val p2 = positions[(i + 1) % n]
             val p3 = positions[(i + 2) % n]
-            val cross =
-                (p2.x - p1.x) * (p3.z - p2.z) - (p2.z - p1.z) * (p3.x - p2.x)
+            val cross = (p2.x - p1.x) * (p3.z - p2.z) - (p2.z - p1.z) * (p3.x - p2.x)
             if (cross != 0) {
                 val currentSign = if (cross > 0) 1 else -1
                 if (sign == 0) sign = currentSign

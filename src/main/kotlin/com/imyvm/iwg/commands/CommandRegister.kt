@@ -1,5 +1,7 @@
 package com.imyvm.iwg.commands
 
+import CreationError
+import Result
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.ui.Translator
 import com.imyvm.iwg.region.*
@@ -74,7 +76,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             )
             .then(
                 literal("list")
-                    .executes { runlistRegions(it) }
+                    .executes { runListRegions(it) }
             )
     )
 }
@@ -161,6 +163,8 @@ private fun runCreateRegion(
             player.sendMessage(errorMsg)
             return 0
         }
+
+        else -> {player.sendMessage(Translator.tr("error.unknown")); return 0}
     }
 }
 
@@ -228,7 +232,7 @@ private fun displayRegionInfo(source: ServerCommandSource, region: Region) {
     }
 }
 
-private fun runlistRegions(context: CommandContext<ServerCommandSource>): Int {
+private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regions = ImyvmWorldGeo.data.getRegionList()
     if (regions.isEmpty()) {
@@ -243,7 +247,7 @@ private fun runlistRegions(context: CommandContext<ServerCommandSource>): Int {
 private fun errorMessage(
     error: CreationError,
     shapeType: Region.Companion.GeoShapeType
-): net.minecraft.text.Text = when (error) {
+): Text = when (error) {
     CreationError.DuplicatedPoints -> Translator.tr("error.duplicated_points")
     CreationError.InsufficientPoints -> Translator.tr("error.insufficient_points", shapeType.name.lowercase())
     CreationError.CoincidentPoints -> Translator.tr("error.coincident_points")
@@ -254,4 +258,6 @@ private fun errorMessage(
         else -> Translator.tr("error.generic_too_small")
     }
     CreationError.NotConvex -> Translator.tr("error.not_convex")
+    CreationError.IntersectionBetweenScopes -> Translator.tr("error.intersection_between_scopes")
+    else -> { Translator.tr("error.unknown") }
 }
