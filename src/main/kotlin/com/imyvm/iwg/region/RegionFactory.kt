@@ -27,33 +27,12 @@ object RegionFactory {
         selectedPositions: MutableList<BlockPos>,
         shapeType: Region.Companion.GeoShapeType
     ): Result<Region, CreationError> {
-
-        val requiredPoints = requiredPoints(shapeType)
-        if (selectedPositions.size < requiredPoints) {
-            return Result.Err(CreationError.InsufficientPoints)
-        }
-
-        val geoShapeResult = when (shapeType) {
-            Region.Companion.GeoShapeType.RECTANGLE -> createRectangle(selectedPositions)
-            Region.Companion.GeoShapeType.CIRCLE -> createCircle(selectedPositions)
-            Region.Companion.GeoShapeType.POLYGON -> createPolygon(selectedPositions)
-            else -> Result.Err(CreationError.InsufficientPoints)
-        }
-
-        if (geoShapeResult is Result.Err) {
-            return geoShapeResult
-        }
-
-        val geoShape = (geoShapeResult as Result.Ok).value
-
-        val existingScopes = ImyvmWorldGeo.data.getRegionList().flatMap { it.geometryScope }
-        if (checkIntersection(geoShape, existingScopes)) {
-            return Result.Err(CreationError.IntersectionBetweenScopes)
-        }
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType)
+        if (geoShapeResult is Result.Err) return geoShapeResult
 
         val geoScope = Region.Companion.GeoScope().apply {
             scopeName = "main_scope"
-            this.geoShape = geoShape
+            geoShape = (geoShapeResult as Result.Ok).value
         }
 
         val newRegion = Region().apply {
@@ -63,6 +42,34 @@ object RegionFactory {
         }
 
         return Result.Ok(newRegion)
+    }
+
+    fun createGeoShape(
+        positions: List<BlockPos>,
+        shapeType: Region.Companion.GeoShapeType
+    ): Result<Region.Companion.GeoShape, CreationError> {
+        val requiredPoints = requiredPoints(shapeType)
+        if (positions.size < requiredPoints) {
+            return Result.Err(CreationError.InsufficientPoints)
+        }
+
+        val geoShapeResult = when (shapeType) {
+            Region.Companion.GeoShapeType.RECTANGLE -> createRectangle(positions)
+            Region.Companion.GeoShapeType.CIRCLE -> createCircle(positions)
+            Region.Companion.GeoShapeType.POLYGON -> createPolygon(positions)
+            else -> Result.Err(CreationError.InsufficientPoints)
+        }
+
+        if (geoShapeResult is Result.Err) return geoShapeResult
+
+        val geoShape = (geoShapeResult as Result.Ok).value
+
+        val existingScopes = ImyvmWorldGeo.data.getRegionList().flatMap { it.geometryScope }
+        if (checkIntersection(geoShape, existingScopes)) {
+            return Result.Err(CreationError.IntersectionBetweenScopes)
+        }
+
+        return Result.Ok(geoShape)
     }
 
     private fun requiredPoints(shapeType: Region.Companion.GeoShapeType): Int =
@@ -82,7 +89,6 @@ object RegionFactory {
 
         val width = abs(pos1.x - pos2.x)
         val length = abs(pos1.z - pos2.z)
-
         if (!checkRectangleSize(width, length)) return Result.Err(CreationError.UnderSizeLimit)
 
         val west  = minOf(pos1.x, pos2.x)
@@ -98,7 +104,6 @@ object RegionFactory {
         )
     }
 
-
     private fun createCircle(positions: List<BlockPos>): Result<Region.Companion.GeoShape, CreationError> {
         val center = positions[0]
         val circumference = positions[1]
@@ -108,7 +113,6 @@ object RegionFactory {
         val dx = circumference.x - center.x
         val dz = circumference.z - center.z
         val radius = sqrt((dx * dx + dz * dz).toDouble())
-
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
@@ -144,3 +148,4 @@ object RegionFactory {
         return abs(area) / 2.0
     }
 }
+
