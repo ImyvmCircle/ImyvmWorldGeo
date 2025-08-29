@@ -22,6 +22,7 @@
   "command.addscope.not_found_id": "Could not find a region with ID: {0}.",
   "command.addscope.not_found_name": "Could not find a region named: {0}.",
   "command.addscope.not_found_generic": "Could not find the specified region.",
+  "command.addscope.duplicate_scope_name": "The region already has a scope with the same name given by command.",
   "command.addscope.success": "Successfully added a new scope '{0}' to region '{1}.",
 
   "command.query.not_found_id": "Error: Region with ID '{0}' not found.",

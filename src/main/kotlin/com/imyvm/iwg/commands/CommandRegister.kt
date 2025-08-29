@@ -331,6 +331,12 @@ private fun runAddScope(
 
     return try {
         val targetRegion = region() ?: throw RegionNotFoundException(Translator.tr("command.addscope.not_found_generic").string)
+        for (existingScope in targetRegion.geometryScope) {
+            if (existingScope.scopeName.equals(scopeName, ignoreCase = true)) {
+                player.sendMessage(Translator.tr("command.addscope.duplicate_scope_name"))
+                return 0
+            }
+        }
         val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
 
         val creationResult = RegionFactory.createScope(
