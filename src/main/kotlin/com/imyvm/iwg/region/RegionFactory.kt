@@ -27,24 +27,41 @@ object RegionFactory {
         selectedPositions: MutableList<BlockPos>,
         shapeType: Region.Companion.GeoShapeType
     ): Result<Region, CreationError> {
-        val geoShapeResult = createGeoShape(selectedPositions, shapeType)
-        if (geoShapeResult is Result.Err) return geoShapeResult
+        val mainScopeResult = createScope("main_scope", selectedPositions, shapeType)
 
-        val geoScope = Region.Companion.GeoScope().apply {
-            scopeName = "main_scope"
-            geoShape = (geoShapeResult as Result.Ok).value
-        }
+        if (mainScopeResult is Result.Err) return mainScopeResult
+
+        val mainScope = (mainScopeResult as Result.Ok).value
 
         val newRegion = Region().apply {
             this.name = name
             this.numberID = numberID
-            geometryScope.add(geoScope)
+            geometryScope.add(mainScope)
         }
 
         return Result.Ok(newRegion)
     }
 
-    fun createGeoShape(
+    fun createScope(
+        scopeName: String,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: Region.Companion.GeoShapeType
+    ): Result<Region.Companion.GeoScope, CreationError> {
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType)
+
+        if (geoShapeResult is Result.Err) {
+            return Result.Err(geoShapeResult.error)
+        }
+
+        val geoScope = Region.Companion.GeoScope().apply {
+            this.scopeName = scopeName
+            this.geoShape = (geoShapeResult as Result.Ok).value
+        }
+
+        return Result.Ok(geoScope)
+    }
+
+    private fun createGeoShape(
         positions: List<BlockPos>,
         shapeType: Region.Companion.GeoShapeType
     ): Result<Region.Companion.GeoShape, CreationError> {

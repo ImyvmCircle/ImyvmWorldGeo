@@ -9,12 +9,21 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
+import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
+import java.util.concurrent.CompletableFuture
+
+private val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSource> = SuggestionProvider { _, builder ->
+    Region.Companion.GeoShapeType.entries
+        .filter { it != Region.Companion.GeoShapeType.UNKNOWN }
+        .forEach { builder.suggest(it.name.toLowerCase()) }
+    CompletableFuture.completedFuture(builder.build())
+}
 
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
     dispatcher.register(
@@ -76,6 +85,27 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("name", StringArgumentType.string())
                             .then(argument("newName", StringArgumentType.string())
                                 .executes { runRenameRegionByName(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("addscope")
+                    .then(
+                        argument("id", IntegerArgumentType.integer())
+                            .then(argument("scopeName", StringArgumentType.string())
+                                .then(argument("shapeType", StringArgumentType.word())
+                                    .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                                    .executes { runAddScopeById(it) }
+                                )
+                            )
+                    )
+                    .then(
+                        argument("name", StringArgumentType.string())
+                            .then(argument("scopeName", StringArgumentType.string())
+                                .then(argument("shapeType", StringArgumentType.word())
+                                    .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                                    .executes { runAddScopeByName(it) }
+                                )
                             )
                     )
             )
@@ -254,6 +284,80 @@ private fun runRenameRegionAndSendFeedback(player: ServerPlayerEntity, region: R
         1
     } catch (e: IllegalArgumentException) {
         player.sendMessage(Translator.tr("command.rename.duplicate_name", newName))
+        0
+    }
+}
+
+private fun runAddScopeById(context: CommandContext<ServerCommandSource>): Int {
+    val regionId = context.getArgument("id", Int::class.java)
+    return runAddScope(
+        context = context,
+        region = { ImyvmWorldGeo.data.getRegionByNumberId(regionId) },
+        notFoundMessage = { Translator.tr("command.addscope.not_found_id", regionId.toString()) }
+    )
+}
+
+private fun runAddScopeByName(context: CommandContext<ServerCommandSource>): Int {
+    val regionName = context.getArgument("name", String::class.java)
+    return runAddScope(
+        context = context,
+        region = { ImyvmWorldGeo.data.getRegionByName(regionName) },
+        notFoundMessage = { Translator.tr("command.addscope.not_found_name", regionName) }
+    )
+}
+
+private fun runAddScope(
+    context: CommandContext<ServerCommandSource>,
+    region: () -> Region?,
+    notFoundMessage: () -> Text
+): Int {
+    val player = context.source.player ?: return 0
+    val playerUUID = player.uuid
+
+    if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
+        player.sendMessage(Translator.tr("command.select.not_in_mode"))
+        return 0
+    }
+
+    val shapeTypeStr = context.getArgument("shapeType", String::class.java).toUpperCase()
+    val shapeType: Region.Companion.GeoShapeType = try {
+        Region.Companion.GeoShapeType.valueOf(shapeTypeStr)
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr("command.addscope.invalid_shape_type"))
+        return 0
+    }
+
+    val scopeName = context.getArgument("scopeName", String::class.java)
+
+    return try {
+        val targetRegion = region() ?: throw RegionNotFoundException(Translator.tr("command.addscope.not_found_generic").string)
+        val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
+
+        val creationResult = RegionFactory.createScope(
+            scopeName = scopeName,
+            selectedPositions = selectedPositions,
+            shapeType = shapeType
+        )
+
+        when (creationResult) {
+            is Result.Ok -> {
+                targetRegion.geometryScope.add(creationResult.value)
+                player.sendMessage(Translator.tr("command.addscope.success", scopeName, targetRegion.name))
+                ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
+                1
+            }
+            is Result.Err -> {
+                val errorMsg = errorMessage(creationResult.error, shapeType)
+                player.sendMessage(errorMsg)
+                0
+            }
+            else -> {
+                player.sendMessage(Translator.tr("error.unknown"))
+                0
+            }
+        }
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(notFoundMessage())
         0
     }
 }

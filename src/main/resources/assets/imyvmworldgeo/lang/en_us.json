@@ -18,6 +18,12 @@
   "command.rename.not_found_id": "Error: Region with ID '{0}' not found.",
   "command.rename.not_found_name": "Error: Region with name '{0}' not found.",
 
+  "command.addscope.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
+  "command.addscope.not_found_id": "Could not find a region with ID: {0}.",
+  "command.addscope.not_found_name": "Could not find a region named: {0}.",
+  "command.addscope.not_found_generic": "Could not find the specified region.",
+  "command.addscope.success": "Successfully added a new scope '{0}' to region '{1}.",
+
   "command.query.not_found_id": "Error: Region with ID '{0}' not found.",
   "command.query.not_found_name": "Error: Region with name '{0}' not found.",
   "command.query.result": "Query successful! Showing information for Region: \n{0} (ID: {1})",
