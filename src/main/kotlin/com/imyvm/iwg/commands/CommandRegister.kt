@@ -13,6 +13,7 @@ import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
@@ -61,6 +62,21 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                     .then(
                         argument("name", StringArgumentType.string())
                             .executes { runDeleteRegionsByName(it) }
+                    )
+            )
+            .then(
+                literal("rename")
+                    .then(
+                        argument("id", IntegerArgumentType.integer())
+                            .then(argument("newName", StringArgumentType.string())
+                                .executes { runRenameRegionById(it) }
+                            )
+                    )
+                    .then(
+                        argument("name", StringArgumentType.string())
+                            .then(argument("newName", StringArgumentType.string())
+                                .executes { runRenameRegionByName(it) }
+                            )
                     )
             )
             .then(
@@ -192,6 +208,52 @@ private fun runDeleteRegionsByName(context: CommandContext<ServerCommandSource>)
         1
     } catch (e: RegionNotFoundException) {
         player.sendMessage(Translator.tr("command.delete.not_found", regionName))
+        0
+    }
+}
+
+private fun runRenameRegionById(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = context.getArgument("id", Int::class.java)
+    val newName = context.getArgument("newName", String::class.java)
+
+    return try {
+        val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+        return runRenameRegionAndSendFeedback(player, region, newName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.rename.not_found_id", regionId.toString()))
+        0
+    }
+}
+
+private fun runRenameRegionByName(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionName = context.getArgument("name", String::class.java)
+    val newName = context.getArgument("newName", String::class.java)
+
+    return try {
+        val region = ImyvmWorldGeo.data.getRegionByName(regionName)
+        return runRenameRegionAndSendFeedback(player, region, newName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.rename.not_found_name", regionName))
+        0
+    }
+}
+
+private fun runRenameRegionAndSendFeedback(player: ServerPlayerEntity, region: Region, newName: String): Int {
+    val oldName = region.name
+
+    if (oldName == newName) {
+        player.sendMessage(Translator.tr("command.rename.repeated_same_name"))
+        return 0
+    }
+
+    return try {
+        ImyvmWorldGeo.data.renameRegion(region, newName)
+        player.sendMessage(Translator.tr("command.rename.success", oldName, newName))
+        1
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr("command.rename.duplicate_name", newName))
         0
     }
 }

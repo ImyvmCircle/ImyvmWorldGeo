@@ -107,6 +107,18 @@ class RegionDatabase {
         regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
     }
 
+    fun renameRegion(region: Region, newName: String) {
+        val isDuplicate = regions.any { otherRegion ->
+            otherRegion.name.equals(newName, ignoreCase = true) && otherRegion.numberID != region.numberID
+        }
+
+        if (isDuplicate) {
+            throw IllegalArgumentException("A region with the name '$newName' already exists.")
+        }
+
+        region.name = newName
+    }
+
     fun getRegionAt(x: Int, z: Int): Region? {
         for (region in regions) {
             for (scope in region.geometryScope) {
