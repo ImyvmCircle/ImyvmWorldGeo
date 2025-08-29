@@ -34,5 +34,15 @@
   "scoreboard.display-name": "Current Region",
   "scoreboard.region.none.name": "-wilderness-",
 
-  "geoshape.info": "Type of shape: {0}, \nCoordinates: {1}, \nArea: {2} m²."
+
+  "geoshape.circle": "Shape #{0}: Circle | Center=({1}, {2}), Radius={3} | Area={4} m²",
+  "geoshape.circle.invalid": "Shape #{0}: Invalid Circle | Area={1} m²",
+
+  "geoshape.rectangle": "Shape #{0}: Rectangle | West-North Corner=({1}, {2}) - East-South Corner=({3}, {4}) | Area={5} m²",
+  "geoshape.rectangle.invalid": "Shape #{0}: Invalid Rectangle | Area={1} m²",
+
+  "geoshape.polygon": "Shape #{0}: Polygon | Vertices={1} | Area={2} m²",
+  "geoshape.polygon.invalid": "Shape #{0}: Invalid Polygon | Area={1} m²",
+
+  "geoshape.unknown": "Shape #{0}: Unknown Shape | Area={1} m²"
 }

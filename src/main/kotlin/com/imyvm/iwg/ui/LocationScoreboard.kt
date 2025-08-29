@@ -2,7 +2,6 @@ package com.imyvm.iwg.ui
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import net.minecraft.scoreboard.*
-import net.minecraft.text.Text
 
 fun initializeGeographicScoreboard(scoreboard: Scoreboard) {
     val objectName = "${ImyvmWorldGeo.MOD_ID}_region"

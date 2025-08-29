@@ -225,10 +225,10 @@ private fun runQueryRegionByName(context: CommandContext<ServerCommandSource>): 
 private fun displayRegionInfo(source: ServerCommandSource, region: Region) {
     val player = source.player ?: return
     player.sendMessage(Translator.tr("command.query.result", region.name, region.numberID.toString()))
-    region.geometryScope.forEach { geoScope ->
-        geoScope.geoShape?.let { geoShape ->
-            player.sendMessage(geoShape.getShapeInfo())
-        }
+
+    val shapeInfos = region.getShapeInfos()
+    shapeInfos.forEach { info ->
+        player.sendMessage(info)
     }
 }
 

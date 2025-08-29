@@ -85,16 +85,19 @@ object RegionFactory {
 
         if (!checkRectangleSize(width, length)) return Result.Err(CreationError.UnderSizeLimit)
 
+        val west  = minOf(pos1.x, pos2.x)
+        val east  = maxOf(pos1.x, pos2.x)
+        val north = minOf(pos1.z, pos2.z)
+        val south = maxOf(pos1.z, pos2.z)
+
         return Result.Ok(
             Region.Companion.GeoShape().apply {
                 geoShapeType = Region.Companion.GeoShapeType.RECTANGLE
-                shapeParameter = mutableListOf(
-                    minOf(pos1.x, pos2.x), minOf(pos1.z, pos2.z),
-                    maxOf(pos1.x, pos2.x), maxOf(pos1.z, pos2.z)
-                )
+                shapeParameter = mutableListOf(west, north, east, south)
             }
         )
     }
+
 
     private fun createCircle(positions: List<BlockPos>): Result<Region.Companion.GeoShape, CreationError> {
         val center = positions[0]
