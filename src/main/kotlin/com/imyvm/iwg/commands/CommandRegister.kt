@@ -50,16 +50,9 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             .then(
                 literal("create")
                     .then(
-                        literal("rectangle")
-                            .executes { runCreateRegion(it, Region.Companion.GeoShapeType.RECTANGLE) }
-                    )
-                    .then(
-                        literal("circle")
-                            .executes { runCreateRegion(it, Region.Companion.GeoShapeType.CIRCLE) }
-                    )
-                    .then(
-                        literal("polygon")
-                            .executes { runCreateRegion(it, Region.Companion.GeoShapeType.POLYGON) }
+                        argument("shapeType", StringArgumentType.word())
+                            .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                            .executes { runCreateRegion(it) }
                     )
             )
             .then(
@@ -175,14 +168,22 @@ private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
     }
 }
 
-private fun runCreateRegion(
-    context: CommandContext<ServerCommandSource>,
-    shapeType: Region.Companion.GeoShapeType
-): Int {
+private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val playerUUID = player.uuid
+
     if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
         player.sendMessage(Translator.tr("command.select.not_in_mode"))
+        return 0
+    }
+
+    val shapeTypeName = StringArgumentType.getString(context, "shapeType").uppercase()
+    val shapeType = Region.Companion.GeoShapeType.entries
+        .find { it.name == shapeTypeName }
+        ?: Region.Companion.GeoShapeType.UNKNOWN
+
+    if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
+        player.sendMessage(Translator.tr("command.create.invalid_shape", shapeTypeName))
         return 0
     }
 
@@ -194,23 +195,24 @@ private fun runCreateRegion(
         shapeType = shapeType
     )
 
-    when (creationResult) {
+    return when (creationResult) {
         is Result.Ok -> {
             val newRegion = creationResult.value
             ImyvmWorldGeo.data.addRegion(newRegion)
             ImyvmWorldGeo.logger.info("Created new region '${newRegion.name}' with positions: ${newRegion.geometryScope}")
             player.sendMessage(Translator.tr("command.create.success", newRegion.name))
             ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
-            return 1
+            1
         }
-
         is Result.Err -> {
             val errorMsg = errorMessage(creationResult.error, shapeType)
             player.sendMessage(errorMsg)
-            return 0
+            0
         }
-
-        else -> {player.sendMessage(Translator.tr("error.unknown")); return 0}
+        else -> {
+            player.sendMessage(Translator.tr("error.unknown"))
+            0
+        }
     }
 }
 
