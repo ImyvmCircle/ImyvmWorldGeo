@@ -16,12 +16,13 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
+import java.util.*
 import java.util.concurrent.CompletableFuture
 
 private val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSource> = SuggestionProvider { _, builder ->
     Region.Companion.GeoShapeType.entries
         .filter { it != Region.Companion.GeoShapeType.UNKNOWN }
-        .forEach { builder.suggest(it.name.toLowerCase()) }
+        .forEach { builder.suggest(it.name.lowercase(Locale.getDefault())) }
     CompletableFuture.completedFuture(builder.build())
 }
 
