@@ -53,6 +53,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
                             .executes { runCreateRegion(it) }
+                            .then(
+                                argument("name", StringArgumentType.word())
+                                    .executes { runCreateRegion(it) }
+                            )
                     )
             )
             .then(
@@ -84,21 +88,23 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             .then(
                 literal("addscope")
                     .then(
-                        argument("id", IntegerArgumentType.integer())
-                            .then(argument("scopeName", StringArgumentType.string())
-                                .then(argument("shapeType", StringArgumentType.word())
-                                    .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                        argument("shapeType", StringArgumentType.word())
+                            .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                            .then(
+                                argument("id", IntegerArgumentType.integer())
                                     .executes { runAddScopeById(it) }
-                                )
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .executes { runAddScopeById(it) }
+                                    )
                             )
-                    )
-                    .then(
-                        argument("name", StringArgumentType.string())
-                            .then(argument("scopeName", StringArgumentType.string())
-                                .then(argument("shapeType", StringArgumentType.word())
-                                    .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                            .then(
+                                argument("name", StringArgumentType.string())
                                     .executes { runAddScopeByName(it) }
-                                )
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .executes { runAddScopeByName(it) }
+                                    )
                             )
                     )
             )
@@ -177,6 +183,12 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
         return 0
     }
 
+    val regionName: String = try {
+        StringArgumentType.getString(context, "name")
+    } catch (e: IllegalArgumentException) {
+        "NewRegion-${System.currentTimeMillis()}"
+    }
+
     val shapeTypeName = StringArgumentType.getString(context, "shapeType").uppercase()
     val shapeType = Region.Companion.GeoShapeType.entries
         .find { it.name == shapeTypeName }
@@ -189,7 +201,7 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
 
     val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]
     val creationResult = RegionFactory.createRegion(
-        name = "NewRegion-${System.currentTimeMillis()}",
+        name = regionName,
         numberID = ImyvmWorldGeo.data.getRegionList().size,
         selectedPositions = selectedPositions ?: mutableListOf(),
         shapeType = shapeType
@@ -321,7 +333,7 @@ private fun runAddScope(
         return 0
     }
 
-    val shapeTypeStr = context.getArgument("shapeType", String::class.java).toUpperCase()
+    val shapeTypeStr = context.getArgument("shapeType", String::class.java).uppercase()
     val shapeType: Region.Companion.GeoShapeType = try {
         Region.Companion.GeoShapeType.valueOf(shapeTypeStr)
     } catch (e: IllegalArgumentException) {
@@ -329,16 +341,23 @@ private fun runAddScope(
         return 0
     }
 
-    val scopeName = context.getArgument("scopeName", String::class.java)
+    val scopeName: String = try {
+        context.getArgument("scopeName", String::class.java)
+    } catch (e: IllegalArgumentException) {
+        val targetRegion = region() ?: return 0
+        "NewScope-${targetRegion}-${System.currentTimeMillis()}"
+    }
 
     return try {
         val targetRegion = region() ?: throw RegionNotFoundException(Translator.tr("command.addscope.not_found_generic").string)
+
         for (existingScope in targetRegion.geometryScope) {
             if (existingScope.scopeName.equals(scopeName, ignoreCase = true)) {
                 player.sendMessage(Translator.tr("command.addscope.duplicate_scope_name"))
                 return 0
             }
         }
+
         val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
 
         val creationResult = RegionFactory.createScope(
