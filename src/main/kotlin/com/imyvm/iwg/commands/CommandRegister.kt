@@ -114,14 +114,14 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("id", IntegerArgumentType.integer())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { /* TODO: Implement remove scope by region ID and scope name */ 0 }
+                                    .executes { runDeleteScopeById(it) }
                             )
                     )
                     .then(
                         argument("name", StringArgumentType.string())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { /* TODO: Implement remove scope by region name and scope name */ 0 }
+                                    .executes { runDeleteScopeByName(it) }
                             )
                     )
             )
@@ -450,21 +450,37 @@ private fun runDeleteScopeById(context: CommandContext<ServerCommandSource>): In
 
     return try {
         val targetRegion = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-
-        for (existingScope in targetRegion.geometryScope) {
-            if (existingScope.scopeName.equals(scopeName, ignoreCase = true)) {
-                targetRegion.geometryScope.remove(existingScope)
-                player.sendMessage(Translator.tr("command.deletescope.success", scopeName, targetRegion.name))
-                return 1
-            }
-        }
-
-        player.sendMessage(Translator.tr("command.deletescope.scope_not_found", scopeName, targetRegion.name))
-        return 0
-
+        runDeleteScope(player, targetRegion, scopeName)
     } catch (e: RegionNotFoundException) {
         player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
         0
+    }
+}
+
+private fun runDeleteScopeByName(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionName = context.getArgument("name", String::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+
+    return try {
+        val targetRegion = ImyvmWorldGeo.data.getRegionByName(regionName)
+        runDeleteScope(player, targetRegion, scopeName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_name", regionName))
+        0
+    }
+}
+
+private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName: String): Int {
+    val existingScope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+
+    if (existingScope != null) {
+        region.geometryScope.remove(existingScope)
+        player.sendMessage(Translator.tr("command.deletescope.success", scopeName, region.name))
+        return 1
+    } else {
+        player.sendMessage(Translator.tr("command.deletescope.scope_not_found", scopeName, region.name))
+        return 0
     }
 }
 
