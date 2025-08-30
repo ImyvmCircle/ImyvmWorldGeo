@@ -1,4 +1,7 @@
 {
+  "command.not_found_id": "Error: Region with ID '{0}' not found.",
+  "command.not_found_name": "Error: Region with name '{0}' not found.",
+
   "command.help": "Imyvm World Geo Commands:\n/imyvm-world-geo help - Show this help message.\n/imyvm-world-geo select start - Start selecting positions with a golden hoe.\n/imyvm-world-geo select stop - Stop selection mode.\n/imyvm-world-geo select reset - Clear all selected points but keep selection mode active.\n/imyvm-world-geo create rectangle - Create a rectangular region from selected positions.\n/imyvm-world-geo create circle - Create a circular region from selected positions.\n/imyvm-world-geo create polygon - Create a polygonal region from selected positions.\n/imyvm-world-geo delete id <id> - Delete a region by its ID.\n/imyvm-world-geo delete name <name> - Delete a region by its name.\n/imyvm-world-geo list - List all regions.",
 
   "command.select.start": "Selection mode started. Use a golden hoe to select positions.",
@@ -15,18 +18,15 @@
   "command.rename.success": "Successfully renamed region ID '{0}' to '{1}'.",
   "command.rename.repeated_same_name": "New name is the same as the current name.",
   "command.rename.duplicate_name": "New name '{0}' is already in use by another region.",
-  "command.rename.not_found_id": "Error: Region with ID '{0}' not found.",
-  "command.rename.not_found_name": "Error: Region with name '{0}' not found.",
 
   "command.addscope.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
-  "command.addscope.not_found_id": "Could not find a region with ID: {0}.",
-  "command.addscope.not_found_name": "Could not find a region named: {0}.",
   "command.addscope.not_found_generic": "Could not find the specified region.",
   "command.addscope.duplicate_scope_name": "The region already has a scope with the same name given by command.",
   "command.addscope.success": "Successfully added a new scope '{0}' to region '{1}.",
 
-  "command.query.not_found_id": "Error: Region with ID '{0}' not found.",
-  "command.query.not_found_name": "Error: Region with name '{0}' not found.",
+  "command.deletescope.success": "Successfully deleted scope '{0}' from region '{1}'.",
+  "command.deletescope.scope_not_found": "Scope '{0}' not found in region '{1}'.",
+
   "command.query.result": "Query successful! Showing information for Region: \n{0} (ID: {1}), total area: {2} m²\n",
 
   "command.list.empty": "No regions found.",
