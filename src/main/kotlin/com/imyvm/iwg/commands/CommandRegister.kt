@@ -226,7 +226,12 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     }
 
     val regionName: String = try {
-        StringArgumentType.getString(context, "name")
+        val nameArgument = StringArgumentType.getString(context, "name")
+        if (nameArgument.matches("\\d+".toRegex())) {
+            player.sendMessage(Translator.tr("command.create.name_is_digits_only"))
+            return 0
+        }
+        nameArgument
     } catch (e: IllegalArgumentException) {
         "NewRegion-${System.currentTimeMillis()}"
     }
@@ -242,9 +247,11 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     }
 
     val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]
+    val biggestId = ImyvmWorldGeo.data.getRegionList().maxOfOrNull { it.numberID } ?: -1
+    val newID = biggestId + 1
     val creationResult = RegionFactory.createRegion(
         name = regionName,
-        numberID = ImyvmWorldGeo.data.getRegionList().size,
+        numberID = newID,
         selectedPositions = selectedPositions ?: mutableListOf(),
         shapeType = shapeType
     )
@@ -302,6 +309,11 @@ private fun runRenameRegionById(context: CommandContext<ServerCommandSource>): I
     val player = context.source.player ?: return 0
     val regionId = context.getArgument("id", Int::class.java)
     val newName = context.getArgument("newName", String::class.java)
+
+    if (newName.matches("\\d+".toRegex())) {
+        player.sendMessage(Translator.tr("command.rename.name_is_digits_only"))
+        return 0
+    }
 
     return try {
         val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
