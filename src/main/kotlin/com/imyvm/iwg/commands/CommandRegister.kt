@@ -345,7 +345,7 @@ private fun runAddScope(
         context.getArgument("scopeName", String::class.java)
     } catch (e: IllegalArgumentException) {
         val targetRegion = region() ?: return 0
-        "NewScope-${targetRegion}-${System.currentTimeMillis()}"
+        "NewScope-${targetRegion.name}-${System.currentTimeMillis()}"
     }
 
     return try {
@@ -417,9 +417,13 @@ private fun runQueryRegionByName(context: CommandContext<ServerCommandSource>): 
 
 private fun displayRegionInfo(source: ServerCommandSource, region: Region) {
     val player = source.player ?: return
-    player.sendMessage(Translator.tr("command.query.result", region.name, region.numberID.toString()))
+    player.sendMessage(Translator.tr("command.query.result",
+        region.name,
+        region.numberID.toString(),
+        region.calculateTotalArea())
+    )
 
-    val shapeInfos = region.getShapeInfos()
+    val shapeInfos = region.getScopeInfos()
     shapeInfos.forEach { info ->
         player.sendMessage(info)
     }

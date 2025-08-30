@@ -9,26 +9,82 @@ class Region {
     var numberID: Int = 0
     var geometryScope: MutableList<GeoScope> = mutableListOf()
 
-    fun getShapeInfos(): List<Text> {
-        val shapeInfos = mutableListOf<Text>()
+    fun getScopeInfos(): List<Text> {
+        val scopeInfos = mutableListOf<Text>()
         geometryScope.forEachIndexed { index, geoScope ->
-            geoScope.geoShape?.let { geoShape ->
-                val info = geoShape.getShapeInfo(index)
-                shapeInfos.add(info)
-            }
+            scopeInfos.add(geoScope.getScopeInfo(index))
         }
-        return shapeInfos
+        return scopeInfos
     }
 
+    fun calculateTotalArea(): Double {
+        var totalArea = 0.0
+        for (scope in geometryScope) {
+            scope.geoShape?.let {
+                totalArea += it.calculateArea()
+            }
+        }
+        return "%.2f".format(totalArea).toDouble()
+    }
     companion object {
         class GeoScope {
             var scopeName: String = ""
             var geoShape: GeoShape? = null
+
+            fun getScopeInfo(index: Int): Text {
+                val shapeInfo = geoShape?.getShapeInfo()
+                    ?: Translator.tr("geoshape.unknown.info", index, "0.0")
+                return Translator.tr("scope.info", index, scopeName, shapeInfo)
+            }
         }
 
         class GeoShape {
             var geoShapeType: GeoShapeType = GeoShapeType.UNKNOWN
             var shapeParameter: MutableList<Int> = mutableListOf()
+
+            fun getShapeInfo(): Text {
+                val area = "%.2f".format(calculateArea())
+
+                return when (geoShapeType) {
+                    GeoShapeType.CIRCLE -> {
+                        if (shapeParameter.size < 3) {
+                            Translator.tr("geoshape.circle.invalid.info", area)
+                        } else {
+                            Translator.tr(
+                                "geoshape.circle.info",
+                                shapeParameter[0], // centerX
+                                shapeParameter[1], // centerY
+                                shapeParameter[2], // radius
+                                area
+                            )
+                        }
+                    }
+                    GeoShapeType.RECTANGLE -> {
+                        if (shapeParameter.size < 4) {
+                            Translator.tr("geoshape.rectangle.invalid.info", area)
+                        } else {
+                            Translator.tr(
+                                "geoshape.rectangle.info",
+                                shapeParameter[0], // west
+                                shapeParameter[1], // north
+                                shapeParameter[2], // east
+                                shapeParameter[3], // south
+                                area
+                            )
+                        }
+                    }
+                    GeoShapeType.POLYGON -> {
+                        if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
+                            Translator.tr("geoshape.polygon.invalid.info", area)
+                        } else {
+                            val coords = shapeParameter.chunked(2)
+                                .joinToString(", ") { "(${it[0]}, ${it[1]})" }
+                            Translator.tr("geoshape.polygon.info", coords, area)
+                        }
+                    }
+                    else -> Translator.tr("geoshape.unknown.info", area)
+                }
+            }
 
             fun isInside(x: Int, y: Int): Boolean {
                 return when (geoShapeType) {
@@ -125,53 +181,6 @@ class Region {
 
                 return inside
             }
-
-            fun getShapeInfo(index: Int): Text {
-                val area = "%.2f".format(calculateArea())
-
-                return when (geoShapeType) {
-                    GeoShapeType.CIRCLE -> {
-                        if (shapeParameter.size < 3) {
-                            Translator.tr("geoshape.circle.invalid", index, area)
-                        } else {
-                            Translator.tr(
-                                "geoshape.circle",
-                                index,
-                                shapeParameter[0], // centerX
-                                shapeParameter[1], // centerY
-                                shapeParameter[2], // radius
-                                area
-                            )
-                        }
-                    }
-                    GeoShapeType.RECTANGLE -> {
-                        if (shapeParameter.size < 4) {
-                            Translator.tr("geoshape.rectangle.invalid", index, area)
-                        } else {
-                            Translator.tr(
-                                "geoshape.rectangle",
-                                index,
-                                shapeParameter[0], // west
-                                shapeParameter[1], // north
-                                shapeParameter[2], // east
-                                shapeParameter[3], // south
-                                area
-                            )
-                        }
-                    }
-                    GeoShapeType.POLYGON -> {
-                        if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
-                            Translator.tr("geoshape.polygon.invalid", index, area)
-                        } else {
-                            val coords = shapeParameter.chunked(2)
-                                .joinToString(", ") { "(${it[0]}, ${it[1]})" }
-                            Translator.tr("geoshape.polygon", index, coords, area)
-                        }
-                    }
-                    else -> Translator.tr("geoshape.unknown", index, area)
-                }
-            }
-
         }
 
         enum class GeoShapeType {

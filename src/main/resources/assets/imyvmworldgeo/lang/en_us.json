@@ -27,7 +27,7 @@
 
   "command.query.not_found_id": "Error: Region with ID '{0}' not found.",
   "command.query.not_found_name": "Error: Region with name '{0}' not found.",
-  "command.query.result": "Query successful! Showing information for Region: \n{0} (ID: {1})",
+  "command.query.result": "Query successful! Showing information for Region: \n{0} (ID: {1}), total area: {2} m²\n",
 
   "command.list.empty": "No regions found.",
   "command.list.header": "Regions:\n{0}",
@@ -47,15 +47,16 @@
   "scoreboard.display-name": "Current Region",
   "scoreboard.region.none.name": "-wilderness-",
 
+  "scope.info": "[{0}] {1}: {2}",
 
-  "geoshape.circle": "Shape #{0}: Circle | Center=({1}, {2}), Radius={3} | Area={4} m²",
-  "geoshape.circle.invalid": "Shape #{0}: Invalid Circle | Area={1} m²",
+  "geoshape.circle.info": "Shape : Circle | Center=({0}, {1}), Radius={2} | Area={3} m²",
+  "geoshape.circle.invalid.info": "Shape : Invalid Circle | Area={0} m²",
 
-  "geoshape.rectangle": "Shape #{0}: Rectangle | West-North Corner=({1}, {2}) - East-South Corner=({3}, {4}) | Area={5} m²",
-  "geoshape.rectangle.invalid": "Shape #{0}: Invalid Rectangle | Area={1} m²",
+  "geoshape.rectangle.info": "Shape : Rectangle | West-North Corner=({0}, {1}) - East-South Corner=({2}, {3}) | Area={4} m²",
+  "geoshape.rectangle.invalid.info": "Shape : Invalid Rectangle | Area={0} m²",
 
-  "geoshape.polygon": "Shape #{0}: Polygon | Vertices={1} | Area={2} m²",
-  "geoshape.polygon.invalid": "Shape #{0}: Invalid Polygon | Area={1} m²",
+  "geoshape.polygon.info": "Shape : Polygon | Vertices={0} | Area={1} m²",
+  "geoshape.polygon.invalid.info": "Shape : Invalid Polygon | Area={0} m²",
 
-  "geoshape.unknown": "Shape #{0}: Unknown Shape | Area={1} m²"
+  "geoshape.unknown.info": "Shape : Unknown Shape | Area={0} m²"
 }
