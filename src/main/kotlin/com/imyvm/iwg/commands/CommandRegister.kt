@@ -135,7 +135,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                     .executes { /* TODO: Implement modify shape by region ID and scope name */ 0 }
                                     .then(
                                         argument("newName", StringArgumentType.string())
-                                            .executes { /* TODO: rename scope */ 0 }
+                                            .executes { runRenameScopeById(it) }
                                     )
                             )
                     )
@@ -146,7 +146,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                     .executes { /* TODO: Implement modify shape by region name and scope name */ 0 }
                                     .then(
                                         argument("newName", StringArgumentType.string())
-                                            .executes { /*TODO: rename scope */ 0 }
+                                            .executes { runRenameScopeByName(it) }
                                     )
                             )
                     )
@@ -475,14 +475,74 @@ private fun runDeleteScopeByName(context: CommandContext<ServerCommandSource>): 
 private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName: String): Int {
     val existingScope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
 
-    if (existingScope != null) {
+    return if (existingScope != null) {
         region.geometryScope.remove(existingScope)
         player.sendMessage(Translator.tr("command.deletescope.success", scopeName, region.name))
-        return 1
+        1
     } else {
         player.sendMessage(Translator.tr("command.deletescope.scope_not_found", scopeName, region.name))
+        0
+    }
+}
+
+private fun runRenameScopeById(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionId = context.getArgument("id", Int::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val newName = context.getArgument("newName", String::class.java)
+
+    return try {
+        val targetRegion = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+        runRenameScope(player, targetRegion, scopeName, newName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
+        0
+    }
+}
+
+private fun runRenameScopeByName(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionName = context.getArgument("name", String::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val newName = context.getArgument("newName", String::class.java)
+
+    return try {
+        val targetRegion = ImyvmWorldGeo.data.getRegionByName(regionName)
+        runRenameScope(player, targetRegion, scopeName, newName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_name", regionName))
+        0
+    }
+}
+
+private fun runRenameScope(
+    player: ServerPlayerEntity,
+    targetRegion: Region,
+    scopeName: String,
+    newName: String
+): Int {
+    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+
+    if (existingScope == null) {
+        player.sendMessage(Translator.tr("command.renamescope.scope_not_found", scopeName, targetRegion.name))
         return 0
     }
+
+    if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
+        player.sendMessage(Translator.tr("command.renamescope.repeated_same_name"))
+        return 0
+    }
+
+    for (scope in targetRegion.geometryScope) {
+        if (scope.scopeName.equals(newName, ignoreCase = true)) {
+            player.sendMessage(Translator.tr("command.renamescope.duplicate_scope_name"))
+            return 0
+        }
+    }
+
+    existingScope.scopeName = newName
+    player.sendMessage(Translator.tr("command.renamescope.success", scopeName, newName, targetRegion.name))
+    return 1
 }
 
 private fun runQueryRegionById(context: CommandContext<ServerCommandSource>): Int {
