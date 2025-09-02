@@ -6,6 +6,9 @@ import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.RegionNotFoundException
+import com.imyvm.iwg.application.resetSelection
+import com.imyvm.iwg.application.startSelection
+import com.imyvm.iwg.application.stopSelection
 import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
@@ -172,46 +175,25 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
     )
 }
 
+fun runHelp(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    player.sendMessage(Translator.tr("command.help"))
+    return 1
+}
+
 private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val playerUUID = player.uuid
-    return if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
-        ImyvmWorldGeo.logger.info("Player $playerUUID has started selection mode, players in selection mod: ${ImyvmWorldGeo.commandlySelectingPlayers.keys}")
-        player.sendMessage(Translator.tr("command.select.start"))
-        1
-    } else {
-        player.sendMessage(Translator.tr("command.select.already"))
-        0
-    }
+    return startSelection(player)
 }
 
 private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val playerUUID = player.uuid
-    return if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
-        ImyvmWorldGeo.logger.info("Player $playerUUID has stopped selection mode, players in selection mod: ${ImyvmWorldGeo.commandlySelectingPlayers.keys}")
-        player.sendMessage(Translator.tr("command.select.stop"))
-        1
-    } else {
-        player.sendMessage(Translator.tr("command.select.not_in_mode"))
-        0
-    }
+    return stopSelection(player)
 }
 
 private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val playerUUID = player.uuid
-    return if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
-        ImyvmWorldGeo.logger.info("Player $playerUUID has reset their selection points.")
-        player.sendMessage(Translator.tr("command.select.reset"))
-        1
-    } else {
-        player.sendMessage(Translator.tr("command.select.not_in_mode"))
-        0
-    }
+    return resetSelection(player)
 }
 
 private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
