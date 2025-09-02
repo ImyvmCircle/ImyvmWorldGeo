@@ -704,8 +704,64 @@ private fun runModifyScopeCircleRadius(
     region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
-){
-    TODO()
+) {
+
+    val shapeParams = existingScope.geoShape?.shapeParameter
+    if (shapeParams == null || shapeParams.size < 3) {
+        player.sendMessage(Translator.tr("command.scope.modify.circle_radius.invalid_circle"))
+        return
+    }
+
+    val centerX = shapeParams[0]
+    val centerZ = shapeParams[1]
+    val oldRadius = shapeParams[2]
+
+    val pos = selectedPositions[0]
+    val dx = pos.x - centerX
+    val dz = pos.z - centerZ
+    val newRadius = kotlin.math.sqrt((dx * dx + dz * dz).toDouble()).toInt()
+
+    if (newRadius <= 0) {
+        player.sendMessage(Translator.tr("command.scope.modify.circle_radius.nonpositive"))
+        return
+    }
+
+    val newPositions = mutableListOf(
+        BlockPos(centerX, 0, centerZ),
+        BlockPos(centerX + newRadius, 0, centerZ)
+    )
+
+    region.geometryScope.remove(existingScope)
+
+    val newScope = RegionFactory.createScope(
+        scopeName = existingScope.scopeName,
+        selectedPositions = newPositions,
+        shapeType = Region.Companion.GeoShapeType.CIRCLE
+    )
+
+    when (newScope) {
+        is Result.Ok -> {
+            region.geometryScope.add(newScope.value)
+            player.sendMessage(
+                Translator.tr(
+                    "command.scope.modify.circle_radius.success",
+                    existingScope.scopeName,
+                    region.name,
+                    oldRadius,
+                    newRadius
+                )
+            )
+            ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+        }
+        is Result.Err -> {
+            region.geometryScope.add(existingScope)
+            val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.CIRCLE)
+            player.sendMessage(errorMsg)
+        }
+        else -> {
+            player.sendMessage(Translator.tr("error.unknown"))
+        }
+    }
 }
 
 private fun runModifyScopeCircleCenter(
@@ -713,7 +769,7 @@ private fun runModifyScopeCircleCenter(
     region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
-){
+) {
     TODO()
 }
 

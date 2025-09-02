@@ -39,6 +39,10 @@
   "command.scope.modify.polygon_points_not_adjacent": "The two selected points are not adjacent vertices of the polygon.",
   "command.scope.modify.polygon_insert_success": "Successfully inserted a new point into scope \"{0}\" of region \"{1}\".",
 
+  "command.scope.modify.circle_radius.invalid_circle": "The selected scope is not a valid circle. Please check the parameters.",
+  "command.scope.modify.circle_radius.nonpositive": "The new radius must be greater than 0.",
+  "command.scope.modify.circle_radius.success": "Successfully modified the radius of scope \"{0}\" in region \"{1}\" from {2} to {3}.",
+
   "command.scope.rename.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
   "command.scope.rename.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
   "command.scope.rename.success": "Successfully renamed scope '{0}' to '{1}' in region '{2}'.",
