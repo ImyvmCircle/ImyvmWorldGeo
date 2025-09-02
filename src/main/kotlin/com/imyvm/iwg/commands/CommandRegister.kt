@@ -634,9 +634,71 @@ private fun runModifyScopePolygonInsertPoint(
     region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
-){
-    TODO()
+) {
+    val shapeParams = existingScope.geoShape?.shapeParameter
+    val pointCount = shapeParams?.size
+
+    if (pointCount == null || pointCount < 6 || pointCount % 2 != 0) {
+        player.sendMessage(Translator.tr("command.scope.modify.invalid_polygon"))
+        return
+    }
+
+    val pointA = selectedPositions[0]
+    val pointB = selectedPositions[1]
+    val newPoint = selectedPositions[2]
+
+    val coords = shapeParams.chunked(2)
+    val blockPosList = coords.map { pair -> BlockPos(pair[0], 0, pair[1]) }.toMutableList()
+
+    val indexA = blockPosList.indexOfFirst { it.x == pointA.x && it.z == pointA.z }
+    val indexB = blockPosList.indexOfFirst { it.x == pointB.x && it.z == pointB.z }
+
+    if (indexA == -1 || indexB == -1) {
+        player.sendMessage(Translator.tr("command.scope.modify.polygon_points_not_found"))
+        return
+    }
+
+    val n = blockPosList.size
+    val areAdjacent = (indexA + 1) % n == indexB || (indexB + 1) % n == indexA
+    if (!areAdjacent) {
+        player.sendMessage(Translator.tr("command.scope.modify.polygon_points_not_adjacent"))
+        return
+    }
+
+    val insertIndex = if ((indexA + 1) % n == indexB) indexB else indexA
+    blockPosList.add(insertIndex, BlockPos(newPoint.x, newPoint.y, newPoint.z))
+
+    region.geometryScope.remove(existingScope)
+
+    val newScope = RegionFactory.createScope(
+        scopeName = existingScope.scopeName,
+        selectedPositions = blockPosList,
+        shapeType = Region.Companion.GeoShapeType.POLYGON
+    )
+
+    when (newScope) {
+        is Result.Ok -> {
+            region.geometryScope.add(newScope.value)
+            player.sendMessage(
+                Translator.tr(
+                    "command.scope.modify.polygon_insert_success",
+                    existingScope.scopeName,
+                    region.name
+                )
+            )
+            ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+        }
+        is Result.Err -> {
+            region.geometryScope.add(existingScope)
+            val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.POLYGON)
+            player.sendMessage(errorMsg)
+        }
+        else -> {
+            player.sendMessage(Translator.tr("error.unknown"))
+        }
+    }
 }
+
 private fun runModifyScopeCircleRadius(
     player: ServerPlayerEntity,
     region: Region,

@@ -35,6 +35,9 @@
   "command.scope.modify.polygon_no_point": "No point selected, please select a point first",
   "command.scope.modify.polygon_insufficient_points": "Insufficient points for polygon, at least two points required",
   "command.scope.modify.unknown_shape_type": "Scope {0} has unknown shape type, cannot modify",
+  "command.scope.modify.polygon_points_not_found": "One or both of the specified points were not found in the current polygon.",
+  "command.scope.modify.polygon_points_not_adjacent": "The two selected points are not adjacent vertices of the polygon.",
+  "command.scope.modify.polygon_insert_success": "Successfully inserted a new point into scope \"{0}\" of region \"{1}\".",
 
   "command.scope.rename.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
   "command.scope.rename.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
