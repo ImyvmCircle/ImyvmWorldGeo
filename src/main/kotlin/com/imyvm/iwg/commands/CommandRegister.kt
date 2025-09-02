@@ -826,8 +826,68 @@ private fun runModifyScopeRectangle(
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
-    TODO()
+    val shapeParams = existingScope.geoShape?.shapeParameter
+    if (shapeParams == null || shapeParams.size < 4) {
+        player.sendMessage(Translator.tr("command.scope.modify.rectangle.invalid_rectangle"))
+        return
+    }
+
+    val point = selectedPositions[0]
+
+    var west = shapeParams[0]
+    var north = shapeParams[1]
+    var east = shapeParams[2]
+    var south = shapeParams[3]
+
+    if (kotlin.math.abs(point.x - west) < kotlin.math.abs(point.x - east)) {
+        west = point.x
+    } else {
+        east = point.x
+    }
+
+    if (kotlin.math.abs(point.z - north) < kotlin.math.abs(point.z - south)) {
+        north = point.z
+    } else {
+        south = point.z
+    }
+
+    val newPositions = mutableListOf(
+        BlockPos(west, 0, north),
+        BlockPos(east, 0, south)
+    )
+
+    region.geometryScope.remove(existingScope)
+
+    val newScope = RegionFactory.createScope(
+        scopeName = existingScope.scopeName,
+        selectedPositions = newPositions,
+        shapeType = Region.Companion.GeoShapeType.RECTANGLE
+    )
+
+    when (newScope) {
+        is Result.Ok -> {
+            region.geometryScope.add(newScope.value)
+            player.sendMessage(
+                Translator.tr(
+                    "command.scope.modify.rectangle.success",
+                    existingScope.scopeName,
+                    region.name,
+                    west, north, east, south
+                )
+            )
+            ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+        }
+        is Result.Err -> {
+            region.geometryScope.add(existingScope)
+            val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.RECTANGLE)
+            player.sendMessage(errorMsg)
+        }
+        else -> {
+            player.sendMessage(Translator.tr("error.unknown"))
+        }
+    }
 }
+
 
 private fun runRenameScopeById(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0

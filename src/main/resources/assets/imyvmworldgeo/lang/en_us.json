@@ -45,6 +45,9 @@
   "command.scope.modify.circle_center.invalid_circle": "The selected scope is not a valid circle. Please check the parameters.",
   "command.scope.modify.circle_center.success": "Successfully moved the circle center of scope \"{0}\" in region \"{1}\" from ({2}) to ({3}) with radius {4}.",
 
+  "command.scope.modify.rectangle.invalid_rectangle": "The selected scope is not a valid rectangle.",
+  "command.scope.modify.rectangle.success": "Successfully updated rectangle scope \"{0}\" in region \"{1}\". New coordinates: west={2}, north={3}, east={4}, south={5}.",
+
   "command.scope.rename.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
   "command.scope.rename.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
   "command.scope.rename.success": "Successfully renamed scope '{0}' to '{1}' in region '{2}'.",
