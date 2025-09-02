@@ -770,8 +770,55 @@ private fun runModifyScopeCircleCenter(
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
-    TODO()
+    val shapeParams = existingScope.geoShape?.shapeParameter
+    if (shapeParams == null || shapeParams.size < 3) {
+        player.sendMessage(Translator.tr("command.scope.modify.circle_center.invalid_circle"))
+        return
+    }
+
+    val radius = shapeParams[2]
+    val oldCenter = selectedPositions[0]
+    val newCenter = selectedPositions[1]
+
+    val newPositions = mutableListOf(
+        BlockPos(newCenter.x, 0, newCenter.z),
+        BlockPos(newCenter.x + radius, 0, newCenter.z)
+    )
+
+    region.geometryScope.remove(existingScope)
+
+    val newScope = RegionFactory.createScope(
+        scopeName = existingScope.scopeName,
+        selectedPositions = newPositions,
+        shapeType = Region.Companion.GeoShapeType.CIRCLE
+    )
+
+    when (newScope) {
+        is Result.Ok -> {
+            region.geometryScope.add(newScope.value)
+            player.sendMessage(
+                Translator.tr(
+                    "command.scope.modify.circle_center.success",
+                    existingScope.scopeName,
+                    region.name,
+                    "${oldCenter.x},${oldCenter.z}",
+                    "${newCenter.x},${newCenter.z}",
+                    radius
+                )
+            )
+            ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+        }
+        is Result.Err -> {
+            region.geometryScope.add(existingScope)
+            val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.CIRCLE)
+            player.sendMessage(errorMsg)
+        }
+        else -> {
+            player.sendMessage(Translator.tr("error.unknown"))
+        }
+    }
 }
+
 
 private fun runModifyScopeRectangle(
     player: ServerPlayerEntity,
