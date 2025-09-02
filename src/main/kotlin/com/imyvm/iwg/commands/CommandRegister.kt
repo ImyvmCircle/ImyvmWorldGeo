@@ -520,7 +520,6 @@ private fun runModifyScope(
     targetRegion: Region,
     scopeName: String
 ): Int {
-    val regionName = targetRegion.name
     val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
 
     return if (existingScope != null) {
@@ -542,19 +541,19 @@ private fun runModifyScope(
                 player.sendMessage(Translator.tr("command.scope.modify.polygon_insufficient_points"))
                 return 0
             } else if (selectedPositions.size == 2){
-                runModifyScopePolygonMove(player, regionName, existingScope, selectedPositions)
+                runModifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
             } else {
-                runModifyScopePolygonInsertPoint(player, regionName, existingScope, selectedPositions)
+                runModifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions)
             }
         } else if (shapeType == Region.Companion.GeoShapeType.CIRCLE) {
             if (selectedPositions.size == 1) {
-                runModifyScopeCircleRadius(player, regionName, existingScope, selectedPositions)
+                runModifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
             } else{
-                runModifyScopeCircleCenter(player, regionName, existingScope, selectedPositions)
+                runModifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
             }
 
         } else if (shapeType == Region.Companion.GeoShapeType.RECTANGLE) {
-            runModifyScopeRectangle(player, regionName, existingScope, selectedPositions)
+            runModifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
         }
         1
     } else {
@@ -565,7 +564,7 @@ private fun runModifyScope(
 
 private fun runModifyScopePolygonMove(
     player: ServerPlayerEntity,
-    regionName: String,
+    region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
@@ -587,14 +586,18 @@ private fun runModifyScopePolygonMove(
     val coords = shapeParams.chunked(2)
     val blockPosList = coords.map { pair -> BlockPos(pair[0], 0, pair[1]) }
 
-    if (blockPosList.none { it == oldPoint }) {
+    if (blockPosList.none { it.x == oldPoint.x && it.z == oldPoint.z }) {
         player.sendMessage(Translator.tr("command.scope.modify.polygon_point_not_found"))
         return
     }
 
     val newPositions = blockPosList.map {
-        if (it == oldPoint) newPoint else it
+        if (it.x == oldPoint.x && it.z == oldPoint.z) {
+            BlockPos(newPoint.x, newPoint.y, newPoint.z)
+        } else it
     }.toMutableList()
+
+    region.geometryScope.remove(existingScope)
 
     val newScope = RegionFactory.createScope(
         scopeName = existingScope.scopeName,
@@ -604,17 +607,18 @@ private fun runModifyScopePolygonMove(
 
     when (newScope) {
         is Result.Ok -> {
-            existingScope.geoShape = newScope.value.geoShape
+            region.geometryScope.add(newScope.value)
             player.sendMessage(
                 Translator.tr(
                     "command.scope.modify.polygon_move_success",
                     existingScope.scopeName,
-                    regionName
+                    region.name
                 )
             )
             ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {
+            region.geometryScope.add(existingScope)
             val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.POLYGON)
             player.sendMessage(errorMsg)
         }
@@ -627,7 +631,7 @@ private fun runModifyScopePolygonMove(
 
 private fun runModifyScopePolygonInsertPoint(
     player: ServerPlayerEntity,
-    regionName: String,
+    region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ){
@@ -635,7 +639,7 @@ private fun runModifyScopePolygonInsertPoint(
 }
 private fun runModifyScopeCircleRadius(
     player: ServerPlayerEntity,
-    regionName: String,
+    region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ){
@@ -644,7 +648,7 @@ private fun runModifyScopeCircleRadius(
 
 private fun runModifyScopeCircleCenter(
     player: ServerPlayerEntity,
-    regionName: String,
+    region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ){
@@ -653,7 +657,7 @@ private fun runModifyScopeCircleCenter(
 
 private fun runModifyScopeRectangle(
     player: ServerPlayerEntity,
-    regionName: String,
+    region: Region,
     existingScope: Region.Companion.GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {

@@ -31,7 +31,7 @@
   "command.scope.modify.invalid_polygon": "Invalid polygon parameters: at least three points (6 coordinates) required, must be paired",
   "command.scope.modify.polygon_duplicate_points": "The two selected points are identical, please select different points",
   "command.scope.modify.polygon_point_not_found": "Point {0} not found in the polygon",
-  "command.scope.modify.polygon_move_success": "Polygon scope {0} successfully moved in region {1}",
+  "command.scope.modify.polygon_move_success": "Polygon scope {0} successfully moved a border point in region {1}",
   "command.scope.modify.polygon_no_point": "No point selected, please select a point first",
   "command.scope.modify.polygon_insufficient_points": "Insufficient points for polygon, at least two points required",
   "command.scope.modify.unknown_shape_type": "Scope {0} has unknown shape type, cannot modify",
