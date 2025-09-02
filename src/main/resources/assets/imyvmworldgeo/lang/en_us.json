@@ -19,15 +19,23 @@
   "command.rename.repeated_same_name": "New name is the same as the current name.",
   "command.rename.duplicate_name": "New name '{0}' is already in use by another region.",
 
+  "command.scope.scope_not_found": "Scope '{0}' not found in region '{1}'.",
+
   "command.scope.add.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
   "command.scope.add.not_found_generic": "Could not find the specified region.",
   "command.scope.add.duplicate_scope_name": "The region already has a scope with the same name given by command.",
   "command.scope.add.success": "Successfully added a new scope '{0}' to region '{1}.",
 
   "command.scope.delete.success": "Successfully deleted scope '{0}' from region '{1}'.",
-  "command.scope.delete.scope_not_found": "Scope '{0}' not found in region '{1}'.",
 
-  "command.scope.rename.scope_not_found": "Scope '{0}' not found in region '{1}'.",
+  "command.scope.modify.invalid_polygon": "Invalid polygon parameters: at least three points (6 coordinates) required, must be paired",
+  "command.scope.modify.polygon_duplicate_points": "The two selected points are identical, please select different points",
+  "command.scope.modify.polygon_point_not_found": "Point {0} not found in the polygon",
+  "command.scope.modify.polygon_move_success": "Polygon scope {0} successfully moved in region {1}",
+  "command.scope.modify.polygon_no_point": "No point selected, please select a point first",
+  "command.scope.modify.polygon_insufficient_points": "Insufficient points for polygon, at least two points required",
+  "command.scope.modify.unknown_shape_type": "Scope {0} has unknown shape type, cannot modify",
+
   "command.scope.rename.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
   "command.scope.rename.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
   "command.scope.rename.success": "Successfully renamed scope '{0}' to '{1}' in region '{2}'.",

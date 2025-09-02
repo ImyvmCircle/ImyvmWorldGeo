@@ -1,6 +1,7 @@
 package com.imyvm.iwg.commands
 
 import CreationError
+import RegionFactory
 import Result
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.ui.Translator
@@ -16,6 +17,7 @@ import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
+import net.minecraft.util.math.BlockPos
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -132,7 +134,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("id", IntegerArgumentType.integer())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { /* TODO: Implement modify shape by region ID and scope name */ 0 }
+                                    .executes { runModifyScopeById(it) }
                                     .then(
                                         argument("newName", StringArgumentType.string())
                                             .executes { runRenameScopeById(it) }
@@ -143,7 +145,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("name", StringArgumentType.string())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { /* TODO: Implement modify shape by region name and scope name */ 0 }
+                                    .executes { runModifyScopeByName(it) }
                                     .then(
                                         argument("newName", StringArgumentType.string())
                                             .executes { runRenameScopeByName(it) }
@@ -480,9 +482,182 @@ private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName
         player.sendMessage(Translator.tr("command.scope.delete.success", scopeName, region.name))
         1
     } else {
-        player.sendMessage(Translator.tr("command.scope.delete.scope_not_found", scopeName, region.name))
+        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, region.name))
         0
     }
+}
+
+private fun runModifyScopeById(context: CommandContext<ServerCommandSource>): Int{
+    val player = context.source.player ?: return 0
+    val regionId = context.getArgument("id", Int::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+
+    return try {
+        val targetRegion = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+        runModifyScope(player, targetRegion, scopeName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
+        0
+    }
+}
+
+private fun runModifyScopeByName(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val regionName = context.getArgument("name", String::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+
+    return try {
+        val targetRegion = ImyvmWorldGeo.data.getRegionByName(regionName)
+        runModifyScope(player, targetRegion, scopeName)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_name", regionName))
+        0
+    }
+}
+
+private fun runModifyScope(
+    player: ServerPlayerEntity,
+    targetRegion: Region,
+    scopeName: String
+): Int {
+    val regionName = targetRegion.name
+    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+
+    return if (existingScope != null) {
+        val playerUUID = player.uuid
+        if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
+            player.sendMessage(Translator.tr("command.select.not_in_mode"))
+            return 0
+        }
+
+        val shapeType = existingScope.geoShape?.geoShapeType ?: Region.Companion.GeoShapeType.UNKNOWN
+        if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
+            player.sendMessage(Translator.tr("command.scope.modify.unknown_shape_type"))
+            return 0
+        }
+
+        val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
+        if (shapeType == Region.Companion.GeoShapeType.POLYGON) {
+            if (selectedPositions.size < 2) {
+                player.sendMessage(Translator.tr("command.scope.modify.polygon_insufficient_points"))
+                return 0
+            } else if (selectedPositions.size == 2){
+                runModifyScopePolygonMove(player, regionName, existingScope, selectedPositions)
+            } else {
+                runModifyScopePolygonInsertPoint(player, regionName, existingScope, selectedPositions)
+            }
+        } else if (shapeType == Region.Companion.GeoShapeType.CIRCLE) {
+            if (selectedPositions.size == 1) {
+                runModifyScopeCircleRadius(player, regionName, existingScope, selectedPositions)
+            } else{
+                runModifyScopeCircleCenter(player, regionName, existingScope, selectedPositions)
+            }
+
+        } else if (shapeType == Region.Companion.GeoShapeType.RECTANGLE) {
+            runModifyScopeRectangle(player, regionName, existingScope, selectedPositions)
+        }
+        1
+    } else {
+        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
+        0
+    }
+}
+
+private fun runModifyScopePolygonMove(
+    player: ServerPlayerEntity,
+    regionName: String,
+    existingScope: Region.Companion.GeoScope,
+    selectedPositions: MutableList<BlockPos>
+) {
+    val shapeParams = existingScope.geoShape?.shapeParameter
+    val pointCount = shapeParams?.size
+
+    if (pointCount == null || pointCount < 6 || pointCount % 2 != 0) {
+        player.sendMessage(Translator.tr("command.scope.modify.invalid_polygon"))
+        return
+    }
+
+    val oldPoint = selectedPositions[0]
+    val newPoint = selectedPositions[1]
+    if (oldPoint == newPoint) {
+        player.sendMessage(Translator.tr("command.scope.modify.polygon_duplicate_points"))
+        return
+    }
+
+    val coords = shapeParams.chunked(2)
+    val blockPosList = coords.map { pair -> BlockPos(pair[0], 0, pair[1]) }
+
+    if (blockPosList.none { it == oldPoint }) {
+        player.sendMessage(Translator.tr("command.scope.modify.polygon_point_not_found"))
+        return
+    }
+
+    val newPositions = blockPosList.map {
+        if (it == oldPoint) newPoint else it
+    }.toMutableList()
+
+    val newScope = RegionFactory.createScope(
+        scopeName = existingScope.scopeName,
+        selectedPositions = newPositions,
+        shapeType = Region.Companion.GeoShapeType.POLYGON
+    )
+
+    when (newScope) {
+        is Result.Ok -> {
+            existingScope.geoShape = newScope.value.geoShape
+            player.sendMessage(
+                Translator.tr(
+                    "command.scope.modify.polygon_move_success",
+                    existingScope.scopeName,
+                    regionName
+                )
+            )
+            ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+        }
+        is Result.Err -> {
+            val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.POLYGON)
+            player.sendMessage(errorMsg)
+        }
+
+        else -> {
+            player.sendMessage(Translator.tr("error.unknown"))
+        }
+    }
+}
+
+private fun runModifyScopePolygonInsertPoint(
+    player: ServerPlayerEntity,
+    regionName: String,
+    existingScope: Region.Companion.GeoScope,
+    selectedPositions: MutableList<BlockPos>
+){
+    TODO()
+}
+private fun runModifyScopeCircleRadius(
+    player: ServerPlayerEntity,
+    regionName: String,
+    existingScope: Region.Companion.GeoScope,
+    selectedPositions: MutableList<BlockPos>
+){
+    TODO()
+}
+
+private fun runModifyScopeCircleCenter(
+    player: ServerPlayerEntity,
+    regionName: String,
+    existingScope: Region.Companion.GeoScope,
+    selectedPositions: MutableList<BlockPos>
+){
+    TODO()
+}
+
+private fun runModifyScopeRectangle(
+    player: ServerPlayerEntity,
+    regionName: String,
+    existingScope: Region.Companion.GeoScope,
+    selectedPositions: MutableList<BlockPos>
+) {
+    TODO()
 }
 
 private fun runRenameScopeById(context: CommandContext<ServerCommandSource>): Int {
@@ -524,7 +699,7 @@ private fun runRenameScope(
     val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
 
     if (existingScope == null) {
-        player.sendMessage(Translator.tr("command.scope.rename.scope_not_found", scopeName, targetRegion.name))
+        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
         return 0
     }
 
