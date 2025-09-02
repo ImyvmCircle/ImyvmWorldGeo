@@ -1,6 +1,6 @@
-package com.imyvm.iwg.region
+package com.imyvm.iwg.domain
 
-import com.imyvm.iwg.ui.Translator
+import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.text.Text
 import kotlin.math.abs
 

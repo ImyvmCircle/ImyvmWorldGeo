@@ -1,4 +1,4 @@
-package com.imyvm.iwg.ui
+package com.imyvm.iwg.util.ui
 
 import com.imyvm.hoki.i18n.HokiLanguage
 import com.imyvm.hoki.i18n.HokiTranslator

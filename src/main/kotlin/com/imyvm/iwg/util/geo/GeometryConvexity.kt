@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util
+package com.imyvm.iwg.util.geo
 
 import net.minecraft.util.math.BlockPos
 

@@ -1,4 +1,4 @@
-package com.imyvm.iwg.region
+package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import net.minecraft.server.MinecraftServer

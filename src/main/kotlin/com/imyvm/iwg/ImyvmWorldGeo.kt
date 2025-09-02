@@ -1,11 +1,10 @@
 package com.imyvm.iwg
 
-import com.imyvm.iwg.commands.register
-import com.imyvm.iwg.region.PlayerRegionChecker
-import com.imyvm.iwg.region.RegionDatabase
-import com.imyvm.iwg.ui.initializeGeographicScoreboard
-import com.imyvm.iwg.ui.updateGeographicScoreboardPlayers
-import com.imyvm.iwg.useblock.UseBlockCommandsHandler
+import com.imyvm.iwg.inter.commands.register
+import com.imyvm.iwg.domain.PlayerRegionChecker
+import com.imyvm.iwg.util.ui.initializeGeographicScoreboard
+import com.imyvm.iwg.util.ui.updateGeographicScoreboardPlayers
+import com.imyvm.iwg.util.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents

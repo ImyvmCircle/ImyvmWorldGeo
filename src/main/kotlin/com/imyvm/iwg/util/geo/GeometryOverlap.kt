@@ -1,6 +1,6 @@
-package com.imyvm.iwg.util
+package com.imyvm.iwg.util.geo
 
-import com.imyvm.iwg.region.Region
+import com.imyvm.iwg.domain.Region
 import net.minecraft.util.math.BlockPos
 
 fun checkIntersection(

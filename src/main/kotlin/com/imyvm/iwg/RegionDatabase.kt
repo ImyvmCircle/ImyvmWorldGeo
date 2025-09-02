@@ -1,5 +1,6 @@
-package com.imyvm.iwg.region
+package com.imyvm.iwg
 
+import com.imyvm.iwg.domain.Region
 import net.fabricmc.loader.api.FabricLoader
 import java.io.DataInputStream
 import java.io.DataOutputStream

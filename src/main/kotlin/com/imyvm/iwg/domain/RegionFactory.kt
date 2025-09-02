@@ -1,6 +1,7 @@
+package com.imyvm.iwg.domain
+
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.region.Region
-import com.imyvm.iwg.util.*
+import com.imyvm.iwg.util.geo.*
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt

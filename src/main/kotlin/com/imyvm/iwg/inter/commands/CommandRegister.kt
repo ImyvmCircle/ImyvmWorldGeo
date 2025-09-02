@@ -1,11 +1,12 @@
-package com.imyvm.iwg.commands
+package com.imyvm.iwg.inter.commands
 
-import CreationError
-import RegionFactory
-import Result
+import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.RegionFactory
+import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.ui.Translator
-import com.imyvm.iwg.region.*
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.RegionNotFoundException
+import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -169,12 +170,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                     .executes { runListRegions(it) }
             )
     )
-}
-
-private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    player.sendMessage(Translator.tr("command.help"))
-    return 1
 }
 
 private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
@@ -977,7 +972,8 @@ private fun runQueryRegionByName(context: CommandContext<ServerCommandSource>): 
 
 private fun displayRegionInfo(source: ServerCommandSource, region: Region) {
     val player = source.player ?: return
-    player.sendMessage(Translator.tr("command.query.result",
+    player.sendMessage(
+        Translator.tr("command.query.result",
         region.name,
         region.numberID.toString(),
         region.calculateTotalArea())

@@ -1,4 +1,4 @@
-package com.imyvm.iwg.ui
+package com.imyvm.iwg.util.ui
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import net.minecraft.scoreboard.*

@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util
+package com.imyvm.iwg.util.geo
 
 
 private const val MIN_RECTANGLE_AREA = 100.0
