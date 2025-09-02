@@ -19,18 +19,18 @@
   "command.rename.repeated_same_name": "New name is the same as the current name.",
   "command.rename.duplicate_name": "New name '{0}' is already in use by another region.",
 
-  "command.addscope.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
-  "command.addscope.not_found_generic": "Could not find the specified region.",
-  "command.addscope.duplicate_scope_name": "The region already has a scope with the same name given by command.",
-  "command.addscope.success": "Successfully added a new scope '{0}' to region '{1}.",
+  "command.scope.add.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
+  "command.scope.add.not_found_generic": "Could not find the specified region.",
+  "command.scope.add.duplicate_scope_name": "The region already has a scope with the same name given by command.",
+  "command.scope.add.success": "Successfully added a new scope '{0}' to region '{1}.",
 
-  "command.deletescope.success": "Successfully deleted scope '{0}' from region '{1}'.",
-  "command.deletescope.scope_not_found": "Scope '{0}' not found in region '{1}'.",
+  "command.scope.delete.success": "Successfully deleted scope '{0}' from region '{1}'.",
+  "command.scope.delete.scope_not_found": "Scope '{0}' not found in region '{1}'.",
 
-  "command.renamescope.scope_not_found": "Scope '{0}' not found in region '{1}'.",
-  "command.renamescope.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
-  "command.renamescope.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
-  "command.renamescope.success": "Successfully renamed scope '{0}' to '{1}' in region '{2}'.",
+  "command.scope.rename.scope_not_found": "Scope '{0}' not found in region '{1}'.",
+  "command.scope.rename.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
+  "command.scope.rename.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
+  "command.scope.rename.success": "Successfully renamed scope '{0}' to '{1}' in region '{2}'.",
 
   "command.query.result": "Query successful! Showing information for Region: \n{0} (ID: {1}), total area: {2} m²\n",
 

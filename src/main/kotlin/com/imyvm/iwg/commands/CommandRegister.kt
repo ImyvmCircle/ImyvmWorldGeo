@@ -392,7 +392,7 @@ private fun runAddScope(
     val shapeType: Region.Companion.GeoShapeType = try {
         Region.Companion.GeoShapeType.valueOf(shapeTypeStr)
     } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr("command.addscope.invalid_shape_type"))
+        player.sendMessage(Translator.tr("command.scope.add.invalid_shape_type"))
         return 0
     }
 
@@ -404,11 +404,11 @@ private fun runAddScope(
     }
 
     return try {
-        val targetRegion = region() ?: throw RegionNotFoundException(Translator.tr("command.addscope.not_found_generic").string)
+        val targetRegion = region() ?: throw RegionNotFoundException(Translator.tr("command.scope.add.not_found_generic").string)
 
         for (existingScope in targetRegion.geometryScope) {
             if (existingScope.scopeName.equals(scopeName, ignoreCase = true)) {
-                player.sendMessage(Translator.tr("command.addscope.duplicate_scope_name"))
+                player.sendMessage(Translator.tr("command.scope.add.duplicate_scope_name"))
                 return 0
             }
         }
@@ -424,7 +424,7 @@ private fun runAddScope(
         when (creationResult) {
             is Result.Ok -> {
                 targetRegion.geometryScope.add(creationResult.value)
-                player.sendMessage(Translator.tr("command.addscope.success", scopeName, targetRegion.name))
+                player.sendMessage(Translator.tr("command.scope.add.success", scopeName, targetRegion.name))
                 ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
                 1
             }
@@ -477,10 +477,10 @@ private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName
 
     return if (existingScope != null) {
         region.geometryScope.remove(existingScope)
-        player.sendMessage(Translator.tr("command.deletescope.success", scopeName, region.name))
+        player.sendMessage(Translator.tr("command.scope.delete.success", scopeName, region.name))
         1
     } else {
-        player.sendMessage(Translator.tr("command.deletescope.scope_not_found", scopeName, region.name))
+        player.sendMessage(Translator.tr("command.scope.delete.scope_not_found", scopeName, region.name))
         0
     }
 }
@@ -524,24 +524,24 @@ private fun runRenameScope(
     val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
 
     if (existingScope == null) {
-        player.sendMessage(Translator.tr("command.renamescope.scope_not_found", scopeName, targetRegion.name))
+        player.sendMessage(Translator.tr("command.scope.rename.scope_not_found", scopeName, targetRegion.name))
         return 0
     }
 
     if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
-        player.sendMessage(Translator.tr("command.renamescope.repeated_same_name"))
+        player.sendMessage(Translator.tr("command.scope.rename.repeated_same_name"))
         return 0
     }
 
     for (scope in targetRegion.geometryScope) {
         if (scope.scopeName.equals(newName, ignoreCase = true)) {
-            player.sendMessage(Translator.tr("command.renamescope.duplicate_scope_name"))
+            player.sendMessage(Translator.tr("command.scope.rename.duplicate_scope_name"))
             return 0
         }
     }
 
     existingScope.scopeName = newName
-    player.sendMessage(Translator.tr("command.renamescope.success", scopeName, newName, targetRegion.name))
+    player.sendMessage(Translator.tr("command.scope.rename.success", scopeName, newName, targetRegion.name))
     return 1
 }
 
