@@ -117,15 +117,6 @@ publishing {
 		// retrieving dependencies.
 
 		maven {
-			name = "GitHubPackages"
-			url = "https://maven.pkg.github.com/ImyvmCircle/ImyvmEconomy"
-			credentials {
-				username = System.getenv("GITHUB_ACTOR")
-				password = System.getenv("GITHUB_TOKEN")
-			}
-		}
-
-		maven {
 			url = 's3://imyvm-maven-repository'
 			credentials(AwsCredentials) {
 				accessKey = System.getenv("S3_ACCESS_KEY_ID")
