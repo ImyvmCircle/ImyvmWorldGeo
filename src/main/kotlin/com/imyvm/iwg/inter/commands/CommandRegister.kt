@@ -6,9 +6,7 @@ import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.RegionNotFoundException
-import com.imyvm.iwg.application.resetSelection
-import com.imyvm.iwg.application.startSelection
-import com.imyvm.iwg.application.stopSelection
+import com.imyvm.iwg.application.*
 import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
@@ -198,51 +196,13 @@ private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val playerUUID = player.uuid
+    if (!selectionModeCheck(player)) return 0
+    val regionName = getNameAutoFillCheck(player, StringArgumentType.getString(context, "name")) ?: return 0
+    val shapeType = getShapeTypeCheck(player, StringArgumentType.getString(context, "shapeType").uppercase()) ?: return 0
 
-    if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        player.sendMessage(Translator.tr("command.select.not_in_mode"))
-        return 0
-    }
-
-    val regionName: String = try {
-        val nameArgument = StringArgumentType.getString(context, "name")
-        if (nameArgument.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("command.create.name_is_digits_only"))
-            return 0
-        }
-        nameArgument
-    } catch (e: IllegalArgumentException) {
-        "NewRegion-${System.currentTimeMillis()}"
-    }
-
-    val shapeTypeName = StringArgumentType.getString(context, "shapeType").uppercase()
-    val shapeType = Region.Companion.GeoShapeType.entries
-        .find { it.name == shapeTypeName }
-        ?: Region.Companion.GeoShapeType.UNKNOWN
-
-    if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
-        player.sendMessage(Translator.tr("command.create.invalid_shape", shapeTypeName))
-        return 0
-    }
-
-    val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]
-    val biggestId = ImyvmWorldGeo.data.getRegionList().maxOfOrNull { it.numberID } ?: -1
-    val newID = biggestId + 1
-    val creationResult = RegionFactory.createRegion(
-        name = regionName,
-        numberID = newID,
-        selectedPositions = selectedPositions ?: mutableListOf(),
-        shapeType = shapeType
-    )
-
-    return when (creationResult) {
+    return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
-            val newRegion = creationResult.value
-            ImyvmWorldGeo.data.addRegion(newRegion)
-            ImyvmWorldGeo.logger.info("Created new region '${newRegion.name}' with positions: ${newRegion.geometryScope}")
-            player.sendMessage(Translator.tr("command.create.success", newRegion.name))
-            ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
+            handleRegionCreateSuccessInternally(player, creationResult)
             1
         }
         is Result.Err -> {
@@ -979,7 +939,7 @@ private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
     return 1
 }
 
-private fun errorMessage(
+fun errorMessage(
     error: CreationError,
     shapeType: Region.Companion.GeoShapeType
 ): Text = when (error) {
