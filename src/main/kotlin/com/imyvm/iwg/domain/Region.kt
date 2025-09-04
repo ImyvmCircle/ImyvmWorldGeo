@@ -4,10 +4,11 @@ import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.text.Text
 import kotlin.math.abs
 
-class Region {
-    var name: String = ""
-    var numberID: Int = 0
-    var geometryScope: MutableList<GeoScope> = mutableListOf()
+class Region(
+    var name: String,
+    var numberID: Int,
+    var geometryScope: MutableList<GeoScope>
+) {
 
     fun getScopeInfos(): List<Text> {
         val scopeInfos = mutableListOf<Text>()
@@ -27,9 +28,10 @@ class Region {
         return "%.2f".format(totalArea).toDouble()
     }
     companion object {
-        class GeoScope {
-            var scopeName: String = ""
-            var geoShape: GeoShape? = null
+        class GeoScope(
+            var scopeName: String,
+            var geoShape: GeoShape?
+        ) {
 
             fun getScopeInfo(index: Int): Text {
                 val shapeInfo = geoShape?.getShapeInfo()
@@ -38,9 +40,10 @@ class Region {
             }
         }
 
-        class GeoShape {
-            var geoShapeType: GeoShapeType = GeoShapeType.UNKNOWN
-            var shapeParameter: MutableList<Int> = mutableListOf()
+        class GeoShape(
+            var geoShapeType: GeoShapeType,
+            var shapeParameter: MutableList<Int>
+        ) {
 
             fun getShapeInfo(): Text {
                 val area = "%.2f".format(calculateArea())

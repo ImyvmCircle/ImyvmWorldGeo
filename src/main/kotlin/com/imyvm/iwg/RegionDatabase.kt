@@ -55,29 +55,30 @@ class RegionDatabase {
             val size = stream.readInt()
             regions = ArrayList(size)
             for (i in 0 until size) {
-                val region = Region()
-                region.name = stream.readUTF()
-                region.numberID = stream.readInt()
+                val name = stream.readUTF()
+                val numberID = stream.readInt()
 
                 val scopeCount = stream.readInt()
-                for (s in 0 until scopeCount) {
-                    val scope = Region.Companion.GeoScope()
-                    scope.scopeName = stream.readUTF()
+                val scopes = ArrayList<Region.Companion.GeoScope>(scopeCount)
 
+                for (s in 0 until scopeCount) {
+                    val scopeName = stream.readUTF()
                     val hasShape = stream.readBoolean()
-                    if (hasShape) {
-                        val shape = Region.Companion.GeoShape()
-                        shape.geoShapeType =
-                            Region.Companion.GeoShapeType.entries.toTypedArray()[stream.readInt()]
+
+                    val shape = if (hasShape) {
+                        val typeOrdinal = stream.readInt()
+                        val geoShapeType = Region.Companion.GeoShapeType.entries[typeOrdinal]
                         val paramSize = stream.readInt()
-                        shape.shapeParameter = MutableList(paramSize) { stream.readInt() }
-                        scope.geoShape = shape
+                        val params = MutableList(paramSize) { stream.readInt() }
+                        Region.Companion.GeoShape(geoShapeType, params)
+                    } else {
+                        null
                     }
 
-                    region.geometryScope.add(scope)
+                    scopes.add(Region.Companion.GeoScope(scopeName, shape))
                 }
 
-                regions.add(region)
+                regions.add(Region(name, numberID, scopes))
             }
         }
     }

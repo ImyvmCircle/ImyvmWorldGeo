@@ -33,12 +33,10 @@ object RegionFactory {
         if (mainScopeResult is Result.Err) return mainScopeResult
 
         val mainScope = (mainScopeResult as Result.Ok).value
+        val geometryScope = mutableListOf<Region.Companion.GeoScope>()
+        geometryScope.add(mainScope)
 
-        val newRegion = Region().apply {
-            this.name = name
-            this.numberID = numberID
-            geometryScope.add(mainScope)
-        }
+        val newRegion = Region(name, numberID, geometryScope)
 
         return Result.Ok(newRegion)
     }
@@ -54,10 +52,7 @@ object RegionFactory {
             return Result.Err(geoShapeResult.error)
         }
 
-        val geoScope = Region.Companion.GeoScope().apply {
-            this.scopeName = scopeName
-            this.geoShape = (geoShapeResult as Result.Ok).value
-        }
+        val geoScope = Region.Companion.GeoScope(scopeName, (geoShapeResult as Result.Ok).value)
 
         return Result.Ok(geoScope)
     }
@@ -115,10 +110,7 @@ object RegionFactory {
         val south = maxOf(pos1.z, pos2.z)
 
         return Result.Ok(
-            Region.Companion.GeoShape().apply {
-                geoShapeType = Region.Companion.GeoShapeType.RECTANGLE
-                shapeParameter = mutableListOf(west, north, east, south)
-            }
+            Region.Companion.GeoShape(Region.Companion.GeoShapeType.RECTANGLE, mutableListOf(west, north, east, south))
         )
     }
 
@@ -134,10 +126,7 @@ object RegionFactory {
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
-            Region.Companion.GeoShape().apply {
-                geoShapeType = Region.Companion.GeoShapeType.CIRCLE
-                shapeParameter = mutableListOf(center.x, center.z, radius.toInt())
-            }
+            Region.Companion.GeoShape(Region.Companion.GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))
         )
     }
 
@@ -149,10 +138,9 @@ object RegionFactory {
         if (!checkPolygonSize(area)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
-            Region.Companion.GeoShape().apply {
-                geoShapeType = Region.Companion.GeoShapeType.POLYGON
-                shapeParameter = positions.flatMap { listOf(it.x, it.z) }.toMutableList()
-            }
+            Region.Companion.GeoShape(
+                geoShapeType = Region.Companion.GeoShapeType.POLYGON,
+                positions.flatMap { listOf(it.x, it.z) }.toMutableList())
         )
     }
 
