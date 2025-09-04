@@ -18,5 +18,53 @@ class ModConfig : HokiConfig("Imyvm_world_geo.conf") {
                 path
             )
         }
+
+        @JvmField
+        @ConfigOption
+        val MIN_RECTANGLE_AREA = Option(
+            "core.min_rectangle_area",
+            100.0,
+            "the minimum area of a rectangle region."
+        ) { obj: Config, path: String? ->
+            obj.getDouble(
+                path
+            )
+        }
+
+        @JvmField
+        @ConfigOption
+        val MIN_POLYGON_AREA = Option(
+            "core.min_polygon_area",
+            100.0,
+            "the minimum area of a polygon region."
+        ) { obj: Config, path: String? ->
+            obj.getDouble(
+                path
+            )
+        }
+
+        @JvmField
+        @ConfigOption
+        val MIN_CIRCLE_RADIUS = Option(
+            "core.min_circle_radius",
+            5.0,
+            "the minimum radius of a circle region."
+        ) { obj: Config, path: String? ->
+            obj.getDouble(
+                path
+            )
+        }
+
+        @JvmField
+        @ConfigOption
+        val MIN_SIDE_LENGTH = Option(
+            "core.min_side_length",
+            10.0,
+            "the minimum length of each side of a rectangle region."
+        ) { obj: Config, path: String? ->
+            obj.getDouble(
+                path
+            )
+        }
     }
 }
