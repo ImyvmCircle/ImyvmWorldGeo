@@ -11,6 +11,9 @@ sealed class CreationError {
     data object InsufficientPoints : CreationError()
     data object CoincidentPoints : CreationError()
     data object UnderSizeLimit : CreationError()
+    data object UnderBoundingBoxLimit : CreationError()
+    data object AspectRatioInvalid : CreationError()
+    data object EdgeTooShort : CreationError()
     data object NotConvex : CreationError()
     data object IntersectionBetweenScopes : CreationError()
 }
@@ -102,7 +105,8 @@ object RegionFactory {
 
         val width = abs(pos1.x - pos2.x)
         val length = abs(pos1.z - pos2.z)
-        if (!checkRectangleSize(width, length)) return Result.Err(CreationError.UnderSizeLimit)
+        val error = checkRectangleSize(width, length)
+        if (error != null) return Result.Err(error)
 
         val west  = minOf(pos1.x, pos2.x)
         val east  = maxOf(pos1.x, pos2.x)
@@ -135,7 +139,8 @@ object RegionFactory {
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
         val area = polygonArea(positions)
-        if (!checkPolygonSize(area)) return Result.Err(CreationError.UnderSizeLimit)
+        val error = checkPolygonSize(positions, area)
+        if (error != null) return Result.Err(error)
 
         return Result.Ok(
             Region.Companion.GeoShape(

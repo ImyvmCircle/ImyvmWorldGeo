@@ -952,6 +952,9 @@ fun errorMessage(
         Region.Companion.GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")
         else -> Translator.tr("error.generic_too_small")
     }
+    CreationError.UnderBoundingBoxLimit -> Translator.tr("error.under_bounding_box_limit")
+    CreationError.AspectRatioInvalid -> Translator.tr("error.aspect_ratio_invalid")
+    CreationError.EdgeTooShort -> Translator.tr("error.edge_too_short")
     CreationError.NotConvex -> Translator.tr("error.not_convex")
     CreationError.IntersectionBetweenScopes -> Translator.tr("error.intersection_between_scopes")
     else -> { Translator.tr("error.unknown") }
