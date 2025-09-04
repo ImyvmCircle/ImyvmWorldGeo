@@ -6,19 +6,25 @@ import com.imyvm.iwg.inter.commands.errorMessage
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
+@Suppress("unused")
 object ImyvmWorldGeoApi {
+
+    @Suppress("MemberVisibilityCanBePrivate")
     fun startSelection(player: ServerPlayerEntity): Int{
         return startSelection(player)
     }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     fun stopSelection(player: ServerPlayerEntity): Int{
         return stopSelection(player)
     }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     fun resetSelection(player: ServerPlayerEntity): Int{
         return resetSelection(player)
     }
 
+    @Suppress("MemberVisibilityCanBePrivate")
     fun createRegion(
         player: ServerPlayerEntity,
         name: String?,
