@@ -1,6 +1,7 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.*
+import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.inter.commands.errorMessage
 import com.imyvm.iwg.util.ui.Translator
@@ -24,7 +25,6 @@ object ImyvmWorldGeoApi {
         return resetSelection(player)
     }
 
-    @Suppress("MemberVisibilityCanBePrivate")
     fun createRegion(
         player: ServerPlayerEntity,
         name: String?,
@@ -48,5 +48,23 @@ object ImyvmWorldGeoApi {
                 0
             }
         }
+    }
+
+    fun queryRegionInfo(player: ServerPlayerEntity, region: Region): Int{
+        player.sendMessage(
+            Translator.tr(
+                "api.query.result",
+                region.name,
+                region.numberID,
+                region.calculateTotalArea().toString()
+            )
+        )
+
+        val shapeInfos = region.getScopeInfos()
+        shapeInfos.forEach { info ->
+            player.sendMessage(info)
+        }
+
+        return 1
     }
 }
