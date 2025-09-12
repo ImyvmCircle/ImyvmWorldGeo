@@ -36,7 +36,7 @@ fun updateGeographicScoreboardPlayers(server: net.minecraft.server.MinecraftServ
 
     for ((uuid, region) in ImyvmWorldGeo.playerRegionChecker.getAllRegions()) {
         val regionName: String = region?.name?.takeIf { it.isNotBlank() }
-            ?: Translator.tr("scoreboard.region.none.name").string ?: "-wilderness-"
+            ?: Translator.tr("scoreboard.region.none.name")?.string ?: "-wilderness-"
 
         activeRegions.add(regionName)
 

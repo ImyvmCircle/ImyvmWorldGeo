@@ -300,24 +300,22 @@ private fun runAddScopeById(context: CommandContext<ServerCommandSource>): Int {
     val regionId = context.getArgument("id", Int::class.java)
     return runAddScope(
         context = context,
-        region = { ImyvmWorldGeo.data.getRegionByNumberId(regionId) },
-        notFoundMessage = { Translator.tr("command.not_found_id", regionId.toString()) }
-    )
+        region = { ImyvmWorldGeo.data.getRegionByNumberId(regionId) }
+    ) { Translator.tr("command.not_found_id", regionId.toString()) }
 }
 
 private fun runAddScopeByName(context: CommandContext<ServerCommandSource>): Int {
     val regionName = context.getArgument("name", String::class.java)
     return runAddScope(
         context = context,
-        region = { ImyvmWorldGeo.data.getRegionByName(regionName) },
-        notFoundMessage = { Translator.tr("command.not_found_name", regionName) }
-    )
+        region = { ImyvmWorldGeo.data.getRegionByName(regionName) }
+    ) { Translator.tr("command.not_found_name", regionName) }
 }
 
 private fun runAddScope(
     context: CommandContext<ServerCommandSource>,
     region: () -> Region?,
-    notFoundMessage: () -> Text
+    notFoundMessage: () -> Text?
 ): Int {
     val player = context.source.player ?: return 0
     val playerUUID = player.uuid
@@ -343,7 +341,8 @@ private fun runAddScope(
     }
 
     return try {
-        val targetRegion = region() ?: throw RegionNotFoundException(Translator.tr("command.scope.add.not_found_generic").string)
+        val targetRegion = region() ?: throw Translator.tr("command.scope.add.not_found_generic")
+            ?.let { RegionNotFoundException(it.string) }!!
 
         for (existingScope in targetRegion.geometryScope) {
             if (existingScope.scopeName.equals(scopeName, ignoreCase = true)) {
@@ -942,7 +941,7 @@ private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
 fun errorMessage(
     error: CreationError,
     shapeType: Region.Companion.GeoShapeType
-): Text = when (error) {
+): Text? = when (error) {
     CreationError.DuplicatedPoints -> Translator.tr("error.duplicated_points")
     CreationError.InsufficientPoints -> Translator.tr("error.insufficient_points", shapeType.name.lowercase())
     CreationError.CoincidentPoints -> Translator.tr("error.coincident_points")

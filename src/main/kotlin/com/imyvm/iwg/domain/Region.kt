@@ -13,7 +13,7 @@ class Region(
     fun getScopeInfos(): List<Text> {
         val scopeInfos = mutableListOf<Text>()
         geometryScope.forEachIndexed { index, geoScope ->
-            scopeInfos.add(geoScope.getScopeInfo(index))
+            geoScope.getScopeInfo(index)?.let { scopeInfos.add(it) }
         }
         return scopeInfos
     }
@@ -33,7 +33,7 @@ class Region(
             var geoShape: GeoShape?
         ) {
 
-            fun getScopeInfo(index: Int): Text {
+            fun getScopeInfo(index: Int): Text? {
                 val shapeInfo = geoShape?.getShapeInfo()
                     ?: Translator.tr("geoshape.unknown.info", index, "0.0")
                 return Translator.tr("scope.info", index, scopeName, shapeInfo)
@@ -45,7 +45,7 @@ class Region(
             var shapeParameter: MutableList<Int>
         ) {
 
-            fun getShapeInfo(): Text {
+            fun getShapeInfo(): Text? {
                 val area = "%.2f".format(calculateArea())
 
                 return when (geoShapeType) {
