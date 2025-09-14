@@ -98,24 +98,110 @@ private fun polygonOverlapCircle(poly: Region.Companion.GeoShape, circle: Region
     val cx = circle.shapeParameter[0]
     val cz = circle.shapeParameter[1]
     val r = circle.shapeParameter[2]
+
     val polyPoints = poly.shapeParameter.chunked(2).map { BlockPos(it[0], 0, it[1]) }
-    return polyPoints.any {
-        val dx = it.x - cx
-        val dz = it.z - cz
-        dx * dx + dz * dz <= r * r
+
+    if (polyPoints.any { (it.x - cx) * (it.x - cx) + (it.z - cz) * (it.z - cz) <= r * r }) {
+        return true
     }
+
+    if (pointInPolygon(BlockPos(cx, 0, cz), polyPoints)) {
+        return true
+    }
+
+    for (i in polyPoints.indices) {
+        val p1 = polyPoints[i]
+        val p2 = polyPoints[(i + 1) % polyPoints.size]
+        if (segmentCircleIntersect(p1, p2, cx, cz, r)) {
+            return true
+        }
+    }
+
+    return false
 }
 
+private fun segmentCircleIntersect(p1: BlockPos, p2: BlockPos, cx: Int, cz: Int, r: Int): Boolean {
+    val dx = (p2.x - p1.x).toDouble()
+    val dz = (p2.z - p1.z).toDouble()
+
+    val fx = (p1.x - cx).toDouble()
+    val fz = (p1.z - cz).toDouble()
+
+    val a = dx * dx + dz * dz
+    val b = 2 * (fx * dx + fz * dz)
+    val c = fx * fx + fz * fz - r * r
+
+    val discriminant = b * b - 4 * a * c
+    if (discriminant < 0) return false
+
+    val sqrtDisc = kotlin.math.sqrt(discriminant)
+    val t1 = (-b - sqrtDisc) / (2 * a)
+    val t2 = (-b + sqrtDisc) / (2 * a)
+
+    return (t1 in 0.0..1.0) || (t2 in 0.0..1.0)
+}
+
+
 private fun polygonsIntersect(a: List<BlockPos>, b: List<BlockPos>): Boolean {
-    val aMinX = a.minOf { it.x }
-    val aMaxX = a.maxOf { it.x }
-    val aMinZ = a.minOf { it.z }
-    val aMaxZ = a.maxOf { it.z }
+    for (i in a.indices) {
+        val a1 = a[i]
+        val a2 = a[(i + 1) % a.size]
+        for (j in b.indices) {
+            val b1 = b[j]
+            val b2 = b[(j + 1) % b.size]
+            if (segmentsIntersect(a1, a2, b1, b2)) return true
+        }
+    }
 
-    val bMinX = b.minOf { it.x }
-    val bMaxX = b.maxOf { it.x }
-    val bMinZ = b.minOf { it.z }
-    val bMaxZ = b.maxOf { it.z }
+    if (pointInPolygon(a[0], b)) return true
+    if (pointInPolygon(b[0], a)) return true
 
-    return aMinX < bMaxX && aMaxX > bMinX && aMinZ < bMaxZ && aMaxZ > bMinZ
+    return false
+}
+
+private fun segmentsIntersect(p1: BlockPos, p2: BlockPos, q1: BlockPos, q2: BlockPos): Boolean {
+    fun orientation(a: BlockPos, b: BlockPos, c: BlockPos): Int {
+        val value = (b.z - a.z) * (c.x - b.x) - (b.x - a.x) * (c.z - b.z)
+        return when {
+            value == 0 -> 0
+            value > 0 -> 1
+            else -> 2
+        }
+    }
+
+    fun onSegment(a: BlockPos, b: BlockPos, c: BlockPos): Boolean {
+        return b.x in minOf(a.x, c.x)..maxOf(a.x, c.x) &&
+                b.z in minOf(a.z, c.z)..maxOf(a.z, c.z)
+    }
+
+    val o1 = orientation(p1, p2, q1)
+    val o2 = orientation(p1, p2, q2)
+    val o3 = orientation(q1, q2, p1)
+    val o4 = orientation(q1, q2, p2)
+
+    if (o1 != o2 && o3 != o4) return true
+
+    if (o1 == 0 && onSegment(p1, q1, p2)) return true
+    if (o2 == 0 && onSegment(p1, q2, p2)) return true
+    if (o3 == 0 && onSegment(q1, p1, q2)) return true
+    if (o4 == 0 && onSegment(q1, p2, q2)) return true
+
+    return false
+}
+
+
+private fun pointInPolygon(p: BlockPos, polygon: List<BlockPos>): Boolean {
+    var count = 0
+    var j = polygon.size - 1
+    for (i in polygon.indices) {
+        val pi = polygon[i]
+        val pj = polygon[j]
+        if ((pi.z > p.z) != (pj.z > p.z) &&
+            p.x < (pj.x - pi.x) * (p.z - pi.z).toDouble() / (pj.z - pi.z).toDouble() + pi.x
+        ) {
+            count++
+        }
+        j = i
+    }
+    return count % 2 == 1
 }
