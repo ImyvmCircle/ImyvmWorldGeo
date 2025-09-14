@@ -37,7 +37,7 @@ class ImyvmWorldGeo : ModInitializer {
 			updateGeographicScoreboardPlayers(server)
 		}
 
-		logger.info("$MOD_ID initialized.")
+		logger.info("$MOD_ID initialized successfully.")
 	}
 
 	companion object {

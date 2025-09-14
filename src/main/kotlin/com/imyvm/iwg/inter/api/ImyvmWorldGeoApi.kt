@@ -43,10 +43,6 @@ object ImyvmWorldGeoApi {
                 player.sendMessage(errorMsg)
                 0
             }
-            else -> {
-                player.sendMessage(Translator.tr("error.unknown"))
-                0
-            }
         }
     }
 

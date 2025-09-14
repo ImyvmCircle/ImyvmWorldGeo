@@ -210,10 +210,6 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
             player.sendMessage(errorMsg)
             0
         }
-        else -> {
-            player.sendMessage(Translator.tr("error.unknown"))
-            0
-        }
     }
 }
 
@@ -369,10 +365,6 @@ private fun runAddScope(
             is Result.Err -> {
                 val errorMsg = errorMessage(creationResult.error, shapeType)
                 player.sendMessage(errorMsg)
-                0
-            }
-            else -> {
-                player.sendMessage(Translator.tr("error.unknown"))
                 0
             }
         }
@@ -559,9 +551,6 @@ private fun runModifyScopePolygonMove(
             player.sendMessage(errorMsg)
         }
 
-        else -> {
-            player.sendMessage(Translator.tr("error.unknown"))
-        }
     }
 }
 
@@ -629,9 +618,6 @@ private fun runModifyScopePolygonInsertPoint(
             val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.POLYGON)
             player.sendMessage(errorMsg)
         }
-        else -> {
-            player.sendMessage(Translator.tr("error.unknown"))
-        }
     }
 }
 
@@ -694,9 +680,6 @@ private fun runModifyScopeCircleRadius(
             val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.CIRCLE)
             player.sendMessage(errorMsg)
         }
-        else -> {
-            player.sendMessage(Translator.tr("error.unknown"))
-        }
     }
 }
 
@@ -748,9 +731,6 @@ private fun runModifyScopeCircleCenter(
             region.geometryScope.add(existingScope)
             val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.CIRCLE)
             player.sendMessage(errorMsg)
-        }
-        else -> {
-            player.sendMessage(Translator.tr("error.unknown"))
         }
     }
 }
@@ -817,9 +797,6 @@ private fun runModifyScopeRectangle(
             region.geometryScope.add(existingScope)
             val errorMsg = errorMessage(newScope.error, Region.Companion.GeoShapeType.RECTANGLE)
             player.sendMessage(errorMsg)
-        }
-        else -> {
-            player.sendMessage(Translator.tr("error.unknown"))
         }
     }
 }
@@ -956,5 +933,4 @@ fun errorMessage(
     CreationError.EdgeTooShort -> Translator.tr("error.edge_too_short")
     CreationError.NotConvex -> Translator.tr("error.not_convex")
     CreationError.IntersectionBetweenScopes -> Translator.tr("error.intersection_between_scopes")
-    else -> { Translator.tr("error.unknown") }
 }
