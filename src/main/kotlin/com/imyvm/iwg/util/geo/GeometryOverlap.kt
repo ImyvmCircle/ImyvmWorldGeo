@@ -49,7 +49,7 @@ private fun rectOverlapRect(a: Region.Companion.GeoShape, b: Region.Companion.Ge
     val bx2 = b.shapeParameter[2]
     val bz2 = b.shapeParameter[3]
 
-    return ax1 < bx2 && ax2 > bx1 && az1 < bz2 && az2 > bz1
+    return ax1 <= bx2 && ax2 >= bx1 && az1 <= bz2 && az2 >= bz1
 }
 
 private fun rectOverlapCircle(rect: Region.Companion.GeoShape, circle: Region.Companion.GeoShape): Boolean {
