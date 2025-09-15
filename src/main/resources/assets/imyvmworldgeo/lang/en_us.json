@@ -13,8 +13,9 @@
   "command.select.reset": "Your selection points have been reset. You are still in selection mode.",
 
   "command.create.success": "Region '{0}' created successfully!",
-  "command.create.name_is_digits_only": "Region name cannot be digits only.",
-  "command.create.name_auto_filled": "Region name not provided. Auto-filled with '{0}'.",
+  "command.create.name_is_digits_only": "Region/scope name cannot be digits only.",
+  "command.create.name_auto_filled": "Region/scope name not provided. Auto-filled with '{0}'.",
+  "command.create.name.invalid": "Region/scope name invalid.",
 
   "command.delete.success.name": "Region '{0}' deleted successfully!",
   "command.delete.success.id": "Region with ID '{0}' deleted successfully!",

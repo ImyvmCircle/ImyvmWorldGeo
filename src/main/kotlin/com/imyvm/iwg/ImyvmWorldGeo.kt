@@ -1,9 +1,9 @@
 package com.imyvm.iwg
 
-import com.imyvm.iwg.inter.commands.register
+import com.imyvm.iwg.inter.register.register
 import com.imyvm.iwg.domain.PlayerRegionChecker
-import com.imyvm.iwg.util.UseBlockCommandsHandler
-import com.imyvm.iwg.util.ui.registerLocationDisplay
+import com.imyvm.iwg.inter.register.registerLocationDisplay
+import com.imyvm.iwg.util.command.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents

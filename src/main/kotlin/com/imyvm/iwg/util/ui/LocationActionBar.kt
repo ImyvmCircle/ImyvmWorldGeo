@@ -7,20 +7,6 @@ import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting
 
-fun registerLocationDisplay() {
-    ServerPlayConnectionEvents.JOIN.register { handler, _, _ ->
-        val player = handler.player
-        updateGeographicActionBarForPlayer(player)
-    }
-    ServerTickEvents.END_SERVER_TICK.register { server ->
-        ImyvmWorldGeo.tickCounter++
-        ImyvmWorldGeo.playerRegionChecker.tick(server)
-        server.playerManager.playerList.forEach { player ->
-            updateGeographicActionBarForPlayer(player)
-        }
-    }
-}
-
 fun updateGeographicActionBarForPlayer(player: ServerPlayerEntity) {
     if (!ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)) return
 

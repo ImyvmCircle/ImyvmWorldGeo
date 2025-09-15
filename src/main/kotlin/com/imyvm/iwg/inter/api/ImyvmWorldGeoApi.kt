@@ -3,7 +3,7 @@ package com.imyvm.iwg.inter.api
 import com.imyvm.iwg.application.*
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.Result
-import com.imyvm.iwg.inter.commands.errorMessage
+import com.imyvm.iwg.inter.register.errorMessage
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
@@ -30,7 +30,7 @@ object ImyvmWorldGeoApi {
         name: String?,
         shapeTypeName: String?): Int{
         if (!selectionModeCheck(player)) return 0
-        val regionName = getNameCheck(player, name) ?: return 0
+        val regionName = getRegionNameCheck(player, name) ?: return 0
         val shapeType = getShapeTypeCheck(player, shapeTypeName ?: "") ?: return 0
 
         return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {

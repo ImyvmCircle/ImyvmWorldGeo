@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util
+package com.imyvm.iwg.util.command
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import net.fabricmc.fabric.api.event.player.UseBlockCallback

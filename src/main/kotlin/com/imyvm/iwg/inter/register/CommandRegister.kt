@@ -1,4 +1,4 @@
-package com.imyvm.iwg.inter.commands
+package com.imyvm.iwg.inter.register
 
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.RegionFactory
@@ -7,6 +7,7 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.application.*
+import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
@@ -171,7 +172,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                     .executes { runListRegions(it) }
             )
             .then(
-                literal("toggledisplay")
+                literal("toggle")
                     .executes{ runChangeDisplayMode(it) }
             )
     )
@@ -201,7 +202,7 @@ private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
 private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     if (!selectionModeCheck(player)) return 0
-    val regionName = getNameAutoFillCheck(player, StringArgumentType.getString(context, "name")) ?: return 0
+    val regionName = getRegionNameAutoFillCheck(player, StringArgumentType.getString(context, "name")) ?: return 0
     val shapeType = getShapeTypeCheck(player, StringArgumentType.getString(context, "shapeType").uppercase()) ?: return 0
 
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
@@ -297,86 +298,56 @@ private fun runRenameRegionAndSendFeedback(player: ServerPlayerEntity, region: R
 }
 
 private fun runAddScopeById(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
     val regionId = context.getArgument("id", Int::class.java)
-    return runAddScope(
-        context = context,
-        region = { ImyvmWorldGeo.data.getRegionByNumberId(regionId) }
-    ) { Translator.tr("command.not_found_id", regionId.toString()) }
+    return try {
+        val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+        runAddScope(context, region)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
+        0
+    }
 }
 
 private fun runAddScopeByName(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
     val regionName = context.getArgument("name", String::class.java)
-    return runAddScope(
-        context = context,
-        region = { ImyvmWorldGeo.data.getRegionByName(regionName) }
-    ) { Translator.tr("command.not_found_name", regionName) }
+    return try {
+        val region = ImyvmWorldGeo.data.getRegionByName(regionName)
+        runAddScope(context, region)
+    } catch (e: RegionNotFoundException) {
+        player.sendMessage(Translator.tr("command.not_found_name", regionName))
+        0
+    }
 }
 
 private fun runAddScope(
     context: CommandContext<ServerCommandSource>,
-    region: () -> Region?,
-    notFoundMessage: () -> Text?
+    region: Region
 ): Int {
     val player = context.source.player ?: return 0
     val playerUUID = player.uuid
+    if (!selectionModeCheck(player)) return 0
 
-    if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        player.sendMessage(Translator.tr("command.select.not_in_mode"))
-        return 0
-    }
+    val shapeTypeName = getOptionalArgument(context, "shapeType")
+        ?.uppercase() ?: return 0
+    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
+    val scopeNameArg = getOptionalArgument(context, "scopeName")
+    val scopeName = getScopeNameCheck(player, { region }, scopeNameArg) ?: return 0
 
-    val shapeTypeStr = context.getArgument("shapeType", String::class.java).uppercase()
-    val shapeType: Region.Companion.GeoShapeType = try {
-        Region.Companion.GeoShapeType.valueOf(shapeTypeStr)
-    } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr("command.scope.add.invalid_shape_type"))
-        return 0
-    }
-
-    val scopeName: String = try {
-        context.getArgument("scopeName", String::class.java)
-    } catch (e: IllegalArgumentException) {
-        val targetRegion = region() ?: return 0
-        "NewScope-${targetRegion.name}-${System.currentTimeMillis()}"
-    }
-
-    return try {
-        val targetRegion = region() ?: throw Translator.tr("command.scope.add.not_found_generic")
-            ?.let { RegionNotFoundException(it.string) }!!
-
-        for (existingScope in targetRegion.geometryScope) {
-            if (existingScope.scopeName.equals(scopeName, ignoreCase = true)) {
-                player.sendMessage(Translator.tr("command.scope.add.duplicate_scope_name"))
-                return 0
-            }
+    return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
+        is Result.Ok -> {
+            handleScopeCreateSuccess(player, creationResult) { region }
+            1
         }
-
-        val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
-
-        val creationResult = RegionFactory.createScope(
-            scopeName = scopeName,
-            selectedPositions = selectedPositions,
-            shapeType = shapeType
-        )
-
-        when (creationResult) {
-            is Result.Ok -> {
-                targetRegion.geometryScope.add(creationResult.value)
-                player.sendMessage(Translator.tr("command.scope.add.success", scopeName, targetRegion.name))
-                ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
-                1
-            }
-            is Result.Err -> {
-                val errorMsg = errorMessage(creationResult.error, shapeType)
-                player.sendMessage(errorMsg)
-                0
-            }
+        is Result.Err -> {
+            val errorMsg = errorMessage(creationResult.error, shapeType)
+            player.sendMessage(errorMsg)
+            0
         }
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(notFoundMessage())
-        0
     }
 }
+
 
 private fun runDeleteScopeById(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0

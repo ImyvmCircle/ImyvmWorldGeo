@@ -7,52 +7,22 @@ import com.imyvm.iwg.domain.RegionFactory
 import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
+import java.util.*
 
-fun selectionModeCheck(player: ServerPlayerEntity): Boolean{
+fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
     val playerUUID = player.uuid
     if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
         player.sendMessage(Translator.tr("command.select.not_in_mode"))
         return false
     }
-
     return true
 }
 
-fun getNameAutoFillCheck(player: ServerPlayerEntity, nameArgument: String?): String? {
-    return try {
-        if (nameArgument == null) {
-            val name = "NewRegion-${System.currentTimeMillis()}"
-            player.sendMessage(Translator.tr("command.create.name_auto_filled", name))
-            name
-        } else if (nameArgument.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("command.create.name_is_digits_only"))
-            null
-        } else {
-            nameArgument
-        }
-    } catch (e: IllegalArgumentException) {
-        val name = "NewRegion-${System.currentTimeMillis()}"
-        player.sendMessage(Translator.tr("command.create.name_auto_filled", name))
-        name
-    }
-}
+fun getRegionNameAutoFillCheck(player: ServerPlayerEntity, nameArgument: String?): String? =
+    validateNameCommon(player, nameArgument, autoFill = true)
 
-fun getNameCheck(player: ServerPlayerEntity, nameArgument: String?): String? {
-    return try {
-        if (nameArgument == null) {
-            player.sendMessage(Translator.tr("command.create.name_invalid"))
-            null
-        } else if (nameArgument.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("command.create.name_is_digits_only"))
-            null
-        } else {
-            nameArgument
-        }
-    } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr("command.create.name_invalid"))
-        null
-    }
-}
+fun getRegionNameCheck(player: ServerPlayerEntity, nameArgument: String?): String? =
+    validateNameCommon(player, nameArgument, autoFill = false)
 
 fun getShapeTypeCheck(
     player: ServerPlayerEntity,
@@ -65,7 +35,6 @@ fun getShapeTypeCheck(
         player.sendMessage(Translator.tr("command.create.invalid_shape", shapeTypeName))
         return null
     }
-
     return shapeType
 }
 
@@ -96,6 +65,49 @@ fun handleRegionCreateSuccess(
     creationResult: Result.Ok<Region>
 ) = handleRegionCreateSuccessCommon(player, creationResult, notify = false)
 
+fun getScopeNameCheck(
+    player: ServerPlayerEntity,
+    region: () -> Region?,
+    scopeNameArg: String?
+): String? {
+    val targetRegion = region() ?: run {
+        player.sendMessage(Translator.tr("command.scope.add.not_found_generic"))
+        return null
+    }
+
+    val scopeName = scopeNameArg ?: "NewScope-${targetRegion.name}-${System.currentTimeMillis()}"
+    return validateNameCommon(player, scopeName, autoFill = false)
+        ?.let { validateScopeUnique(player, targetRegion, it) }
+}
+
+fun tryScopeCreation(
+    playerUUID: UUID,
+    scopeName: String,
+    shapeType: Region.Companion.GeoShapeType
+): Result<Region.Companion.GeoScope, CreationError> {
+    val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
+    return RegionFactory.createScope(
+        scopeName = scopeName,
+        selectedPositions = selectedPositions,
+        shapeType = shapeType
+    )
+}
+
+fun handleScopeCreateSuccess(
+    player: ServerPlayerEntity,
+    creationResult: Result.Ok<Region.Companion.GeoScope>,
+    region: () -> Region?
+) {
+    val targetRegion = region() ?: return
+    val newScope = creationResult.value
+    targetRegion.geometryScope.add(newScope)
+
+    player.sendMessage(
+        Translator.tr("command.scope.add.success", newScope.scopeName, targetRegion.name)
+    )
+    ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+}
+
 private fun handleRegionCreateSuccessCommon(
     player: ServerPlayerEntity,
     creationResult: Result.Ok<Region>,
@@ -108,6 +120,50 @@ private fun handleRegionCreateSuccessCommon(
     if (notify) {
         player.sendMessage(Translator.tr("command.create.success", newRegion.name))
     }
-
     ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+}
+
+private fun validateNameCommon(
+    player: ServerPlayerEntity,
+    nameArgument: String?,
+    autoFill: Boolean
+): String? {
+    return try {
+        if (nameArgument == null) {
+            if (autoFill) {
+                val name = "NewRegion-${System.currentTimeMillis()}"
+                player.sendMessage(Translator.tr("command.create.name_auto_filled", name))
+                name
+            } else {
+                player.sendMessage(Translator.tr("command.create.name_invalid"))
+                null
+            }
+        } else if (nameArgument.matches("\\d+".toRegex())) {
+            player.sendMessage(Translator.tr("command.create.name_is_digits_only"))
+            null
+        } else {
+            nameArgument
+        }
+    } catch (e: IllegalArgumentException) {
+        if (autoFill) {
+            val name = "NewRegion-${System.currentTimeMillis()}"
+            player.sendMessage(Translator.tr("command.create.name_auto_filled", name))
+            name
+        } else {
+            player.sendMessage(Translator.tr("command.create.name_invalid")) // 原有消息
+            null
+        }
+    }
+}
+
+private fun validateScopeUnique(
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeName: String
+): String? {
+    if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
+        player.sendMessage(Translator.tr("command.scope.add.duplicate_scope_name"))
+        return null
+    }
+    return scopeName
 }
