@@ -70,7 +70,14 @@ fun getScopeNameCheck(
     region: Region,
     scopeNameArg: String?
 ): String? {
-    val scopeName = scopeNameArg ?: "NewScope-${region.name}-${System.currentTimeMillis()}"
+    val scopeName = if (scopeNameArg == null) {
+        val autoName = "NewScope-${region.name}-${System.currentTimeMillis()}"
+        player.sendMessage(Translator.tr("command.scope.add.name_auto_filled", autoName))
+        autoName
+    } else {
+        scopeNameArg
+    }
+
     return validateNameCommon(player, scopeName, autoFill = false)
         ?.let { validateScopeUnique(player, region, it) }
 }
