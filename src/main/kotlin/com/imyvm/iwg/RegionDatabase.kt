@@ -6,9 +6,6 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
 import java.nio.file.Path
-import kotlin.io.path.exists
-import kotlin.io.path.inputStream
-import kotlin.io.path.outputStream
 
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
@@ -85,13 +82,13 @@ class RegionDatabase {
             ?: throw RegionNotFoundException("Region with ID '$id' not found.")
     }
 
-    fun getRegionAt(x: Int, z: Int): Region? {
+    fun getRegionAndScopeAt(x: Int, z: Int): Pair<Region, Region.Companion.GeoScope>? {
         for (region in regions) {
             for (scope in region.geometryScope) {
                 val geoShape = scope.geoShape
                 if (geoShape != null) {
                     if (geoShape.isInside(x, z)) {
-                        return region
+                        return Pair(region, scope)
                     }
                 }
             }

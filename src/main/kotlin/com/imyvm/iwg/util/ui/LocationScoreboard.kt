@@ -4,7 +4,7 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import net.minecraft.scoreboard.*
 
 fun initializeGeographicScoreboard(scoreboard: Scoreboard) {
-    val objectName = "${ImyvmWorldGeo.MOD_ID}_region"
+    val objectName = "${ImyvmWorldGeo.MOD_ID}_region_scope"
     val displayName = Translator.tr("scoreboard.display-name")
 
     val objective = scoreboard.getNullableObjective(objectName)
@@ -30,31 +30,33 @@ fun updateGeographicScoreboardPlayers(server: net.minecraft.server.MinecraftServ
     if ((ImyvmWorldGeo.tickCounter % 20).toInt() != 0) return
 
     val scoreboard = server.scoreboard ?: return
-    val objective: ScoreboardObjective = scoreboard.getNullableObjective("${ImyvmWorldGeo.MOD_ID}_region") ?: return
+    val objective: ScoreboardObjective =
+        scoreboard.getNullableObjective("${ImyvmWorldGeo.MOD_ID}_region_scope") ?: return
 
-    val activeRegions = mutableSetOf<String>()
+    val activeRegionScopes = mutableSetOf<String>()
 
-    for ((uuid, region) in ImyvmWorldGeo.playerRegionChecker.getAllRegions()) {
-        val regionName: String = region?.name?.takeIf { it.isNotBlank() }
-            ?: Translator.tr("scoreboard.region.none.name")?.string ?: "-wilderness-"
+    for ((uuid, regionScopePair) in ImyvmWorldGeo.playerRegionChecker.getAllRegionScopesWithPlayers()) {
+        val regionName = regionScopePair.first.name.takeIf { it.isNotBlank() } ?: "-wilderness-"
+        val scopeName = regionScopePair.second.scopeName.takeIf { it.isNotBlank() } ?: "-none-"
 
-        activeRegions.add(regionName)
+        val displayName = "$regionName \n $scopeName"
+        activeRegionScopes.add(displayName)
 
-        val scoreHolder: ScoreHolder = ScoreHolder.fromName(regionName)
+        val scoreHolder: ScoreHolder = ScoreHolder.fromName(displayName)
         val score = scoreboard.getOrCreateScore(scoreHolder, objective)
         score.score = 0
     }
 
     val toRemove = mutableListOf<String>()
     for (score in scoreboard.getScoreboardEntries(objective)) {
-        val playerName = score.owner
-        if (!activeRegions.contains(playerName)) {
-            toRemove.add(playerName)
+        val name = score.owner
+        if (!activeRegionScopes.contains(name)) {
+            toRemove.add(name)
         }
     }
 
-    toRemove.forEach { playerName ->
-        val scoreHolder = ScoreHolder.fromName(playerName)
+    toRemove.forEach { name ->
+        val scoreHolder = ScoreHolder.fromName(name)
         scoreboard.removeScore(scoreHolder, objective)
     }
 
