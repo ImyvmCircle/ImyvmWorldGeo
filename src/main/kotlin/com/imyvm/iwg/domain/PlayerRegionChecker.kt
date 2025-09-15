@@ -6,6 +6,7 @@ import java.util.*
 
 class PlayerRegionChecker {
     private val playerRegionScopeMap: MutableMap<UUID, Pair<Region, Region.Companion.GeoScope>?> = mutableMapOf()
+
     fun tick(server: MinecraftServer) {
         if ((ImyvmWorldGeo.tickCounter % 20).toInt() != 0) return
         updatePlayerRegions(server)
@@ -24,8 +25,12 @@ class PlayerRegionChecker {
         playerRegionScopeMap.keys.retainAll(onlinePlayers)
     }
 
-    fun getAllRegionScopesWithPlayers(): Map<UUID, Pair<Region, Region.Companion.GeoScope>> {
-        return playerRegionScopeMap.filterValues { it != null }
-            .mapValues { it.value!! }
+    fun getAllRegionScopesWithPlayers(): Map<UUID, Pair<Region?, Region.Companion.GeoScope?>> {
+        return playerRegionScopeMap.mapValues { entry ->
+            val region = entry.value?.first
+            val scope = entry.value?.second
+            Pair(region, scope)
+        }
     }
+
 }

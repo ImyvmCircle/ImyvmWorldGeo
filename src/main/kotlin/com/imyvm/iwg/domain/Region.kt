@@ -36,9 +36,8 @@ class Region(
         ) {
 
             fun getScopeInfo(index: Int): Text? {
-                val shapeInfo = geoShape?.getShapeInfo()
-                    ?: Translator.tr("geoshape.unknown.info", index, "0.0")
-                return Translator.tr("scope.info", index, scopeName, shapeInfo)
+                val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
+                return Translator.tr("scope.info", index, scopeName, shapeInfoString)
             }
         }
 

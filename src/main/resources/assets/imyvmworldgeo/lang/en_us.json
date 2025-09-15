@@ -77,7 +77,10 @@
 
 
   "scoreboard.display-name": "Current Region",
+  "scoreboard.region.prefix": "Region:",
+  "scoreboard.scope.prefix": "Scope:",
   "scoreboard.region.none.name": "-wilderness-",
+  "scoreboard.scope.none.name": "-Free to use-",
 
   "scope.info": "[{0}] {1}: {2}",
 

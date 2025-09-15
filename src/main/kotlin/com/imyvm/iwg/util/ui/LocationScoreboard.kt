@@ -33,24 +33,43 @@ fun updateGeographicScoreboardPlayers(server: net.minecraft.server.MinecraftServ
     val objective: ScoreboardObjective =
         scoreboard.getNullableObjective("${ImyvmWorldGeo.MOD_ID}_region_scope") ?: return
 
-    val activeRegionScopes = mutableSetOf<String>()
+    val activeEntries = mutableSetOf<String>()
 
     for ((uuid, regionScopePair) in ImyvmWorldGeo.playerRegionChecker.getAllRegionScopesWithPlayers()) {
-        val regionName = regionScopePair.first.name.takeIf { it.isNotBlank() } ?: "-wilderness-"
-        val scopeName = regionScopePair.second.scopeName.takeIf { it.isNotBlank() } ?: "-none-"
+        val region = regionScopePair.first
+        val scope = regionScopePair.second
 
-        val displayName = "$regionName \n $scopeName"
-        activeRegionScopes.add(displayName)
+        val regionPrefix = Translator.tr("scoreboard.region.prefix")?.string ?: "Region:"
+        val scopePrefix = Translator.tr("scoreboard.scope.prefix")?.string  ?: "Scope:"
 
-        val scoreHolder: ScoreHolder = ScoreHolder.fromName(displayName)
-        val score = scoreboard.getOrCreateScore(scoreHolder, objective)
-        score.score = 0
+        val regionName = region?.name?.takeIf { it.isNotBlank() }
+            ?: Translator.tr("scoreboard.region.none.name")?.string  ?: "-wilderness-"
+
+        val scopeName = scope?.scopeName?.takeIf { it.isNotBlank() }
+            ?: Translator.tr("scoreboard.scope.none.name")?.string  ?: "-Free to use-"
+
+        val regionLine = if (regionName == Translator.tr("scoreboard.region.none.name")?.string)
+            regionName
+        else "$regionPrefix $regionName"
+
+        val scopeLine = if (scopeName == Translator.tr("scoreboard.scope.none.name")?.string)
+            scopeName
+        else "$scopePrefix $scopeName"
+
+
+
+        for (line in listOf(regionLine, scopeLine)) {
+            activeEntries.add(line)
+            val scoreHolder: ScoreHolder = ScoreHolder.fromName(line)
+            val score = scoreboard.getOrCreateScore(scoreHolder, objective)
+            score.score = 0
+        }
     }
 
     val toRemove = mutableListOf<String>()
     for (score in scoreboard.getScoreboardEntries(objective)) {
         val name = score.owner
-        if (!activeRegionScopes.contains(name)) {
+        if (!activeEntries.contains(name)) {
             toRemove.add(name)
         }
     }
