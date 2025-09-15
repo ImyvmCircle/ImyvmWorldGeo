@@ -57,6 +57,48 @@ class RegionDatabase {
         regions.add(region)
     }
 
+    fun removeRegion(regionToDelete: Region) {
+        regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
+    }
+
+    fun renameRegion(region: Region, newName: String) {
+        val isDuplicate = regions.any { otherRegion ->
+            otherRegion.name.equals(newName, ignoreCase = true) && otherRegion.numberID != region.numberID
+        }
+        if (isDuplicate) {
+            throw IllegalArgumentException("A region with the name '$newName' already exists.")
+        }
+        region.name = newName
+    }
+
+    fun getRegionList(): List<Region> {
+        return regions
+    }
+
+    fun getRegionByName(name: String): Region {
+        return regions.find { it.name == name }
+            ?: throw RegionNotFoundException("Region with name '$name' not found.")
+    }
+
+    fun getRegionByNumberId(id: Int): Region {
+        return regions.find { it.numberID == id }
+            ?: throw RegionNotFoundException("Region with ID '$id' not found.")
+    }
+
+    fun getRegionAt(x: Int, z: Int): Region? {
+        for (region in regions) {
+            for (scope in region.geometryScope) {
+                val geoShape = scope.geoShape
+                if (geoShape != null) {
+                    if (geoShape.isInside(x, z)) {
+                        return region
+                    }
+                }
+            }
+        }
+        return null
+    }
+
     private fun saveGeoScopes(stream: DataOutputStream, scopes: List<Region.Companion.GeoScope>) {
         stream.writeInt(scopes.size)
         for (scope in scopes) {
