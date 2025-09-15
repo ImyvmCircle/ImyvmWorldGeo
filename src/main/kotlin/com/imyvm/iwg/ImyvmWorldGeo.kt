@@ -39,6 +39,7 @@ class ImyvmWorldGeo : ModInitializer {
 
 		val playerRegionChecker: PlayerRegionChecker = PlayerRegionChecker()
 		val commandlySelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
+		val locationActionBarEnabledPlayers: MutableSet<UUID> = Collections.synchronizedSet(mutableSetOf())
 
 		fun dataLoad() {
 			try {

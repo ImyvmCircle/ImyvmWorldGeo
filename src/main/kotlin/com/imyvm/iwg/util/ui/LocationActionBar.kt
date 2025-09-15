@@ -22,6 +22,8 @@ fun registerLocationDisplay() {
 }
 
 fun updateGeographicActionBarForPlayer(player: ServerPlayerEntity) {
+    if (!ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)) return
+
     val regionScopePair = ImyvmWorldGeo.playerRegionChecker.getAllRegionScopesWithPlayers()[player.uuid]
     val region = regionScopePair?.first
     val scope = regionScopePair?.second

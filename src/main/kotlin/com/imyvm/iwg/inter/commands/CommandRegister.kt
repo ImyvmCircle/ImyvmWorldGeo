@@ -170,6 +170,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("list")
                     .executes { runListRegions(it) }
             )
+            .then(
+                literal("toggledisplay")
+                    .executes{ runChangeDisplayMode(it) }
+            )
     )
 }
 
@@ -912,6 +916,19 @@ private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
     }
     val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}" }
     player.sendMessage(Translator.tr("command.list.header", regionList))
+    return 1
+}
+
+private fun runChangeDisplayMode(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    if (ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)) {
+        ImyvmWorldGeo.locationActionBarEnabledPlayers.remove(player.uuid)
+        player.sendMessage(Translator.tr("command.toggle.disabled"))
+    } else {
+        ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
+        player.sendMessage(Translator.tr("command.toggle.enabled"))
+    }
+
     return 1
 }
 

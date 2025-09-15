@@ -61,6 +61,9 @@
   "command.list.empty": "No regions found.",
   "command.list.header": "Regions:\n{0}",
 
+  "command.toggle.enabled": "Action bar is now enabled.",
+  "command.toggle.disabled": "Action bar is now disabled.",
+
   "error.duplicated_points": "Cannot create a region with duplicated points.",
   "error.insufficient_points": "You must select enough points for a {0} region.",
   "error.coincident_points": "For a rectangle, the first two points must not share the same X or Z coordinate.",
