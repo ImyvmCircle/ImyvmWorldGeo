@@ -2,13 +2,11 @@ package com.imyvm.iwg
 
 import com.imyvm.iwg.inter.commands.register
 import com.imyvm.iwg.domain.PlayerRegionChecker
-import com.imyvm.iwg.util.ui.initializeGeographicScoreboard
-import com.imyvm.iwg.util.ui.updateGeographicScoreboardPlayers
 import com.imyvm.iwg.util.UseBlockCommandsHandler
+import com.imyvm.iwg.util.ui.registerLocationDisplay
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
@@ -28,14 +26,7 @@ class ImyvmWorldGeo : ModInitializer {
 		dataLoad()
 		dataSave()
 
-		ServerLifecycleEvents.SERVER_STARTED.register { server ->
-			initializeGeographicScoreboard(server.scoreboard)
-		}
-		ServerTickEvents.END_SERVER_TICK.register { server ->
-			tickCounter++
-			playerRegionChecker.tick(server)
-			updateGeographicScoreboardPlayers(server)
-		}
+		registerLocationDisplay()
 
 		logger.info("$MOD_ID initialized successfully.")
 	}
