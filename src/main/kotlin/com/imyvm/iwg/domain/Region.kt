@@ -9,6 +9,7 @@ class Region(
     var numberID: Int,
     var geometryScope: MutableList<GeoScope>
 ) {
+    var settings: MutableList<Setting> = mutableListOf()
 
     fun getScopeInfos(): List<Text> {
         val scopeInfos = mutableListOf<Text>()
@@ -32,6 +33,7 @@ class Region(
             var scopeName: String,
             var geoShape: GeoShape?
         ) {
+            var settings: MutableList<Setting> = mutableListOf()
 
             fun getScopeInfo(index: Int): Text? {
                 val shapeInfo = geoShape?.getShapeInfo()
