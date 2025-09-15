@@ -67,17 +67,12 @@ fun handleRegionCreateSuccess(
 
 fun getScopeNameCheck(
     player: ServerPlayerEntity,
-    region: () -> Region?,
+    region: Region,
     scopeNameArg: String?
 ): String? {
-    val targetRegion = region() ?: run {
-        player.sendMessage(Translator.tr("command.scope.add.not_found_generic"))
-        return null
-    }
-
-    val scopeName = scopeNameArg ?: "NewScope-${targetRegion.name}-${System.currentTimeMillis()}"
+    val scopeName = scopeNameArg ?: "NewScope-${region.name}-${System.currentTimeMillis()}"
     return validateNameCommon(player, scopeName, autoFill = false)
-        ?.let { validateScopeUnique(player, targetRegion, it) }
+        ?.let { validateScopeUnique(player, region, it) }
 }
 
 fun tryScopeCreation(
@@ -96,14 +91,13 @@ fun tryScopeCreation(
 fun handleScopeCreateSuccess(
     player: ServerPlayerEntity,
     creationResult: Result.Ok<Region.Companion.GeoScope>,
-    region: () -> Region?
+    region: Region
 ) {
-    val targetRegion = region() ?: return
     val newScope = creationResult.value
-    targetRegion.geometryScope.add(newScope)
+    region.geometryScope.add(newScope)
 
     player.sendMessage(
-        Translator.tr("command.scope.add.success", newScope.scopeName, targetRegion.name)
+        Translator.tr("command.scope.add.success", newScope.scopeName, region.name)
     )
     ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
 }
@@ -150,7 +144,7 @@ private fun validateNameCommon(
             player.sendMessage(Translator.tr("command.create.name_auto_filled", name))
             name
         } else {
-            player.sendMessage(Translator.tr("command.create.name_invalid")) // 原有消息
+            player.sendMessage(Translator.tr("command.create.name_invalid"))
             null
         }
     }

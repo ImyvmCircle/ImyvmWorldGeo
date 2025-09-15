@@ -331,11 +331,11 @@ private fun runAddScope(
         ?.uppercase() ?: return 0
     val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
     val scopeNameArg = getOptionalArgument(context, "scopeName")
-    val scopeName = getScopeNameCheck(player, { region }, scopeNameArg) ?: return 0
+    val scopeName = getScopeNameCheck(player, region, scopeNameArg) ?: return 0
 
     return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
         is Result.Ok -> {
-            handleScopeCreateSuccess(player, creationResult) { region }
+            handleScopeCreateSuccess(player, creationResult, region)
             1
         }
         is Result.Err -> {
