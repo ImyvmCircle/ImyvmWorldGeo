@@ -8,6 +8,7 @@ import com.imyvm.iwg.ModConfig.Companion.MIN_ASPECT_RATIO
 import com.imyvm.iwg.ModConfig.Companion.MIN_EDGE_LENGTH
 import com.imyvm.iwg.domain.CreationError
 import net.minecraft.util.math.BlockPos
+import kotlin.math.abs
 
 fun checkRectangleSize(width: Int, length: Int): CreationError? {
     val area = width * length
@@ -38,6 +39,40 @@ fun checkPolygonSize(positions: List<BlockPos>, area: Double): CreationError? {
         ?: checkBoundingBox(xs, zs)
         ?: checkAspectRatio(xs, zs)
         ?: checkEdges(positions)
+}
+
+fun calculateCircleArea(shapeParameter : MutableList<Int>) : Double {
+    return if (shapeParameter.size < 3) 0.0
+    else {
+        val radius = shapeParameter[2].toDouble()
+        Math.PI * radius * radius
+    }
+}
+
+fun calculateRectangleArea(shapeParameter: MutableList<Int>) : Double {
+    return if (shapeParameter.size < 4) 0.0
+    else {
+        val west = shapeParameter[0].toDouble()
+        val north = shapeParameter[1].toDouble()
+        val east = shapeParameter[2].toDouble()
+        val south = shapeParameter[3].toDouble()
+        (east - west) * (south - north)
+    }
+}
+
+fun caculatePolygonArea(shapeParameter: MutableList<Int>): Double {
+    return if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) 0.0
+    else {
+        val vertices = shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
+        var area = 0.0
+        var j = vertices.size - 1
+        for (i in vertices.indices) {
+            area += (vertices[j].first + vertices[i].first).toDouble() *
+                    (vertices[j].second - vertices[i].second).toDouble()
+            j = i
+        }
+        abs(area / 2.0)
+    }
 }
 
 private fun checkArea(area: Double): CreationError? {
