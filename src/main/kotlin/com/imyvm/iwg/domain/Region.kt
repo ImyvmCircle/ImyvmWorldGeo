@@ -104,7 +104,7 @@ class Region(
                 return when (geoShapeType) {
                     GeoShapeType.CIRCLE -> calculateCircleArea(this.shapeParameter)
                     GeoShapeType.RECTANGLE -> calculateRectangleArea(this.shapeParameter)
-                    GeoShapeType.POLYGON -> caculatePolygonArea(this.shapeParameter)
+                    GeoShapeType.POLYGON -> calculatePolygonArea(this.shapeParameter)
                     else -> 0.0
                 }
             }

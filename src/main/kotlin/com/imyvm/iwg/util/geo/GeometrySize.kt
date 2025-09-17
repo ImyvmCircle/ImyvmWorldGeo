@@ -60,7 +60,7 @@ fun calculateRectangleArea(shapeParameter: MutableList<Int>) : Double {
     }
 }
 
-fun caculatePolygonArea(shapeParameter: MutableList<Int>): Double {
+fun calculatePolygonArea(shapeParameter: MutableList<Int>): Double {
     return if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) 0.0
     else {
         val vertices = shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
