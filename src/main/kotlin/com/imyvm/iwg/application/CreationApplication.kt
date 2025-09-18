@@ -11,7 +11,7 @@ import java.util.*
 
 fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
     val playerUUID = player.uuid
-    if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
+    if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
         player.sendMessage(Translator.tr("command.select.not_in_mode"))
         return false
     }
@@ -44,7 +44,7 @@ fun tryRegionCreation(
     shapeType: Region.Companion.GeoShapeType,
 ): Result<Region, CreationError> {
     val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
     val biggestId = ImyvmWorldGeo.data.getRegionList().maxOfOrNull { it.numberID } ?: -1
     val newID = biggestId + 1
     return RegionFactory.createRegion(
@@ -87,7 +87,7 @@ fun tryScopeCreation(
     scopeName: String,
     shapeType: Region.Companion.GeoShapeType
 ): Result<Region.Companion.GeoScope, CreationError> {
-    val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
     return RegionFactory.createScope(
         scopeName = scopeName,
         selectedPositions = selectedPositions,
@@ -106,7 +106,7 @@ fun handleScopeCreateSuccess(
     player.sendMessage(
         Translator.tr("command.scope.add.success", newScope.scopeName, region.name)
     )
-    ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+    ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
 }
 
 private fun handleRegionCreateSuccessCommon(
@@ -121,7 +121,7 @@ private fun handleRegionCreateSuccessCommon(
     if (notify) {
         player.sendMessage(Translator.tr("command.create.success", newRegion.name))
     }
-    ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+    ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
 }
 
 private fun validateNameCommon(

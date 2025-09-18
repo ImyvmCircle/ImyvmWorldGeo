@@ -6,9 +6,9 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 fun startSelection(player: ServerPlayerEntity): Int {
     val playerUUID = player.uuid
-    return if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] = mutableListOf()
-        ImyvmWorldGeo.logger.info("Player $playerUUID has started selection mode, players in selection mod: ${ImyvmWorldGeo.commandlySelectingPlayers.keys}")
+    return if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+        ImyvmWorldGeo.pointSelectingPlayers[playerUUID] = mutableListOf()
+        ImyvmWorldGeo.logger.info("Player $playerUUID has started selection mode, players in selection mod: ${ImyvmWorldGeo.pointSelectingPlayers.keys}")
         player.sendMessage(Translator.tr("command.select.start"))
         1
     } else {
@@ -19,9 +19,9 @@ fun startSelection(player: ServerPlayerEntity): Int {
 
 fun stopSelection(player: ServerPlayerEntity): Int{
     val playerUUID = player.uuid
-    return if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.commandlySelectingPlayers.remove(playerUUID)
-        ImyvmWorldGeo.logger.info("Player $playerUUID has stopped selection mode, players in selection mod: ${ImyvmWorldGeo.commandlySelectingPlayers.keys}")
+    return if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+        ImyvmWorldGeo.pointSelectingPlayers.remove(playerUUID)
+        ImyvmWorldGeo.logger.info("Player $playerUUID has stopped selection mode, players in selection mod: ${ImyvmWorldGeo.pointSelectingPlayers.keys}")
         player.sendMessage(Translator.tr("command.select.stop"))
         1
     } else {
@@ -32,9 +32,9 @@ fun stopSelection(player: ServerPlayerEntity): Int{
 
 fun resetSelection(player: ServerPlayerEntity): Int {
     val playerUUID = player.uuid
-    return if (ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]?.clear()
-        ImyvmWorldGeo.logger.info("Player $playerUUID has reset their selection, current selected positions: ${ImyvmWorldGeo.commandlySelectingPlayers[playerUUID]}")
+    return if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+        ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.clear()
+        ImyvmWorldGeo.logger.info("Player $playerUUID has reset their selection, current selected positions: ${ImyvmWorldGeo.pointSelectingPlayers[playerUUID]}")
         player.sendMessage(Translator.tr("command.select.reset"))
         1
     } else {

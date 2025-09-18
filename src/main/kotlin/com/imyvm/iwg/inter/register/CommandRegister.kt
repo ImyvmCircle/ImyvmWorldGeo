@@ -425,7 +425,7 @@ private fun runModifyScope(
 
     return if (existingScope != null) {
         val playerUUID = player.uuid
-        if (!ImyvmWorldGeo.commandlySelectingPlayers.containsKey(playerUUID)) {
+        if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
             player.sendMessage(Translator.tr("command.select.not_in_mode"))
             return 0
         }
@@ -436,7 +436,7 @@ private fun runModifyScope(
             return 0
         }
 
-        val selectedPositions = ImyvmWorldGeo.commandlySelectingPlayers[playerUUID] ?: mutableListOf()
+        val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
         if (shapeType == Region.Companion.GeoShapeType.POLYGON) {
             if (selectedPositions.size < 2) {
                 player.sendMessage(Translator.tr("command.scope.modify.polygon_insufficient_points"))

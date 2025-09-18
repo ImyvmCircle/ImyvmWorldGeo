@@ -240,7 +240,7 @@ private fun recreateScope(
                     *extraArgs
                 )
             )
-            ImyvmWorldGeo.commandlySelectingPlayers.remove(player.uuid)
+            ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {
             region.geometryScope.add(existingScope)
