@@ -51,42 +51,9 @@ class Region(
                 val area = "%.2f".format(calculateArea())
 
                 return when (geoShapeType) {
-                    GeoShapeType.CIRCLE -> {
-                        if (shapeParameter.size < 3) {
-                            Translator.tr("geoshape.circle.invalid.info", area)
-                        } else {
-                            Translator.tr(
-                                "geoshape.circle.info",
-                                shapeParameter[0], // centerX
-                                shapeParameter[1], // centerY
-                                shapeParameter[2], // radius
-                                area
-                            )
-                        }
-                    }
-                    GeoShapeType.RECTANGLE -> {
-                        if (shapeParameter.size < 4) {
-                            Translator.tr("geoshape.rectangle.invalid.info", area)
-                        } else {
-                            Translator.tr(
-                                "geoshape.rectangle.info",
-                                shapeParameter[0], // west
-                                shapeParameter[1], // north
-                                shapeParameter[2], // east
-                                shapeParameter[3], // south
-                                area
-                            )
-                        }
-                    }
-                    GeoShapeType.POLYGON -> {
-                        if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
-                            Translator.tr("geoshape.polygon.invalid.info", area)
-                        } else {
-                            val coords = shapeParameter.chunked(2)
-                                .joinToString(", ") { "(${it[0]}, ${it[1]})" }
-                            Translator.tr("geoshape.polygon.info", coords, area)
-                        }
-                    }
+                    GeoShapeType.CIRCLE -> getCircleInfo(area)
+                    GeoShapeType.RECTANGLE -> getRectangleInfo(area)
+                    GeoShapeType.POLYGON -> getPolygonInfo(area)
                     else -> Translator.tr("geoshape.unknown.info", area)
                 }
             }
@@ -107,6 +74,42 @@ class Region(
                     GeoShapeType.POLYGON -> calculatePolygonArea(this.shapeParameter)
                     else -> 0.0
                 }
+            }
+
+            private fun getCircleInfo(area: String): Text? {
+                if (shapeParameter.size < 3) {
+                    return Translator.tr("geoshape.circle.invalid.info", area)
+                }
+                return Translator.tr(
+                    "geoshape.circle.info",
+                    shapeParameter[0], // centerX
+                    shapeParameter[1], // centerY
+                    shapeParameter[2], // radius
+                    area
+                )
+            }
+
+            private fun getRectangleInfo(area: String): Text? {
+                if (shapeParameter.size < 4) {
+                    return Translator.tr("geoshape.rectangle.invalid.info", area)
+                }
+                return Translator.tr(
+                    "geoshape.rectangle.info",
+                    shapeParameter[0], // west
+                    shapeParameter[1], // north
+                    shapeParameter[2], // east
+                    shapeParameter[3], // south
+                    area
+                )
+            }
+
+            private fun getPolygonInfo(area: String): Text? {
+                if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
+                    return Translator.tr("geoshape.polygon.invalid.info", area)
+                }
+                val coords = shapeParameter.chunked(2)
+                    .joinToString(", ") { "(${it[0]}, ${it[1]})" }
+                return Translator.tr("geoshape.polygon.info", coords, area)
             }
         }
 
