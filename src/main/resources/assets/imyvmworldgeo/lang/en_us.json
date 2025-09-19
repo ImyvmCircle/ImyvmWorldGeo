@@ -97,5 +97,9 @@
   "geoshape.polygon.info": "Shape : Polygon | Vertices={0} | Area={1} m²",
   "geoshape.polygon.invalid.info": "Shape : Invalid Polygon | Area={0} m²",
 
-  "geoshape.unknown.info": "Shape : Unknown Shape | Area={0} m²"
+  "geoshape.unknown.info": "Shape : Unknown Shape | Area={0} m²",
+
+
+  "setting.permission.build": "You don't have permission to build in this Region.",
+  "setting.permission.break": "You don't have permission to break in this Region."
 }
