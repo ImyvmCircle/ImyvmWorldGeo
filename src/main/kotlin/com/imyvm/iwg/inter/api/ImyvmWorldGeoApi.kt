@@ -1,6 +1,6 @@
 package com.imyvm.iwg.inter.api
 
-import com.imyvm.iwg.application.*
+import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.inter.register.errorMessage

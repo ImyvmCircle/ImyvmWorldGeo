@@ -1,4 +1,4 @@
-package com.imyvm.iwg.application
+package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region

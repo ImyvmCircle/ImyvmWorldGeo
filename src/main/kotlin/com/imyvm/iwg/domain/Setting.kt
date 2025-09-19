@@ -32,8 +32,7 @@ class RuleSetting(
 interface BaseKey
 
 enum class PermissionKey : BaseKey {
-    BUILD,
-    BREAK,
+    BUILD_BREAK,
     FLY
 }
 

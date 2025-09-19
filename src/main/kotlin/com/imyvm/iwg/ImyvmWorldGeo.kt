@@ -3,6 +3,7 @@ package com.imyvm.iwg
 import com.imyvm.iwg.inter.register.register
 import com.imyvm.iwg.domain.PlayerRegionChecker
 import com.imyvm.iwg.inter.register.registerLocationDisplay
+import com.imyvm.iwg.inter.register.registerRegionPermissionCommands
 import com.imyvm.iwg.util.command.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -27,6 +28,8 @@ class ImyvmWorldGeo : ModInitializer {
 		dataSave()
 
 		registerLocationDisplay()
+
+		registerRegionPermissionCommands()
 
 		logger.info("$MOD_ID initialized successfully.")
 	}

@@ -5,7 +5,7 @@ import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.RegionNotFoundException
-import com.imyvm.iwg.application.*
+import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
