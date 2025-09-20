@@ -9,6 +9,7 @@ import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.arguments.IntegerArgumentType
@@ -86,6 +87,184 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("name", StringArgumentType.string())
                             .then(argument("newName", StringArgumentType.string())
                                 .executes { runRenameRegionByName(it) }
+                            )
+                    )
+            )
+            .then(
+                literal("setting")
+                    .then(
+                        literal("add")
+                            .then(
+                                argument("id", IntegerArgumentType.integer())
+                                    .then(
+                                        argument("settingType", StringArgumentType.string())
+                                            .then(
+                                                argument("key", StringArgumentType.string())
+                                                    .then(
+                                                        argument("value", StringArgumentType.string())
+                                                            .then(
+                                                                argument("isPersonal", BoolArgumentType.bool())
+                                                                    .executes{ runAddSettingToRegionById(it) }
+                                                                    .then(
+                                                                        argument("playerName", StringArgumentType.string())
+                                                                            .executes{ runAddSettingToRegionById(it) }
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                argument("name", StringArgumentType.string())
+                                    .then(
+                                        argument("settingType", StringArgumentType.string())
+                                            .then(
+                                                argument("key", StringArgumentType.string())
+                                                    .then(
+                                                        argument("value", StringArgumentType.string())
+                                                            .then(
+                                                                argument("isPersonal", BoolArgumentType.bool())
+                                                                    .executes{ runAddSettingToRegionById(it) }
+                                                                    .then(
+                                                                        argument("playerName", StringArgumentType.string())
+                                                                            .executes{ runAddSettingToRegionById(it) }
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("remove")
+                            .then(
+                                argument("id", IntegerArgumentType.integer())
+                                    .then(
+                                        argument("settingType", StringArgumentType.word())
+                                            .then(
+                                                argument("key", StringArgumentType.word())
+                                                    .then(
+                                                        argument("isPersonal", BoolArgumentType.bool())
+                                                            .executes{ runDeleteSettingToRegionById(it) }
+                                                            .then(
+                                                                argument("playerName", StringArgumentType.string())
+                                                                    .executes{ runDeleteSettingToRegionById(it) }
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                argument("name", StringArgumentType.string())
+                                    .then(
+                                        argument("settingType", StringArgumentType.word())
+                                            .then(
+                                                argument("key", StringArgumentType.word())
+                                                    .then(
+                                                        argument("isPersonal", BoolArgumentType.bool())
+                                                            .executes{ runDeleteSettingToRegionById(it) }
+                                                            .then(
+                                                                argument("playerName", StringArgumentType.string())
+                                                                    .executes{ runDeleteSettingToRegionById(it) }
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+            )
+            .then(
+                literal("settingscope")
+                    .then(
+                        literal("add")
+                            .then(
+                                argument("id", IntegerArgumentType.integer())
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .then(
+                                                argument("settingType", StringArgumentType.string())
+                                                    .then(
+                                                        argument("key", StringArgumentType.string())
+                                                            .then(
+                                                                argument("value", StringArgumentType.string())
+                                                                    .then(
+                                                                        argument("isPersonal", BoolArgumentType.bool())
+                                                                            .executes{ runAddSettingToRegionById(it) }
+                                                                            .then(
+                                                                                argument("playerName", StringArgumentType.string())
+                                                                                    .executes{ runAddSettingToRegionById(it) }
+                                                                            )
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                argument("name", StringArgumentType.string())
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .then(
+                                                argument("settingType", StringArgumentType.string())
+                                                    .then(
+                                                        argument("key", StringArgumentType.string())
+                                                            .then(
+                                                                argument("value", StringArgumentType.string())
+                                                                    .then(
+                                                                        argument("isPersonal", BoolArgumentType.bool())
+                                                                            .executes{ runAddSettingToRegionById(it) }
+                                                                            .then(
+                                                                                argument("playerName", StringArgumentType.string())
+                                                                                    .executes{ runAddSettingToRegionById(it) }
+                                                                            )
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("remove")
+                            .then(
+                                argument("id", IntegerArgumentType.integer())
+                                    .then(
+                                        argument("scopeName", StringArgumentType.word())
+                                            .then(
+                                                argument("settingType", StringArgumentType.word())
+                                                    .then(
+                                                        argument("key", StringArgumentType.word())
+                                                            .then(
+                                                                argument("isPersonal", BoolArgumentType.bool())
+                                                                    .executes{ runDeleteSettingToRegionById(it) }
+                                                                    .then(
+                                                                        argument("playerName", StringArgumentType.string())
+                                                                            .executes{ runDeleteSettingToRegionById(it) }
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                argument("name", StringArgumentType.string())
+                                    .then(
+                                        argument("scopeName", StringArgumentType.word())
+                                            .then(
+                                                argument("settingType", StringArgumentType.word())
+                                                    .then(
+                                                        argument("key", StringArgumentType.word())
+                                                            .then(
+                                                                argument("isPersonal", BoolArgumentType.bool())
+                                                                    .executes{ runDeleteSettingToRegionById(it) }
+                                                                    .then(
+                                                                        argument("playerName", StringArgumentType.string())
+                                                                            .executes{ runDeleteSettingToRegionById(it) }
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
                             )
                     )
             )
@@ -521,6 +700,14 @@ private fun runRenameScope(
     existingScope.scopeName = newName
     player.sendMessage(Translator.tr("command.scope.rename.success", scopeName, newName, targetRegion.name))
     return 1
+}
+
+private fun runAddSettingToRegionById(context: CommandContext<ServerCommandSource>): Int {
+    TODO()
+}
+
+private fun runDeleteSettingToRegionById(context: CommandContext<ServerCommandSource>): Int {
+    TODO()
 }
 
 private fun runQueryRegionById(context: CommandContext<ServerCommandSource>): Int {

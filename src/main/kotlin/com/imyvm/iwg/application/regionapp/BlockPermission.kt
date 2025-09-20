@@ -12,7 +12,7 @@ fun registerPlayerBuildBreakPermission(){
 }
 
 private fun playerBuildPermission(){
-    UseBlockCallback.EVENT.register { player, world, _, hitResult ->
+    UseBlockCallback.EVENT.register { player, _, _, hitResult ->
         val pos = hitResult.blockPos
         if (!playerCanBuildOrBreak(player, pos)) {
             player.sendMessage(Translator.tr("setting.permission.build"))
@@ -23,7 +23,7 @@ private fun playerBuildPermission(){
 }
 
 private fun playerBreakPermission(){
-    PlayerBlockBreakEvents.BEFORE.register { world, player, pos, _, _ ->
+    PlayerBlockBreakEvents.BEFORE.register { _, player, pos, _, _ ->
         if (!playerCanBuildOrBreak(player, pos)) {
             player.sendMessage(Translator.tr("setting.permission.break"))
             return@register false
