@@ -30,6 +30,11 @@ private val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSour
     CompletableFuture.completedFuture(builder.build())
 }
 
+//TODO("MERGE_REGION_IDENTIFIER")
+//TODO("PROVIDER_REGION_IDENTIFIER")
+//TODO("PROVIDER_SCOPE_IDENTIFIER")
+//TODO("PROVIDER_PLAYER_LIST_ONLINE")
+//TODO("PROVIDER_SETTING_KEY")
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
     dispatcher.register(
         literal("imyvm-world-geo")
@@ -67,26 +72,16 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             .then(
                 literal("delete")
                     .then(
-                        argument("id", IntegerArgumentType.integer())
-                            .executes { runDeleteRegionsById(it) }
-                    )
-                    .then(
-                        argument("name", StringArgumentType.string())
-                            .executes { runDeleteRegionsByName(it) }
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .executes { runDeleteRegion(it) }
                     )
             )
             .then(
                 literal("rename")
                     .then(
-                        argument("id", IntegerArgumentType.integer())
+                        argument("regionIdentifier", StringArgumentType.string())
                             .then(argument("newName", StringArgumentType.string())
-                                .executes { runRenameRegionById(it) }
-                            )
-                    )
-                    .then(
-                        argument("name", StringArgumentType.string())
-                            .then(argument("newName", StringArgumentType.string())
-                                .executes { runRenameRegionByName(it) }
+                                .executes { runRenameRegion(it) }
                             )
                     )
             )
@@ -395,37 +390,35 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     }
 }
 
-private fun runDeleteRegionsById(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     return try {
-        val regionToDelete = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        ImyvmWorldGeo.data.removeRegion(regionToDelete)
-        player.sendMessage(Translator.tr("command.delete.success.id", regionId))
+     if (regionIdentifier.matches("\\d+".toRegex())) {
+            val regionId = regionIdentifier.toInt()
+            val regionToDelete = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+            ImyvmWorldGeo.data.removeRegion(regionToDelete)
+            player.sendMessage(Translator.tr("command.delete.success.id", regionId))
+        } else {
+            val regionToDelete = ImyvmWorldGeo.data.getRegionByName(regionIdentifier)
+            ImyvmWorldGeo.data.removeRegion(regionToDelete)
+            player.sendMessage(Translator.tr("command.delete.success.name", regionToDelete.name))
+        }
         1
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId))
-        0
+     }
+        catch (e: RegionNotFoundException) {
+            if (regionIdentifier.matches("\\d+".toRegex())) {
+                player.sendMessage(Translator.tr("command.not_found_id", regionIdentifier))
+            } else {
+                player.sendMessage(Translator.tr("command.not_found_name", regionIdentifier))
+            }
+            0
     }
 }
 
-private fun runDeleteRegionsByName(context: CommandContext<ServerCommandSource>): Int {
+private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
-    return try {
-        val regionToDelete = ImyvmWorldGeo.data.getRegionByName(regionName)
-        ImyvmWorldGeo.data.removeRegion(regionToDelete)
-        player.sendMessage(Translator.tr("command.delete.success.name", regionToDelete.name))
-        1
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
-}
-
-private fun runRenameRegionById(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
 
     if (newName.matches("\\d+".toRegex())) {
@@ -434,42 +427,20 @@ private fun runRenameRegionById(context: CommandContext<ServerCommandSource>): I
     }
 
     return try {
-        val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        return runRenameRegionAndSendFeedback(player, region, newName)
+        if (regionIdentifier.matches("\\d+".toRegex())) {
+            val regionId = regionIdentifier.toInt()
+            val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+            return renameRegion(player, region, newName)
+        } else {
+            val region = ImyvmWorldGeo.data.getRegionByName(regionIdentifier)
+            return renameRegion(player, region, newName)
+        }
     } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
-        0
-    }
-}
-
-private fun runRenameRegionByName(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
-    val newName = context.getArgument("newName", String::class.java)
-
-    return try {
-        val region = ImyvmWorldGeo.data.getRegionByName(regionName)
-        return runRenameRegionAndSendFeedback(player, region, newName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
-}
-
-private fun runRenameRegionAndSendFeedback(player: ServerPlayerEntity, region: Region, newName: String): Int {
-    val oldName = region.name
-
-    if (oldName == newName) {
-        player.sendMessage(Translator.tr("command.rename.repeated_same_name"))
-        return 0
-    }
-
-    return try {
-        ImyvmWorldGeo.data.renameRegion(region, newName)
-        player.sendMessage(Translator.tr("command.rename.success", oldName, newName))
-        1
-    } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr("command.rename.duplicate_name", newName))
+        if (regionIdentifier.matches("\\d+".toRegex())) {
+            player.sendMessage(Translator.tr("command.not_found_id", regionIdentifier))
+        } else {
+            player.sendMessage(Translator.tr("command.not_found_name", regionIdentifier))
+        }
         0
     }
 }
@@ -565,6 +536,14 @@ private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName
         player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, region.name))
         0
     }
+}
+
+private fun runAddSettingToRegionById(context: CommandContext<ServerCommandSource>): Int {
+    TODO()
+}
+
+private fun runDeleteSettingToRegionById(context: CommandContext<ServerCommandSource>): Int {
+    TODO()
 }
 
 private fun runModifyScopeById(context: CommandContext<ServerCommandSource>): Int{
@@ -700,14 +679,6 @@ private fun runRenameScope(
     existingScope.scopeName = newName
     player.sendMessage(Translator.tr("command.scope.rename.success", scopeName, newName, targetRegion.name))
     return 1
-}
-
-private fun runAddSettingToRegionById(context: CommandContext<ServerCommandSource>): Int {
-    TODO()
-}
-
-private fun runDeleteSettingToRegionById(context: CommandContext<ServerCommandSource>): Int {
-    TODO()
 }
 
 private fun runQueryRegionById(context: CommandContext<ServerCommandSource>): Int {
