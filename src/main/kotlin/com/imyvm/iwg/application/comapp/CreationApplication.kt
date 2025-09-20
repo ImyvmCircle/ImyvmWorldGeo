@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.util.ui.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionFactory
 import com.imyvm.iwg.domain.Result

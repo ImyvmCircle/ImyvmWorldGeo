@@ -6,7 +6,7 @@ import com.imyvm.iwg.ModConfig.Companion.MIN_SIDE_LENGTH
 import com.imyvm.iwg.ModConfig.Companion.MIN_POLYGON_SPAN
 import com.imyvm.iwg.ModConfig.Companion.MIN_ASPECT_RATIO
 import com.imyvm.iwg.ModConfig.Companion.MIN_EDGE_LENGTH
-import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.util.ui.CreationError
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 
