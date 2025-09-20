@@ -6,8 +6,23 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionFactory
 import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.util.ui.Translator
+import com.imyvm.iwg.util.ui.errorMessage
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
+
+fun regionCreationScheduler(player: ServerPlayerEntity, regionName: String, shapeType: Region.Companion.GeoShapeType): Int {
+    return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
+        is Result.Ok -> {
+            handleRegionCreateSuccessInternally(player, creationResult)
+            1
+        }
+        is Result.Err -> {
+            val errorMsg = errorMessage(creationResult.error, shapeType)
+            player.sendMessage(errorMsg)
+            0
+        }
+    }
+}
 
 fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
     val playerUUID = player.uuid
