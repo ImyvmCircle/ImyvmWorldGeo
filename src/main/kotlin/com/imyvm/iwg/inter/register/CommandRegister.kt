@@ -2,7 +2,6 @@ package com.imyvm.iwg.inter.register
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.util.command.identifierHandler
 import com.imyvm.iwg.util.ui.Translator
@@ -15,7 +14,6 @@ import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
@@ -26,7 +24,6 @@ private val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSour
     CompletableFuture.completedFuture(builder.build())
 }
 
-//TODO("MERGE_REGION_IDENTIFIER")
 //TODO("PROVIDER_REGION_IDENTIFIER")
 //TODO("PROVIDER_SCOPE_IDENTIFIER")
 //TODO("PROVIDER_PLAYER_LIST_ONLINE")
@@ -34,10 +31,6 @@ private val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSour
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
     dispatcher.register(
         literal("imyvm-world-geo")
-            .then(
-                literal("help")
-                    .executes { runHelp(it) }
-            )
             .then(
                 literal("select")
                     .then(
@@ -231,15 +224,13 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             )
             .then(
                 literal("toggle")
-                    .executes{ runChangeDisplayMode(it) }
+                    .executes{ runToggleActionBar(it) }
+            )
+            .then(
+                literal("help")
+                    .executes { runHelp(it) }
             )
     )
-}
-
-fun runHelp(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    player.sendMessage(Translator.tr("command.help"))
-    return 1
 }
 
 private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
@@ -328,41 +319,17 @@ private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
     return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery) }
 }
 
-private fun onQueryRegion(player: ServerPlayerEntity, region: Region) {
-    player.sendMessage(
-        Translator.tr("command.query.result",
-        region.name,
-        region.numberID.toString(),
-        region.calculateTotalArea())
-    )
-
-    val shapeInfos = region.getScopeInfos()
-    shapeInfos.forEach { info ->
-        player.sendMessage(info)
-    }
-}
-
 private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regions = ImyvmWorldGeo.data.getRegionList()
-    if (regions.isEmpty()) {
-        player.sendMessage(Translator.tr("command.list.empty"))
-        return 0
-    }
-    val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}" }
-    player.sendMessage(Translator.tr("command.list.header", regionList))
-    return 1
+    return onListRegions(player)
 }
 
-private fun runChangeDisplayMode(context: CommandContext<ServerCommandSource>): Int {
+private fun runToggleActionBar(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    if (ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)) {
-        ImyvmWorldGeo.locationActionBarEnabledPlayers.remove(player.uuid)
-        player.sendMessage(Translator.tr("command.toggle.disabled"))
-    } else {
-        ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
-        player.sendMessage(Translator.tr("command.toggle.enabled"))
-    }
+    return onToggleActionBar(player)
+}
 
-    return 1
+fun runHelp(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    return onHelp(player)
 }
