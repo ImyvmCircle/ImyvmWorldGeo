@@ -336,6 +336,11 @@ private fun runDeleteScopeByName(context: CommandContext<ServerCommandSource>): 
 }
 
 private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName: String): Int {
+    if (region.geometryScope.size < 2) {
+        player.sendMessage(Translator.tr("command.scope.delete.error.last_scope"))
+        return 0
+    }
+
     val existingScope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
 
     return if (existingScope != null) {
