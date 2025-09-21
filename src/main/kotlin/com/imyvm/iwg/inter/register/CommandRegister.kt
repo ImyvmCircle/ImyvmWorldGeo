@@ -31,8 +31,27 @@ private val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSo
     builder.buildFuture()
 }
 
-//TODO("PROVIDER_SCOPE_IDENTIFIER")
-//TODO("PROVIDER_PLAYER_LIST_ONLINE")
+val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+    val regionIdentifier = StringArgumentType.getString(context, "regionIdentifier")
+    getScopesForRegion(regionIdentifier).forEach { builder.suggest(it) }
+    builder.buildFuture()
+}
+
+val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+    val source = context.source
+    source.server.playerManager.playerList.forEach { player ->
+        builder.suggest(player.name.string)
+    }
+    builder.buildFuture()
+}
+
+fun getScopesForRegion(identifier: String): List<String> {
+    val region = ImyvmWorldGeo.data.getRegionList().find {
+        it.name.equals(identifier, ignoreCase = true) || it.numberID.toString() == identifier
+    }
+    return region?.geometryScope?.map { it.scopeName } ?: emptyList()
+}
+
 //TODO("PROVIDER_SETTING_KEY")
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
     dispatcher.register(
@@ -105,6 +124,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .then(
                                 argument("scopeName", StringArgumentType.string())
+                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                     .executes { runDeleteScope(it) }
                             )
                     )
@@ -116,6 +136,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .then(
                                 argument("scopeName", StringArgumentType.string())
+                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                     .executes { runModifyScope(it) }
                                     .then(
                                         argument("newName", StringArgumentType.string())
@@ -142,6 +163,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                                     .executes{ runAddSettingRegion(it) }
                                                                     .then(
                                                                         argument("playerName", StringArgumentType.string())
+                                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
                                                                             .executes{ runAddSettingRegion(it) }
                                                                     )
                                                             )
@@ -164,6 +186,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                             .executes{ runDeleteSettingRegion(it) }
                                                             .then(
                                                                 argument("playerName", StringArgumentType.string())
+                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
                                                                     .executes{ runDeleteSettingRegion(it) }
                                                             )
                                                     )
@@ -181,6 +204,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("settingType", StringArgumentType.string())
                                                     .then(
@@ -192,6 +216,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                                             .executes{ runAddSettingScope(it) }
                                                                             .then(
                                                                                 argument("playerName", StringArgumentType.string())
+                                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
                                                                                     .executes{ runAddSettingScope(it) }
                                                                             )
                                                                     )
@@ -208,6 +233,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.word())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("settingType", StringArgumentType.word())
                                                     .then(
@@ -217,6 +243,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                                     .executes{ runDeleteSettingScope(it) }
                                                                     .then(
                                                                         argument("playerName", StringArgumentType.string())
+                                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
                                                                             .executes{ runDeleteSettingScope(it) }
                                                                     )
                                                             )
