@@ -1,8 +1,6 @@
 package com.imyvm.iwg.util.ui
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
-import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text
 import net.minecraft.util.Formatting

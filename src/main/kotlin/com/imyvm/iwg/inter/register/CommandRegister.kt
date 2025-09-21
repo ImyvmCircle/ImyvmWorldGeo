@@ -2,6 +2,7 @@ package com.imyvm.iwg.inter.register
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.comapp.*
+import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.command.getPlayerRegionPair
 import com.imyvm.iwg.util.command.identifierHandler
 import com.mojang.brigadier.CommandDispatcher
@@ -268,7 +269,9 @@ private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(context, regionToAddScope)}
+    val scopeNameArg = getOptionalArgument(context, "scopeName") ?: return 0
+    val shapeTypeName = getOptionalArgument(context, "shapeType")?.uppercase() ?: return 0
+    return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, shapeTypeName)}
 }
 
 private fun runDeleteScope(context: CommandContext<ServerCommandSource>): Int {

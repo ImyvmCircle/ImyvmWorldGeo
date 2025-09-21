@@ -5,11 +5,8 @@ import com.imyvm.iwg.util.ui.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionFactory
 import com.imyvm.iwg.domain.Result
-import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.ui.Translator
 import com.imyvm.iwg.util.ui.errorMessage
-import com.mojang.brigadier.context.CommandContext
-import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
@@ -28,17 +25,14 @@ fun onRegionCreation(player: ServerPlayerEntity, regionName: String, shapeType: 
 }
 
 fun onScopeCreation(
-    context: CommandContext<ServerCommandSource>,
-    region: Region
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeNameArg: String,
+    shapeTypeName: String
 ): Int {
-    val player = context.source.player ?: return 0
     val playerUUID = player.uuid
     if (!selectionModeCheck(player)) return 0
-
-    val shapeTypeName = getOptionalArgument(context, "shapeType")
-        ?.uppercase() ?: return 0
     val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
-    val scopeNameArg = getOptionalArgument(context, "scopeName")
     val scopeName = getScopeNameCheck(player, region, scopeNameArg) ?: return 0
 
     return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
