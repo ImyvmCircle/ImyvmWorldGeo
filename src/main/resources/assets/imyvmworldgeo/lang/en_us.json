@@ -1,8 +1,8 @@
 {
   "api.query.result": "Region: {0} (ID: {1}), total area: {2} m²\n",
 
-  "command.not_found_id": "Error: Region with ID '{0}' not found.",
-  "command.not_found_name": "Error: Region with name '{0}' not found.",
+  "command.not_found_id": "Error: Region with ID {0} not found.",
+  "command.not_found_name": "Error: Region with name {0} not found.",
 
   "command.help": "Imyvm World Geo Commands:\n/imyvm-world-geo help - Show this help message.\n/imyvm-world-geo select start - Start selecting positions with a golden hoe.\n/imyvm-world-geo select stop - Stop selection mode.\n/imyvm-world-geo select reset - Clear all selected points but keep selection mode active.\n/imyvm-world-geo create rectangle - Create a rectangular region from selected positions.\n/imyvm-world-geo create circle - Create a circular region from selected positions.\n/imyvm-world-geo create polygon - Create a polygonal region from selected positions.\n/imyvm-world-geo delete id <id> - Delete a region by its ID.\n/imyvm-world-geo delete name <name> - Delete a region by its name.\n/imyvm-world-geo list - List all regions.",
 
@@ -12,25 +12,25 @@
   "command.select.not_in_mode": "You are not in selection mode. Use /imyvm-world-geo select start first.",
   "command.select.reset": "Your selection points have been reset. You are still in selection mode.",
 
-  "command.create.success": "Region '{0}' created successfully!",
+  "command.create.success": "Region {0} created successfully!",
   "command.create.name_is_digits_only": "Region/scope name cannot be digits only.",
-  "command.create.name_auto_filled": "Region/scope name not provided. Auto-filled with '{0}'.",
+  "command.create.name_auto_filled": "Region/scope name not provided. Auto-filled with {0}.",
   "command.create.name.invalid": "Region/scope name invalid.",
 
-  "command.delete.success": "Region ‘{0}' with id {1} deleted successfully!",
+  "command.delete.success": "Region {0} with id {1} deleted successfully!",
 
-  "command.rename.success": "Successfully renamed region ID '{0}' to '{1}'.",
+  "command.rename.success": "Successfully renamed region ID {0} to {1}.",
   "command.rename.repeated_same_name": "New name is the same as the current name.",
-  "command.rename.duplicate_name": "New name '{0}' is already in use by another region.",
+  "command.rename.duplicate_name": "New name {0} is already in use by another region.",
 
-  "command.scope.scope_not_found": "Scope '{0}' not found in region '{1}'.",
+  "command.scope.scope_not_found": "Scope {0} not found in region {1}.",
 
   "command.scope.add.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
   "command.scope.add.not_found_generic": "Could not find the specified region.",
   "command.scope.add.duplicate_scope_name": "The region already has a scope with the same name given by command.",
-  "command.scope.add.success": "Successfully added a new scope '{0}' to region '{1}.",
+  "command.scope.add.success": "Successfully added a new scope {0} to region {1}.",
 
-  "command.scope.delete.success": "Successfully deleted scope '{0}' from region '{1}'.",
+  "command.scope.delete.success": "Successfully deleted scope {0} from region {1}.",
 
   "command.scope.modify.invalid_polygon": "Invalid polygon parameters: at least three points (6 coordinates) required, must be paired",
   "command.scope.modify.polygon_duplicate_points": "The two selected points are identical, please select different points",
@@ -41,20 +41,20 @@
   "command.scope.modify.unknown_shape_type": "Scope {0} has unknown shape type, cannot modify",
   "command.scope.modify.polygon_points_not_found": "One or both of the specified points were not found in the current polygon.",
   "command.scope.modify.polygon_points_not_adjacent": "The two selected points are not adjacent vertices of the polygon.",
-  "command.scope.modify.polygon_insert_success": "Successfully inserted a new point into scope \"{0}\" of region \"{1}\".",
+  "command.scope.modify.polygon_insert_success": "Successfully inserted a new point into scope {0} of region {1}.",
 
   "command.scope.modify.circle_radius.invalid_circle": "The selected scope is not a valid circle. Please check the parameters.",
   "command.scope.modify.circle_radius.nonpositive": "The new radius must be greater than 0.",
-  "command.scope.modify.circle_radius.success": "Successfully modified the radius of scope \"{0}\" in region \"{1}\" from {2} to {3}.",
+  "command.scope.modify.circle_radius.success": "Successfully modified the radius of scope {0} in region {1} from {2} to {3}.",
   "command.scope.modify.circle_center.invalid_circle": "The selected scope is not a valid circle. Please check the parameters.",
-  "command.scope.modify.circle_center.success": "Successfully moved the circle center of scope \"{0}\" in region \"{1}\" from ({2}) to ({3}) with radius {4}.",
+  "command.scope.modify.circle_center.success": "Successfully moved the circle center of scope {0} in region {1} from ({2}) to ({3}) with radius {4}.",
 
   "command.scope.modify.rectangle.invalid_rectangle": "The selected scope is not a valid rectangle.",
-  "command.scope.modify.rectangle.success": "Successfully updated rectangle scope \"{0}\" in region \"{1}\". New coordinates: west={2}, north={3}, east={4}, south={5}.",
+  "command.scope.modify.rectangle.success": "Successfully updated rectangle scope {0} in region {1}. New coordinates: west={2}, north={3}, east={4}, south={5}.",
 
   "command.scope.rename.repeated_same_name": "The new name is the same as the old name. Please choose a different name.",
-  "command.scope.rename.duplicate_scope_name": "A scope with the name '{0}' already exists in region '{1}'.",
-  "command.scope.rename.success": "Successfully renamed scope '{0}' to '{1}' in region '{2}'.",
+  "command.scope.rename.duplicate_scope_name": "A scope with the name {0} already exists in region {1}.",
+  "command.scope.rename.success": "Successfully renamed scope {0} to {1} in region {2}.",
 
   "command.query.result": "&5Query successful! Showing information for Region: \n{0} (ID: {1}), total area: {2} m²\n",
 
@@ -98,7 +98,6 @@
 
   "geoshape.unknown.info": "Shape : Unknown Shape | Area={0} m²",
 
-
-  "setting.permission.build": "You don't have permission to build in this Region.",
-  "setting.permission.break": "You don't have permission to break in this Region."
+  "setting.permission.build": "You dont have permission to build in this Region.",
+  "setting.permission.break": "You dont have permission to break in this Region."
 }
