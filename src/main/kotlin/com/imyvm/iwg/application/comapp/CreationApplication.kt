@@ -185,7 +185,6 @@ private fun handleRegionCreateSuccessCommon(
 ) {
     val newRegion = creationResult.value
     ImyvmWorldGeo.data.addRegion(newRegion)
-    ImyvmWorldGeo.logger.info("Created new region '${newRegion.name}' with positions: ${newRegion.geometryScope}")
 
     if (notify) {
         player.sendMessage(Translator.tr("command.create.success", newRegion.name))

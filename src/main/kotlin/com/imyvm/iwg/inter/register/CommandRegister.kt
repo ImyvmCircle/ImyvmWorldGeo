@@ -4,6 +4,7 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.application.comapp.*
+import com.imyvm.iwg.util.command.identifierHandler
 import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.BoolArgumentType
@@ -290,7 +291,7 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
-    return regionDeleteScheduler(player, regionIdentifier)
+    return identifierHandler(regionIdentifier, player) { regionToDelete -> onRegionDelete(player, regionToDelete) }
 }
 
 private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {

@@ -7,11 +7,6 @@ import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun regionRenameScheduler(player: ServerPlayerEntity, regionIdentifier: String, newName: String): Int {
-    if (newName.matches("\\d+".toRegex())) {
-        player.sendMessage(Translator.tr("command.rename.name_is_digits_only"))
-        return 0
-    }
-
     return try {
         if (regionIdentifier.matches("\\d+".toRegex())) {
             val regionId = regionIdentifier.toInt()
@@ -32,8 +27,12 @@ fun regionRenameScheduler(player: ServerPlayerEntity, regionIdentifier: String, 
 }
 
 fun renameRegionCore(player: ServerPlayerEntity, region: Region, newName: String): Int {
-    val oldName = region.name
+    if (newName.matches("\\d+".toRegex())) {
+        player.sendMessage(Translator.tr("command.rename.name_is_digits_only"))
+        return 0
+    }
 
+    val oldName = region.name
     if (oldName == newName) {
         player.sendMessage(Translator.tr("command.rename.repeated_same_name"))
         return 0

@@ -17,8 +17,7 @@
   "command.create.name_auto_filled": "Region/scope name not provided. Auto-filled with '{0}'.",
   "command.create.name.invalid": "Region/scope name invalid.",
 
-  "command.delete.success.name": "Region '{0}' deleted successfully!",
-  "command.delete.success.id": "Region with ID '{0}' deleted successfully!",
+  "command.delete.success": "Region ‘{0}' with id {1} deleted successfully!",
 
   "command.rename.success": "Successfully renamed region ID '{0}' to '{1}'.",
   "command.rename.repeated_same_name": "New name is the same as the current name.",
