@@ -1,13 +1,10 @@
 package com.imyvm.iwg.inter.register
 
-import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.application.comapp.*
-import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.ui.Translator
-import com.imyvm.iwg.util.ui.errorMessage
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
@@ -90,19 +87,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
                             .then(
-                                argument("id", IntegerArgumentType.integer())
-                                    .executes { runAddScopeById(it) }
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .executes { runAddScope(it) }
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
-                                            .executes { runAddScopeById(it) }
-                                    )
-                            )
-                            .then(
-                                argument("name", StringArgumentType.string())
-                                    .executes { runAddScopeByName(it) }
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .executes { runAddScopeByName(it) }
+                                            .executes { runAddScope(it) }
                                     )
                             )
                     )
@@ -311,55 +300,10 @@ private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
     return regionRenameScheduler(player, regionIdentifier, newName)
 }
 
-private fun runAddScopeById(context: CommandContext<ServerCommandSource>): Int {
+private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
-    return try {
-        val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        runAddScope(context, region)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
-        0
-    }
-}
-
-private fun runAddScopeByName(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
-    return try {
-        val region = ImyvmWorldGeo.data.getRegionByName(regionName)
-        runAddScope(context, region)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
-}
-
-private fun runAddScope(
-    context: CommandContext<ServerCommandSource>,
-    region: Region
-): Int {
-    val player = context.source.player ?: return 0
-    val playerUUID = player.uuid
-    if (!selectionModeCheck(player)) return 0
-
-    val shapeTypeName = getOptionalArgument(context, "shapeType")
-        ?.uppercase() ?: return 0
-    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
-    val scopeNameArg = getOptionalArgument(context, "scopeName")
-    val scopeName = getScopeNameCheck(player, region, scopeNameArg) ?: return 0
-
-    return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
-        is Result.Ok -> {
-            handleScopeCreateSuccess(player, creationResult, region)
-            1
-        }
-        is Result.Err -> {
-            val errorMsg = errorMessage(creationResult.error, shapeType)
-            player.sendMessage(errorMsg)
-            0
-        }
-    }
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    return scopeAddScheduler(context, regionIdentifier, player)
 }
 
 private fun runDeleteScopeById(context: CommandContext<ServerCommandSource>): Int {

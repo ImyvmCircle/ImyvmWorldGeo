@@ -1,12 +1,16 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.util.ui.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionFactory
 import com.imyvm.iwg.domain.Result
+import com.imyvm.iwg.util.command.getOptionalArgument
 import com.imyvm.iwg.util.ui.Translator
 import com.imyvm.iwg.util.ui.errorMessage
+import com.mojang.brigadier.context.CommandContext
+import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
@@ -14,6 +18,56 @@ fun regionCreationScheduler(player: ServerPlayerEntity, regionName: String, shap
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
             handleRegionCreateSuccessInternally(player, creationResult)
+            1
+        }
+        is Result.Err -> {
+            val errorMsg = errorMessage(creationResult.error, shapeType)
+            player.sendMessage(errorMsg)
+            0
+        }
+    }
+}
+
+fun scopeAddScheduler(context: CommandContext<ServerCommandSource>, regionIdentifier: String, player: ServerPlayerEntity): Int {
+    return try {
+        if (regionIdentifier.matches("\\d+".toRegex())) {
+            val regionId = regionIdentifier.toInt()
+            val regionToAddScope = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+            scopeCreationScheduler(context, regionToAddScope)
+            1
+        } else {
+            val regionToAddScope = ImyvmWorldGeo.data.getRegionByName(regionIdentifier)
+            scopeCreationScheduler(context, regionToAddScope)
+            1
+        }
+    }
+    catch (e: RegionNotFoundException) {
+        if (regionIdentifier.matches("\\d+".toRegex())) {
+            player.sendMessage(Translator.tr("command.not_found_id", regionIdentifier))
+        } else {
+            player.sendMessage(Translator.tr("command.not_found_name", regionIdentifier))
+        }
+        0
+    }
+}
+
+fun scopeCreationScheduler(
+    context: CommandContext<ServerCommandSource>,
+    region: Region
+): Int {
+    val player = context.source.player ?: return 0
+    val playerUUID = player.uuid
+    if (!selectionModeCheck(player)) return 0
+
+    val shapeTypeName = getOptionalArgument(context, "shapeType")
+        ?.uppercase() ?: return 0
+    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
+    val scopeNameArg = getOptionalArgument(context, "scopeName")
+    val scopeName = getScopeNameCheck(player, region, scopeNameArg) ?: return 0
+
+    return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
+        is Result.Ok -> {
+            handleScopeCreateSuccess(player, creationResult, region)
             1
         }
         is Result.Err -> {
