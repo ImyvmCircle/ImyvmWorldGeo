@@ -4,7 +4,6 @@ import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.Result
 import com.imyvm.iwg.util.ui.errorMessage
-import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 @Suppress("unused")

@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.register
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.util.command.getOptionalArgument
@@ -24,7 +25,12 @@ private val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSour
     CompletableFuture.completedFuture(builder.build())
 }
 
-//TODO("PROVIDER_REGION_IDENTIFIER")
+private val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { _, builder ->
+    val regionNames = ImyvmWorldGeo.data.getRegionList().map { it.name }
+    regionNames.forEach { builder.suggest(it) }
+    builder.buildFuture()
+}
+
 //TODO("PROVIDER_SCOPE_IDENTIFIER")
 //TODO("PROVIDER_PLAYER_LIST_ONLINE")
 //TODO("PROVIDER_SETTING_KEY")
@@ -62,6 +68,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("delete")
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .executes { runDeleteRegion(it) }
                     )
             )
@@ -69,6 +76,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("rename")
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .then(argument("newName", StringArgumentType.string())
                                 .executes { runRenameRegion(it) }
                             )
@@ -81,6 +89,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .executes { runAddScope(it) }
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
@@ -93,6 +102,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("deletescope")
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .then(
                                 argument("scopeName", StringArgumentType.string())
                                     .executes { runDeleteScope(it) }
@@ -103,6 +113,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("modifyscope")
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .then(
                                 argument("scopeName", StringArgumentType.string())
                                     .executes { runModifyScope(it) }
@@ -119,6 +130,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         literal("add")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("settingType", StringArgumentType.string())
                                             .then(
@@ -142,6 +154,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         literal("remove")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("settingType", StringArgumentType.word())
                                             .then(
@@ -165,6 +178,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         literal("add")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .then(
@@ -191,6 +205,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                         literal("remove")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.word())
                                             .then(
@@ -215,6 +230,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                 literal("query")
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .executes{ runQueryRegion(it) }
                     )
             )
