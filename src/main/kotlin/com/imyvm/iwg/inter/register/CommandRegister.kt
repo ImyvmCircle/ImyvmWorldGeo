@@ -10,7 +10,6 @@ import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
-import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
@@ -100,41 +99,23 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             .then(
                 literal("deletescope")
                     .then(
-                        argument("id", IntegerArgumentType.integer())
+                        argument("regionIdentifier", StringArgumentType.string())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { runDeleteScopeById(it) }
-                            )
-                    )
-                    .then(
-                        argument("name", StringArgumentType.string())
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .executes { runDeleteScopeByName(it) }
+                                    .executes { runDeleteScope(it) }
                             )
                     )
             )
             .then(
                 literal("modifyscope")
                     .then(
-                        argument("id", IntegerArgumentType.integer())
+                        argument("regionIdentifier", StringArgumentType.string())
                             .then(
                                 argument("scopeName", StringArgumentType.string())
-                                    .executes { runModifyScopeById(it) }
+                                    .executes { runModifyScope(it) }
                                     .then(
                                         argument("newName", StringArgumentType.string())
-                                            .executes { runRenameScopeById(it) }
-                                    )
-                            )
-                    )
-                    .then(
-                        argument("name", StringArgumentType.string())
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .executes { runModifyScopeByName(it) }
-                                    .then(
-                                        argument("newName", StringArgumentType.string())
-                                            .executes { runRenameScopeByName(it) }
+                                            .executes { runRenameScope(it) }
                                     )
                             )
                     )
@@ -240,12 +221,8 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
             .then(
                 literal("query")
                     .then(
-                        argument("id", IntegerArgumentType.integer())
-                            .executes{ runQueryRegionById(it) }
-                    )
-                    .then(
-                        argument("name", StringArgumentType.string())
-                            .executes{ runQueryRegionByName(it) }
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .executes{ runQueryRegion(it) }
                     )
             )
             .then(
@@ -285,7 +262,7 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     if (!selectionModeCheck(player)) return 0
     val regionName = getRegionNameAutoFillCheck(player, StringArgumentType.getString(context, "name")) ?: return 0
     val shapeType = getShapeTypeCheck(player, StringArgumentType.getString(context, "shapeType").uppercase()) ?: return 0
-    return regionCreationScheduler(player, regionName, shapeType)
+    return onRegionCreation(player, regionName, shapeType)
 }
 
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
@@ -298,194 +275,35 @@ private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
-    return regionRenameScheduler(player, regionIdentifier, newName)
+    return identifierHandler(regionIdentifier, player) { regionToRename -> onRegionRename(player, regionToRename, newName) }
 }
 
 private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
-    return scopeAddScheduler(context, regionIdentifier, player)
+    return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(context, regionToAddScope)}
 }
 
-private fun runDeleteScopeById(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeleteScope(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     val scopeName = context.getArgument("scopeName", String::class.java)
-
-    return try {
-        val targetRegion = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        runDeleteScope(player, targetRegion, scopeName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
-        0
-    }
+    return identifierHandler(regionIdentifier, player) { regionToDeleteScope -> onScopeDelete(player, regionToDeleteScope, scopeName)}
 }
 
-private fun runDeleteScopeByName(context: CommandContext<ServerCommandSource>): Int {
+private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     val scopeName = context.getArgument("scopeName", String::class.java)
-
-    return try {
-        val targetRegion = ImyvmWorldGeo.data.getRegionByName(regionName)
-        runDeleteScope(player, targetRegion, scopeName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
+    return identifierHandler(regionIdentifier, player) { regionToModifyScope -> onModifyScope(player, regionToModifyScope, scopeName)}
 }
 
-private fun runDeleteScope(player: ServerPlayerEntity, region: Region, scopeName: String): Int {
-    if (region.geometryScope.size < 2) {
-        player.sendMessage(Translator.tr("command.scope.delete.error.last_scope"))
-        return 0
-    }
-
-    val existingScope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
-
-    return if (existingScope != null) {
-        region.geometryScope.remove(existingScope)
-        player.sendMessage(Translator.tr("command.scope.delete.success", scopeName, region.name))
-        1
-    } else {
-        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, region.name))
-        0
-    }
-}
-
-private fun runModifyScopeById(context: CommandContext<ServerCommandSource>): Int{
+private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
-    val scopeName = context.getArgument("scopeName", String::class.java)
-
-    return try {
-        val targetRegion = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        runModifyScope(player, targetRegion, scopeName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
-        0
-    }
-}
-
-private fun runModifyScopeByName(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
-    val scopeName = context.getArgument("scopeName", String::class.java)
-
-    return try {
-        val targetRegion = ImyvmWorldGeo.data.getRegionByName(regionName)
-        runModifyScope(player, targetRegion, scopeName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
-}
-
-private fun runModifyScope(
-    player: ServerPlayerEntity,
-    targetRegion: Region,
-    scopeName: String
-): Int {
-    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
-
-    return if (existingScope != null) {
-        val playerUUID = player.uuid
-        if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-            player.sendMessage(Translator.tr("command.select.not_in_mode"))
-            return 0
-        }
-
-        val shapeType = existingScope.geoShape?.geoShapeType ?: Region.Companion.GeoShapeType.UNKNOWN
-        if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
-            player.sendMessage(Translator.tr("command.scope.modify.unknown_shape_type"))
-            return 0
-        }
-
-        val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
-        if (shapeType == Region.Companion.GeoShapeType.POLYGON) {
-            if (selectedPositions.size < 2) {
-                player.sendMessage(Translator.tr("command.scope.modify.polygon_insufficient_points"))
-                return 0
-            } else if (selectedPositions.size == 2){
-                modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
-            } else {
-                modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions)
-            }
-        } else if (shapeType == Region.Companion.GeoShapeType.CIRCLE) {
-            if (selectedPositions.size == 1) {
-                modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
-            } else{
-                modifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
-            }
-
-        } else if (shapeType == Region.Companion.GeoShapeType.RECTANGLE) {
-            modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
-        }
-        1
-    } else {
-        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
-        0
-    }
-}
-
-private fun runRenameScopeById(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     val scopeName = context.getArgument("scopeName", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
-
-    return try {
-        val targetRegion = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        runRenameScope(player, targetRegion, scopeName, newName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
-        0
-    }
-}
-
-private fun runRenameScopeByName(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
-    val scopeName = context.getArgument("scopeName", String::class.java)
-    val newName = context.getArgument("newName", String::class.java)
-
-    return try {
-        val targetRegion = ImyvmWorldGeo.data.getRegionByName(regionName)
-        runRenameScope(player, targetRegion, scopeName, newName)
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
-}
-
-private fun runRenameScope(
-    player: ServerPlayerEntity,
-    targetRegion: Region,
-    scopeName: String,
-    newName: String
-): Int {
-    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
-
-    if (existingScope == null) {
-        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
-        return 0
-    }
-
-    if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
-        player.sendMessage(Translator.tr("command.scope.rename.repeated_same_name"))
-        return 0
-    }
-
-    for (scope in targetRegion.geometryScope) {
-        if (scope.scopeName.equals(newName, ignoreCase = true)) {
-            player.sendMessage(Translator.tr("command.scope.rename.duplicate_scope_name"))
-            return 0
-        }
-    }
-
-    existingScope.scopeName = newName
-    player.sendMessage(Translator.tr("command.scope.rename.success", scopeName, newName, targetRegion.name))
-    return 1
+    return identifierHandler(regionIdentifier, player) { regionToRenameScope -> onRenameScope(player, regionToRenameScope, scopeName, newName)}
 }
 
 private fun runAddSettingRegion(context: CommandContext<ServerCommandSource>): Int {
@@ -504,34 +322,13 @@ private fun runDeleteSettingScope(context: CommandContext<ServerCommandSource>):
     TODO()
 }
 
-private fun runQueryRegionById(context: CommandContext<ServerCommandSource>): Int {
+private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val regionId = context.getArgument("id", Int::class.java)
-    return try {
-        val region = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-        displayRegionInfo(context.source, region)
-        1
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_id", regionId.toString()))
-        0
-    }
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery) }
 }
 
-private fun runQueryRegionByName(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionName = context.getArgument("name", String::class.java)
-    return try {
-        val region = ImyvmWorldGeo.data.getRegionByName(regionName)
-        displayRegionInfo(context.source, region)
-        1
-    } catch (e: RegionNotFoundException) {
-        player.sendMessage(Translator.tr("command.not_found_name", regionName))
-        0
-    }
-}
-
-private fun displayRegionInfo(source: ServerCommandSource, region: Region) {
-    val player = source.player ?: return
+private fun onQueryRegion(player: ServerPlayerEntity, region: Region) {
     player.sendMessage(
         Translator.tr("command.query.result",
         region.name,

@@ -11,3 +11,23 @@ fun onRegionDelete(player: ServerPlayerEntity, region: Region){
     ImyvmWorldGeo.data.removeRegion(region)
     player.sendMessage(Translator.tr("command.delete.success", regionName, regionId))
 }
+
+fun onScopeDelete(player: ServerPlayerEntity, region: Region, scopeName: String){
+    if (!checkScopeSize(player, region)) return
+
+    val existingScope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+    if (existingScope != null) {
+        region.geometryScope.remove(existingScope)
+        player.sendMessage(Translator.tr("command.scope.delete.success", scopeName, region.name))
+    } else {
+        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, region.name))
+    }
+}
+
+private fun checkScopeSize(player: ServerPlayerEntity, region: Region): Boolean{
+    if (region.geometryScope.size < 2) {
+        player.sendMessage(Translator.tr("command.scope.delete.error.last_scope"))
+        return false
+    }
+    return true
+}

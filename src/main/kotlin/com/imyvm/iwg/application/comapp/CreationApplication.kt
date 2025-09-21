@@ -1,7 +1,6 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.util.ui.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionFactory
@@ -14,7 +13,7 @@ import net.minecraft.server.command.ServerCommandSource
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
-fun regionCreationScheduler(player: ServerPlayerEntity, regionName: String, shapeType: Region.Companion.GeoShapeType): Int {
+fun onRegionCreation(player: ServerPlayerEntity, regionName: String, shapeType: Region.Companion.GeoShapeType): Int {
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
             handleRegionCreateSuccessInternally(player, creationResult)
@@ -28,30 +27,7 @@ fun regionCreationScheduler(player: ServerPlayerEntity, regionName: String, shap
     }
 }
 
-fun scopeAddScheduler(context: CommandContext<ServerCommandSource>, regionIdentifier: String, player: ServerPlayerEntity): Int {
-    return try {
-        if (regionIdentifier.matches("\\d+".toRegex())) {
-            val regionId = regionIdentifier.toInt()
-            val regionToAddScope = ImyvmWorldGeo.data.getRegionByNumberId(regionId)
-            scopeCreationScheduler(context, regionToAddScope)
-            1
-        } else {
-            val regionToAddScope = ImyvmWorldGeo.data.getRegionByName(regionIdentifier)
-            scopeCreationScheduler(context, regionToAddScope)
-            1
-        }
-    }
-    catch (e: RegionNotFoundException) {
-        if (regionIdentifier.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("command.not_found_id", regionIdentifier))
-        } else {
-            player.sendMessage(Translator.tr("command.not_found_name", regionIdentifier))
-        }
-        0
-    }
-}
-
-fun scopeCreationScheduler(
+fun onScopeCreation(
     context: CommandContext<ServerCommandSource>,
     region: Region
 ): Int {
@@ -87,12 +63,6 @@ fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
     return true
 }
 
-fun getRegionNameAutoFillCheck(player: ServerPlayerEntity, nameArgument: String?): String? =
-    validateNameCommon(player, nameArgument, autoFill = true)
-
-fun getRegionNameCheck(player: ServerPlayerEntity, nameArgument: String?): String? =
-    validateNameCommon(player, nameArgument, autoFill = false)
-
 fun getShapeTypeCheck(
     player: ServerPlayerEntity,
     shapeTypeName: String,
@@ -107,32 +77,12 @@ fun getShapeTypeCheck(
     return shapeType
 }
 
-fun tryRegionCreation(
-    player: ServerPlayerEntity,
-    regionName: String,
-    shapeType: Region.Companion.GeoShapeType,
-): Result<Region, CreationError> {
-    val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
-    val biggestId = ImyvmWorldGeo.data.getRegionList().maxOfOrNull { it.numberID } ?: -1
-    val newID = biggestId + 1
-    return RegionFactory.createRegion(
-        name = regionName,
-        numberID = newID,
-        selectedPositions = selectedPositions ?: mutableListOf(),
-        shapeType = shapeType
-    )
-}
 
-fun handleRegionCreateSuccessInternally(
-    player: ServerPlayerEntity,
-    creationResult: Result.Ok<Region>
-) = handleRegionCreateSuccessCommon(player, creationResult, notify = true)
+fun getRegionNameAutoFillCheck(player: ServerPlayerEntity, nameArgument: String?): String? =
+    validateNameCommon(player, nameArgument, autoFill = true)
 
-fun handleRegionCreateSuccess(
-    player: ServerPlayerEntity,
-    creationResult: Result.Ok<Region>
-) = handleRegionCreateSuccessCommon(player, creationResult, notify = false)
+fun getRegionNameCheck(player: ServerPlayerEntity, nameArgument: String?): String? =
+    validateNameCommon(player, nameArgument, autoFill = false)
 
 fun getScopeNameCheck(
     player: ServerPlayerEntity,
@@ -151,6 +101,24 @@ fun getScopeNameCheck(
         ?.let { validateScopeUnique(player, region, it) }
 }
 
+
+fun tryRegionCreation(
+    player: ServerPlayerEntity,
+    regionName: String,
+    shapeType: Region.Companion.GeoShapeType,
+): Result<Region, CreationError> {
+    val playerUUID = player.uuid
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
+    val biggestId = ImyvmWorldGeo.data.getRegionList().maxOfOrNull { it.numberID } ?: -1
+    val newID = biggestId + 1
+    return RegionFactory.createRegion(
+        name = regionName,
+        numberID = newID,
+        selectedPositions = selectedPositions ?: mutableListOf(),
+        shapeType = shapeType
+    )
+}
+
 fun tryScopeCreation(
     playerUUID: UUID,
     scopeName: String,
@@ -163,6 +131,16 @@ fun tryScopeCreation(
         shapeType = shapeType
     )
 }
+
+fun handleRegionCreateSuccessInternally(
+    player: ServerPlayerEntity,
+    creationResult: Result.Ok<Region>
+) = handleRegionCreateSuccessCommon(player, creationResult, notify = true)
+
+fun handleRegionCreateSuccess(
+    player: ServerPlayerEntity,
+    creationResult: Result.Ok<Region>
+) = handleRegionCreateSuccessCommon(player, creationResult, notify = false)
 
 fun handleScopeCreateSuccess(
     player: ServerPlayerEntity,

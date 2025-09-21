@@ -9,6 +9,53 @@ import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 
+fun onModifyScope(
+    player: ServerPlayerEntity,
+    targetRegion: Region,
+    scopeName: String
+): Int {
+    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+
+    return if (existingScope != null) {
+        val playerUUID = player.uuid
+        if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+            player.sendMessage(Translator.tr("command.select.not_in_mode"))
+            return 0
+        }
+
+        val shapeType = existingScope.geoShape?.geoShapeType ?: Region.Companion.GeoShapeType.UNKNOWN
+        if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
+            player.sendMessage(Translator.tr("command.scope.modify.unknown_shape_type"))
+            return 0
+        }
+
+        val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
+        if (shapeType == Region.Companion.GeoShapeType.POLYGON) {
+            if (selectedPositions.size < 2) {
+                player.sendMessage(Translator.tr("command.scope.modify.polygon_insufficient_points"))
+                return 0
+            } else if (selectedPositions.size == 2){
+                modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
+            } else {
+                modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions)
+            }
+        } else if (shapeType == Region.Companion.GeoShapeType.CIRCLE) {
+            if (selectedPositions.size == 1) {
+                modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
+            } else{
+                modifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
+            }
+
+        } else if (shapeType == Region.Companion.GeoShapeType.RECTANGLE) {
+            modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
+        }
+        1
+    } else {
+        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
+        0
+    }
+}
+
 fun modifyScopePolygonMove(
     player: ServerPlayerEntity,
     region: Region,
