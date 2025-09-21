@@ -1,10 +1,9 @@
 package com.imyvm.iwg.inter.register
 
-import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.comapp.*
+import com.imyvm.iwg.util.command.getPlayerRegionPair
 import com.imyvm.iwg.util.command.identifierHandler
-import com.imyvm.iwg.util.ui.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
@@ -257,44 +256,38 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
 }
 
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToDelete -> onRegionDelete(player, regionToDelete) }
 }
 
 private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val newName = context.getArgument("newName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToRename -> onRegionRename(player, regionToRename, newName) }
 }
 
 private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(context, regionToAddScope)}
 }
 
 private fun runDeleteScope(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToDeleteScope -> onScopeDelete(player, regionToDeleteScope, scopeName)}
 }
 
 private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToModifyScope -> onModifyScope(player, regionToModifyScope, scopeName)}
 }
 
 private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
-    return identifierHandler(regionIdentifier, player) { regionToRenameScope -> onRenameScope(player, regionToRenameScope, scopeName, newName)}
+    return identifierHandler(regionIdentifier, player) { regionToRenameScope -> onScopeRename(player, regionToRenameScope, scopeName, newName)}
 }
 
 private fun runAddSettingRegion(context: CommandContext<ServerCommandSource>): Int {
@@ -314,8 +307,7 @@ private fun runDeleteSettingScope(context: CommandContext<ServerCommandSource>):
 }
 
 private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery) }
 }
 

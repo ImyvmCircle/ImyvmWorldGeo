@@ -20,7 +20,7 @@ fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String):
     }
 }
 
-fun onRenameScope(
+fun onScopeRename(
     player: ServerPlayerEntity,
     targetRegion: Region,
     scopeName: String,
