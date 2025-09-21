@@ -11,7 +11,6 @@ import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 
-//TODO("PROVIDER_SETTING_KEY")
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
     dispatcher.register(
         literal("imyvm-world-geo")
@@ -113,8 +112,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("settingType", StringArgumentType.string())
+                                            .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("key", StringArgumentType.string())
+                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                     .then(
                                                         argument("value", StringArgumentType.string())
                                                             .then(
@@ -138,8 +139,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("settingType", StringArgumentType.word())
+                                            .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("key", StringArgumentType.word())
+                                                    .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                                     .then(
                                                         argument("isPersonal", BoolArgumentType.bool())
                                                             .executes{ runDeleteSettingRegion(it) }
@@ -166,8 +169,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("settingType", StringArgumentType.string())
+                                                    .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                                     .then(
                                                         argument("key", StringArgumentType.string())
+                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                             .then(
                                                                 argument("value", StringArgumentType.string())
                                                                     .then(
@@ -195,8 +200,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("settingType", StringArgumentType.word())
+                                                    .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                                     .then(
                                                         argument("key", StringArgumentType.word())
+                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                             .then(
                                                                 argument("isPersonal", BoolArgumentType.bool())
                                                                     .executes{ runDeleteSettingScope(it) }

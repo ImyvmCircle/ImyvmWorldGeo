@@ -1,7 +1,10 @@
 package com.imyvm.iwg.util.command
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.domain.EffectKey
+import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.RuleKey
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.server.command.ServerCommandSource
@@ -32,6 +35,27 @@ val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> 
     source.server.playerManager.playerList.forEach { player ->
         builder.suggest(player.name.string)
     }
+    builder.buildFuture()
+}
+
+val SETTING_TYPE_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+    listOf("permission", "effect", "rule").forEach { builder.suggest(it) }
+    builder.buildFuture()
+}
+
+val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+    val type = try {
+        StringArgumentType.getString(context, "settingType")
+    } catch (e: Exception) {
+        null
+    }
+
+    when (type?.lowercase()) {
+        "permission" -> PermissionKey.entries.forEach { builder.suggest(it.name) }
+        "effect"     -> EffectKey.entries.forEach { builder.suggest(it.name) }
+        "rule"       -> RuleKey.entries.forEach { builder.suggest(it.name) }
+    }
+
     builder.buildFuture()
 }
 
