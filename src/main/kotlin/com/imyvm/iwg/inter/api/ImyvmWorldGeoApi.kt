@@ -47,20 +47,7 @@ object ImyvmWorldGeoApi {
     }
 
     fun queryRegionInfo(player: ServerPlayerEntity, region: Region): Int{
-        player.sendMessage(
-            Translator.tr(
-                "api.query.result",
-                region.name,
-                region.numberID,
-                region.calculateTotalArea().toString()
-            )
-        )
-
-        val shapeInfos = region.getScopeInfos()
-        shapeInfos.forEach { info ->
-            player.sendMessage(info)
-        }
-
+        onQueryRegion(player, region, true)
         return 1
     }
 }

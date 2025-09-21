@@ -5,14 +5,19 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
-fun onQueryRegion(player: ServerPlayerEntity, region: Region) {
+fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
+    val messageKey = if (isApi) {
+        "api.query.result"
+    } else {
+        "command.query.result"
+    }
+
     player.sendMessage(
-        Translator.tr("command.query.result",
+        Translator.tr(messageKey,
             region.name,
             region.numberID.toString(),
             region.calculateTotalArea())
     )
-
     val shapeInfos = region.getScopeInfos()
     shapeInfos.forEach { info ->
         player.sendMessage(info)

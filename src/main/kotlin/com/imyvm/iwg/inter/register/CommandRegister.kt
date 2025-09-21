@@ -311,7 +311,7 @@ private fun runDeleteSettingScope(context: CommandContext<ServerCommandSource>):
 
 private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery) }
+    return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery, false) }
 }
 
 private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
