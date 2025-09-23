@@ -120,11 +120,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                         argument("value", StringArgumentType.string())
                                                             .then(
                                                                 argument("isPersonal", BoolArgumentType.bool())
-                                                                    .executes{ runAddSettingRegion(it) }
+                                                                    .executes{ runAddDeleteSetting(it) }
                                                                     .then(
                                                                         argument("playerName", StringArgumentType.string())
                                                                             .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                            .executes{ runAddSettingRegion(it) }
+                                                                            .executes{ runAddDeleteSetting(it) }
                                                                     )
                                                             )
                                                     )
@@ -145,11 +145,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                     .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                                     .then(
                                                         argument("isPersonal", BoolArgumentType.bool())
-                                                            .executes{ runDeleteSettingRegion(it) }
+                                                            .executes{ runAddDeleteSetting(it) }
                                                             .then(
                                                                 argument("playerName", StringArgumentType.string())
                                                                     .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                    .executes{ runDeleteSettingRegion(it) }
+                                                                    .executes{ runAddDeleteSetting(it) }
                                                             )
                                                     )
                                             )
@@ -177,11 +177,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                                 argument("value", StringArgumentType.string())
                                                                     .then(
                                                                         argument("isPersonal", BoolArgumentType.bool())
-                                                                            .executes{ runAddSettingScope(it) }
+                                                                            .executes{ runAddDeleteSetting(it) }
                                                                             .then(
                                                                                 argument("playerName", StringArgumentType.string())
                                                                                     .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                                    .executes{ runAddSettingScope(it) }
+                                                                                    .executes{ runAddDeleteSetting(it) }
                                                                             )
                                                                     )
                                                             )
@@ -206,11 +206,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                             .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                             .then(
                                                                 argument("isPersonal", BoolArgumentType.bool())
-                                                                    .executes{ runDeleteSettingScope(it) }
+                                                                    .executes{ runAddDeleteSetting(it) }
                                                                     .then(
                                                                         argument("playerName", StringArgumentType.string())
                                                                             .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                            .executes{ runDeleteSettingScope(it) }
+                                                                            .executes{ runAddDeleteSetting(it) }
                                                                     )
                                                             )
                                                     )
@@ -299,23 +299,19 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
-    return identifierHandler(regionIdentifier, player) { regionToRenameScope -> onScopeRename(player, regionToRenameScope, scopeName, newName)}
+    return identifierHandler(regionIdentifier, player) { regionToRenameScope ->
+        onScopeRename(player, regionToRenameScope, scopeName, newName)}
 }
 
-private fun runAddSettingRegion(context: CommandContext<ServerCommandSource>): Int {
-    TODO()
-}
-
-private fun runDeleteSettingRegion(context: CommandContext<ServerCommandSource>): Int {
-    TODO()
-}
-
-private fun runAddSettingScope(context: CommandContext<ServerCommandSource>): Int {
-    TODO()
-}
-
-private fun runDeleteSettingScope(context: CommandContext<ServerCommandSource>): Int {
-    TODO()
+private fun runAddDeleteSetting(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val keyString = context.getArgument("key", String::class.java)
+    val valueString = context.getArgument("value", String::class.java)
+    val isPersonal = context.getArgument("isPersonal", Boolean::class.java)
+    val targetPlayer = context.getArgument("playerName", String::class.java)
+    return identifierHandler(regionIdentifier, player) { regionToAddSetting ->
+        onHandleSetting(player, regionToAddSetting, scopeName, keyString, valueString, isPersonal, targetPlayer) }
 }
 
 private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
