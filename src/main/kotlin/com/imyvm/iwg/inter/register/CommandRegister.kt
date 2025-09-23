@@ -118,6 +118,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                                     .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                     .then(
                                                         argument("value", StringArgumentType.string())
+                                                            .executes{ runAddDeleteSetting(it) }
                                                             .then(
                                                                 argument("isPersonal", BoolArgumentType.bool())
                                                                     .executes{ runAddDeleteSetting(it) }
