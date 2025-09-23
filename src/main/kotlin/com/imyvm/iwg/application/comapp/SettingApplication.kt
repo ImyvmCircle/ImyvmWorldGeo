@@ -12,14 +12,14 @@ fun onHandleSetting(
     region: Region,
     scopeName: String?,
     keyString: String,
-    valueString: String,
-    isPersonal: Boolean,
-    targetPlayerStr: String
+    valueString: String?,
+    isPersonal: Boolean?,
+    targetPlayerStr: String?
 ){
-    if(!checkKeyValidity(player, keyString, valueString)) return
+    if( valueString != null && !checkKeyValueValidity(player, keyString, valueString)) return
 }
 
-private fun checkKeyValidity(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
+private fun checkKeyValueValidity(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
     return when {
         isPermissionKey(keyString) -> checkPermissionSetting(player, keyString, valueString)
         isEffectKey(keyString) -> checkEffectSetting(player, keyString, valueString)
