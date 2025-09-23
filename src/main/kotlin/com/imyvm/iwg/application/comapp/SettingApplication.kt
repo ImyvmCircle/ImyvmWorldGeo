@@ -48,7 +48,7 @@ private fun onHandleRegion(
 private fun onHandleScope(
     player: ServerPlayerEntity,
     region: Region,
-    scopeName: String?
+    scopeName: String?,
     keyString: String,
     valueString: String,
     isPersonal: Boolean,
