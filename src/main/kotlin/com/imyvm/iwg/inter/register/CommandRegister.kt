@@ -306,11 +306,11 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runAddDeleteSetting(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    val scopeName = context.getArgument("scopeName", String::class.java)
+    val scopeName = getOptionalArgument(context, "scopeName")
     val keyString = context.getArgument("key", String::class.java)
-    val valueString = context.getArgument("value", String::class.java)
-    val isPersonal = context.getArgument("isPersonal", Boolean::class.java)
-    val targetPlayer = context.getArgument("playerName", String::class.java)
+    val valueString = getOptionalArgument(context, "value")
+    val isPersonal = getOptionalArgument(context, "isPersonal")?.toBoolean() ?: false
+    val targetPlayer = getOptionalArgument(context, "playerName")
     return identifierHandler(regionIdentifier, player) { regionToAddSetting ->
         onHandleSetting(player, regionToAddSetting, scopeName, keyString, valueString, isPersonal, targetPlayer) }
 }
