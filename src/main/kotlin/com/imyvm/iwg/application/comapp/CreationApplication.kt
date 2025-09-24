@@ -27,7 +27,7 @@ fun onRegionCreation(player: ServerPlayerEntity, regionName: String, shapeType: 
 fun onScopeCreation(
     player: ServerPlayerEntity,
     region: Region,
-    scopeNameArg: String,
+    scopeNameArg: String?,
     shapeTypeName: String
 ): Int {
     val playerUUID = player.uuid

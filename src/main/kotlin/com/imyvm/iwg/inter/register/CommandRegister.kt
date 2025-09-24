@@ -279,7 +279,7 @@ private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    val scopeNameArg = getOptionalArgument(context, "scopeName") ?: return 0
+    val scopeNameArg = getOptionalArgument(context, "scopeName")
     val shapeTypeName = getOptionalArgument(context, "shapeType")?.uppercase() ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, shapeTypeName)}
 }
