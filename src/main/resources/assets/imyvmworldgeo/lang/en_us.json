@@ -23,8 +23,6 @@
   "command.rename.repeated_same_name": "New name is the same as the current name.",
   "command.rename.duplicate_name": "New name {0} is already in use by another region.",
 
-  "command.scope.scope_not_found": "Scope {0} not found in region {1}.",
-
   "command.scope.add.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
   "command.scope.add.not_found_generic": "Could not find the specified region.",
   "command.scope.add.duplicate_scope_name": "The region already has a scope with the same name given by command.",
@@ -84,6 +82,8 @@
   "scoreboard.scope.prefix": "Scope:",
   "scoreboard.region.none.name": "-wilderness-",
   "scoreboard.scope.none.name": "-Free to use-",
+
+  "region.error.no_scope": "Scope {0} not found in region {1}.",
 
   "scope.info": "[{0}] {1}: {2}",
 
