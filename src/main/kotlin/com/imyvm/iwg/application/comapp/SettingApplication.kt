@@ -15,15 +15,15 @@ fun onHandleSetting(
     isPersonal: Boolean?,
     targetPlayerStr: String?
 ) {
-    if (valueString != null && !checkKeyValueValidity(player, keyString, valueString)) return
     if (isPersonal == true && !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, isPersonal, targetPlayerStr)) return
 
     try {
         val key = parseKeyOrFail(keyString)
         if (valueString != null) {
-            handleAddSetting(player, region, scopeName, key, keyString, valueString, isPersonal, targetPlayerStr)
+            val value = parseValueOrFail(player, key, valueString) ?: return
+            handleAddSetting(player, region, scopeName, key, value, isPersonal, targetPlayerStr)
         } else {
-            handleRemoveSetting(player, region, scopeName, key, keyString, isPersonal, targetPlayerStr)
+            handleRemoveSetting(player, region, scopeName, key, isPersonal, targetPlayerStr)
         }
     } catch (e: IllegalArgumentException) {
         player.sendMessage(Translator.tr(e.message))
@@ -37,25 +37,41 @@ private fun parseKeyOrFail(keyString: String): Any = when {
     else -> throw IllegalArgumentException("command.setting.error.invalid_key")
 }
 
+private fun parseValueOrFail(player: ServerPlayerEntity, key: Any, valueString: String): Any? {
+    return try {
+        when (key) {
+            is PermissionKey -> valueString.toBooleanStrict()
+            is EffectKey -> valueString.toInt()
+            is RuleKey -> valueString.toBooleanStrict()
+            else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+        }
+    } catch (e: Exception) {
+        val errorMsg = when (key) {
+            is PermissionKey, is RuleKey -> "command.setting.error.invalid_value_boolean"
+            is EffectKey -> "command.setting.error.invalid_value_int"
+            else -> "command.setting.error.invalid_key"
+        }
+        player.sendMessage(Translator.tr(errorMsg, key.toString(), valueString))
+        null
+    }
+}
+
 private fun handleAddSetting(
     player: ServerPlayerEntity,
     region: Region,
     scopeName: String?,
     key: Any,
-    keyString: String,
-    valueString: String,
+    value: Any,
     isPersonal: Boolean?,
     targetPlayerStr: String?
 ) {
-    val value = parseValueForKey(key, valueString)
     val targetPlayerUUID = resolveTargetPlayerUUID(player, isPersonal, targetPlayerStr) ?: return
-
     val setting = buildSetting(key, value, isPersonal, targetPlayerUUID)
 
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
     settingsContainer.add(setting)
 
-    player.sendMessage(Translator.tr("command.setting.add.success", keyString, valueString))
+    player.sendMessage(Translator.tr("command.setting.add.success", key.toString(), value.toString()))
 }
 
 private fun handleRemoveSetting(
@@ -63,7 +79,6 @@ private fun handleRemoveSetting(
     region: Region,
     scopeName: String?,
     key: Any,
-    keyString: String,
     isPersonal: Boolean?,
     targetPlayerStr: String?
 ) {
@@ -71,10 +86,10 @@ private fun handleRemoveSetting(
     val removed = settingsContainer.removeIf { matchesSetting(it, key, isPersonal, targetPlayerStr, player.server) }
 
     if (!removed) {
-        player.sendMessage(Translator.tr("command.setting.delete.error.no_such_setting", keyString))
+        player.sendMessage(Translator.tr("command.setting.delete.error.no_such_setting", key.toString()))
         return
     }
-    player.sendMessage(Translator.tr("command.setting.delete.success", keyString))
+    player.sendMessage(Translator.tr("command.setting.delete.success", key.toString()))
 }
 
 private fun buildSetting(
@@ -86,13 +101,6 @@ private fun buildSetting(
     is PermissionKey -> PermissionSetting(key, value as Boolean, isPersonal == true, targetPlayerUUID)
     is EffectKey -> EffectSetting(key, value as Int, isPersonal == true, targetPlayerUUID)
     is RuleKey -> RuleSetting(key, value as Boolean)
-    else -> throw IllegalArgumentException("command.setting.error.invalid_key")
-}
-
-private fun parseValueForKey(key: Any, valueString: String): Any = when (key) {
-    is PermissionKey -> valueString.toBooleanStrict()
-    is EffectKey -> valueString.toInt()
-    is RuleKey -> valueString.toBooleanStrict()
     else -> throw IllegalArgumentException("command.setting.error.invalid_key")
 }
 
@@ -126,19 +134,6 @@ private fun matchesSetting(
 
     val profile = server.userCache?.getByUuid(setting.playerUUID)
     return profile?.get()?.name.equals(targetPlayerStr, ignoreCase = true)
-}
-
-
-private fun checkKeyValueValidity(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
-    return when {
-        isPermissionKey(keyString) -> checkPermissionSetting(player, keyString, valueString)
-        isEffectKey(keyString) -> checkEffectSetting(player, keyString, valueString)
-        isRuleKey(keyString) -> checkRuleSetting(player, keyString, valueString)
-        else -> {
-            player.sendMessage(Translator.tr("command.setting.error.invalid_key", keyString))
-            false
-        }
-    }
 }
 
 private fun checkPlayerWhenPersonal(
@@ -196,34 +191,6 @@ private fun checkPlayerWhenPersonal(
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
 private fun isRuleKey(key: String) = runCatching { RuleKey.valueOf(key) }.isSuccess
-
-private fun checkPermissionSetting(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
-    val value = valueString.toBooleanStrictOrNull()
-    if (value == null) {
-        player.sendMessage(Translator.tr("command.setting.error.invalid_value_boolean", keyString, valueString))
-        return false
-    }
-
-    return true
-}
-
-private fun checkEffectSetting(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
-    val value = valueString.toIntOrNull()
-    if (value == null) {
-        player.sendMessage(Translator.tr("command.setting.error.invalid_value_int", keyString, valueString))
-        return false
-    }
-    return true
-}
-
-private fun checkRuleSetting(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
-    val value = valueString.toBooleanStrictOrNull()
-    if (value == null) {
-        player.sendMessage(Translator.tr("command.setting.error.invalid_value_boolean", keyString, valueString))
-        return false
-    }
-    return true
-}
 
 private fun isDuplicateSetting(server: MinecraftServer, settings: List<Setting>, keyString: String, isPersonal: Boolean?, targetPlayerStr: String?): Boolean {
     return settings
