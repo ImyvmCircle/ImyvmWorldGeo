@@ -54,6 +54,17 @@
   "command.scope.rename.duplicate_scope_name": "A scope with the name {0} already exists in region {1}.",
   "command.scope.rename.success": "Successfully renamed scope {0} to {1} in region {2}.",
 
+  "command.setting.add.success": "Successfully added setting: {0} = {1}.",
+  "command.setting.delete.success": "Successfully removed setting: {0}.",
+  "command.setting.delete.error.no_such_setting": "No such setting found for key: {0}.",
+  "command.setting.error.invalid_key": "Invalid setting key.",
+  "command.setting.error.invalid_value_boolean": "Invalid value for {0}. Expected a boolean (true/false), but got: {1}.",
+  "command.setting.error.invalid_value_int": "Invalid value for {0}. Expected an integer, but got: {1}.",
+  "command.setting.error.invalid_target_player": "Invalid target player: {0}.",
+  "command.setting.error.missing_target_player": "Missing target player name.",
+  "command.setting.error.region.duplicate_personal_setting": "Duplicate personal setting: {0} already exists for player {1} in this region.",
+  "command.setting.error.scope.duplicate_personal_setting": "Duplicate personal setting: {0} already exists for player {1} in scope {2}.",
+
   "command.query.result": "&5Query successful! Showing information for Region: \n{0} (ID: {1}), total area: {2} m²\n",
 
   "command.list.empty": "No regions found.",
