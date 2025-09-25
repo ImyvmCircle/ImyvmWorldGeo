@@ -16,7 +16,9 @@ fun onHandleSetting(
     isPersonal: Boolean?,
     targetPlayerStr: String?
 ){
+    // Whether the operation is addition or deletion is analyzed by the presence of valueString.
     if( valueString != null && !checkKeyValueValidity(player, keyString, valueString)) return
+    if( isPersonal == true && !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, isPersonal, targetPlayerStr)) return
 }
 
 private fun checkKeyValueValidity(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
@@ -29,6 +31,43 @@ private fun checkKeyValueValidity(player: ServerPlayerEntity, keyString: String,
             false
         }
     }
+}
+
+private fun checkPlayerWhenPersonal(
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeName: String?,
+    keyString: String,
+    valueString: String?,
+    isPersonal: Boolean?,
+    targetPlayerStr: String?
+): Boolean{
+    if (targetPlayerStr.isNullOrBlank()) {
+        player.sendMessage(Translator.tr("command.setting.error.missing_target_player"))
+        return false
+    }
+
+    if (valueString != null) {
+        if (scopeName == null) {
+            if ( region.settings.filter { (it.key.toString() == keyString) && it.isPersonal == isPersonal }
+                    .any { it.playerUUID.toString() == targetPlayerStr } ) {
+                player.sendMessage(Translator.tr("command.setting.error.region.duplicate_personal_setting", keyString, targetPlayerStr))
+                return false
+            }
+        } else {
+            val scope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+            if (scope == null) {
+                player.sendMessage(Translator.tr("command.setting.error.region.no_scope", scopeName))
+                return false
+            }
+            if ( scope.settings.filter { (it.key.toString() == keyString) && it.isPersonal == isPersonal }
+                    .any { it.playerUUID.toString() == targetPlayerStr } ) {
+                player.sendMessage(Translator.tr("command.setting.error.scope.duplicate_personal_setting", keyString, targetPlayerStr, scopeName))
+                return false
+            }
+        }
+    }
+    return true
 }
 
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
