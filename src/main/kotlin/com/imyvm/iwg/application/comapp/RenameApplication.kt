@@ -4,6 +4,7 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
+import org.apache.logging.log4j.core.tools.picocli.CommandLine.Help.Ansi.Text
 
 fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String): Int {
     if(!checkNameDigit(newName, player)) return 0
@@ -26,28 +27,29 @@ fun onScopeRename(
     scopeName: String,
     newName: String
 ): Int {
-    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+    try {
+        val existingScope = targetRegion.getScopeByName(scopeName)
 
-    if (existingScope == null) {
-        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
-        return 0
-    }
-
-    if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
-        player.sendMessage(Translator.tr("command.scope.rename.repeated_same_name"))
-        return 0
-    }
-
-    for (scope in targetRegion.geometryScope) {
-        if (scope.scopeName.equals(newName, ignoreCase = true)) {
-            player.sendMessage(Translator.tr("command.scope.rename.duplicate_scope_name"))
+        if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
+            player.sendMessage(Translator.tr("command.scope.rename.repeated_same_name"))
             return 0
         }
-    }
 
-    existingScope.scopeName = newName
-    player.sendMessage(Translator.tr("command.scope.rename.success", scopeName, newName, targetRegion.name))
-    return 1
+        for (scope in targetRegion.geometryScope) {
+            if (scope !== existingScope && scope.scopeName.equals(newName, ignoreCase = true)) {
+                player.sendMessage(Translator.tr("command.scope.rename.duplicate_scope_name"))
+                return 0
+            }
+        }
+
+        existingScope.scopeName = newName
+        player.sendMessage(Translator.tr("command.scope.rename.success", scopeName, newName, targetRegion.name))
+        return 1
+
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr(e.message))
+        return 0
+    }
 }
 
 private fun checkNameDigit(newName: String, player: ServerPlayerEntity): Boolean {

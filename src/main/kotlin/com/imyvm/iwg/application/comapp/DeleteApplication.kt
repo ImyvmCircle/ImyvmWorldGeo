@@ -15,12 +15,13 @@ fun onRegionDelete(player: ServerPlayerEntity, region: Region){
 fun onScopeDelete(player: ServerPlayerEntity, region: Region, scopeName: String){
     if (!checkScopeSize(player, region)) return
 
-    val existingScope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
-    if (existingScope != null) {
+    try {
+        val existingScope = region.getScopeByName(scopeName)
         region.geometryScope.remove(existingScope)
         player.sendMessage(Translator.tr("command.scope.delete.success", scopeName, region.name))
-    } else {
-        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, region.name))
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr(e.message))
+        return
     }
 }
 

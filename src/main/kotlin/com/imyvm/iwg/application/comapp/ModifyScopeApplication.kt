@@ -14,9 +14,9 @@ fun onModifyScope(
     targetRegion: Region,
     scopeName: String
 ): Int {
-    val existingScope = targetRegion.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+    try {
+        val existingScope = targetRegion.getScopeByName(scopeName)
 
-    return if (existingScope != null) {
         val playerUUID = player.uuid
         if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
             player.sendMessage(Translator.tr("command.select.not_in_mode"))
@@ -49,10 +49,10 @@ fun onModifyScope(
         } else if (shapeType == Region.Companion.GeoShapeType.RECTANGLE) {
             modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
         }
-        1
-    } else {
-        player.sendMessage(Translator.tr("command.scope.scope_not_found", scopeName, targetRegion.name))
-        0
+        return 1
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr(e.message))
+        return 0
     }
 }
 

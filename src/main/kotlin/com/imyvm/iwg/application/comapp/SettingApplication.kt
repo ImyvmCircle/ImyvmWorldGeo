@@ -55,14 +55,15 @@ private fun checkPlayerWhenPersonal(
                 return false
             }
         } else {
-            val scope = region.geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
-            if (scope == null) {
-                player.sendMessage(Translator.tr("command.setting.error.region.no_scope", scopeName))
-                return false
-            }
-            if ( scope.settings.filter { (it.key.toString() == keyString) && it.isPersonal == isPersonal }
-                    .any { it.playerUUID.toString() == targetPlayerStr } ) {
-                player.sendMessage(Translator.tr("command.setting.error.scope.duplicate_personal_setting", keyString, targetPlayerStr, scopeName))
+            try {
+                val scope = region.getScopeByName(scopeName)
+                if ( scope.settings.filter { (it.key.toString() == keyString) && it.isPersonal == isPersonal }
+                        .any { it.playerUUID.toString() == targetPlayerStr } ) {
+                    player.sendMessage(Translator.tr("command.setting.error.scope.duplicate_personal_setting", keyString, targetPlayerStr, scopeName))
+                    return false
+                }
+            } catch (e: IllegalArgumentException) {
+                player.sendMessage(Translator.tr(e.message))
                 return false
             }
         }
