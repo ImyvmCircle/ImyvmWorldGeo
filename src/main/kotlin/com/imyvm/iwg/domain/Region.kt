@@ -10,6 +10,10 @@ class Region(
     var geometryScope: MutableList<GeoScope>,
     var settings: MutableList<Setting> = mutableListOf()
 ) {
+    fun getScopeByName(scopeName: String){
+        geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+            ?: throw IllegalArgumentException(Translator.tr("region.error.no_scope", scopeName)!!.string)
+    }
 
     fun getScopeInfos(): List<Text> {
         val scopeInfos = mutableListOf<Text>()
