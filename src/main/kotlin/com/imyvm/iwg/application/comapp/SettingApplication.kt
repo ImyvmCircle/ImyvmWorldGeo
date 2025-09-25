@@ -4,6 +4,7 @@ import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import java.util.*
 
 fun onHandleSetting(
     player: ServerPlayerEntity,
@@ -13,72 +14,120 @@ fun onHandleSetting(
     valueString: String?,
     isPersonal: Boolean?,
     targetPlayerStr: String?
-){
-    // Whether the operation is addition or deletion is analyzed by the presence of valueString.
-    if( valueString != null && !checkKeyValueValidity(player, keyString, valueString)) return
-    if( isPersonal == true && !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, isPersonal, targetPlayerStr)) return
+) {
+    if (valueString != null && !checkKeyValueValidity(player, keyString, valueString)) return
+    if (isPersonal == true && !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, isPersonal, targetPlayerStr)) return
 
     try {
-        val key = when {
-            isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
-            isEffectKey(keyString) -> EffectKey.valueOf(keyString)
-            isRuleKey(keyString) -> RuleKey.valueOf(keyString)
-            else -> throw IllegalArgumentException("command.setting.error.invalid_key")
-        }
+        val key = parseKeyOrFail(keyString)
         if (valueString != null) {
-            val value = when (key) {
-                is PermissionKey -> valueString.toBooleanStrict()
-                is EffectKey -> valueString.toInt()
-                is RuleKey -> valueString.toBooleanStrict()
-                else -> throw IllegalArgumentException("command.setting.error.invalid_key")
-            }
-            val targetPlayerUUID = if (isPersonal == true) {
-                try {
-                    val server = player.server
-                    val profile = server.userCache
-                        ?.findByName(targetPlayerStr)
-                        ?.orElse(null)
-                        ?: throw IllegalArgumentException(
-                            Translator.tr("command.setting.error.invalid_target_player", targetPlayerStr).toString()
-                        )
-                    profile.id
-                } catch (e: IllegalArgumentException) {
-                    player.sendMessage(Translator.tr("command.setting.error.invalid_target_player", targetPlayerStr))
-                    return
-                }
-            } else null
-
-            val setting: Setting = when (key) {
-                is PermissionKey -> PermissionSetting(key, value as Boolean, isPersonal == true, targetPlayerUUID)
-                is EffectKey -> EffectSetting(key, value as Int, isPersonal == true, targetPlayerUUID)
-                is RuleKey -> RuleSetting(key, value as Boolean)
-                else -> throw IllegalArgumentException("command.setting.error.invalid_key")
-            }
-            if (scopeName == null) {
-                region.settings.add(setting)
-            } else {
-                val scope = region.getScopeByName(scopeName)
-                scope.settings.add(setting)
-            }
-            player.sendMessage(Translator.tr("command.setting.add.success", keyString, valueString))
+            handleAddSetting(player, region, scopeName, key, keyString, valueString, isPersonal, targetPlayerStr)
         } else {
-            val removed = if (scopeName == null) {
-                region.settings.removeIf { it.key == key && it.isPersonal == isPersonal && (targetPlayerStr == null || player.server.userCache?.getByUuid(it.playerUUID)?.get()?.name.equals(targetPlayerStr, ignoreCase = true)) }
-            } else {
-                val scope = region.getScopeByName(scopeName)
-                scope.settings.removeIf { it.key == key && it.isPersonal == isPersonal && (targetPlayerStr == null || player.server.userCache?.getByUuid(it.playerUUID)?.get()?.name.equals(targetPlayerStr, ignoreCase = true)) }
-            }
-            if (!removed) {
-                player.sendMessage(Translator.tr("command.setting.delete.error.no_such_setting", keyString))
-                return
-            }
-            player.sendMessage(Translator.tr("command.setting.delete.success", keyString))
+            handleRemoveSetting(player, region, scopeName, key, keyString, isPersonal, targetPlayerStr)
         }
     } catch (e: IllegalArgumentException) {
         player.sendMessage(Translator.tr(e.message))
-        return
     }
 }
+
+private fun parseKeyOrFail(keyString: String): Any = when {
+    isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
+    isEffectKey(keyString) -> EffectKey.valueOf(keyString)
+    isRuleKey(keyString) -> RuleKey.valueOf(keyString)
+    else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+}
+
+private fun handleAddSetting(
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeName: String?,
+    key: Any,
+    keyString: String,
+    valueString: String,
+    isPersonal: Boolean?,
+    targetPlayerStr: String?
+) {
+    val value = parseValueForKey(key, valueString)
+    val targetPlayerUUID = resolveTargetPlayerUUID(player, isPersonal, targetPlayerStr) ?: return
+
+    val setting = buildSetting(key, value, isPersonal, targetPlayerUUID)
+
+    val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
+    settingsContainer.add(setting)
+
+    player.sendMessage(Translator.tr("command.setting.add.success", keyString, valueString))
+}
+
+private fun handleRemoveSetting(
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeName: String?,
+    key: Any,
+    keyString: String,
+    isPersonal: Boolean?,
+    targetPlayerStr: String?
+) {
+    val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
+    val removed = settingsContainer.removeIf { matchesSetting(it, key, isPersonal, targetPlayerStr, player.server) }
+
+    if (!removed) {
+        player.sendMessage(Translator.tr("command.setting.delete.error.no_such_setting", keyString))
+        return
+    }
+    player.sendMessage(Translator.tr("command.setting.delete.success", keyString))
+}
+
+private fun buildSetting(
+    key: Any,
+    value: Any,
+    isPersonal: Boolean?,
+    targetPlayerUUID: UUID?
+): Setting = when (key) {
+    is PermissionKey -> PermissionSetting(key, value as Boolean, isPersonal == true, targetPlayerUUID)
+    is EffectKey -> EffectSetting(key, value as Int, isPersonal == true, targetPlayerUUID)
+    is RuleKey -> RuleSetting(key, value as Boolean)
+    else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+}
+
+private fun parseValueForKey(key: Any, valueString: String): Any = when (key) {
+    is PermissionKey -> valueString.toBooleanStrict()
+    is EffectKey -> valueString.toInt()
+    is RuleKey -> valueString.toBooleanStrict()
+    else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+}
+
+private fun resolveTargetPlayerUUID(
+    player: ServerPlayerEntity,
+    isPersonal: Boolean?,
+    targetPlayerStr: String?
+): UUID? {
+    if (isPersonal != true) return null
+    return try {
+        val profile = player.server.userCache
+            ?.findByName(targetPlayerStr)
+            ?.orElse(null)
+            ?: throw IllegalArgumentException("command.setting.error.invalid_target_player")
+        profile.id
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr("command.setting.error.invalid_target_player", targetPlayerStr))
+        null
+    }
+}
+
+private fun matchesSetting(
+    setting: Setting,
+    key: Any,
+    isPersonal: Boolean?,
+    targetPlayerStr: String?,
+    server: MinecraftServer
+): Boolean {
+    if (setting.key != key || setting.isPersonal != isPersonal) return false
+    if (targetPlayerStr == null) return true
+
+    val profile = server.userCache?.getByUuid(setting.playerUUID)
+    return profile?.get()?.name.equals(targetPlayerStr, ignoreCase = true)
+}
+
 
 private fun checkKeyValueValidity(player: ServerPlayerEntity, keyString: String, valueString: String): Boolean {
     return when {
@@ -143,7 +192,6 @@ private fun checkPlayerWhenPersonal(
 
     return true
 }
-
 
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
