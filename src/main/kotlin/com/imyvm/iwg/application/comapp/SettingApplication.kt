@@ -12,18 +12,18 @@ fun onHandleSetting(
     scopeName: String?,
     keyString: String,
     valueString: String?,
-    isPersonal: Boolean?,
     targetPlayerStr: String?
 ) {
-    if (isPersonal == true && !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, isPersonal, targetPlayerStr)) return
+    if (targetPlayerStr != null &&
+        !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, targetPlayerStr)) return
 
     try {
         val key = parseKeyOrFail(keyString)
         if (valueString != null) {
             val value = parseValueOrFail(player, key, valueString) ?: return
-            handleAddSetting(player, region, scopeName, key, value, isPersonal, targetPlayerStr)
+            handleAddSetting(player, region, scopeName, key, value, targetPlayerStr)
         } else {
-            handleRemoveSetting(player, region, scopeName, key, isPersonal, targetPlayerStr)
+            handleRemoveSetting(player, region, scopeName, key, targetPlayerStr)
         }
     } catch (e: IllegalArgumentException) {
         player.sendMessage(Translator.tr(e.message))
@@ -62,11 +62,10 @@ private fun handleAddSetting(
     scopeName: String?,
     key: Any,
     value: Any,
-    isPersonal: Boolean?,
     targetPlayerStr: String?
 ) {
-    val targetPlayerUUID = resolveTargetPlayerUUID(player, isPersonal, targetPlayerStr) ?: return
-    val setting = buildSetting(key, value, isPersonal, targetPlayerUUID)
+    val targetPlayerUUID = resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
+    val setting = buildSetting(key, value, targetPlayerUUID)
 
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
     settingsContainer.add(setting)
@@ -79,11 +78,10 @@ private fun handleRemoveSetting(
     region: Region,
     scopeName: String?,
     key: Any,
-    isPersonal: Boolean?,
     targetPlayerStr: String?
 ) {
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-    val removed = settingsContainer.removeIf { matchesSetting(it, key, isPersonal, targetPlayerStr, player.server) }
+    val removed = settingsContainer.removeIf { matchesSetting(it, key, targetPlayerStr, player.server) }
 
     if (!removed) {
         player.sendMessage(Translator.tr("command.setting.delete.error.no_such_setting", key.toString()))
@@ -95,21 +93,19 @@ private fun handleRemoveSetting(
 private fun buildSetting(
     key: Any,
     value: Any,
-    isPersonal: Boolean?,
     targetPlayerUUID: UUID?
 ): Setting = when (key) {
-    is PermissionKey -> PermissionSetting(key, value as Boolean, isPersonal == true, targetPlayerUUID)
-    is EffectKey -> EffectSetting(key, value as Int, isPersonal == true, targetPlayerUUID)
+    is PermissionKey -> PermissionSetting(key, value as Boolean, targetPlayerUUID)
+    is EffectKey -> EffectSetting(key, value as Int, targetPlayerUUID)
     is RuleKey -> RuleSetting(key, value as Boolean)
     else -> throw IllegalArgumentException("command.setting.error.invalid_key")
 }
 
 private fun resolveTargetPlayerUUID(
     player: ServerPlayerEntity,
-    isPersonal: Boolean?,
     targetPlayerStr: String?
 ): UUID? {
-    if (isPersonal != true) return null
+    if (targetPlayerStr == null) return null
     return try {
         val profile = player.server.userCache
             ?.findByName(targetPlayerStr)
@@ -125,12 +121,13 @@ private fun resolveTargetPlayerUUID(
 private fun matchesSetting(
     setting: Setting,
     key: Any,
-    isPersonal: Boolean?,
     targetPlayerStr: String?,
     server: MinecraftServer
 ): Boolean {
-    if (setting.key != key || setting.isPersonal != isPersonal) return false
-    if (targetPlayerStr == null) return true
+    if (setting.key != key) return false
+    if (targetPlayerStr == null) {
+        return setting.playerUUID == null
+    }
 
     val profile = server.userCache?.getByUuid(setting.playerUUID)
     return profile?.get()?.name.equals(targetPlayerStr, ignoreCase = true)
@@ -142,61 +139,45 @@ private fun checkPlayerWhenPersonal(
     scopeName: String?,
     keyString: String,
     valueString: String?,
-    isPersonal: Boolean?,
-    targetPlayerStr: String?
+    targetPlayerStr: String
 ): Boolean {
-    if (targetPlayerStr.isNullOrBlank()) {
-        player.sendMessage(Translator.tr("command.setting.error.missing_target_player"))
-        return false
-    }
-
     val server = player.server
 
     if (valueString != null) {
-        if (scopeName == null) {
-            if (isDuplicateSetting(server, region.settings, keyString, isPersonal, targetPlayerStr)) {
-                player.sendMessage(
-                    Translator.tr(
-                        "command.setting.error.region.duplicate_personal_setting",
-                        keyString,
-                        targetPlayerStr
-                    )
-                )
-                return false
+        val container = try {
+            scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
+        } catch (e: IllegalArgumentException) {
+            player.sendMessage(Translator.tr(e.message))
+            return false
+        }
+
+        if (isDuplicateSetting(server, container, keyString, targetPlayerStr)) {
+            val msgKey = if (scopeName == null) {
+                "command.setting.error.region.duplicate_personal_setting"
+            } else {
+                "command.setting.error.scope.duplicate_personal_setting"
             }
-        } else {
-            try {
-                val scope = region.getScopeByName(scopeName)
-                if (isDuplicateSetting(server, scope.settings, keyString, isPersonal, targetPlayerStr)) {
-                    player.sendMessage(
-                        Translator.tr(
-                            "command.setting.error.scope.duplicate_personal_setting",
-                            keyString,
-                            targetPlayerStr,
-                            scopeName
-                        )
-                    )
-                    return false
-                }
-            } catch (e: IllegalArgumentException) {
-                player.sendMessage(Translator.tr(e.message))
-                return false
-            }
+            player.sendMessage(Translator.tr(msgKey, keyString, targetPlayerStr, scopeName ?: ""))
+            return false
         }
     }
-
     return true
 }
 
-private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
-private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
-private fun isRuleKey(key: String) = runCatching { RuleKey.valueOf(key) }.isSuccess
-
-private fun isDuplicateSetting(server: MinecraftServer, settings: List<Setting>, keyString: String, isPersonal: Boolean?, targetPlayerStr: String?): Boolean {
+private fun isDuplicateSetting(
+    server: MinecraftServer,
+    settings: List<Setting>,
+    keyString: String,
+    targetPlayerStr: String
+): Boolean {
     return settings
-        .filter { it.key.toString() == keyString && it.isPersonal == isPersonal }
+        .filter { it.key.toString() == keyString && it.playerUUID != null }
         .any { setting ->
             val profile = server.userCache?.getByUuid(setting.playerUUID)
             profile?.get()?.name.equals(targetPlayerStr, ignoreCase = true)
         }
 }
+
+private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
+private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
+private fun isRuleKey(key: String) = runCatching { RuleKey.valueOf(key) }.isSuccess

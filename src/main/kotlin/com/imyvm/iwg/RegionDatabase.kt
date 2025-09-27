@@ -6,6 +6,8 @@ import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
 import java.nio.file.Path
+import java.util.*
+import kotlin.collections.ArrayList
 
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
@@ -176,35 +178,32 @@ class RegionDatabase {
         stream.writeInt(0)
         stream.writeInt(setting.key.ordinal)
         stream.writeBoolean(setting.value)
-        stream.writeBoolean(setting.isPersonal)
         stream.writeUTF(setting.playerUUID?.toString() ?: "")
     }
 
     private fun loadPermissionSetting(stream: DataInputStream): PermissionSetting {
         val key = PermissionKey.entries[stream.readInt()]
         val value = stream.readBoolean()
-        val isPersonal = stream.readBoolean()
         val uuidStr = stream.readUTF()
-        val uuid = if (uuidStr.isNotEmpty()) java.util.UUID.fromString(uuidStr) else null
-        return PermissionSetting(key, value, isPersonal, uuid)
+        val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
+        return PermissionSetting(key, value, uuid)
     }
 
     private fun saveEffectSetting(stream: DataOutputStream, setting: EffectSetting) {
         stream.writeInt(1)
         stream.writeInt(setting.key.ordinal)
         stream.writeInt(setting.value)
-        stream.writeBoolean(setting.isPersonal)
         stream.writeUTF(setting.playerUUID?.toString() ?: "")
     }
 
     private fun loadEffectSetting(stream: DataInputStream): EffectSetting {
         val key = EffectKey.entries[stream.readInt()]
         val value = stream.readInt()
-        val isPersonal = stream.readBoolean()
         val uuidStr = stream.readUTF()
-        val uuid = if (uuidStr.isNotEmpty()) java.util.UUID.fromString(uuidStr) else null
-        return EffectSetting(key, value, isPersonal, uuid)
+        val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
+        return EffectSetting(key, value, uuid)
     }
+
 
     private fun saveRuleSetting(stream: DataOutputStream, setting: RuleSetting) {
         stream.writeInt(2)
