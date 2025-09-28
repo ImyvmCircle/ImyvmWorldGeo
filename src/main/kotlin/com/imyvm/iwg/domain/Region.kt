@@ -134,27 +134,30 @@ class Region(
         }
 
         private fun formatSettings(settings: List<Setting>, key: String, scopeName: String? = null): List<Text> {
+            if (settings.isEmpty()) return emptyList()
+
             val result = mutableListOf<Text>()
 
-            settings.filter { !it.isPersonal }.forEach { s ->
-                (if (scopeName == null) {
-                    Translator.tr(key, s.key.toString(), s.value.toString())
-                } else {
-                    Translator.tr(key, scopeName, s.key.toString(), s.value.toString())
-                })?.let {
+            val global = settings.filter { !it.isPersonal }
+            if (global.isNotEmpty()) {
+                val items = global.joinToString(", ") { "${it.key}=${it.value}" }
+                (if (scopeName == null) Translator.tr(key, items)
+                else Translator.tr(key, scopeName, items))?.let {
                     result.add(
                         it
                     )
                 }
             }
 
-            settings.filter { it.isPersonal }.forEach { s ->
-                val playerName = s.playerUUID?.toString() ?: "?"
-                (if (scopeName == null) {
-                    Translator.tr("${key}.personal", s.key.toString(), s.value.toString(), playerName)
-                } else {
-                    Translator.tr("${key}.personal", scopeName, s.key.toString(), s.value.toString(), playerName)
-                })?.let {
+            val personal = settings.filter { it.isPersonal }
+            if (personal.isNotEmpty()) {
+                val items = personal.joinToString(", ") { s ->
+                    val playerUUID = s.playerUUID?.toString() ?: "?"
+                    "${s.key}=${s.value} (Player $playerUUID)"
+                }
+                val trKey = "$key.personal"
+                (if (scopeName == null) Translator.tr(trKey, items)
+                else Translator.tr(trKey, scopeName, items))?.let {
                     result.add(
                         it
                     )
@@ -163,5 +166,7 @@ class Region(
 
             return result
         }
+
+
     }
 }

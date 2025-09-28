@@ -65,7 +65,7 @@
   "command.setting.error.region.duplicate_personal_setting": "Duplicate personal setting: {0} already exists for player {1} in this region.",
   "command.setting.error.scope.duplicate_personal_setting": "Duplicate personal setting: {0} already exists for player {1} in scope {2}.",
 
-  "command.query.result": "&5Query successful! Showing information for Region: \n{0} (ID: {1}), total area: {2} m²\n",
+  "command.query.result": "§5Query successful!§r Showing information for Region: \n§e{0}§r (ID: §6{1}§r), total area: §a{2} m²§r",
 
   "command.list.empty": "No regions found.",
   "command.list.header": "Regions:\n{0}",
@@ -96,11 +96,11 @@
 
   "region.error.no_scope": "Scope {0} not found in region {1}.",
 
-  "region.setting": "Region setting: {0} = {1}",
-  "region.setting.personal": "Region setting: {0} = {1} (Player {2})",
-  "scope.info": "[{0}] {1}: {2}",
-  "scope.setting": "Scope {0} setting: {1} = {2}",
-  "scope.setting.personal": "Scope {0} setting: {1} = {2} (Player {3})",
+  "region.setting": "§6Region settings§r: {0}",
+  "region.setting.personal": "§6Region personal settings§r: {0}",
+  "scope.setting": "§bScope {0} settings§r: {1}",
+  "scope.setting.personal": "§bScope {0} personal settings§r: {1}",
+  "scope.info": "§d[{0}]§r {1}: {2}",
 
   "geoshape.circle.info": "Shape : Circle | Center=({0}, {1}), Radius={2} | Area={3} m²",
   "geoshape.circle.invalid.info": "Shape : Invalid Circle | Area={0} m²",
