@@ -114,6 +114,6 @@
 
   "geoshape.unknown.info": "Shape : Unknown Shape | Area={0} m²",
 
-  "setting.permission.build": "You dont have permission to build in this Region.",
-  "setting.permission.break": "You dont have permission to break in this Region."
+  "setting.permission.build": "You dont have permission to build in this place.",
+  "setting.permission.break": "You dont have permission to break in this place."
 }
