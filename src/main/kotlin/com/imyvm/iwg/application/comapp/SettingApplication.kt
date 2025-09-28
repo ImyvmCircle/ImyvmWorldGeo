@@ -64,7 +64,11 @@ private fun handleAddSetting(
     value: Any,
     targetPlayerStr: String?
 ) {
-    val targetPlayerUUID = resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
+    val targetPlayerUUID = if (targetPlayerStr != null) {
+        resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
+    } else {
+        null
+    }
     val setting = buildSetting(key, value, targetPlayerUUID)
 
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings

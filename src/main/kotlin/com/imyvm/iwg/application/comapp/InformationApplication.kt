@@ -4,7 +4,6 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
 
 fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
     val messageKey = if (isApi) {
