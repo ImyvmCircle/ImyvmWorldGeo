@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.domain.*
+import com.imyvm.iwg.util.resolver.getUUIDFromPlayerName
+import com.imyvm.iwg.util.resolver.resolvePlayerName
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -110,13 +112,11 @@ private fun resolveTargetPlayerUUID(
     targetPlayerStr: String?
 ): UUID? {
     if (targetPlayerStr == null) return null
-    return try {
-        val profile = player.server.userCache
-            ?.findByName(targetPlayerStr)
-            ?.orElse(null)
-            ?: throw IllegalArgumentException("command.setting.error.invalid_target_player")
-        profile.id
-    } catch (e: IllegalArgumentException) {
+
+    val uuid = getUUIDFromPlayerName(player.server, targetPlayerStr)
+    return if (uuid != null) {
+        uuid
+    } else {
         player.sendMessage(Translator.tr("command.setting.error.invalid_target_player", targetPlayerStr))
         null
     }
@@ -133,8 +133,8 @@ private fun matchesSetting(
         return setting.playerUUID == null
     }
 
-    val profile = server.userCache?.getByUuid(setting.playerUUID)
-    return profile?.get()?.name.equals(targetPlayerStr, ignoreCase = true)
+    val name = resolvePlayerName(server, setting.playerUUID)
+    return name.equals(targetPlayerStr, ignoreCase = true)
 }
 
 private fun checkPlayerWhenPersonal(

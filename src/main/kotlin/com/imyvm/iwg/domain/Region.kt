@@ -1,7 +1,9 @@
 package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.util.geo.*
+import com.imyvm.iwg.util.resolver.resolvePlayerName
 import com.imyvm.iwg.util.ui.Translator
+import net.minecraft.server.MinecraftServer
 import net.minecraft.text.Text
 
 class Region(
@@ -15,17 +17,17 @@ class Region(
             ?: throw IllegalArgumentException(Translator.tr("region.error.no_scope", scopeName, name)!!.string)
     }
 
-    fun getScopeInfos(): List<Text> {
+    fun getScopeInfos(server: MinecraftServer): List<Text> {
         val infos = mutableListOf<Text>()
         geometryScope.forEachIndexed { index, geoScope ->
             geoScope.getScopeInfo(index)?.let { infos.add(it) }
-            infos.addAll(geoScope.getSettingInfos())
+            infos.addAll(geoScope.getSettingInfos(server))
         }
         return infos
     }
 
-    fun getSettingInfos(): List<Text> {
-        return formatSettings(settings, "region.setting")
+    fun getSettingInfos(server: MinecraftServer): List<Text> {
+        return formatSettings(server, settings, "region.setting")
     }
 
     fun calculateTotalArea(): Double {
@@ -50,8 +52,8 @@ class Region(
                 return Translator.tr("scope.info", index, scopeName, shapeInfoString)
             }
 
-            fun getSettingInfos(): List<Text> {
-                return formatSettings(settings, "scope.setting", scopeName)
+            fun getSettingInfos(server: MinecraftServer): List<Text> {
+                return formatSettings(server, settings, "scope.setting", scopeName)
             }
         }
 
@@ -133,40 +135,50 @@ class Region(
             POLYGON
         }
 
-        private fun formatSettings(settings: List<Setting>, key: String, scopeName: String? = null): List<Text> {
-            if (settings.isEmpty()) return emptyList()
+        private fun formatSettings(
+            server: MinecraftServer,
+            settings: List<Setting>,
+            key: String,
+            scopeName: String? = null
+        ): List<Text> {
+            val personalSettings = mutableListOf<String>()
+            val globalSettings = mutableListOf<String>()
+
+            settings.forEach { s ->
+                val display = if (s.isPersonal) {
+                    val playerName = resolvePlayerName(server, s.playerUUID)
+                    "${s.key}=${s.value} (Player $playerName)"
+                } else {
+                    "${s.key}=${s.value}"
+                }
+                if (s.isPersonal) personalSettings.add(display)
+                else globalSettings.add(display)
+            }
 
             val result = mutableListOf<Text>()
 
-            val global = settings.filter { !it.isPersonal }
-            if (global.isNotEmpty()) {
-                val items = global.joinToString(", ") { "${it.key}=${it.value}" }
-                (if (scopeName == null) Translator.tr(key, items)
-                else Translator.tr(key, scopeName, items))?.let {
-                    result.add(
-                        it
-                    )
+            if (globalSettings.isNotEmpty()) {
+                val combined = globalSettings.joinToString(", ")
+                val text = if (scopeName == null) {
+                    Translator.tr(key, combined)
+                } else {
+                    Translator.tr(key, scopeName, combined)
                 }
+                text?.let { result.add(it) }
             }
 
-            val personal = settings.filter { it.isPersonal }
-            if (personal.isNotEmpty()) {
-                val items = personal.joinToString(", ") { s ->
-                    val playerUUID = s.playerUUID?.toString() ?: "?"
-                    "${s.key}=${s.value} (Player $playerUUID)"
+            if (personalSettings.isNotEmpty()) {
+                val combined = personalSettings.joinToString(", ")
+                val text = if (scopeName == null) {
+                    Translator.tr("${key}.personal", combined)
+                } else {
+                    Translator.tr("${key}.personal", scopeName, combined)
                 }
-                val trKey = "$key.personal"
-                (if (scopeName == null) Translator.tr(trKey, items)
-                else Translator.tr(trKey, scopeName, items))?.let {
-                    result.add(
-                        it
-                    )
-                }
+                text?.let { result.add(it) }
             }
 
             return result
         }
-
 
     }
 }

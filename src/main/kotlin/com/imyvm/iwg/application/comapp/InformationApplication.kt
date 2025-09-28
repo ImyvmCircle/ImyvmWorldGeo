@@ -19,8 +19,9 @@ fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
             region.calculateTotalArea())
     )
 
-    region.getSettingInfos().forEach { info -> player.sendMessage(info) }
-    region.getScopeInfos().forEach { info -> player.sendMessage(info) }
+    val server = player.server
+    region.getSettingInfos(server).forEach { info -> player.sendMessage(info) }
+    region.getScopeInfos(server).forEach { info -> player.sendMessage(info) }
 }
 
 fun onListRegions(player: ServerPlayerEntity): Int {

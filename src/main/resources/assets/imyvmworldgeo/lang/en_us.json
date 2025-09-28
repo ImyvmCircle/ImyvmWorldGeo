@@ -98,9 +98,10 @@
 
   "region.setting": "§6Region settings§r: {0}",
   "region.setting.personal": "§6Region personal settings§r: {0}",
+
+  "scope.info": "§d[{0}]§r {1}: {2}",
   "scope.setting": "§bScope {0} settings§r: {1}",
   "scope.setting.personal": "§bScope {0} personal settings§r: {1}",
-  "scope.info": "§d[{0}]§r {1}: {2}",
 
   "geoshape.circle.info": "Shape : Circle | Center=({0}, {1}), Radius={2} | Area={3} m²",
   "geoshape.circle.invalid.info": "Shape : Invalid Circle | Area={0} m²",
