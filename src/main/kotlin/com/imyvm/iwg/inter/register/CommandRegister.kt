@@ -138,7 +138,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
                                             .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
                                             .then(
                                                 argument("key", StringArgumentType.word())
-                                                    .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
+                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                     .executes{ runAddDeleteSetting(it) }
                                                     .then(
                                                         argument("playerName", StringArgumentType.string())
