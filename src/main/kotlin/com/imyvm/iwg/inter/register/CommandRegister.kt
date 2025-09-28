@@ -3,7 +3,6 @@ package com.imyvm.iwg.inter.register
 import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.util.command.*
 import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.BoolArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.command.CommandRegistryAccess

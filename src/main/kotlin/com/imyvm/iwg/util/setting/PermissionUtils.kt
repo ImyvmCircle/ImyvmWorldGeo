@@ -39,11 +39,22 @@ private fun checkPermission(
     key: PermissionKey,
     scope: Region.Companion.GeoScope?
 ): Boolean? {
-    scope?.settings?.filterIsInstance<com.imyvm.iwg.domain.PermissionSetting>()?.find { it.key == key }?.let {
-        return if (it.isPersonal) it.playerUUID == playerUUID && it.value else it.value
+    scope?.settings?.filterIsInstance<com.imyvm.iwg.domain.PermissionSetting>()?.let { settings ->
+        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
+            return it.value
+        }
+        settings.firstOrNull { !it.isPersonal && it.key == key }?.let {
+            return it.value
+        }
     }
-    region.settings.filterIsInstance<com.imyvm.iwg.domain.PermissionSetting>().find { it.key == key }?.let {
-        return if (it.isPersonal) it.playerUUID == playerUUID && it.value else it.value
+    region.settings.filterIsInstance<com.imyvm.iwg.domain.PermissionSetting>().let { settings ->
+        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
+            return it.value
+        }
+        settings.firstOrNull { !it.isPersonal && it.key == key }?.let {
+            return it.value
+        }
     }
+
     return null
 }
