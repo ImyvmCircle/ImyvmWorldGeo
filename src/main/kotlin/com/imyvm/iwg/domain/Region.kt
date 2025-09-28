@@ -16,11 +16,16 @@ class Region(
     }
 
     fun getScopeInfos(): List<Text> {
-        val scopeInfos = mutableListOf<Text>()
+        val infos = mutableListOf<Text>()
         geometryScope.forEachIndexed { index, geoScope ->
-            geoScope.getScopeInfo(index)?.let { scopeInfos.add(it) }
+            geoScope.getScopeInfo(index)?.let { infos.add(it) }
+            infos.addAll(geoScope.getSettingInfos())
         }
-        return scopeInfos
+        return infos
+    }
+
+    fun getSettingInfos(): List<Text> {
+        return formatSettings(settings, "region.setting")
     }
 
     fun calculateTotalArea(): Double {
@@ -43,6 +48,10 @@ class Region(
             fun getScopeInfo(index: Int): Text? {
                 val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
                 return Translator.tr("scope.info", index, scopeName, shapeInfoString)
+            }
+
+            fun getSettingInfos(): List<Text> {
+                return formatSettings(settings, "scope.setting", scopeName)
             }
         }
 
@@ -122,6 +131,37 @@ class Region(
             CIRCLE,
             RECTANGLE,
             POLYGON
+        }
+
+        private fun formatSettings(settings: List<Setting>, key: String, scopeName: String? = null): List<Text> {
+            val result = mutableListOf<Text>()
+
+            settings.filter { !it.isPersonal }.forEach { s ->
+                (if (scopeName == null) {
+                    Translator.tr(key, s.key.toString(), s.value.toString())
+                } else {
+                    Translator.tr(key, scopeName, s.key.toString(), s.value.toString())
+                })?.let {
+                    result.add(
+                        it
+                    )
+                }
+            }
+
+            settings.filter { it.isPersonal }.forEach { s ->
+                val playerName = s.playerUUID?.toString() ?: "?"
+                (if (scopeName == null) {
+                    Translator.tr("${key}.personal", s.key.toString(), s.value.toString(), playerName)
+                } else {
+                    Translator.tr("${key}.personal", scopeName, s.key.toString(), s.value.toString(), playerName)
+                })?.let {
+                    result.add(
+                        it
+                    )
+                }
+            }
+
+            return result
         }
     }
 }

@@ -96,7 +96,11 @@
 
   "region.error.no_scope": "Scope {0} not found in region {1}.",
 
+  "region.setting": "Region setting: {0} = {1}",
+  "region.setting.personal": "Region setting: {0} = {1} (Player {2})",
   "scope.info": "[{0}] {1}: {2}",
+  "scope.setting": "Scope {0} setting: {1} = {2}",
+  "scope.setting.personal": "Scope {0} setting: {1} = {2} (Player {3})",
 
   "geoshape.circle.info": "Shape : Circle | Center=({0}, {1}), Radius={2} | Area={3} m²",
   "geoshape.circle.invalid.info": "Shape : Invalid Circle | Area={0} m²",

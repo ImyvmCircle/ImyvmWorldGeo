@@ -4,6 +4,7 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 
 fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
     val messageKey = if (isApi) {
@@ -18,10 +19,9 @@ fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
             region.numberID.toString(),
             region.calculateTotalArea())
     )
-    val shapeInfos = region.getScopeInfos()
-    shapeInfos.forEach { info ->
-        player.sendMessage(info)
-    }
+
+    region.getSettingInfos().forEach { info -> player.sendMessage(info) }
+    region.getScopeInfos().forEach { info -> player.sendMessage(info) }
 }
 
 fun onListRegions(player: ServerPlayerEntity): Int {
