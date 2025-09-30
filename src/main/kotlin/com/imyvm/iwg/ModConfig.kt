@@ -21,6 +21,18 @@ class ModConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val LAZY_TICKER_SECONDS = Option(
+            "core.lazy_ticker_seconds",
+            1,
+            "the interval in seconds for lazy ticker tasks to run."
+        ) { obj: Config, path: String? ->
+            obj.getInt(
+                path
+            )
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,
