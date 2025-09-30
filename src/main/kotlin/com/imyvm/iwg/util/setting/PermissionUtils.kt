@@ -1,29 +1,10 @@
 package com.imyvm.iwg.util.setting
 
-import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.domain.Region
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.util.math.BlockPos
 import java.util.*
 
-fun playerCanBuildOrBreak(player: PlayerEntity, pos: BlockPos): Boolean {
-    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(pos.x, pos.z)
-    regionAndScope?.let { (region, scope) ->
-        return hasPermissionDefaultAllow(region, player.uuid, PermissionKey.BUILD_BREAK, scope)
-    }
-    return true
-}
-
-fun playerCanOpenContainer(player: PlayerEntity, pos: BlockPos): Boolean {
-    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(pos.x, pos.z)
-    regionAndScope?.let { (region, scope) ->
-        return hasPermissionDefaultAllow(region, player.uuid, PermissionKey.CONTAINER, scope)
-    }
-    return true
-}
-
-private fun hasPermissionDefaultAllow(
+fun hasPermissionDefaultAllow(
     region: Region,
     playerUUID: UUID,
     key: PermissionKey,
