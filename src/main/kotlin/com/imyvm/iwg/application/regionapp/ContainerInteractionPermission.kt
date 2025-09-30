@@ -11,7 +11,7 @@ import net.minecraft.util.ActionResult
 import net.minecraft.util.math.BlockPos
 
 fun registerPlayerContainerInteractionPermission() {
-    UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
+    UseBlockCallback.EVENT.register { player, world, _, hitResult ->
         val pos = hitResult.blockPos
         val blockEntity = world.getBlockEntity(pos)
 

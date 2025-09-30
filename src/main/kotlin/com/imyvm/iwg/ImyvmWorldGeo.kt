@@ -3,7 +3,9 @@ package com.imyvm.iwg
 import com.imyvm.iwg.inter.register.register
 import com.imyvm.iwg.domain.PlayerRegionChecker
 import com.imyvm.iwg.inter.register.registerLocationDisplay
+import com.imyvm.iwg.inter.register.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.registerRegionPermissions
+import com.imyvm.iwg.util.LazyTicker.registerLazyTicker
 import com.imyvm.iwg.util.command.UseBlockCommandsHandler
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
@@ -27,6 +29,9 @@ class ImyvmWorldGeo : ModInitializer {
 		dataLoad()
 		dataSave()
 
+		registerLazyTicker()
+
+		registerPlayerGeographyPair()
 		registerLocationDisplay()
 
 		registerRegionPermissions()
@@ -38,7 +43,6 @@ class ImyvmWorldGeo : ModInitializer {
 		const val MOD_ID = "imyvmworldgeo"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 		val data: RegionDatabase = RegionDatabase()
-		var tickCounter: Long = 0L
 
 		val playerRegionChecker: PlayerRegionChecker = PlayerRegionChecker()
 		val pointSelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()

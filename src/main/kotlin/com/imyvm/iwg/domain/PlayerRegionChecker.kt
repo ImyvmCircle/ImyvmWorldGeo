@@ -7,22 +7,18 @@ import java.util.*
 class PlayerRegionChecker {
     private val playerRegionScopeMap: MutableMap<UUID, Pair<Region, Region.Companion.GeoScope>?> = mutableMapOf()
 
-    fun tick(server: MinecraftServer) {
-        if ((ImyvmWorldGeo.tickCounter % 20).toInt() != 0) return
-        updatePlayerRegions(server)
-    }
+    fun updatePlayerRegions(server: MinecraftServer) {
+        val onlinePlayers = server.playerManager.playerList
 
-    private fun updatePlayerRegions(server: MinecraftServer) {
-        for (player in server.playerManager.playerList) {
+        for (player in onlinePlayers) {
             val playerX = player.blockX
             val playerZ = player.blockZ
             val currentRegionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(playerX, playerZ)
-
             playerRegionScopeMap[player.uuid] = currentRegionAndScope
         }
 
-        val onlinePlayers = server.playerManager.playerList.map { it.uuid }.toSet()
-        playerRegionScopeMap.keys.retainAll(onlinePlayers)
+        val onlineUUIDs = onlinePlayers.map { it.uuid }.toSet()
+        playerRegionScopeMap.keys.retainAll(onlineUUIDs)
     }
 
     fun getAllRegionScopesWithPlayers(): Map<UUID, Pair<Region?, Region.Companion.GeoScope?>> {
