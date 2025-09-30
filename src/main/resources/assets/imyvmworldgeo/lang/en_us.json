@@ -62,8 +62,10 @@
   "command.setting.error.invalid_value_int": "Invalid value for {0}. Expected an integer, but got: {1}.",
   "command.setting.error.invalid_target_player": "Invalid target player: {0}.",
   "command.setting.error.missing_target_player": "Missing target player name.",
-  "command.setting.error.region.duplicate_personal_setting": "Duplicate personal setting: {0} already exists for player {1} in this region.",
-  "command.setting.error.scope.duplicate_personal_setting": "Duplicate personal setting: {0} already exists for player {1} in scope {2}.",
+  "command.setting.error.region.duplicate_player": "Duplicate personal setting: {0} already exists for player {1} in this region.",
+  "command.setting.error.region.duplicate_global": "Duplicate global setting: {0} already exists in this region.",
+  "command.setting.error.scope.duplicate_personal_player": "Duplicate personal setting: {0} already exists for player {1} in scope {2}.",
+  "command.setting.error.scope.duplicate_global": "Duplicate global setting: {0} already exists in scope {2}.",
 
   "command.query.result": "§5Query successful!§r Showing information for Region: \n§e{0}§r (ID: §6{1}§r), total area: §a{2} m²§r",
 

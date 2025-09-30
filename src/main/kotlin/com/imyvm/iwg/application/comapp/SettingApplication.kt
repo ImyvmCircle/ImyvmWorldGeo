@@ -16,8 +16,7 @@ fun onHandleSetting(
     valueString: String?,
     targetPlayerStr: String?
 ) {
-    if (targetPlayerStr != null &&
-        !checkPlayerWhenPersonal(player, region, scopeName, keyString, valueString, targetPlayerStr)) return
+    if (!checkPlayer(player, region, scopeName, keyString, valueString, targetPlayerStr)) return
 
     try {
         val key = parseKeyOrFail(keyString)
@@ -137,13 +136,13 @@ private fun matchesSetting(
     return name.equals(targetPlayerStr, ignoreCase = true)
 }
 
-private fun checkPlayerWhenPersonal(
+private fun checkPlayer(
     player: ServerPlayerEntity,
     region: Region,
     scopeName: String?,
     keyString: String,
     valueString: String?,
-    targetPlayerStr: String
+    targetPlayerStr: String?
 ): Boolean {
     val server = player.server
 
@@ -157,11 +156,19 @@ private fun checkPlayerWhenPersonal(
 
         if (isDuplicateSetting(server, container, keyString, targetPlayerStr)) {
             val msgKey = if (scopeName == null) {
-                "command.setting.error.region.duplicate_personal_setting"
+                if (targetPlayerStr == null) {
+                    "command.setting.error.region.duplicate_global"
+                } else {
+                    "command.setting.error.region.duplicate_player"
+                }
             } else {
-                "command.setting.error.scope.duplicate_personal_setting"
+                if (targetPlayerStr == null) {
+                    "command.setting.error.scope.duplicate_global"
+                } else {
+                    "command.setting.error.scope.duplicate_player"
+                }
             }
-            player.sendMessage(Translator.tr(msgKey, keyString, targetPlayerStr, scopeName ?: ""))
+            player.sendMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", scopeName ?: ""))
             return false
         }
     }
@@ -172,15 +179,20 @@ private fun isDuplicateSetting(
     server: MinecraftServer,
     settings: List<Setting>,
     keyString: String,
-    targetPlayerStr: String
+    targetPlayerStr: String?
 ): Boolean {
-    return settings
-        .filter { it.key.toString() == keyString && it.playerUUID != null }
-        .any { setting ->
-            val profile = server.userCache?.getByUuid(setting.playerUUID)
-            profile?.get()?.name.equals(targetPlayerStr, ignoreCase = true)
+    return settings.any { setting ->
+        if (setting.key.toString() != keyString) return@any false
+
+        if (targetPlayerStr == null) {
+            return@any setting.playerUUID == null
+        } else {
+            val name = resolvePlayerName(server, setting.playerUUID)
+            return@any name.equals(targetPlayerStr, ignoreCase = true)
         }
+    }
 }
+
 
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
