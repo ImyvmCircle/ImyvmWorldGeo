@@ -15,6 +15,14 @@ fun playerCanBuildOrBreak(player: PlayerEntity, pos: BlockPos): Boolean {
     return true
 }
 
+fun playerCanOpenContainer(player: PlayerEntity, pos: BlockPos): Boolean {
+    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(pos.x, pos.z)
+    regionAndScope?.let { (region, scope) ->
+        return hasPermissionDefaultAllow(region, player.uuid, PermissionKey.CONTAINER, scope)
+    }
+    return true
+}
+
 private fun hasPermissionDefaultAllow(
     region: Region,
     playerUUID: UUID,

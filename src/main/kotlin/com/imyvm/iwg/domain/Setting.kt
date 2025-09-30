@@ -33,7 +33,8 @@ interface BaseKey
 
 enum class PermissionKey : BaseKey {
     BUILD_BREAK,
-    FLY
+    FLY,
+    CONTAINER
 }
 
 enum class EffectKey : BaseKey {
