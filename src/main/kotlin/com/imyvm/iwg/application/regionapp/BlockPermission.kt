@@ -2,7 +2,7 @@ package com.imyvm.iwg.application.regionapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.PermissionKey
-import com.imyvm.iwg.util.setting.hasPermissionDefaultAllow
+import com.imyvm.iwg.util.setting.hasPermissionBlacklist
 import com.imyvm.iwg.util.ui.Translator
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
@@ -39,7 +39,7 @@ private fun playerBreakPermission(){
 private fun playerCanBuildOrBreak(player: PlayerEntity, pos: BlockPos): Boolean {
     val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(pos.x, pos.z)
     regionAndScope?.let { (region, scope) ->
-        return hasPermissionDefaultAllow(region, player.uuid, PermissionKey.BUILD_BREAK, scope)
+        return hasPermissionBlacklist(region, player.uuid, PermissionKey.BUILD_BREAK, scope)
     }
     return true
 }

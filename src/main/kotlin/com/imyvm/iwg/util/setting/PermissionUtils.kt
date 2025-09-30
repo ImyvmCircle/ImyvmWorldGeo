@@ -4,7 +4,7 @@ import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.domain.Region
 import java.util.*
 
-fun hasPermissionDefaultAllow(
+fun hasPermissionBlacklist(
     region: Region,
     playerUUID: UUID,
     key: PermissionKey,
@@ -13,7 +13,7 @@ fun hasPermissionDefaultAllow(
     return checkPermission(region, playerUUID, key, scope) ?: true
 }
 
-private fun hasPermissionDefaultDeny(
+fun hasPermissionWhitelist(
     region: Region,
     playerUUID: UUID,
     key: PermissionKey,
