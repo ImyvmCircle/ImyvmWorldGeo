@@ -11,6 +11,7 @@ import java.util.*
 
 private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
 private val systemGrantedFly: MutableSet<UUID> = mutableSetOf()
+private val fallImmunity: MutableMap<UUID, Int> = mutableMapOf()
 
 fun registerFlyPermission() {
     LazyTicker.registerTask { server ->
@@ -19,6 +20,8 @@ fun registerFlyPermission() {
 }
 
 private fun playerFlyManagement(server: MinecraftServer) {
+    val currentTick = server.overworld.time.toInt()
+
     for (player in server.playerManager.playerList) {
         val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
 
@@ -40,6 +43,14 @@ private fun playerFlyManagement(server: MinecraftServer) {
         } else {
             handleNoFlyZone(player)
         }
+
+        fallImmunity[player.uuid]?.let { expireTick ->
+            if (currentTick <= expireTick) {
+                player.fallDistance = 0f
+            } else {
+                fallImmunity.remove(player.uuid)
+            }
+        }
     }
 
     processLandingCountdown(server)
@@ -55,7 +66,9 @@ private fun handleNoFlyZone(player: ServerPlayerEntity) {
 }
 
 private fun processLandingCountdown(server: MinecraftServer) {
+    val currentTick = server.overworld.time.toInt()
     val iterator = pendingLanding.iterator()
+
     while (iterator.hasNext()) {
         val entry = iterator.next()
         val uuid = entry.key
@@ -65,6 +78,7 @@ private fun processLandingCountdown(server: MinecraftServer) {
         if (player == null) {
             iterator.remove()
             systemGrantedFly.remove(uuid)
+            fallImmunity.remove(uuid)
             continue
         }
 
@@ -82,6 +96,7 @@ private fun processLandingCountdown(server: MinecraftServer) {
             if (uuid in systemGrantedFly) {
                 player.abilities.allowFlying = false
                 player.abilities.flying = false
+                fallImmunity[uuid] = currentTick + 20 * 10
                 player.sendAbilitiesUpdate()
                 player.sendMessage(Translator.tr("setting.permission.fly.disabled"))
                 systemGrantedFly.remove(uuid)
@@ -92,3 +107,4 @@ private fun processLandingCountdown(server: MinecraftServer) {
         }
     }
 }
+
