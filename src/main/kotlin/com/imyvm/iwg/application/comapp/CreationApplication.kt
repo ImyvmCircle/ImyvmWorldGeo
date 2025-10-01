@@ -28,7 +28,11 @@ fun onRegionCreation(
 
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
-            handleRegionCreateSuccessInternally(player, creationResult)
+            if (isApi) {
+                handleRegionCreateSuccess(player, creationResult)
+            } else {
+                handleRegionCreateSuccessInternally(player, creationResult)
+            }
             1
         }
         is Result.Err -> {

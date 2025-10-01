@@ -12,5 +12,8 @@ object ImyvmWorldGeoApi {
     fun stopSelection(player: ServerPlayerEntity) = onStopSelection(player)
     fun resetSelection(player: ServerPlayerEntity) = onResetSelection(player)
     fun createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?) = onRegionCreation(player, name, shapeTypeName ?: "", isApi = true)
+    fun deleteRegion(player: ServerPlayerEntity, region: Region) = onRegionDelete(player, region)
+    fun renameRegion(player: ServerPlayerEntity, region: Region, newName: String) = onRegionRename(player, region, newName)
+
     fun queryRegionInfo(player: ServerPlayerEntity, region: Region) = onQueryRegion(player, region, true)
 }
