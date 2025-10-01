@@ -9,6 +9,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 import com.imyvm.iwg.domain.Region
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 
 private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
 private val systemGrantedFly: MutableSet<UUID> = mutableSetOf()
@@ -18,12 +19,17 @@ fun registerFlyPermission() {
     LazyTicker.registerTask { server ->
         managePlayersFly(server)
     }
-}
 
+    ServerTickEvents.END_SERVER_TICK.register{ server ->
+        for (player in server.playerManager.playerList) {
+            val currentTick = server.overworld.time.toInt()
+            processFallImmunity(player, currentTick)
+        }
+    }
+}
 private fun managePlayersFly(server: MinecraftServer) {
     val currentTick = server.overworld.time.toInt()
     for (player in server.playerManager.playerList) {
-        processFallImmunity(player, currentTick)
         processPlayerFly(player)
     }
     processLandingCountdown(server, currentTick)
