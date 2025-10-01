@@ -33,6 +33,30 @@ class ModConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS = Option(
+            "core.permission.fly.disable_countdown_seconds",
+            5,
+            "the countdown time in seconds before disabling fly when the player leaves a region that allows flying."
+        ) { obj: Config, path: String? ->
+            obj.getInt(
+                path
+            )
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS = Option(
+            "core.permission.fly.disable_fall_immunity_seconds",
+            5,
+            "the duration in seconds of fall damage immunity after fly is disabled."
+        ) { obj: Config, path: String? ->
+            obj.getInt(
+                path
+            )
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,

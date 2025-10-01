@@ -118,5 +118,9 @@
 
   "setting.permission.build": "You dont have permission to build in this place.",
   "setting.permission.break": "You dont have permission to break in this place.",
-  "setting.permission.container": "You dont have permission to use container in this place."
+  "setting.permission.container": "You dont have permission to use container in this place.",
+  "setting.permission.fly.enabled": "You now have permission to fly in a flying-allowed area.",
+  "setting.permission.fly.restored": "Your flight has been restored returning to a flying-allowed area.",
+  "setting.permission.fly.disabled.soon": "You will lose your flight soon in a no-fly area in {0} seconds.",
+  "setting.permission.fly.disabled": "Your flight has been disabled in a no-fly area."
 }

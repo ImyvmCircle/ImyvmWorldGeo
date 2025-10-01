@@ -2,6 +2,8 @@ package com.imyvm.iwg.application.regionapp
 
 import com.imyvm.iwg.util.ui.Translator
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.ModConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
+import com.imyvm.iwg.ModConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.util.LazyTicker
 import com.imyvm.iwg.util.setting.hasPermissionWhitelist
@@ -50,8 +52,9 @@ private fun processPlayerFly(player: ServerPlayerEntity) {
         }
     } else {
         if (uuid in systemGrantedFly && uuid !in pendingLanding) {
-            pendingLanding[uuid] = 100
-            player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon"))
+            pendingLanding[uuid] = PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value * 20
+            player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon",
+                PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value))
         }
     }
 }
@@ -110,7 +113,8 @@ private fun processFallImmunity(player: ServerPlayerEntity, currentTick: Int) {
     }
 }
 
-private fun grantFallImmunity(uuid: UUID, currentTick: Int, durationTicks: Int = 20 * 10) {
+private fun grantFallImmunity(uuid: UUID, currentTick: Int) {
+    val durationTicks = PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS.value * 20
     fallImmunity[uuid] = currentTick + durationTicks
 }
 
