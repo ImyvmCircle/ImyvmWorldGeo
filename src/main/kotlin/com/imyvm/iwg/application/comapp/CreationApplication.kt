@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.util.ui.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionFactory
@@ -104,7 +105,7 @@ private fun tryRegionCreation(
 ): Result<Region, CreationError> {
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
-    val biggestId = ImyvmWorldGeo.data.getRegionList().maxOfOrNull { it.numberID } ?: -1
+    val biggestId = RegionDatabase.getRegionList().maxOfOrNull { it.numberID } ?: -1
     val newID = biggestId + 1
     return RegionFactory.createRegion(
         name = regionName,
@@ -133,7 +134,7 @@ private fun handleRegionCreateSuccess(
     notify: Boolean
 ) {
     val newRegion = creationResult.value
-    ImyvmWorldGeo.data.addRegion(newRegion)
+    RegionDatabase.addRegion(newRegion)
 
     if (notify) {
         player.sendMessage(Translator.tr("command.create.success", newRegion.name))

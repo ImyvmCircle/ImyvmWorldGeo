@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
@@ -26,7 +27,7 @@ fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) : 
 }
 
 fun onListRegions(player: ServerPlayerEntity): Int {
-    val regions = ImyvmWorldGeo.data.getRegionList()
+    val regions = RegionDatabase.getRegionList()
     if (regions.isEmpty()) {
         player.sendMessage(Translator.tr("command.list.empty"))
         return 0

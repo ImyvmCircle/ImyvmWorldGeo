@@ -1,9 +1,9 @@
 package com.imyvm.iwg.application.regionapp
 
 import com.imyvm.iwg.util.ui.Translator
-import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.ModConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
 import com.imyvm.iwg.ModConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.util.LazyTicker
 import com.imyvm.iwg.util.setting.hasPermissionWhitelist
@@ -38,7 +38,7 @@ private fun managePlayersFly(server: MinecraftServer) {
 
 private fun processPlayerFly(player: ServerPlayerEntity) {
     val uuid = player.uuid
-    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.blockX, player.blockZ)
     val canFlyNow = regionAndScope?.let { (region, scope) ->
         hasPermissionWhitelist(region, uuid, PermissionKey.FLY, scope)
     } ?: false
@@ -128,7 +128,7 @@ private fun cleanupAbsentPlayer(
 }
 
 private fun isStillNoFly(player: ServerPlayerEntity): Boolean {
-    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.blockX, player.blockZ)
     return regionAndScope?.let { (region, scope) ->
         !hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
     } ?: true

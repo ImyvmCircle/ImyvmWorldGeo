@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.regionapp
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.util.setting.hasPermissionBlacklist
 import com.imyvm.iwg.util.ui.Translator
@@ -27,7 +27,7 @@ fun registerPlayerContainerInteractionPermission() {
 }
 
 private fun playerCanOpenContainer(player: PlayerEntity, pos: BlockPos): Boolean {
-    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(pos.x, pos.z)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(pos.x, pos.z)
     regionAndScope?.let { (region, scope) ->
         return hasPermissionBlacklist(region, player.uuid, PermissionKey.CONTAINER, scope)
     }

@@ -1,6 +1,6 @@
 package com.imyvm.iwg.util.command
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.RegionNotFoundException
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
@@ -14,9 +14,9 @@ fun identifierHandler(
     return try {
         val region: Region = if (regionIdentifier.matches("\\d+".toRegex())) {
             val regionId = regionIdentifier.toInt()
-            ImyvmWorldGeo.data.getRegionByNumberId(regionId)
+            RegionDatabase.getRegionByNumberId(regionId)
         } else {
-            ImyvmWorldGeo.data.getRegionByName(regionIdentifier)
+            RegionDatabase.getRegionByName(regionIdentifier)
         }
         onRegionFound(region)
         1

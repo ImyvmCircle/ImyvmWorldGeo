@@ -1,6 +1,6 @@
 package com.imyvm.iwg.util.command
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.domain.EffectKey
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.domain.Region
@@ -19,7 +19,7 @@ val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSource> = Su
 }
 
 val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { _, builder ->
-    val regionNames = ImyvmWorldGeo.data.getRegionList().map { it.name }
+    val regionNames = RegionDatabase.getRegionList().map { it.name }
     regionNames.forEach { builder.suggest(it) }
     builder.buildFuture()
 }
@@ -60,7 +60,7 @@ val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { 
 }
 
 fun getScopesForRegion(identifier: String): List<String> {
-    val region = ImyvmWorldGeo.data.getRegionList().find {
+    val region = RegionDatabase.getRegionList().find {
         it.name.equals(identifier, ignoreCase = true) || it.numberID.toString() == identifier
     }
     return region?.geometryScope?.map { it.scopeName } ?: emptyList()

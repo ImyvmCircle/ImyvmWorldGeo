@@ -1,6 +1,6 @@
 package com.imyvm.iwg.domain
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.util.ui.CreationError
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.util.math.BlockPos
@@ -64,7 +64,7 @@ object RegionFactory {
 
         val geoShape = (geoShapeResult as Result.Ok).value
 
-        val existingScopes = ImyvmWorldGeo.data.getRegionList().flatMap { it.geometryScope }
+        val existingScopes = RegionDatabase.getRegionList().flatMap { it.geometryScope }
         if (checkIntersection(geoShape, existingScopes)) {
             return Result.Err(CreationError.IntersectionBetweenScopes)
         }

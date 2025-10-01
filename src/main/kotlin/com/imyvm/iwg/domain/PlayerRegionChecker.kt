@@ -1,6 +1,6 @@
 package com.imyvm.iwg.domain
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import net.minecraft.server.MinecraftServer
 import java.util.*
 
@@ -13,7 +13,7 @@ class PlayerRegionChecker {
         for (player in onlinePlayers) {
             val playerX = player.blockX
             val playerZ = player.blockZ
-            val currentRegionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(playerX, playerZ)
+            val currentRegionAndScope = RegionDatabase.getRegionAndScopeAt(playerX, playerZ)
             playerRegionScopeMap[player.uuid] = currentRegionAndScope
         }
 

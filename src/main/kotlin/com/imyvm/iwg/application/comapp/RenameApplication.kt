@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.comapp
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
@@ -11,7 +11,7 @@ fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String):
     if(!checkNameRepeat(oldName, newName, player)) return 0
 
     return try {
-        ImyvmWorldGeo.data.renameRegion(region, newName)
+        RegionDatabase.renameRegion(region, newName)
         player.sendMessage(Translator.tr("command.rename.success", oldName, newName))
         1
     } catch (e: IllegalArgumentException) {

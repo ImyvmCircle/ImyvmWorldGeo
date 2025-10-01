@@ -11,7 +11,10 @@ import kotlin.collections.ArrayList
 
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
-class RegionDatabase {
+object RegionDatabase {
+
+    private lateinit var regions: MutableList<Region>
+    private const val DATABASE_FILENAME = "iwg_regions.db"
 
     @Throws(IOException::class)
     fun save() {
@@ -219,10 +222,5 @@ class RegionDatabase {
 
     private fun getDatabasePath(): Path {
         return FabricLoader.getInstance().gameDir.resolve("world").resolve(DATABASE_FILENAME)
-    }
-
-    companion object {
-        private const val DATABASE_FILENAME = "iwg_regions.db"
-        lateinit var regions: MutableList<Region>
     }
 }

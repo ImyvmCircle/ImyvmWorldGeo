@@ -43,7 +43,6 @@ class ImyvmWorldGeo : ModInitializer {
 		const val MOD_ID = "imyvmworldgeo"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
-		val data: RegionDatabase = RegionDatabase()
 		val playerRegionChecker: PlayerRegionChecker = PlayerRegionChecker()
 
 		val pointSelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
@@ -51,7 +50,7 @@ class ImyvmWorldGeo : ModInitializer {
 
 		fun dataLoad() {
 			try {
-				data.load()
+				RegionDatabase.load()
 			} catch (e: Exception) {
 				logger.error("Failed to load region database: ${e.message}", e)
 			}
@@ -60,7 +59,7 @@ class ImyvmWorldGeo : ModInitializer {
 		fun dataSave() {
 			ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
 				try {
-					data.save()
+					RegionDatabase.save()
 				} catch (e: Exception) {
 					logger.error("Failed to save region database: ${e.message}", e)
 				}
