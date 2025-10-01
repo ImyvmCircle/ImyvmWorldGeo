@@ -8,7 +8,6 @@ import com.imyvm.iwg.util.setting.hasPermissionWhitelist
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
-import com.imyvm.iwg.domain.Region
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 
 private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
@@ -36,18 +35,25 @@ private fun managePlayersFly(server: MinecraftServer) {
 }
 
 private fun processPlayerFly(player: ServerPlayerEntity) {
+    val uuid = player.uuid
     val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
-    if (regionAndScope != null) handleFlyPermission(player, regionAndScope)
-    else handleNoFlyZone(player)
-}
+    val canFlyNow = regionAndScope?.let { (region, scope) ->
+        hasPermissionWhitelist(region, uuid, PermissionKey.FLY, scope)
+    } ?: false
 
-private fun handleFlyPermission(
-    player: ServerPlayerEntity,
-    regionAndScope: Pair<Region, Region.Companion.GeoScope>
-) {
-    val (region, scope) = regionAndScope
-    val canFly = hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
-    if (canFly) enableFlying(player) else handleNoFlyZone(player)
+    if (canFlyNow) {
+        if (!player.abilities.allowFlying && uuid !in systemGrantedFly) {
+            enableFlying(player)
+        } else if (uuid in pendingLanding) {
+            pendingLanding.remove(uuid)
+            player.sendMessage(Translator.tr("setting.permission.fly.restored"))
+        }
+    } else {
+        if (uuid in systemGrantedFly && uuid !in pendingLanding) {
+            pendingLanding[uuid] = 100
+            player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon"))
+        }
+    }
 }
 
 private fun enableFlying(player: ServerPlayerEntity) {
@@ -58,14 +64,6 @@ private fun enableFlying(player: ServerPlayerEntity) {
         systemGrantedFly.add(player.uuid)
     }
     pendingLanding.remove(player.uuid)
-}
-
-private fun handleNoFlyZone(player: ServerPlayerEntity) {
-    if (player.uuid !in systemGrantedFly || !player.abilities.allowFlying) return
-    if (player.uuid !in pendingLanding) {
-        pendingLanding[player.uuid] = 100
-        player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon"))
-    }
 }
 
 private fun processLandingCountdown(server: MinecraftServer, currentTick: Int) {
