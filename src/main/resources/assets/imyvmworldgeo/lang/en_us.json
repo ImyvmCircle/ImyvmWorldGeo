@@ -27,6 +27,8 @@
   "command.scope.add.not_found_generic": "Could not find the specified region.",
   "command.scope.add.duplicate_scope_name": "The region already has a scope with the same name given by command.",
   "command.scope.add.success": "Successfully added a new scope {0} to region {1}.",
+  "command.scope.add.name_auto_filled": "Scope name not provided. Auto-filled with {0}.",
+  "command.scope.add.name_is_digits_only": "Region/scope name cannot be digits only.",
 
   "command.scope.delete.success": "Successfully deleted scope {0} from region {1}.",
 
