@@ -21,8 +21,8 @@ class ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
 
-		CommandRegistrationCallback.EVENT.register { dispatcher, registryAccess, _ ->
-			register(dispatcher, registryAccess)
+		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
+			register(dispatcher)
 		}
 		UseBlockCallback.EVENT.register(UseBlockCommandsHandler())
 

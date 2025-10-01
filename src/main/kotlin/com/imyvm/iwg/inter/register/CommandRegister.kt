@@ -5,12 +5,11 @@ import com.imyvm.iwg.util.command.*
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
-import net.minecraft.command.CommandRegistryAccess
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
 
-fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess: CommandRegistryAccess) {
+fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
         literal("imyvm-world-geo")
             .then(
@@ -249,7 +248,7 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val nameArg = getOptionalArgument(context, "name")
     val shapeTypeArg = StringArgumentType.getString(context, "shapeType").uppercase()
-    return onRegionCreation(player, nameArg, shapeTypeArg, isApi = false)
+    return onRegionCreation(player, nameArg, shapeTypeArg)
 }
 
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
@@ -276,18 +275,18 @@ private fun runDeleteScope(context: CommandContext<ServerCommandSource>): Int {
     return identifierHandler(regionIdentifier, player) { regionToDeleteScope -> onScopeDelete(player, regionToDeleteScope, scopeName)}
 }
 
-private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
-    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    val scopeName = context.getArgument("scopeName", String::class.java)
-    return identifierHandler(regionIdentifier, player) { regionToModifyScope -> onModifyScope(player, regionToModifyScope, scopeName)}
-}
-
 private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToRenameScope ->
         onScopeRename(player, regionToRenameScope, scopeName, newName)}
+}
+
+private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    return identifierHandler(regionIdentifier, player) { regionToModifyScope -> onModifyScope(player, regionToModifyScope, scopeName)}
 }
 
 private fun runAddDeleteSetting(context: CommandContext<ServerCommandSource>): Int {
