@@ -232,25 +232,24 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>, registryAccess:
 
 private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    return startSelection(player)
+    return onStartSelection(player)
 }
 
 private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    return stopSelection(player)
+    return onStopSelection(player)
 }
 
 private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    return resetSelection(player)
+    return onResetSelection(player)
 }
 
 private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    if (!selectionModeCheck(player)) return 0
-    val regionName = getRegionNameAutoFillCheck(player, StringArgumentType.getString(context, "name")) ?: return 0
-    val shapeType = getShapeTypeCheck(player, StringArgumentType.getString(context, "shapeType").uppercase()) ?: return 0
-    return onRegionCreation(player, regionName, shapeType)
+    val nameArg = StringArgumentType.getString(context, "name")
+    val shapeTypeArg = StringArgumentType.getString(context, "shapeType").uppercase()
+    return onRegionCreation(player, nameArg, shapeTypeArg, isApi = false)
 }
 
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {

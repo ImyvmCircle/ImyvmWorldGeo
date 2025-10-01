@@ -4,7 +4,6 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
-import org.apache.logging.log4j.core.tools.picocli.CommandLine.Help.Ansi.Text
 
 fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String): Int {
     if(!checkNameDigit(newName, player)) return 0

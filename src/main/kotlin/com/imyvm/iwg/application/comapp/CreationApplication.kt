@@ -10,7 +10,22 @@ import com.imyvm.iwg.util.ui.errorMessage
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
-fun onRegionCreation(player: ServerPlayerEntity, regionName: String, shapeType: Region.Companion.GeoShapeType): Int {
+fun onRegionCreation(
+    player: ServerPlayerEntity,
+    regionNameArg: String?,
+    shapeTypeName: String,
+    isApi: Boolean = false
+): Int {
+    if (!selectionModeCheck(player)) return 0
+
+    val regionName = if (isApi) {
+        getRegionNameCheck(player, regionNameArg) ?: return 0
+    } else {
+        getRegionNameAutoFillCheck(player, regionNameArg) ?: return 0
+    }
+
+    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
+
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
             handleRegionCreateSuccessInternally(player, creationResult)

@@ -8,45 +8,9 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 @Suppress("unused")
 object ImyvmWorldGeoApi {
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun startSelection(player: ServerPlayerEntity): Int{
-        return startSelection(player)
-    }
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun stopSelection(player: ServerPlayerEntity): Int{
-        return stopSelection(player)
-    }
-
-    @Suppress("MemberVisibilityCanBePrivate")
-    fun resetSelection(player: ServerPlayerEntity): Int{
-        return resetSelection(player)
-    }
-
-    fun createRegion(
-        player: ServerPlayerEntity,
-        name: String?,
-        shapeTypeName: String?): Int{
-        if (!selectionModeCheck(player)) return 0
-        val regionName = getRegionNameCheck(player, name) ?: return 0
-        val shapeType = getShapeTypeCheck(player, shapeTypeName ?: "") ?: return 0
-
-        return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
-            is Result.Ok -> {
-                handleRegionCreateSuccess(player, creationResult)
-                1
-            }
-            is Result.Err -> {
-                val errorMsg = errorMessage(creationResult.error, shapeType)
-                player.sendMessage(errorMsg)
-                0
-            }
-        }
-    }
-
-    fun queryRegionInfo(player: ServerPlayerEntity, region: Region): Int{
-        onQueryRegion(player, region, true)
-        return 1
-    }
+    fun startSelection(player: ServerPlayerEntity) = onStartSelection(player)
+    fun stopSelection(player: ServerPlayerEntity) = onStopSelection(player)
+    fun resetSelection(player: ServerPlayerEntity) = onResetSelection(player)
+    fun createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?) = onRegionCreation(player, name, shapeTypeName ?: "", isApi = true)
+    fun queryRegionInfo(player: ServerPlayerEntity, region: Region) = onQueryRegion(player, region, true)
 }

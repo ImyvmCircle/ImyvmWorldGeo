@@ -5,7 +5,7 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.ui.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
-fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
+fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) : Int{
     val messageKey = if (isApi) {
         "api.query.result"
     } else {
@@ -22,6 +22,7 @@ fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) {
     val server = player.server
     region.getSettingInfos(server).forEach { info -> player.sendMessage(info) }
     region.getScopeInfos(server).forEach { info -> player.sendMessage(info) }
+    return 1
 }
 
 fun onListRegions(player: ServerPlayerEntity): Int {
