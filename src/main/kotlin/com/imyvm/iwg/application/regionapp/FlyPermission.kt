@@ -8,6 +8,7 @@ import com.imyvm.iwg.util.setting.hasPermissionWhitelist
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
+import com.imyvm.iwg.domain.Region
 
 private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
 private val systemGrantedFly: MutableSet<UUID> = mutableSetOf()
@@ -15,96 +16,108 @@ private val fallImmunity: MutableMap<UUID, Int> = mutableMapOf()
 
 fun registerFlyPermission() {
     LazyTicker.registerTask { server ->
-        playerFlyManagement(server)
+        managePlayersFly(server)
     }
 }
 
-private fun playerFlyManagement(server: MinecraftServer) {
+private fun managePlayersFly(server: MinecraftServer) {
     val currentTick = server.overworld.time.toInt()
-
     for (player in server.playerManager.playerList) {
-        val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
-
-        if (regionAndScope != null) {
-            val (region, scope) = regionAndScope
-            val canFly = hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
-
-            if (canFly) {
-                if (!player.abilities.allowFlying) {
-                    player.abilities.allowFlying = true
-                    player.sendAbilitiesUpdate()
-                    player.sendMessage(Translator.tr("setting.permission.fly.enabled"))
-                    systemGrantedFly.add(player.uuid)
-                }
-                pendingLanding.remove(player.uuid)
-            } else {
-                handleNoFlyZone(player)
-            }
-        } else {
-            handleNoFlyZone(player)
-        }
-
-        fallImmunity[player.uuid]?.let { expireTick ->
-            if (currentTick <= expireTick) {
-                player.fallDistance = 0f
-            } else {
-                fallImmunity.remove(player.uuid)
-            }
-        }
+        processPlayerFly(player)
+        processFallImmunity(player, currentTick)
     }
+    processLandingCountdown(server, currentTick)
+}
 
-    processLandingCountdown(server)
+private fun processPlayerFly(player: ServerPlayerEntity) {
+    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
+    if (regionAndScope != null) handleFlyPermission(player, regionAndScope)
+    else handleNoFlyZone(player)
+}
+
+private fun handleFlyPermission(
+    player: ServerPlayerEntity,
+    regionAndScope: Pair<Region, Region.Companion.GeoScope>
+) {
+    val (region, scope) = regionAndScope
+    val canFly = hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
+    if (canFly) enableFlying(player) else handleNoFlyZone(player)
+}
+
+private fun enableFlying(player: ServerPlayerEntity) {
+    if (!player.abilities.allowFlying) {
+        player.abilities.allowFlying = true
+        player.sendAbilitiesUpdate()
+        player.sendMessage(Translator.tr("setting.permission.fly.enabled"))
+        systemGrantedFly.add(player.uuid)
+    }
+    pendingLanding.remove(player.uuid)
+}
+
+private fun processFallImmunity(player: ServerPlayerEntity, currentTick: Int) {
+    fallImmunity[player.uuid]?.let { expireTick ->
+        if (currentTick <= expireTick) player.fallDistance = 0f
+        else fallImmunity.remove(player.uuid)
+    }
 }
 
 private fun handleNoFlyZone(player: ServerPlayerEntity) {
-    if (player.uuid in systemGrantedFly && player.abilities.allowFlying) {
-        if (!pendingLanding.containsKey(player.uuid)) {
-            pendingLanding[player.uuid] = 100
-            player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon"))
-        }
+    if (player.uuid !in systemGrantedFly || !player.abilities.allowFlying) return
+    if (player.uuid !in pendingLanding) {
+        pendingLanding[player.uuid] = 100
+        player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon"))
     }
 }
 
-private fun processLandingCountdown(server: MinecraftServer) {
-    val currentTick = server.overworld.time.toInt()
+private fun processLandingCountdown(server: MinecraftServer, currentTick: Int) {
     val iterator = pendingLanding.iterator()
-
     while (iterator.hasNext()) {
         val entry = iterator.next()
         val uuid = entry.key
         val ticksLeft = entry.value - 20
-
         val player = server.playerManager.getPlayer(uuid)
-        if (player == null) {
-            iterator.remove()
-            systemGrantedFly.remove(uuid)
-            fallImmunity.remove(uuid)
-            continue
-        }
-
-        val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
-        val stillNoFly = regionAndScope?.let { (region, scope) ->
-            !hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
-        } ?: true
-
-        if (!stillNoFly) {
-            iterator.remove()
-            continue
-        }
-
-        if (ticksLeft <= 0) {
-            if (uuid in systemGrantedFly) {
-                player.abilities.allowFlying = false
-                player.abilities.flying = false
-                fallImmunity[uuid] = currentTick + 20 * 10
-                player.sendAbilitiesUpdate()
-                player.sendMessage(Translator.tr("setting.permission.fly.disabled"))
-                systemGrantedFly.remove(uuid)
-            }
-            iterator.remove()
-        } else {
-            pendingLanding[uuid] = ticksLeft
-        }
+        if (player == null) { cleanupAbsentPlayer(uuid, iterator); continue }
+        if (!isStillNoFly(player)) { iterator.remove(); continue }
+        handleLandingEnd(player, uuid, ticksLeft, currentTick, iterator)
     }
 }
 
+private fun cleanupAbsentPlayer(
+    uuid: UUID,
+    iterator: MutableIterator<MutableMap.MutableEntry<UUID, Int>>
+) {
+    iterator.remove()
+    systemGrantedFly.remove(uuid)
+    fallImmunity.remove(uuid)
+}
+
+private fun isStillNoFly(player: ServerPlayerEntity): Boolean {
+    val regionAndScope = ImyvmWorldGeo.data.getRegionAndScopeAt(player.blockX, player.blockZ)
+    return regionAndScope?.let { (region, scope) ->
+        !hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
+    } ?: true
+}
+
+private fun handleLandingEnd(
+    player: ServerPlayerEntity,
+    uuid: UUID,
+    ticksLeft: Int,
+    currentTick: Int,
+    iterator: MutableIterator<MutableMap.MutableEntry<UUID, Int>>
+) {
+    if (ticksLeft <= 0) {
+        if (uuid in systemGrantedFly) disableFlying(player, uuid, currentTick)
+        iterator.remove()
+    } else {
+        pendingLanding[uuid] = ticksLeft
+    }
+}
+
+private fun disableFlying(player: ServerPlayerEntity, uuid: UUID, currentTick: Int) {
+    player.abilities.allowFlying = false
+    player.abilities.flying = false
+    fallImmunity[uuid] = currentTick + 20 * 10
+    player.sendAbilitiesUpdate()
+    player.sendMessage(Translator.tr("setting.permission.fly.disabled"))
+    systemGrantedFly.remove(uuid)
+}
