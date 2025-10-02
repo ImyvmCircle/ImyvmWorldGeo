@@ -1,11 +1,11 @@
-package com.imyvm.iwg.inter
+package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.domain.Region
 import net.minecraft.server.network.ServerPlayerEntity
 
 @Suppress("unused")
-object ImyvmWorldGeoApi {
+object PlayerInteractionApi {
     fun startSelection(player: ServerPlayerEntity) = onStartSelection(player)
     fun stopSelection(player: ServerPlayerEntity) = onStopSelection(player)
     fun resetSelection(player: ServerPlayerEntity) = onResetSelection(player)
