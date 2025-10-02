@@ -1,4 +1,6 @@
 {
+  "interaction.point.selection": "&aSelected position: &e{0}\n&aAll positions:\n&b{1}",
+
   "api.query.result": "Region: {0} (ID: {1}), total area: {2} m²\n",
 
   "command.not_found_id": "Error: Region with ID {0} not found.",
