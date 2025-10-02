@@ -1,7 +1,8 @@
-package com.imyvm.iwg.domain
+package com.imyvm.iwg.application.regionapp
 
-import com.imyvm.iwg.RegionDatabase
-import com.imyvm.iwg.util.ui.CreationError
+import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
@@ -114,7 +115,10 @@ object RegionFactory {
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
-            Region.Companion.GeoShape(Region.Companion.GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))
+            Region.Companion.GeoShape(
+                Region.Companion.GeoShapeType.CIRCLE,
+                mutableListOf(center.x, center.z, radius.toInt())
+            )
         )
     }
 
@@ -129,7 +133,8 @@ object RegionFactory {
         return Result.Ok(
             Region.Companion.GeoShape(
                 geoShapeType = Region.Companion.GeoShapeType.POLYGON,
-                positions.flatMap { listOf(it.x, it.z) }.toMutableList())
+                positions.flatMap { listOf(it.x, it.z) }.toMutableList()
+            )
         )
     }
 

@@ -1,9 +1,8 @@
 package com.imyvm.iwg.application.comapp
 
-import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.RegionDatabase
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.util.ui.Translator
+import com.imyvm.iwg.application.ui.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun onRegionDelete(player: ServerPlayerEntity, region: Region){

@@ -1,21 +1,16 @@
-package com.imyvm.iwg.application.regionapp
+package com.imyvm.iwg.application.regionapp.permission
 
-import com.imyvm.iwg.RegionDatabase
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.PermissionKey
-import com.imyvm.iwg.util.setting.hasPermissionBlacklist
-import com.imyvm.iwg.util.ui.Translator
+import com.imyvm.iwg.application.regionapp.permission.helper.hasPermissionBlacklist
+import com.imyvm.iwg.application.ui.text.Translator
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.util.ActionResult
 import net.minecraft.util.math.BlockPos
 
-fun registerPlayerBuildBreakPermission(){
-    playerBuildPermission()
-    playerBreakPermission()
-}
-
-private fun playerBuildPermission(){
+fun playerBuildPermission(){
     UseBlockCallback.EVENT.register { player, _, _, hitResult ->
         val pos = hitResult.blockPos
         if (!playerCanBuildOrBreak(player, pos)) {
@@ -26,7 +21,7 @@ private fun playerBuildPermission(){
     }
 }
 
-private fun playerBreakPermission(){
+fun playerBreakPermission(){
     PlayerBlockBreakEvents.BEFORE.register { _, player, pos, _, _ ->
         if (!playerCanBuildOrBreak(player, pos)) {
             player.sendMessage(Translator.tr("setting.permission.break"))

@@ -1,4 +1,4 @@
-package com.imyvm.iwg.inter.api
+package com.imyvm.iwg.inter
 
 import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.domain.Region

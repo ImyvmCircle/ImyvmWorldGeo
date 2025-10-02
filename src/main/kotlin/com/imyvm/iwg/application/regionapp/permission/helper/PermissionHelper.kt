@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util.setting
+package com.imyvm.iwg.application.regionapp.permission.helper
 
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.domain.Region

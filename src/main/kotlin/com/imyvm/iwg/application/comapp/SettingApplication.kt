@@ -1,9 +1,9 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.domain.*
-import com.imyvm.iwg.util.resolver.getUUIDFromPlayerName
-import com.imyvm.iwg.util.resolver.resolvePlayerName
-import com.imyvm.iwg.util.ui.Translator
+import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
+import com.imyvm.iwg.util.translator.resolvePlayerName
+import com.imyvm.iwg.application.ui.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*

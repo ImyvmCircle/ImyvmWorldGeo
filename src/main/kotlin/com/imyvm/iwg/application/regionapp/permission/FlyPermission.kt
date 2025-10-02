@@ -1,34 +1,21 @@
-package com.imyvm.iwg.application.regionapp
+package com.imyvm.iwg.application.regionapp.permission
 
-import com.imyvm.iwg.util.ui.Translator
-import com.imyvm.iwg.ModConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
-import com.imyvm.iwg.ModConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
-import com.imyvm.iwg.RegionDatabase
+import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.infra.ModConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
+import com.imyvm.iwg.infra.ModConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.PermissionKey
-import com.imyvm.iwg.util.LazyTicker
-import com.imyvm.iwg.util.setting.hasPermissionWhitelist
+import com.imyvm.iwg.application.regionapp.permission.helper.hasPermissionWhitelist
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 
 private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
 private val systemGrantedFly: MutableSet<UUID> = mutableSetOf()
 private val fallImmunity: MutableMap<UUID, Int> = mutableMapOf()
 
-fun registerFlyPermission() {
-    LazyTicker.registerTask { server ->
-        managePlayersFly(server)
-    }
 
-    ServerTickEvents.END_SERVER_TICK.register{ server ->
-        for (player in server.playerManager.playerList) {
-            val currentTick = server.overworld.time.toInt()
-            processFallImmunity(player, currentTick)
-        }
-    }
-}
-private fun managePlayersFly(server: MinecraftServer) {
+fun managePlayersFly(server: MinecraftServer) {
     val currentTick = server.overworld.time.toInt()
     for (player in server.playerManager.playerList) {
         processPlayerFly(player)
@@ -36,7 +23,7 @@ private fun managePlayersFly(server: MinecraftServer) {
     processLandingCountdown(server, currentTick)
 }
 
-private fun processPlayerFly(player: ServerPlayerEntity) {
+fun processPlayerFly(player: ServerPlayerEntity) {
     val uuid = player.uuid
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.blockX, player.blockZ)
     val canFlyNow = regionAndScope?.let { (region, scope) ->
@@ -53,7 +40,8 @@ private fun processPlayerFly(player: ServerPlayerEntity) {
     } else {
         if (uuid in systemGrantedFly && uuid !in pendingLanding) {
             pendingLanding[uuid] = PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value * 20
-            player.sendMessage(Translator.tr("setting.permission.fly.disabled.soon",
+            player.sendMessage(
+                Translator.tr("setting.permission.fly.disabled.soon",
                 PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value))
         }
     }
@@ -106,7 +94,7 @@ private fun disableFlying(player: ServerPlayerEntity, uuid: UUID, currentTick: I
     systemGrantedFly.remove(uuid)
 }
 
-private fun processFallImmunity(player: ServerPlayerEntity, currentTick: Int) {
+fun processFallImmunity(player: ServerPlayerEntity, currentTick: Int) {
     fallImmunity[player.uuid]?.let { expireTick ->
         if (currentTick <= expireTick) player.fallDistance = 0f
         else fallImmunity.remove(player.uuid)

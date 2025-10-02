@@ -1,4 +1,4 @@
-package com.imyvm.iwg
+package com.imyvm.iwg.infra
 
 import com.imyvm.iwg.domain.*
 import net.fabricmc.loader.api.FabricLoader
@@ -18,7 +18,7 @@ object RegionDatabase {
 
     @Throws(IOException::class)
     fun save() {
-        val file = this.getDatabasePath()
+        val file = getDatabasePath()
         DataOutputStream(file.toFile().outputStream()).use { stream ->
             stream.writeInt(regions.size)
             for (region in regions) {
@@ -32,7 +32,7 @@ object RegionDatabase {
 
     @Throws(IOException::class)
     fun load() {
-        val file = this.getDatabasePath()
+        val file = getDatabasePath()
         if (!file.toFile().exists()) {
             regions = mutableListOf()
             return

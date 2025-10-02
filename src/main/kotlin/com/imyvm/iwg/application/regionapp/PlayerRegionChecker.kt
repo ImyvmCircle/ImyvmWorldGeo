@@ -1,6 +1,7 @@
-package com.imyvm.iwg.domain
+package com.imyvm.iwg.application.regionapp
 
-import com.imyvm.iwg.RegionDatabase
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.infra.RegionDatabase
 import net.minecraft.server.MinecraftServer
 import java.util.*
 

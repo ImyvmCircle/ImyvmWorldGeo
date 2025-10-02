@@ -1,16 +1,12 @@
 package com.imyvm.iwg
 
-import com.imyvm.iwg.inter.register.register
-import com.imyvm.iwg.domain.PlayerRegionChecker
-import com.imyvm.iwg.inter.register.registerLocationDisplay
-import com.imyvm.iwg.inter.register.registerPlayerGeographyPair
-import com.imyvm.iwg.inter.register.registerRegionPermissions
-import com.imyvm.iwg.util.LazyTicker.registerLazyTicker
-import com.imyvm.iwg.util.command.UseBlockCommandsHandler
+import com.imyvm.iwg.application.regionapp.PlayerRegionChecker
+import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
+import com.imyvm.iwg.inter.register.*
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
-import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
@@ -24,7 +20,7 @@ class ImyvmWorldGeo : ModInitializer {
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
 			register(dispatcher)
 		}
-		UseBlockCallback.EVENT.register(UseBlockCommandsHandler())
+		registerPointSelection()
 
 		dataLoad()
 		dataSave()

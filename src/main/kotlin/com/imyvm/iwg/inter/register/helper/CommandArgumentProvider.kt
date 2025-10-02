@@ -1,6 +1,6 @@
-package com.imyvm.iwg.util.command
+package com.imyvm.iwg.inter.register.helper
 
-import com.imyvm.iwg.RegionDatabase
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.EffectKey
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.domain.Region

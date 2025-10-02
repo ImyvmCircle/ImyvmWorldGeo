@@ -1,12 +1,12 @@
 package com.imyvm.iwg.util.geo
-import com.imyvm.iwg.ModConfig.Companion.MIN_CIRCLE_RADIUS
-import com.imyvm.iwg.ModConfig.Companion.MIN_POLYGON_AREA
-import com.imyvm.iwg.ModConfig.Companion.MIN_RECTANGLE_AREA
-import com.imyvm.iwg.ModConfig.Companion.MIN_SIDE_LENGTH
-import com.imyvm.iwg.ModConfig.Companion.MIN_POLYGON_SPAN
-import com.imyvm.iwg.ModConfig.Companion.MIN_ASPECT_RATIO
-import com.imyvm.iwg.ModConfig.Companion.MIN_EDGE_LENGTH
-import com.imyvm.iwg.util.ui.CreationError
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_CIRCLE_RADIUS
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_POLYGON_AREA
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_RECTANGLE_AREA
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_SIDE_LENGTH
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_POLYGON_SPAN
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_ASPECT_RATIO
+import com.imyvm.iwg.infra.ModConfig.Companion.MIN_EDGE_LENGTH
+import com.imyvm.iwg.domain.CreationError
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 

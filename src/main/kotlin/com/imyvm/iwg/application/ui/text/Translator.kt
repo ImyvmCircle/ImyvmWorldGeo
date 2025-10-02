@@ -1,9 +1,9 @@
-package com.imyvm.iwg.util.ui
+package com.imyvm.iwg.application.ui.text
 
 import com.imyvm.hoki.i18n.HokiLanguage
 import com.imyvm.hoki.i18n.HokiTranslator
 import com.imyvm.iwg.ImyvmWorldGeo.Companion.MOD_ID
-import com.imyvm.iwg.ModConfig
+import com.imyvm.iwg.infra.ModConfig
 import net.minecraft.text.Text
 
 object Translator : HokiTranslator() {

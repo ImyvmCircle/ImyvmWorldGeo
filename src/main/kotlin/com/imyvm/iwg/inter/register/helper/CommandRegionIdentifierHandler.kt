@@ -1,9 +1,9 @@
-package com.imyvm.iwg.util.command
+package com.imyvm.iwg.inter.register.helper
 
-import com.imyvm.iwg.RegionDatabase
-import com.imyvm.iwg.RegionNotFoundException
+import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.util.ui.Translator
+import com.imyvm.iwg.application.ui.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun identifierHandler(

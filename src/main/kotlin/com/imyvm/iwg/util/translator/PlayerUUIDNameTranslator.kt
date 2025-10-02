@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util.resolver
+package com.imyvm.iwg.util.translator
 
 import net.minecraft.server.MinecraftServer
 import java.util.*

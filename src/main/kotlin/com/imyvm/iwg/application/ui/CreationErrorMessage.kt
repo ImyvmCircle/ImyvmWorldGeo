@@ -1,19 +1,9 @@
-package com.imyvm.iwg.util.ui
+package com.imyvm.iwg.application.ui
 
+import com.imyvm.iwg.application.ui.text.Translator
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.CreationError
 import net.minecraft.text.Text
-
-sealed class CreationError {
-    data object DuplicatedPoints : CreationError()
-    data object InsufficientPoints : CreationError()
-    data object CoincidentPoints : CreationError()
-    data object UnderSizeLimit : CreationError()
-    data object UnderBoundingBoxLimit : CreationError()
-    data object AspectRatioInvalid : CreationError()
-    data object EdgeTooShort : CreationError()
-    data object NotConvex : CreationError()
-    data object IntersectionBetweenScopes : CreationError()
-}
 
 fun errorMessage(
     error: CreationError,

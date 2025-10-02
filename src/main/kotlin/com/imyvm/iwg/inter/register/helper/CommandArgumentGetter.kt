@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util.command
+package com.imyvm.iwg.inter.register.helper
 
 import com.mojang.brigadier.context.CommandContext
 import net.minecraft.server.command.ServerCommandSource

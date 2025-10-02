@@ -1,4 +1,4 @@
-package com.imyvm.iwg.util.ui
+package com.imyvm.iwg.application.ui.text
 
 import net.minecraft.text.Text
 import net.minecraft.text.Style
