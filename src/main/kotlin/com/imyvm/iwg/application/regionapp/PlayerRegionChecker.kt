@@ -7,7 +7,7 @@ import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
 object PlayerRegionChecker {
-    private val playerRegionScopeMap: MutableMap<UUID, Pair<Region, Region.Companion.GeoScope>?> = ConcurrentHashMap()
+    private val playerRegionScopeMap: MutableMap<UUID, Pair<Region?, Region.Companion.GeoScope?>> = ConcurrentHashMap()
 
     fun updatePlayerRegions(server: MinecraftServer) {
         val onlinePlayers = server.playerManager.playerList
@@ -16,7 +16,7 @@ object PlayerRegionChecker {
             val playerX = player.blockX
             val playerZ = player.blockZ
             val currentRegionAndScope = RegionDatabase.getRegionAndScopeAt(playerX, playerZ)
-            playerRegionScopeMap[player.uuid] = currentRegionAndScope
+            playerRegionScopeMap[player.uuid] = currentRegionAndScope ?: Pair(null, null)
         }
 
         val onlineUUIDs = onlinePlayers.map { it.uuid }.toSet()
@@ -25,10 +25,10 @@ object PlayerRegionChecker {
 
     fun getAllRegionScopesWithPlayers(): Map<UUID, Pair<Region?, Region.Companion.GeoScope?>> {
         return playerRegionScopeMap.mapValues { entry ->
-            val region = entry.value?.first
-            val scope = entry.value?.second
+            val region = entry.value.first
+            val scope = entry.value.second
             Pair(region, scope)
         }
     }
-
 }
+
