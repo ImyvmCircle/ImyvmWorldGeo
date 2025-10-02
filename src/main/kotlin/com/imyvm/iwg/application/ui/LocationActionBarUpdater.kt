@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.ui
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.regionapp.PlayerRegionChecker
 import com.imyvm.iwg.application.ui.text.Translator
 import com.imyvm.iwg.domain.Region
 import net.minecraft.server.network.ServerPlayerEntity
@@ -20,7 +21,7 @@ private fun isActionBarEnabled(player: ServerPlayerEntity) =
     ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)
 
 private fun getPlayerRegionScope(player: ServerPlayerEntity): Pair<Region?, Region.Companion.GeoScope?> {
-    val pair = ImyvmWorldGeo.playerRegionChecker.getAllRegionScopesWithPlayers()[player.uuid]
+    val pair = PlayerRegionChecker.getAllRegionScopesWithPlayers()[player.uuid]
     return pair?.first to pair?.second
 }
 

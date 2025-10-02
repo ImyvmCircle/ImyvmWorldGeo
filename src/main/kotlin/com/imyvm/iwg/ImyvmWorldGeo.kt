@@ -1,7 +1,5 @@
 package com.imyvm.iwg
 
-import com.imyvm.iwg.application.regionapp.PlayerRegionChecker
-import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
@@ -11,7 +9,6 @@ import com.imyvm.iwg.inter.register.command.register
 import com.imyvm.iwg.inter.register.registerDataLoadSave
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
@@ -37,8 +34,6 @@ class ImyvmWorldGeo : ModInitializer {
 	companion object {
 		const val MOD_ID = "imyvmworldgeo"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
-
-		val playerRegionChecker: PlayerRegionChecker = PlayerRegionChecker()
 
 		val pointSelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
 		val locationActionBarEnabledPlayers: MutableSet<UUID> = Collections.synchronizedSet(mutableSetOf())

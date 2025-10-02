@@ -1,10 +1,10 @@
 package com.imyvm.iwg.inter.register.event
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.regionapp.PlayerRegionChecker
 import com.imyvm.iwg.infra.LazyTicker
 
 fun registerPlayerGeographyPair() {
     LazyTicker.registerTask { server ->
-        ImyvmWorldGeo.playerRegionChecker.updatePlayerRegions(server)
+        PlayerRegionChecker.updatePlayerRegions(server)
     }
 }

@@ -2,7 +2,6 @@ package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.comapp.*
 import com.imyvm.iwg.inter.register.command.helper.*
-import com.imyvm.iwg.inter.register.helper.*
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
