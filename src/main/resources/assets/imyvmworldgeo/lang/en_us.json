@@ -4,7 +4,7 @@
   "interaction.meta.not_found_id": "Error: Region with ID {0} not found.",
   "interaction.meta.not_found_name": "Error: Region with name {0} not found.",
 
-  "interaction.meta.select.start": "Selection mode started. Use a golden hoe to select positions.",
+  "interaction.meta.select.start": "Selection mode started. Use a command block to select positions.",
   "interaction.meta.select.already": "You are already in selection mode.",
   "interaction.meta.select.stop": "Selection mode stopped.",
   "interaction.meta.select.not_in_mode": "You are not in selection mode. Use /imyvm-world-geo select start first.",

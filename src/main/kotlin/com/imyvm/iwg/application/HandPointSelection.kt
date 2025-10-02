@@ -20,7 +20,7 @@ fun handPointSelection(
     }
 
     val itemStack = player.getStackInHand(hand)
-    if (itemStack.item != Items.GOLDEN_HOE) return ActionResult.PASS
+    if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
 
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
