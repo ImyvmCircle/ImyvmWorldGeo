@@ -11,6 +11,8 @@ object RegionDataApi {
     fun renameRegion(region: Region, newName: String) = RegionDatabase.renameRegion(region, newName)
     fun getRegionList() = RegionDatabase.getRegionList()
     fun getRegionById(id: Int) = RegionDatabase.getRegionByNumberId(id)
-    fun getRegionScopeByLocation(x: Int, z: Int) = RegionDatabase.getRegionAndScopeAt(x,z)
-    fun getRegionScopeByLocation(blockPos: BlockPos) = RegionDatabase.getRegionAndScopeAt(blockPos.x, blockPos.z)
+    fun getRegionScopePairByLocation(x: Int, z: Int) = RegionDatabase.getRegionAndScopeAt(x,z)
+    fun getRegionScopePairByLocation(blockPos: BlockPos) = RegionDatabase.getRegionAndScopeAt(blockPos.x, blockPos.z)
+    fun getRegionArea(region: Region) = region.calculateTotalArea()
+    fun getRegionAreaById(id: Int) = RegionDatabase.getRegionByNumberId(id).calculateTotalArea()
 }
