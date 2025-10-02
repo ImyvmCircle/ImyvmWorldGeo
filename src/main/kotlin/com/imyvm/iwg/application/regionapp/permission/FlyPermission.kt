@@ -14,7 +14,6 @@ private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
 private val systemGrantedFly: MutableSet<UUID> = mutableSetOf()
 private val fallImmunity: MutableMap<UUID, Int> = mutableMapOf()
 
-
 fun managePlayersFly(server: MinecraftServer) {
     val currentTick = server.overworld.time.toInt()
     for (player in server.playerManager.playerList) {

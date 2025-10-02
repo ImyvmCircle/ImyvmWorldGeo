@@ -22,9 +22,9 @@ fun identifierHandler(
         1
     } catch (e: RegionNotFoundException) {
         if (regionIdentifier.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("command.not_found_id", regionIdentifier))
+            player.sendMessage(Translator.tr("interaction.meta.not_found_id", regionIdentifier))
         } else {
-            player.sendMessage(Translator.tr("command.not_found_name", regionIdentifier))
+            player.sendMessage(Translator.tr("interaction.meta.not_found_name", regionIdentifier))
         }
         0
     }

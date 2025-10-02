@@ -9,7 +9,7 @@ fun onRegionDelete(player: ServerPlayerEntity, region: Region){
     val regionName = region.name
     val regionId = region.numberID
     RegionDatabase.removeRegion(region)
-    player.sendMessage(Translator.tr("command.delete.success", regionName, regionId))
+    player.sendMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId))
 }
 
 fun onScopeDelete(player: ServerPlayerEntity, region: Region, scopeName: String){
@@ -18,7 +18,7 @@ fun onScopeDelete(player: ServerPlayerEntity, region: Region, scopeName: String)
     try {
         val existingScope = region.getScopeByName(scopeName)
         region.geometryScope.remove(existingScope)
-        player.sendMessage(Translator.tr("command.scope.delete.success", scopeName, region.name))
+        player.sendMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name))
     } catch (e: IllegalArgumentException) {
         player.sendMessage(Translator.tr(e.message))
         return
@@ -27,7 +27,7 @@ fun onScopeDelete(player: ServerPlayerEntity, region: Region, scopeName: String)
 
 private fun checkScopeSize(player: ServerPlayerEntity, region: Region): Boolean{
     if (region.geometryScope.size < 2) {
-        player.sendMessage(Translator.tr("command.scope.delete.error.last_scope"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.delete.error.last_scope"))
         return false
     }
     return true

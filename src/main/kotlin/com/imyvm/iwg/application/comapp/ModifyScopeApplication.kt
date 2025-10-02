@@ -19,20 +19,20 @@ fun onModifyScope(
 
         val playerUUID = player.uuid
         if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-            player.sendMessage(Translator.tr("command.select.not_in_mode"))
+            player.sendMessage(Translator.tr("interaction.meta.select.not_in_mode"))
             return 0
         }
 
         val shapeType = existingScope.geoShape?.geoShapeType ?: Region.Companion.GeoShapeType.UNKNOWN
         if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
-            player.sendMessage(Translator.tr("command.scope.modify.unknown_shape_type"))
+            player.sendMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type"))
             return 0
         }
 
         val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
         if (shapeType == Region.Companion.GeoShapeType.POLYGON) {
             if (selectedPositions.size < 2) {
-                player.sendMessage(Translator.tr("command.scope.modify.polygon_insufficient_points"))
+                player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_insufficient_points"))
                 return 0
             } else if (selectedPositions.size == 2){
                 modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
@@ -67,13 +67,13 @@ fun modifyScopePolygonMove(
     val oldPoint = selectedPositions[0]
     val newPoint = selectedPositions[1]
     if (oldPoint == newPoint) {
-        player.sendMessage(Translator.tr("command.scope.modify.polygon_duplicate_points"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_duplicate_points"))
         return
     }
 
     val blockPosList = getPolygonPoints(existingScope)
     if (blockPosList.none { it.x == oldPoint.x && it.z == oldPoint.z }) {
-        player.sendMessage(Translator.tr("command.scope.modify.polygon_point_not_found"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found"))
         return
     }
 
@@ -86,7 +86,7 @@ fun modifyScopePolygonMove(
     recreateScope(
         player, region, existingScope, newPositions,
         Region.Companion.GeoShapeType.POLYGON,
-        "command.scope.modify.polygon_move_success"
+        "interaction.meta.scope.modify.polygon_move_success"
     )
 }
 
@@ -107,14 +107,14 @@ fun modifyScopePolygonInsertPoint(
     val indexB = blockPosList.indexOfFirst { it.x == pointB.x && it.z == pointB.z }
 
     if (indexA == -1 || indexB == -1) {
-        player.sendMessage(Translator.tr("command.scope.modify.polygon_points_not_found"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_found"))
         return
     }
 
     val n = blockPosList.size
     val areAdjacent = (indexA + 1) % n == indexB || (indexB + 1) % n == indexA
     if (!areAdjacent) {
-        player.sendMessage(Translator.tr("command.scope.modify.polygon_points_not_adjacent"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_adjacent"))
         return
     }
 
@@ -124,7 +124,7 @@ fun modifyScopePolygonInsertPoint(
     recreateScope(
         player, region, existingScope, blockPosList,
         Region.Companion.GeoShapeType.POLYGON,
-        "command.scope.modify.polygon_insert_success"
+        "interaction.meta.scope.modify.polygon_insert_success"
     )
 }
 
@@ -136,7 +136,7 @@ fun modifyScopeCircleRadius(
 ) {
     val shapeParams = existingScope.geoShape?.shapeParameter
     if (shapeParams == null || shapeParams.size < 3) {
-        player.sendMessage(Translator.tr("command.scope.modify.circle_radius.invalid_circle"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.invalid_circle"))
         return
     }
 
@@ -150,7 +150,7 @@ fun modifyScopeCircleRadius(
     val newRadius = kotlin.math.sqrt((dx * dx + dz * dz).toDouble()).toInt()
 
     if (newRadius <= 0) {
-        player.sendMessage(Translator.tr("command.scope.modify.circle_radius.nonpositive"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.nonpositive"))
         return
     }
 
@@ -162,7 +162,7 @@ fun modifyScopeCircleRadius(
     recreateScope(
         player, region, existingScope, newPositions,
         Region.Companion.GeoShapeType.CIRCLE,
-        "command.scope.modify.circle_radius.success",
+        "interaction.meta.scope.modify.circle_radius.success",
         oldRadius, newRadius
     )
 }
@@ -175,7 +175,7 @@ fun modifyScopeCircleCenter(
 ) {
     val shapeParams = existingScope.geoShape?.shapeParameter
     if (shapeParams == null || shapeParams.size < 3) {
-        player.sendMessage(Translator.tr("command.scope.modify.circle_center.invalid_circle"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.circle_center.invalid_circle"))
         return
     }
 
@@ -191,7 +191,7 @@ fun modifyScopeCircleCenter(
     recreateScope(
         player, region, existingScope, newPositions,
         Region.Companion.GeoShapeType.CIRCLE,
-        "command.scope.modify.circle_center.success",
+        "interaction.meta.scope.modify.circle_center.success",
         "${oldCenter.x},${oldCenter.z}",
         "${newCenter.x},${newCenter.z}",
         radius
@@ -206,7 +206,7 @@ fun modifyScopeRectangle(
 ) {
     val shapeParams = existingScope.geoShape?.shapeParameter
     if (shapeParams == null || shapeParams.size < 4) {
-        player.sendMessage(Translator.tr("command.scope.modify.rectangle.invalid_rectangle"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle"))
         return
     }
 
@@ -237,7 +237,7 @@ fun modifyScopeRectangle(
     recreateScope(
         player, region, existingScope, newPositions,
         Region.Companion.GeoShapeType.RECTANGLE,
-        "command.scope.modify.rectangle.success",
+        "interaction.meta.scope.modify.rectangle.success",
         west, north, east, south
     )
 }
@@ -247,7 +247,7 @@ private fun validatePolygon(player: ServerPlayerEntity, existingScope: Region.Co
     val pointCount = shapeParams?.size
 
     if (pointCount == null || pointCount < 6 || pointCount % 2 != 0) {
-        player.sendMessage(Translator.tr("command.scope.modify.invalid_polygon"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.invalid_polygon"))
         return false
     }
     return true

@@ -35,7 +35,7 @@ private fun parseKeyOrFail(keyString: String): Any = when {
     isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
     isEffectKey(keyString) -> EffectKey.valueOf(keyString)
     isRuleKey(keyString) -> RuleKey.valueOf(keyString)
-    else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+    else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
 private fun parseValueOrFail(player: ServerPlayerEntity, key: Any, valueString: String): Any? {
@@ -44,13 +44,13 @@ private fun parseValueOrFail(player: ServerPlayerEntity, key: Any, valueString: 
             is PermissionKey -> valueString.toBooleanStrict()
             is EffectKey -> valueString.toInt()
             is RuleKey -> valueString.toBooleanStrict()
-            else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+            else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
         }
     } catch (e: Exception) {
         val errorMsg = when (key) {
-            is PermissionKey, is RuleKey -> "command.setting.error.invalid_value_boolean"
-            is EffectKey -> "command.setting.error.invalid_value_int"
-            else -> "command.setting.error.invalid_key"
+            is PermissionKey, is RuleKey -> "interaction.meta.setting.error.invalid_value_boolean"
+            is EffectKey -> "interaction.meta.setting.error.invalid_value_int"
+            else -> "interaction.meta.setting.error.invalid_key"
         }
         player.sendMessage(Translator.tr(errorMsg, key.toString(), valueString))
         null
@@ -75,7 +75,7 @@ private fun handleAddSetting(
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
     settingsContainer.add(setting)
 
-    player.sendMessage(Translator.tr("command.setting.add.success", key.toString(), value.toString()))
+    player.sendMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), value.toString()))
 }
 
 private fun handleRemoveSetting(
@@ -89,10 +89,10 @@ private fun handleRemoveSetting(
     val removed = settingsContainer.removeIf { matchesSetting(it, key, targetPlayerStr, player.server) }
 
     if (!removed) {
-        player.sendMessage(Translator.tr("command.setting.delete.error.no_such_setting", key.toString()))
+        player.sendMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString()))
         return
     }
-    player.sendMessage(Translator.tr("command.setting.delete.success", key.toString()))
+    player.sendMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString()))
 }
 
 private fun buildSetting(
@@ -103,7 +103,7 @@ private fun buildSetting(
     is PermissionKey -> PermissionSetting(key, value as Boolean, targetPlayerUUID)
     is EffectKey -> EffectSetting(key, value as Int, targetPlayerUUID)
     is RuleKey -> RuleSetting(key, value as Boolean)
-    else -> throw IllegalArgumentException("command.setting.error.invalid_key")
+    else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
 private fun resolveTargetPlayerUUID(
@@ -116,7 +116,7 @@ private fun resolveTargetPlayerUUID(
     return if (uuid != null) {
         uuid
     } else {
-        player.sendMessage(Translator.tr("command.setting.error.invalid_target_player", targetPlayerStr))
+        player.sendMessage(Translator.tr("interaction.meta.setting.error.invalid_target_player", targetPlayerStr))
         null
     }
 }
@@ -157,15 +157,15 @@ private fun checkPlayer(
         if (isDuplicateSetting(server, container, keyString, targetPlayerStr)) {
             val msgKey = if (scopeName == null) {
                 if (targetPlayerStr == null) {
-                    "command.setting.error.region.duplicate_global"
+                    "interaction.meta.setting.error.region.duplicate_global"
                 } else {
-                    "command.setting.error.region.duplicate_player"
+                    "interaction.meta.setting.error.region.duplicate_player"
                 }
             } else {
                 if (targetPlayerStr == null) {
-                    "command.setting.error.scope.duplicate_global"
+                    "interaction.meta.setting.error.scope.duplicate_global"
                 } else {
-                    "command.setting.error.scope.duplicate_player"
+                    "interaction.meta.setting.error.scope.duplicate_player"
                 }
             }
             player.sendMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", scopeName ?: ""))

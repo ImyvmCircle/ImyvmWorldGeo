@@ -78,7 +78,7 @@ fun onScopeCreation(
 private fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
     val playerUUID = player.uuid
     if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-        player.sendMessage(Translator.tr("command.select.not_in_mode"))
+        player.sendMessage(Translator.tr("interaction.meta.select.not_in_mode"))
         return false
     }
     return true
@@ -92,7 +92,7 @@ private fun getShapeTypeCheck(
         .find { it.name == shapeTypeName }
         ?: Region.Companion.GeoShapeType.UNKNOWN
     if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
-        player.sendMessage(Translator.tr("command.create.invalid_shape", shapeTypeName))
+        player.sendMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeName))
         return null
     }
     return shapeType
@@ -137,7 +137,7 @@ private fun handleRegionCreateSuccess(
     RegionDatabase.addRegion(newRegion)
 
     if (notify) {
-        player.sendMessage(Translator.tr("command.create.success", newRegion.name))
+        player.sendMessage(Translator.tr("interaction.meta.create.success", newRegion.name))
     }
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
 }
@@ -153,7 +153,7 @@ private fun handleScopeCreateSuccess(
 
     if (notify) {
         player.sendMessage(
-            Translator.tr("command.scope.add.success", newScope.scopeName, region.name)
+            Translator.tr("interaction.meta.scope.add.success", newScope.scopeName, region.name)
         )
     }
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
@@ -178,15 +178,15 @@ private fun validateNameCommon(
                         }
                     }
                     val msgKey = when (type) {
-                        NameType.REGION -> "command.create.name_auto_filled"
-                        NameType.SCOPE -> "command.scope.add.name_auto_filled"
+                        NameType.REGION -> "interaction.meta.name_auto_filled"
+                        NameType.SCOPE -> "interaction.meta.add.name_auto_filled"
                     }
                     player.sendMessage(Translator.tr(msgKey, name))
                     name
                 } else {
                     val msgKey = when (type) {
-                        NameType.REGION -> "command.create.name_invalid"
-                        NameType.SCOPE -> "command.scope.add.name_invalid"
+                        NameType.REGION -> "interaction.meta.create.name_invalid"
+                        NameType.SCOPE -> "interaction.meta.scope.add.name_invalid"
                     }
                     player.sendMessage(Translator.tr(msgKey))
                     return null
@@ -194,8 +194,8 @@ private fun validateNameCommon(
             }
             nameArgument.matches("\\d+".toRegex()) -> {
                 val msgKey = when (type) {
-                    NameType.REGION -> "command.create.name_is_digits_only"
-                    NameType.SCOPE -> "command.scope.add.name_is_digits_only"
+                    NameType.REGION -> "interaction.meta.create.name_is_digits_only"
+                    NameType.SCOPE -> "interaction.meta.scope.add.name_is_digits_only"
                 }
                 player.sendMessage(Translator.tr(msgKey))
                 return null
@@ -210,8 +210,8 @@ private fun validateNameCommon(
         }
     } catch (e: IllegalArgumentException) {
         val msgKey = when (type) {
-            NameType.REGION -> if (autoFill) "command.create.name_auto_filled" else "command.create.name_invalid"
-            NameType.SCOPE -> if (autoFill) "command.scope.add.name_auto_filled" else "command.scope.add.name_invalid"
+            NameType.REGION -> if (autoFill) "interaction.meta.create.name_auto_filled" else "interaction.meta.create.name_invalid"
+            NameType.SCOPE -> if (autoFill) "interaction.meta.scope.add.name_auto_filled" else "interaction.meta.scope.add.name_invalid"
         }
         val name = when (type) {
             NameType.REGION -> "NewRegion-${System.currentTimeMillis()}"
@@ -231,7 +231,7 @@ private fun validateScopeUnique(
     scopeName: String
 ): String? {
     if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
-        player.sendMessage(Translator.tr("command.scope.add.duplicate_scope_name"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.add.duplicate_scope_name"))
         return null
     }
     return scopeName
