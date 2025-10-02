@@ -33,7 +33,7 @@ This mod is **server-side only** and requires the following environment:
    - [Fabric Kotlin](https://www.curseforge.com/minecraft/mc-mods/fabric-language-kotlin)
 
 4. **Install Imyvm Hoki mod**  
-   This mod depends on Imyvm fork of  Hoki, another ImyvmCircle project. Download the latest Hoki jar from [GitHub](https://github.com/ImyvmCircle/Hoki) and place it in the server's `mods` folder.
+   This mod depends on Imyvm fork of Hoki, another ImyvmCircle project. Download the latest Hoki jar from [GitHub](https://github.com/ImyvmCircle/Hoki) and place it in the server's `mods` folder.
 
 5. **Add Imyvm World Geo mod jar**  
    Place the `imyvm-world-geo` jar into the server's `mods` folder. 
@@ -91,7 +91,7 @@ _Provides access to region data and database operations, which make it convenien
 ## Commands
 
 - `/imyvm-world-geo select start`  
-  Start selecting positions with a golden hoe.
+  Start selecting positions with a command block.
 
 - `/imyvm-world-geo select stop`  
   Stop selection mode.
