@@ -1,4 +1,4 @@
-package com.imyvm.iwg.inter.register.helper
+package com.imyvm.iwg.inter.register.command.helper
 
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException

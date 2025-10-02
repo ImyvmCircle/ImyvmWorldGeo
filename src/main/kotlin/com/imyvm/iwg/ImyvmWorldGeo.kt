@@ -3,7 +3,12 @@ package com.imyvm.iwg
 import com.imyvm.iwg.application.regionapp.PlayerRegionChecker
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
-import com.imyvm.iwg.inter.register.*
+import com.imyvm.iwg.inter.register.event.registerLocationDisplay
+import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
+import com.imyvm.iwg.inter.register.event.registerPointSelection
+import com.imyvm.iwg.inter.register.event.registerRegionPermissions
+import com.imyvm.iwg.inter.register.command.register
+import com.imyvm.iwg.inter.register.registerDataLoadSave
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -16,21 +21,15 @@ import java.util.concurrent.ConcurrentHashMap
 class ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
-
-		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ ->
-			register(dispatcher)
-		}
-		registerPointSelection()
-
-		dataLoad()
-		dataSave()
+		registerDataLoadSave()
 
 		registerLazyTicker()
-
 		registerPlayerGeographyPair()
 		registerLocationDisplay()
-
 		registerRegionPermissions()
+
+		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
+		registerPointSelection()
 
 		logger.info("$MOD_ID initialized successfully.")
 	}
@@ -43,23 +42,5 @@ class ImyvmWorldGeo : ModInitializer {
 
 		val pointSelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
 		val locationActionBarEnabledPlayers: MutableSet<UUID> = Collections.synchronizedSet(mutableSetOf())
-
-		fun dataLoad() {
-			try {
-				RegionDatabase.load()
-			} catch (e: Exception) {
-				logger.error("Failed to load region database: ${e.message}", e)
-			}
-		}
-
-		fun dataSave() {
-			ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
-				try {
-					RegionDatabase.save()
-				} catch (e: Exception) {
-					logger.error("Failed to save region database: ${e.message}", e)
-				}
-			}
-		}
 	}
 }

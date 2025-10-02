@@ -1,4 +1,4 @@
-package com.imyvm.iwg.inter.register
+package com.imyvm.iwg.inter.register.event
 
 import com.imyvm.iwg.application.regionapp.permission.*
 import com.imyvm.iwg.infra.LazyTicker
