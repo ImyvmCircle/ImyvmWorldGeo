@@ -17,27 +17,39 @@ fun onRegionCreation(
     shapeTypeName: String,
     isApi: Boolean = false
 ): Int {
-    if (!selectionModeCheck(player)) return 0
+    val region = onTryingRegionCreationWithReturn(player, regionNameArg, shapeTypeName, isApi)
+    return if (region != null) 1 else 0
+}
+
+fun onTryingRegionCreationWithReturn(
+    player: ServerPlayerEntity,
+    regionNameArg: String?,
+    shapeTypeName: String,
+    isApi: Boolean = true
+): Region? {
+    if (!selectionModeCheck(player)) return null
 
     val regionName = validateNameCommon(
         player,
         regionNameArg,
         type = NameType.REGION,
         autoFill = !isApi
-    ) ?: return 0
+    ) ?: return null
 
-    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
+    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
 
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
-            if (isApi) handleRegionCreateSuccess(player, creationResult, notify = false)
-            else handleRegionCreateSuccess(player, creationResult, notify = true)
-            1
+            if (isApi)
+                handleRegionCreateSuccess(player, creationResult, notify = false)
+            else
+                handleRegionCreateSuccess(player, creationResult, notify = true)
+            creationResult.value
         }
         is Result.Err -> {
             val errorMsg = errorMessage(creationResult.error, shapeType)
             player.sendMessage(errorMsg)
-            0
+            null
         }
     }
 }
@@ -49,9 +61,20 @@ fun onScopeCreation(
     shapeTypeName: String,
     isApi: Boolean = false
 ): Int {
+    val resultPair = onTryingScopeCreationWithReturn(player, region, scopeNameArg, shapeTypeName, isApi)
+    return if (resultPair != null) 1 else 0
+}
+
+fun onTryingScopeCreationWithReturn (
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeNameArg: String?,
+    shapeTypeName: String,
+    isApi: Boolean = true
+): Pair<Region, Region.Companion.GeoScope>? {
     val playerUUID = player.uuid
-    if (!selectionModeCheck(player)) return 0
-    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return 0
+    if (!selectionModeCheck(player)) return null
+    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
 
     val scopeName = validateNameCommon(
         player,
@@ -59,18 +82,20 @@ fun onScopeCreation(
         type = NameType.SCOPE,
         autoFill = !isApi,
         regionForScope = region
-    ) ?: return 0
+    ) ?: return null
 
     return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
         is Result.Ok -> {
-            if (isApi) handleScopeCreateSuccess(player, creationResult, region, false)
-            else handleScopeCreateSuccess(player, creationResult, region, true)
-            1
+            if (isApi)
+                handleScopeCreateSuccess(player, creationResult, region, notify = false)
+            else
+                handleScopeCreateSuccess(player, creationResult, region, notify = true)
+            Pair(region, creationResult.value)
         }
         is Result.Err -> {
             val errorMsg = errorMessage(creationResult.error, shapeType)
             player.sendMessage(errorMsg)
-            0
+            null
         }
     }
 }
