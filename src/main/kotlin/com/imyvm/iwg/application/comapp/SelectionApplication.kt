@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.comapp
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun onStartSelection(player: ServerPlayerEntity): Int {

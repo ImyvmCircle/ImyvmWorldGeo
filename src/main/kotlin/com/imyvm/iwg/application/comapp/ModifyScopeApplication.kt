@@ -4,8 +4,8 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.regionapp.RegionFactory
 import com.imyvm.iwg.application.regionapp.Result
-import com.imyvm.iwg.application.ui.errorMessage
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.application.comapp.helper.errorMessage
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 

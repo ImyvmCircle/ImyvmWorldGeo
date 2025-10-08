@@ -1,7 +1,7 @@
 package com.imyvm.iwg.inter.register.event
 
 import com.imyvm.iwg.infra.LazyTicker
-import com.imyvm.iwg.application.ui.updateGeographicActionBarForPlayer
+import com.imyvm.iwg.application.event.updateGeographicActionBarForPlayer
 import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents
 
 fun registerLocationDisplay() {

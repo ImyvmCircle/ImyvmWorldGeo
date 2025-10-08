@@ -3,7 +3,7 @@ package com.imyvm.iwg.inter.register.command.helper
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun identifierHandler(

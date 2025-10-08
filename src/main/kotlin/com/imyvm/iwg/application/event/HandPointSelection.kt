@@ -1,7 +1,7 @@
-package com.imyvm.iwg.application
+package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Items
 import net.minecraft.util.ActionResult
@@ -28,7 +28,8 @@ fun handPointSelection(
     val clickedPos = hitResult.blockPos
     selectedPositions.add(clickedPos)
 
-    player.sendMessage(Translator.tr(
+    player.sendMessage(
+        Translator.tr(
         "interaction.game.point.selection", clickedPos, selectedPositions.joinToString(separator = "\n") { it.toString() })
     )
 

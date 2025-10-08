@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.regionapp.permission
 
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.infra.ModConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
 import com.imyvm.iwg.infra.ModConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
 import com.imyvm.iwg.infra.RegionDatabase

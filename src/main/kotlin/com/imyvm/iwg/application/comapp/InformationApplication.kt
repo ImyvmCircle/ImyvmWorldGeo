@@ -3,7 +3,7 @@ package com.imyvm.iwg.application.comapp
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) : Int{

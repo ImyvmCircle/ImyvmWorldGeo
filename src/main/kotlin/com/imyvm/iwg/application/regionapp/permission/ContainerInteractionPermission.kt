@@ -3,7 +3,7 @@ package com.imyvm.iwg.application.regionapp.permission
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.PermissionKey
 import com.imyvm.iwg.application.regionapp.permission.helper.hasPermissionBlacklist
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.screen.NamedScreenHandlerFactory
 import net.minecraft.util.ActionResult

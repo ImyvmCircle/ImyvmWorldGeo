@@ -1,8 +1,8 @@
-package com.imyvm.iwg.application.ui
+package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.regionapp.PlayerRegionChecker
-import com.imyvm.iwg.application.ui.text.Translator
+import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.domain.Region
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.text.Text

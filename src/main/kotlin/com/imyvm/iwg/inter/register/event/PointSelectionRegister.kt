@@ -1,6 +1,6 @@
 package com.imyvm.iwg.inter.register.event
 
-import com.imyvm.iwg.application.handPointSelection
+import com.imyvm.iwg.application.event.handPointSelection
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 
 fun registerPointSelection() {
