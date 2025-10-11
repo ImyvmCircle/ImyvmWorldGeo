@@ -12,6 +12,7 @@ object PlayerInteractionApi {
     fun createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?) = onRegionCreation(player, name, shapeTypeName ?: "", isApi = true)
     fun createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?) = onTryingRegionCreationWithReturn(player, name, shapeTypeName ?: "", isApi = true)
     fun deleteRegion(player: ServerPlayerEntity, region: Region) = onRegionDelete(player, region)
+    fun deleteRegionWithoutFeedback(player: ServerPlayerEntity, region: Region) = onRegionDelete(player, region, isApi = true)
     fun renameRegion(player: ServerPlayerEntity, region: Region, newName: String) = onRegionRename(player, region, newName)
     fun addScope(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?) = onScopeCreation(player, region, name, shapeTypeName ?: "", isApi = true)
     fun createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?) = onTryingScopeCreationWithReturn(player, region, name, shapeTypeName ?: "", isApi = true)

@@ -5,11 +5,13 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
-fun onRegionDelete(player: ServerPlayerEntity, region: Region){
+fun onRegionDelete(player: ServerPlayerEntity, region: Region, isApi: Boolean = false){
     val regionName = region.name
     val regionId = region.numberID
     RegionDatabase.removeRegion(region)
-    player.sendMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId))
+    if (isApi.not()) {
+        player.sendMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId))
+    }
 }
 
 fun onScopeDelete(player: ServerPlayerEntity, region: Region, scopeName: String){
