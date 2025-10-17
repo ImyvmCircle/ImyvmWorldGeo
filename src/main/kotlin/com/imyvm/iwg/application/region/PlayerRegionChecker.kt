@@ -1,4 +1,4 @@
-package com.imyvm.iwg.application.regionapp
+package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.infra.RegionDatabase

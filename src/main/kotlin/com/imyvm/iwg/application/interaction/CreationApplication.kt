@@ -1,13 +1,13 @@
-package com.imyvm.iwg.application.comapp
+package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.application.regionapp.RegionFactory
-import com.imyvm.iwg.application.regionapp.Result
+import com.imyvm.iwg.application.region.RegionFactory
+import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
-import com.imyvm.iwg.application.comapp.helper.errorMessage
+import com.imyvm.iwg.application.interaction.helper.errorMessage
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 

@@ -1,4 +1,4 @@
-package com.imyvm.iwg.application.regionapp
+package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region

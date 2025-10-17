@@ -1,4 +1,4 @@
-package com.imyvm.iwg.application.comapp.helper
+package com.imyvm.iwg.application.interaction.helper
 
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.domain.Region

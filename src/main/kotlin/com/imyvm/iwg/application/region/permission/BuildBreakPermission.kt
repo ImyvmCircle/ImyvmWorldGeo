@@ -1,8 +1,8 @@
-package com.imyvm.iwg.application.regionapp.permission
+package com.imyvm.iwg.application.region.permission
 
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.PermissionKey
-import com.imyvm.iwg.application.regionapp.permission.helper.hasPermissionBlacklist
+import com.imyvm.iwg.application.region.permission.helper.hasPermissionBlacklist
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback

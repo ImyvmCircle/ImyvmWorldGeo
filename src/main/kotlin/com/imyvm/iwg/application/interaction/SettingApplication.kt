@@ -1,4 +1,4 @@
-package com.imyvm.iwg.application.comapp
+package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName

@@ -1,4 +1,4 @@
-package com.imyvm.iwg.application.comapp
+package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.util.text.Translator

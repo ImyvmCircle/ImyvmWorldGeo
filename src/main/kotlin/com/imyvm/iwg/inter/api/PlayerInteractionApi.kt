@@ -1,6 +1,6 @@
 package com.imyvm.iwg.inter.api
 
-import com.imyvm.iwg.application.comapp.*
+import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.Region
 import net.minecraft.server.network.ServerPlayerEntity
 
