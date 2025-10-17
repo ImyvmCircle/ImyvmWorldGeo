@@ -256,7 +256,7 @@ private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val nameArg = getOptionalArgument(context, "name")
     val shapeTypeArg = StringArgumentType.getString(context, "shapeType").uppercase()
-    return onRegionCreation(player, nameArg, shapeTypeArg)
+    return onRegionCreation(player, nameArg, shapeTypeArg, idMark = 0)
 }
 
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {

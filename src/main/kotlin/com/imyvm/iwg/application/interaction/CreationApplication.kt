@@ -16,9 +16,10 @@ fun onRegionCreation(
     player: ServerPlayerEntity,
     regionNameArg: String?,
     shapeTypeName: String,
-    isApi: Boolean = false
+    isApi: Boolean = false,
+    idMark: Int
 ): Int {
-    val region = onTryingRegionCreationWithReturn(player, regionNameArg, shapeTypeName, isApi)
+    val region = onTryingRegionCreationWithReturn(player, regionNameArg, shapeTypeName, isApi, idMark)
     return if (region != null) 1 else 0
 }
 
@@ -26,7 +27,8 @@ fun onTryingRegionCreationWithReturn(
     player: ServerPlayerEntity,
     regionNameArg: String?,
     shapeTypeName: String,
-    isApi: Boolean = true
+    isApi: Boolean = true,
+    idMark: Int
 ): Region? {
     if (!selectionModeCheck(player)) return null
 
@@ -39,7 +41,7 @@ fun onTryingRegionCreationWithReturn(
 
     val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
 
-    return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
+    return when (val creationResult = tryRegionCreation(player, regionName, shapeType, idMark)) {
         is Result.Ok -> {
             if (isApi) handleRegionCreateSuccess(player, creationResult, notify = false)
             else handleRegionCreateSuccess(player, creationResult, notify = true)
@@ -124,10 +126,11 @@ private fun tryRegionCreation(
     player: ServerPlayerEntity,
     regionName: String,
     shapeType: Region.Companion.GeoShapeType,
+    idMark: Int
 ): Result<Region, CreationError> {
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
-    val newID = generateNewRegionId(0)
+    val newID = generateNewRegionId(idMark)
     return RegionFactory.createRegion(
         name = regionName,
         numberID = newID,
