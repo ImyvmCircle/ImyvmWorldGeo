@@ -29,6 +29,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("create")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
@@ -41,6 +42,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("delete")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -49,6 +51,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("rename")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -59,6 +62,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("addscope")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
@@ -75,6 +79,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("deletescope")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -87,6 +92,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("modifyscope")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -103,6 +109,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("setting")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         literal("add")
                             .then(
@@ -151,6 +158,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("settingscope")
+                    .requires{ it.hasPermissionLevel(2) }
                     .then(
                         literal("add")
                             .then(
