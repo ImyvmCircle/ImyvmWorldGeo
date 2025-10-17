@@ -5,6 +5,7 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.regionapp.RegionFactory
 import com.imyvm.iwg.application.regionapp.Result
 import com.imyvm.iwg.application.comapp.helper.errorMessage
+import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
@@ -31,9 +32,11 @@ fun onModifyScope(
 
         val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
         if (shapeType == Region.Companion.GeoShapeType.POLYGON) {
-            if (selectedPositions.size < 2) {
+            if (selectedPositions.size == 0) {
                 player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_insufficient_points"))
                 return 0
+            } else if (selectedPositions.size == 1) {
+                modifyScopePolygonMonoPoint(player, targetRegion, existingScope, selectedPositions)
             } else if (selectedPositions.size == 2){
                 modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
             } else {
@@ -53,6 +56,26 @@ fun onModifyScope(
     } catch (e: IllegalArgumentException) {
         player.sendMessage(Translator.tr(e.message))
         return 0
+    }
+}
+
+fun modifyScopePolygonMonoPoint(
+    player: ServerPlayerEntity,
+    region: Region,
+    existingScope: Region.Companion.GeoScope,
+    selectedPositions: MutableList<BlockPos>
+) {
+    if (!validatePolygon(player, existingScope)) return
+
+    val point = selectedPositions[0]
+    val blockPosList = getPolygonPoints(existingScope)
+
+    if (blockPosList.none { it.x == point.x && it.z == point.z }) {
+        val (pointA, pointB) = findNearestAdjacentPoints(blockPosList, point)
+        val insertPositions = mutableListOf(pointA, pointB, point)
+        modifyScopePolygonInsertPoint(player, region, existingScope, insertPositions)
+    } else {
+        modifyScopePolygonDeletePoint(player, region, existingScope, point)
     }
 }
 
@@ -125,6 +148,33 @@ fun modifyScopePolygonInsertPoint(
         player, region, existingScope, blockPosList,
         Region.Companion.GeoShapeType.POLYGON,
         "interaction.meta.scope.modify.polygon_insert_success"
+    )
+}
+
+fun modifyScopePolygonDeletePoint(
+    player: ServerPlayerEntity,
+    region: Region,
+    existingScope: Region.Companion.GeoScope,
+    point: BlockPos
+) {
+    val blockPosList = getPolygonPoints(existingScope).toMutableList()
+
+    if (blockPosList.size <= 3) {
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_minimum_points"))
+        return
+    }
+
+    val removed = blockPosList.removeIf { it.x == point.x && it.z == point.z }
+
+    if (!removed) {
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found"))
+        return
+    }
+
+    recreateScope(
+        player, region, existingScope, blockPosList,
+        Region.Companion.GeoShapeType.POLYGON,
+        "interaction.meta.scope.modify.polygon_delete_success"
     )
 }
 

@@ -5,6 +5,7 @@ import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.text.Text
+import net.minecraft.util.math.BlockPos
 
 class Region(
     var name: String,
