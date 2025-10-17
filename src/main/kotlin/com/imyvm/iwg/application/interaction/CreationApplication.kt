@@ -8,6 +8,7 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.interaction.helper.errorMessage
+import com.imyvm.iwg.application.region.generateNewRegionId
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
@@ -84,10 +85,8 @@ fun onTryingScopeCreationWithReturn (
 
     return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
         is Result.Ok -> {
-            if (isApi)
-                handleScopeCreateSuccess(player, creationResult, region, notify = false)
-            else
-                handleScopeCreateSuccess(player, creationResult, region, notify = true)
+            if (isApi) handleScopeCreateSuccess(player, creationResult, region, notify = false)
+            else handleScopeCreateSuccess(player, creationResult, region, notify = true)
             Pair(region, creationResult.value)
         }
         is Result.Err -> {
@@ -128,8 +127,7 @@ private fun tryRegionCreation(
 ): Result<Region, CreationError> {
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
-    val biggestId = RegionDatabase.getRegionList().maxOfOrNull { it.numberID } ?: -1
-    val newID = biggestId + 1
+    val newID = generateNewRegionId(0)
     return RegionFactory.createRegion(
         name = regionName,
         numberID = newID,

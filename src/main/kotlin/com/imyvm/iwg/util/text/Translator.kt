@@ -3,14 +3,14 @@ package com.imyvm.iwg.util.text
 import com.imyvm.hoki.i18n.HokiLanguage
 import com.imyvm.hoki.i18n.HokiTranslator
 import com.imyvm.iwg.ImyvmWorldGeo.Companion.MOD_ID
-import com.imyvm.iwg.infra.ModConfig
+import com.imyvm.iwg.infra.WorldGeoConfig
 import net.minecraft.text.Text
 
 object Translator : HokiTranslator() {
-    private var languageInstance = createLanguage(ModConfig.LANGUAGE.value)
+    private var languageInstance = createLanguage(WorldGeoConfig.LANGUAGE.value)
 
     init {
-        ModConfig.LANGUAGE.changeEvents.register { option, _, _ ->
+        WorldGeoConfig.LANGUAGE.changeEvents.register { option, _, _ ->
             languageInstance = createLanguage(option.value)
         }
     }

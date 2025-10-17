@@ -5,7 +5,7 @@ import com.imyvm.hoki.config.HokiConfig
 import com.imyvm.hoki.config.Option
 import com.typesafe.config.Config
 
-class ModConfig : HokiConfig("Imyvm_world_geo.conf") {
+class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
     companion object{
         @JvmField
         @ConfigOption

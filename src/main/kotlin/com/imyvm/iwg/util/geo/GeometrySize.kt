@@ -1,30 +1,22 @@
 package com.imyvm.iwg.util.geo
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_CIRCLE_RADIUS
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_POLYGON_AREA
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_RECTANGLE_AREA
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_SIDE_LENGTH
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_POLYGON_SPAN
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_ASPECT_RATIO
-import com.imyvm.iwg.infra.ModConfig.Companion.MIN_EDGE_LENGTH
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_CIRCLE_RADIUS
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_POLYGON_AREA
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_RECTANGLE_AREA
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_SIDE_LENGTH
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_POLYGON_SPAN
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_ASPECT_RATIO
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.MIN_EDGE_LENGTH
 import com.imyvm.iwg.domain.CreationError
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 
 fun checkRectangleSize(width: Int, length: Int): CreationError? {
     val area = width * length
-
-    if (area < MIN_RECTANGLE_AREA.value) {
-        return CreationError.UnderSizeLimit
-    }
-
-    if (width < MIN_SIDE_LENGTH.value || length < MIN_SIDE_LENGTH.value) {
-        return CreationError.EdgeTooShort
-    }
+    if (area < MIN_RECTANGLE_AREA.value) return CreationError.UnderSizeLimit
+    if (width < MIN_SIDE_LENGTH.value || length < MIN_SIDE_LENGTH.value) return CreationError.EdgeTooShort
 
     val aspectRatio = if (length == 0) Double.MAX_VALUE else width.toDouble() / length
-    if (aspectRatio < MIN_ASPECT_RATIO.value|| aspectRatio > (1.0 / MIN_ASPECT_RATIO.value)) {
-        return CreationError.AspectRatioInvalid
-    }
+    if (aspectRatio < MIN_ASPECT_RATIO.value|| aspectRatio > (1.0 / MIN_ASPECT_RATIO.value)) return CreationError.AspectRatioInvalid
 
     return null
 }
