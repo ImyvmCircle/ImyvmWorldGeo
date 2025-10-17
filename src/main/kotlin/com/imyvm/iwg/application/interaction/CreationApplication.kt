@@ -40,10 +40,8 @@ fun onTryingRegionCreationWithReturn(
 
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType)) {
         is Result.Ok -> {
-            if (isApi)
-                handleRegionCreateSuccess(player, creationResult, notify = false)
-            else
-                handleRegionCreateSuccess(player, creationResult, notify = true)
+            if (isApi) handleRegionCreateSuccess(player, creationResult, notify = false)
+            else handleRegionCreateSuccess(player, creationResult, notify = true)
             creationResult.value
         }
         is Result.Err -> {

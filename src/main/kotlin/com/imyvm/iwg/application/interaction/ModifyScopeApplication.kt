@@ -49,7 +49,7 @@ private fun modifyPolygonScope(
     selectedPositions: MutableList<BlockPos>
 ): Int {
     return when (selectedPositions.size) {
-        0 -> { player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_insufficient_points"));0 }
+        0 -> { player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_insufficient_points")); 0}
         1 -> { modifyScopePolygonMonoPoint(player, targetRegion, existingScope, selectedPositions); 1 }
         2 -> { modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions); 1 }
         else -> { modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions); 1 }

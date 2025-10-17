@@ -19,24 +19,11 @@ fun recreateScope(
     vararg extraArgs: Any
 ) {
     region.geometryScope.remove(existingScope)
-
-    val newScope = RegionFactory.createScope(
-        scopeName = existingScope.scopeName,
-        selectedPositions = newPositions,
-        shapeType = shapeType
-    )
-
+    val newScope = RegionFactory.createScope(scopeName = existingScope.scopeName, selectedPositions = newPositions, shapeType = shapeType)
     when (newScope) {
         is Result.Ok -> {
             region.geometryScope.add(newScope.value)
-            player.sendMessage(
-                Translator.tr(
-                    successMessageKey,
-                    existingScope.scopeName,
-                    region.name,
-                    *extraArgs
-                )
-            )
+            player.sendMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs))
             ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {

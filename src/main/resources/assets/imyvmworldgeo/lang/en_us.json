@@ -38,6 +38,8 @@
   "interaction.meta.scope.modify.polygon_no_point": "No point selected, please select a point first",
   "interaction.meta.scope.modify.polygon_insufficient_points": "Insufficient points for polygon, at least two points required",
   "interaction.meta.scope.modify.unknown_shape_type": "Scope {0} has unknown shape type, cannot modify",
+  "interaction.meta.scope.modify.polygon_minimum_points": "A polygon scope must have at least 4 points if one point of which need to be deleted.",
+  "interaction.meta.scope.modify.polygon_delete_success": "Successfully deleted a point from scope {0} of region {1}.",
   "interaction.meta.scope.modify.polygon_points_not_found": "One or both of the specified points were not found in the current polygon.",
   "interaction.meta.scope.modify.polygon_points_not_adjacent": "The two selected points are not adjacent vertices of the polygon.",
   "interaction.meta.scope.modify.polygon_insert_success": "Successfully inserted a new point into scope {0} of region {1}.",

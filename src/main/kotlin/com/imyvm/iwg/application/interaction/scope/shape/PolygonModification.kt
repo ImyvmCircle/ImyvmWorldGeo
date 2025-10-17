@@ -97,18 +97,11 @@ fun modifyScopePolygonDeletePoint(
     point: BlockPos
 ) {
     val blockPosList = getPolygonPoints(existingScope).toMutableList()
-
     if (blockPosList.size <= 3) {
         player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_minimum_points"))
         return
     }
-
-    val removed = blockPosList.removeIf { it.x == point.x && it.z == point.z }
-
-    if (!removed) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found"))
-        return
-    }
+    blockPosList.removeIf { it.x == point.x && it.z == point.z }
 
     recreateScope(
         player, region, existingScope, blockPosList,
