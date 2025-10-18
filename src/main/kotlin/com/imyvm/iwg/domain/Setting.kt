@@ -12,6 +12,12 @@ abstract class Setting(
         get() = playerUUID != null
 }
 
+enum class SettingTypes{
+    PERMISSION,
+    EFFECT,
+    RULE
+}
+
 class PermissionSetting(
     override val key: PermissionKey,
     override val value: Boolean,

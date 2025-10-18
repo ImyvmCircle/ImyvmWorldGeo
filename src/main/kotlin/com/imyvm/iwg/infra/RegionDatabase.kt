@@ -87,6 +87,21 @@ object RegionDatabase {
             ?: throw RegionNotFoundException("Region with ID '$id' not found.")
     }
 
+    fun getRegionAndScope(regionId: Int, scopeName: String): Pair<Region?, Region.Companion.GeoScope?> {
+        val region = try {
+            getRegionByNumberId(regionId)
+        } catch (e: RegionNotFoundException) {
+            return Pair(null, null)
+        }
+        val scope = region.geometryScope.find { it.scopeName == scopeName }
+        return Pair(region, scope)
+    }
+
+    fun getRegionAndScope(region: Region, scopeName: String): Pair<Region, Region.Companion.GeoScope?> {
+        val scope = region.geometryScope.find { it.scopeName == scopeName }
+        return Pair(region, scope)
+    }
+
     fun getRegionAndScopeAt(x: Int, z: Int): Pair<Region, Region.Companion.GeoScope>? {
         for (region in regions) {
             for (scope in region.geometryScope) {
