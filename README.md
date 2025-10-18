@@ -1,4 +1,11 @@
-# IMYVMWorldGeo 1.21 1.0.0
+# IMYVMWorldGeo 1.21 1.0.1
+
+## Changelog 1.0.1
+
+This is a version mainly aimed to improve api functions and behavior.
+- API:Make RegionDataApi focused on data access and database operations only.
+- Region Creation: ID generator improved to avoid conflicts and contains more information.
+- Scope Modification: allow insert point by one click and delete point.
 
 ## Introduction
 
@@ -50,43 +57,130 @@ This mod is **server-side only** and requires the following environment:
 
 > For detailed commands and API usage, see the `Command` and `API` sections in this README.
 
-## API
+## API Documentation
 
-APIs allow extension mods to build and enrich functions base on geography regions defined here.
+This API provides functionality for interacting with geographical regions in your Minecraft world. It allows extension mods to enrich and build features based on defined regions.
 
 ### Player Interaction API
-_Handles player-triggered actions related to regions and scopes._
+Handles player-triggered actions related to regions and their scopes.
 
-- `startSelection(player)` – Start selection mode for the player.  
-- `stopSelection(player)` – Stop selection mode.  
-- `resetSelection(player)` – Reset selected positions.  
-- `createRegion(player, name, shapeTypeName)` – Create a region with optional name and shape.  
-- `deleteRegion(player, region)` – Delete a specified region.  
-- `renameRegion(player, region, newName)` – Rename a region.  
-- `addScope(player, region, name, shapeTypeName)` – Add a scope to a region with optional name and shape.  
-- `deleteScope(player, region, scopeName)` – Delete a scope from a region.  
-- `renameScope(player, region, oldName, newName)` – Rename a scope within a region.  
-- `modifyScope(player, region, scopeName)` – Modify a scope’s properties.  
-- `addSettingRegion(player, region, keyString, valueString, targetPlayerStr)` – Add a setting to a region.  
-- `addSettingScope(player, region, scopeName, keyString, valueString, targetPlayerStr)` – Add a setting to a specific scope.  
-- `removeSettingRegion(player, region, keyString, targetPlayerStr)` – Remove a setting from a region.  
-- `removeSettingScope(player, region, scopeName, keyString, targetPlayerStr)` – Remove a setting from a specific scope.  
-- `queryRegionInfo(player, region)` – Query detailed information about a region.  
+#### Functions:
+- `startSelection(player: ServerPlayerEntity)`  
+  Starts selection mode for the player.
+
+- `stopSelection(player: ServerPlayerEntity)`  
+  Stops selection mode for the player.
+
+- `resetSelection(player: ServerPlayerEntity)`  
+  Resets the player's selected positions.
+
+- `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?, idMark: Int = 0)`  
+  Creates a region with an optional name, shape, and ID marker.
+
+- `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?, idMark: Int = 0)`  
+  Creates a region and returns the created region.
+
+- `deleteRegion(player: ServerPlayerEntity, region: Region)`  
+  Deletes a specified region.
+
+- `renameRegion(player: ServerPlayerEntity, region: Region, newName: String)`  
+  Renames a region.
+
+- `addScope(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?)`  
+  Adds a scope to a region with an optional name and shape.
+
+- `createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?)`  
+  Creates a scope for a region and returns the region-scope pair.
+
+- `deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
+  Deletes a scope from a region.
+
+- `renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String)`  
+  Renames a scope within a region.
+
+- `modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
+  Modifies the properties of a scope.
+
+- `addSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?)`  
+  Adds a setting to a region.
+
+- `addSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?)`  
+  Adds a setting to a scope within a region.
+
+- `removeSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, targetPlayerStr: String?)`  
+  Removes a setting from a region.
+
+- `removeSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?)`  
+  Removes a setting from a scope within a region.
+
+- `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
+  Queries detailed information about a region.
 
 ---
 
 ### Region Data API
-_Provides access to region data and database operations, which make it convenient for extension functions._
+Provides access to region data and database operations for extension functions.
 
-- `addRegion(region)` – Add a new region to the database.  
-- `removeRegion(region)` – Remove a region from the database.  
-- `renameRegion(region, newName)` – Rename a region in the database.  
-- `getRegionList()` – Retrieve the list of all regions.  
-- `getRegionById(id)` – Get a region by its numeric ID.  
-- `getRegionScopePairByLocation(x, z)` – Get region and scope at specified coordinates.  
-- `getRegionScopePairByLocation(blockPos)` – Get region and scope at specified block position.  
-- `getRegionArea(region)` – Calculate the total area of a region.  
-- `getRegionAreaById(id)` – Calculate the total area of a region by its ID.  
+#### Functions:
+- `getRegion(id: Int): Region?`  
+  Retrieves a region by its numeric ID.
+
+- `getRegionList(): List<Region>`  
+  Retrieves the list of all regions.
+
+- `getRegionListFiltered(idMark: Int): List<Region>`  
+  Retrieves a filtered list of regions based on ID mark.
+
+- `getRegionFoundingTime(region: Region): Long`  
+  Gets the founding time of a region.
+
+- `getRegionScopes(region: Region): List<Region.Companion.GeoScope>`  
+  Retrieves the list of scopes within a region.
+
+- `getRegionScopePair(region: Region, scopeName: String): Pair<Region, Region.Companion.GeoScope?>`  
+  Retrieves the region-scope pair based on the region and scope name.
+
+- `getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, Region.Companion.GeoScope?>`  
+  Retrieves the region-scope pair by region ID and scope name.
+
+- `getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, Region.Companion.GeoScope>?`  
+  Retrieves the region-scope pair by coordinates.
+
+- `getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, Region.Companion.GeoScope>?`  
+  Retrieves the region-scope pair by block position.
+
+- `getScopeShape(scope: Region.Companion.GeoScope): Region.Companion.GeoShape?`  
+  Retrieves the shape of a scope.
+
+- `getScopeArea(scope: Region.Companion.GeoScope): Double?`  
+  Retrieves the area of a scope.
+
+- `getRegionArea(region: Region): Double`  
+  Calculates the total area of a region.
+
+- `getRegionGlobalSettings(region: Region): List<Setting>`  
+  Retrieves the global settings for a region.
+
+- `getRegionGlobalSettingsByType(region: Region, settingTypes: SettingTypes): List<Setting>`  
+  Retrieves the global settings by type for a region.
+
+- `getRegionPersonalSettings(region: Region, player: ServerPlayerEntity): List<Setting>`  
+  Retrieves the personal settings for a region for a specific player.
+
+- `getRegionPersonalSettingsByType(region: Region, player: ServerPlayerEntity, settingTypes: SettingTypes): List<Setting>`  
+  Retrieves the personal settings by type for a region for a specific player.
+
+- `getScopeGlobalSettings(scope: Region.Companion.GeoScope): List<Setting>`  
+  Retrieves the global settings for a scope.
+
+- `getScopeGlobalSettingsByType(scope: Region.Companion.GeoScope, settingTypes: SettingTypes): List<Setting>`  
+  Retrieves the global settings by type for a scope.
+
+- `getScopePersonalSettings(scope: Region.Companion.GeoScope, player: ServerPlayerEntity): List<Setting>`  
+  Retrieves the personal settings for a scope for a specific player.
+
+- `getScopePersonalSettingsByType(scope: Region.Companion.GeoScope, player: ServerPlayerEntity, settingTypes: SettingTypes): List<Setting>`  
+  Retrieves the personal settings by type for a scope for a specific player.
 
 ## Commands
 
