@@ -11,14 +11,6 @@ import net.minecraft.util.math.BlockPos
 
 @Suppress("unused")
 object RegionDataApi {
-
-    fun addRegion(region: Region): Unit = RegionDatabase.addRegion(region)
-
-    fun removeRegion(region: Region): Unit = RegionDatabase.removeRegion(region)
-
-    fun renameRegion(region: Region, newName: String): Unit =
-        RegionDatabase.renameRegion(region, newName)
-
     fun getRegion(id: Int): Region? {
         return try {
             RegionDatabase.getRegionByNumberId(id)
