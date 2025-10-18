@@ -6,8 +6,10 @@ import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
-import net.minecraft.server.network.ServerPlayerEntity
+import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
+import net.minecraft.server.MinecraftServer
 import net.minecraft.util.math.BlockPos
+import java.util.*
 
 @Suppress("unused")
 object RegionDataApi {
@@ -54,15 +56,15 @@ object RegionDataApi {
     fun getRegionGlobalSettingsByType(region: Region, settingTypes: SettingTypes): List<Setting> =
         filterSettingsByType(region.settings, settingTypes, isPersonal = false)
 
-    fun getRegionPersonalSettings(region: Region, player: ServerPlayerEntity): List<Setting> =
-        region.settings.toSet().filter { it.isPersonal && it.playerUUID == player.uuid }
+    fun getRegionPersonalSettings(region: Region, playerUUID: UUID,): List<Setting> =
+        region.settings.toSet().filter { it.isPersonal && it.playerUUID == playerUUID }
 
     fun getRegionPersonalSettingsByType(
         region: Region,
-        player: ServerPlayerEntity,
+        playerUUID: UUID,
         settingTypes: SettingTypes
     ): List<Setting> =
-        filterSettingsByType(region.settings, settingTypes, isPersonal = true, playerUUID = player.uuid)
+        filterSettingsByType(region.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
     fun getScopeGlobalSettings(scope: Region.Companion.GeoScope): List<Setting> =
         scope.settings.toSet().filter { !it.isPersonal }
@@ -73,14 +75,17 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = false)
 
-    fun getScopePersonalSettings(scope: Region.Companion.GeoScope, player: ServerPlayerEntity): List<Setting> =
-        scope.settings.toSet().filter { it.isPersonal && it.playerUUID == player.uuid }
+    fun getScopePersonalSettings(scope: Region.Companion.GeoScope, playerUUID: UUID): List<Setting> =
+        scope.settings.toSet().filter { it.isPersonal && it.playerUUID == playerUUID }
 
     fun getScopePersonalSettingsByType(
         scope: Region.Companion.GeoScope,
-        player: ServerPlayerEntity,
+        playerUUID: UUID,
         settingTypes: SettingTypes
     ): List<Setting> =
-        filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = player.uuid)
+        filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
+    fun getPlayerUUID(server: MinecraftServer, playerName: String): UUID? {
+        return getUUIDFromPlayerName(server, playerName)
+    }
 }

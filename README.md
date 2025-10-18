@@ -164,11 +164,11 @@ Provides access to region data and database operations for extension functions.
 - `getRegionGlobalSettingsByType(region: Region, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the global settings by type for a region.
 
-- `getRegionPersonalSettings(region: Region, player: ServerPlayerEntity): List<Setting>`  
-  Retrieves the personal settings for a region for a specific player.
+- `getRegionPersonalSettings(region: Region, playerUUID: UUID): List<Setting>`  
+  Retrieves the personal settings for a region for a specific playerUUID.
 
-- `getRegionPersonalSettingsByType(region: Region, player: ServerPlayerEntity, settingTypes: SettingTypes): List<Setting>`  
-  Retrieves the personal settings by type for a region for a specific player.
+- `getRegionPersonalSettingsByType(region: Region, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
+  Retrieves the personal settings by type for a region for a specific playerUUID.
 
 - `getScopeGlobalSettings(scope: Region.Companion.GeoScope): List<Setting>`  
   Retrieves the global settings for a scope.
@@ -176,11 +176,14 @@ Provides access to region data and database operations for extension functions.
 - `getScopeGlobalSettingsByType(scope: Region.Companion.GeoScope, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the global settings by type for a scope.
 
-- `getScopePersonalSettings(scope: Region.Companion.GeoScope, player: ServerPlayerEntity): List<Setting>`  
-  Retrieves the personal settings for a scope for a specific player.
+- `getScopePersonalSettings(scope: Region.Companion.GeoScope, playerUUID: UUID): List<Setting>`  
+  Retrieves the personal settings for a scope for a specific playerUUID.
 
-- `getScopePersonalSettingsByType(scope: Region.Companion.GeoScope, player: ServerPlayerEntity, settingTypes: SettingTypes): List<Setting>`  
-  Retrieves the personal settings by type for a scope for a specific player.
+- `getScopePersonalSettingsByType(scope: Region.Companion.GeoScope, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
+  Retrieves the personal settings by type for a scope for a specific playerUUID.
+
+- `getPlayerUUID(server: MinecraftServer, playerName: String): UUID?`
+  Retrieves the UUID of a player by their name, in a specified server with cache of player data.
 
 ## Commands
 
