@@ -19,7 +19,7 @@ fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String):
         player.sendMessage(Translator.tr("interaction.meta.rename.success", oldName, newName))
         1
     } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr("interaction.meta.rename.duplicate_name", newName))
+        player.sendMessage(Translator.tr("interaction.meta.name.duplicate_name", newName))
         0
     }
 }

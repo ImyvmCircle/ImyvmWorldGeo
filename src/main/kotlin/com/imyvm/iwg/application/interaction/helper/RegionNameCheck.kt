@@ -1,5 +1,6 @@
 package com.imyvm.iwg.application.interaction.helper
 
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
@@ -19,9 +20,12 @@ fun checkNameDigit(newName: String, player: ServerPlayerEntity): Boolean {
     return true
 }
 
-fun checkNameRepeat(oldName: String, newName: String, player: ServerPlayerEntity): Boolean {
+fun checkNameRepeat(oldName: String = "", newName: String, player: ServerPlayerEntity): Boolean {
     if (oldName == newName) {
-        player.sendMessage(Translator.tr("interaction.meta.name.repeated_same_name"))
+        player.sendMessage(Translator.tr("interaction.meta.name.repeated_same_name", newName))
+        return false
+    } else if (RegionDatabase.getRegionList().find { it.name == newName } != null) {
+        player.sendMessage(Translator.tr("interaction.meta.name.duplicate_name", newName))
         return false
     }
     return true

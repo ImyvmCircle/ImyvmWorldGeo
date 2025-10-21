@@ -3,8 +3,9 @@
 
   "interaction.meta.not_found_id": "Error: Region with ID {0} not found.",
   "interaction.meta.not_found_name": "Error: Region with name {0} not found.",
-  "interaction.meta.name.name_is_empty": "New name input is empty.",
-  "interaction.meta.name.repeated_same_name": "New name is the same as the current name.",
+  "interaction.meta.name.name_is_empty": "New region name input is empty.",
+  "interaction.meta.name.name_is_digits_only": "New region name cant be digits only",
+  "interaction.meta.name.repeated_same_name": "New name {0} is the same as the current name.",
   "interaction.meta.name.duplicate_name": "New name {0} is already in use by another region.",
 
   "interaction.meta.select.start": "Selection mode started. Use a command block to select positions.",

@@ -1,13 +1,13 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.interaction.helper.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
-import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.region.generateNewRegionId
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
@@ -190,75 +190,45 @@ private fun validateNameCommon(
     autoFill: Boolean = false,
     regionForScope: Region? = null
 ): String? {
-    return try {
-        val finalName = when {
-            nameArgument == null -> {
-                if (autoFill) {
-                    val name = when (type) {
-                        NameType.REGION -> "NewRegion-${System.currentTimeMillis()}"
-                        NameType.SCOPE -> {
-                            val regionName = regionForScope?.name ?: "UnknownRegion"
-                            "$regionName-NewScope-${System.currentTimeMillis()}"
-                        }
-                    }
-                    val msgKey = when (type) {
-                        NameType.REGION -> "interaction.meta.name_auto_filled"
-                        NameType.SCOPE -> "interaction.meta.add.name_auto_filled"
-                    }
-                    player.sendMessage(Translator.tr(msgKey, name))
-                    name
-                } else {
-                    val msgKey = when (type) {
-                        NameType.REGION -> "interaction.meta.create.name_invalid"
-                        NameType.SCOPE -> "interaction.meta.scope.add.name_invalid"
-                    }
-                    player.sendMessage(Translator.tr(msgKey))
-                    return null
-                }
-            }
-            nameArgument.matches("\\d+".toRegex()) -> {
-                val msgKey = when (type) {
-                    NameType.REGION -> "interaction.meta.create.name_is_digits_only"
-                    NameType.SCOPE -> "interaction.meta.scope.add.name_is_digits_only"
-                }
-                player.sendMessage(Translator.tr(msgKey))
+    val name = when {
+        nameArgument == null -> {
+            if (autoFill) {
+                generateAndNotifyAutoName(player, type, regionForScope)
+            } else {
+                NameValidationMessages.sendNameRequired(player, type)
                 return null
             }
-            else -> nameArgument
         }
-
-        if (type == NameType.SCOPE) {
-            regionForScope?.let { validateScopeUnique(player, it, finalName) }
-        } else {
-            finalName
-        }
-    } catch (e: IllegalArgumentException) {
-        val msgKey = when (type) {
-            NameType.REGION -> if (autoFill) "interaction.meta.create.name_auto_filled" else "interaction.meta.create.name_invalid"
-            NameType.SCOPE -> if (autoFill) "interaction.meta.scope.add.name_auto_filled" else "interaction.meta.scope.add.name_invalid"
-        }
-        val name = when (type) {
-            NameType.REGION -> "NewRegion-${System.currentTimeMillis()}"
-            NameType.SCOPE -> {
-                val regionName = regionForScope?.name ?: "UnknownRegion"
-                "NewScope-$regionName-${System.currentTimeMillis()}"
-            }
-        }
-        player.sendMessage(Translator.tr(msgKey, name))
-        if (autoFill) name else null
+        else -> nameArgument
     }
+
+    if (!checkNameEmpty(name, player)) return null
+    if (!checkNameDigit(name, player)) return null
+    if (!checkNameRepeat(newName = name, player = player)) return null
+    if (type == NameType.SCOPE && regionForScope != null) {
+        if (!checkScopeUnique(name, regionForScope, player)) return null
+    }
+
+    return name
 }
 
-private fun validateScopeUnique(
+private fun generateAndNotifyAutoName(
     player: ServerPlayerEntity,
-    region: Region,
-    scopeName: String
-): String? {
-    if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.add.duplicate_scope_name"))
-        return null
+    type: NameType,
+    region: Region?
+): String {
+    val name = when (type) {
+        NameType.REGION -> CreationNameGenerator.generateRegionName()
+        NameType.SCOPE -> CreationNameGenerator.generateScopeName(region)
     }
-    return scopeName
+    NameValidationMessages.sendAutoFilled(player, type, name)
+    return name
 }
 
-private enum class NameType { REGION, SCOPE }
+fun checkScopeUnique(scopeName: String, region: Region, player: ServerPlayerEntity): Boolean {
+    if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
+        NameValidationMessages.sendDuplicateScope(player)
+        return false
+    }
+    return true
+}
