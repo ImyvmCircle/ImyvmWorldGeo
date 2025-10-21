@@ -18,6 +18,7 @@
   "interaction.meta.delete.success": "Region {0} with id {1} deleted successfully!",
 
   "interaction.meta.rename.success": "Successfully renamed region ID {0} to {1}.",
+  "interaction.meta.rename.name_is_empty": "New name input is empty.",
   "interaction.meta.rename.repeated_same_name": "New name is the same as the current name.",
   "interaction.meta.rename.duplicate_name": "New name {0} is already in use by another region.",
 

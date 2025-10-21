@@ -6,6 +6,7 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 
 fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String): Int {
+    if (!checkNameEmpty(newName, player)) return 0
     if(!checkNameDigit(newName, player)) return 0
     val oldName = region.name
     if(!checkNameRepeat(oldName, newName, player)) return 0
@@ -49,6 +50,14 @@ fun onScopeRename(
         player.sendMessage(Translator.tr(e.message))
         return 0
     }
+}
+
+private fun checkNameEmpty(newName: String, player: ServerPlayerEntity): Boolean{
+    if (newName.trim() == "") {
+        player.sendMessage(Translator.tr("interaction.meta.rename.name_is_empty"))
+        return false
+    }
+    return true
 }
 
 private fun checkNameDigit(newName: String, player: ServerPlayerEntity): Boolean {
