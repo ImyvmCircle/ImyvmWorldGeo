@@ -1,5 +1,8 @@
 package com.imyvm.iwg.application.interaction
 
+import com.imyvm.iwg.application.interaction.helper.checkNameDigit
+import com.imyvm.iwg.application.interaction.helper.checkNameEmpty
+import com.imyvm.iwg.application.interaction.helper.checkNameRepeat
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
@@ -50,28 +53,4 @@ fun onScopeRename(
         player.sendMessage(Translator.tr(e.message))
         return 0
     }
-}
-
-private fun checkNameEmpty(newName: String, player: ServerPlayerEntity): Boolean{
-    if (newName.trim() == "") {
-        player.sendMessage(Translator.tr("interaction.meta.rename.name_is_empty"))
-        return false
-    }
-    return true
-}
-
-private fun checkNameDigit(newName: String, player: ServerPlayerEntity): Boolean {
-    if (newName.matches("\\d+".toRegex())) {
-        player.sendMessage(Translator.tr("interaction.meta.rename.name_is_digits_only"))
-        return false
-    }
-    return true
-}
-
-private fun checkNameRepeat(oldName: String, newName: String, player: ServerPlayerEntity): Boolean {
-    if (oldName == newName) {
-        player.sendMessage(Translator.tr("interaction.meta.rename.repeated_same_name"))
-        return false
-    }
-    return true
 }

@@ -3,6 +3,9 @@
 
   "interaction.meta.not_found_id": "Error: Region with ID {0} not found.",
   "interaction.meta.not_found_name": "Error: Region with name {0} not found.",
+  "interaction.meta.name.name_is_empty": "New name input is empty.",
+  "interaction.meta.name.repeated_same_name": "New name is the same as the current name.",
+  "interaction.meta.name.duplicate_name": "New name {0} is already in use by another region.",
 
   "interaction.meta.select.start": "Selection mode started. Use a command block to select positions.",
   "interaction.meta.select.already": "You are already in selection mode.",
@@ -18,9 +21,6 @@
   "interaction.meta.delete.success": "Region {0} with id {1} deleted successfully!",
 
   "interaction.meta.rename.success": "Successfully renamed region ID {0} to {1}.",
-  "interaction.meta.rename.name_is_empty": "New name input is empty.",
-  "interaction.meta.rename.repeated_same_name": "New name is the same as the current name.",
-  "interaction.meta.rename.duplicate_name": "New name {0} is already in use by another region.",
 
   "interaction.meta.scope.add.invalid_shape_type": "Invalid shape type. Please use one of the following: rectangle, circle, polygon.",
   "interaction.meta.scope.add.not_found_generic": "Could not find the specified region.",
