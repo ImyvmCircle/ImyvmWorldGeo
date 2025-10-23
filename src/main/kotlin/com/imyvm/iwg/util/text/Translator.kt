@@ -18,7 +18,7 @@ object Translator : HokiTranslator() {
     fun tr(key: String?, vararg args: Any?): Text? {
         val raw = key?.let { languageInstance.get(it) }
         val formatted = if (args.isNotEmpty()) {
-            java.text.MessageFormat.format(raw, *args)
+            raw?.let { java.text.MessageFormat.format(it, *args) }
         } else {
             raw
         }
