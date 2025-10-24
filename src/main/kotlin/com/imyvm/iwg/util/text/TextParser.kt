@@ -24,22 +24,6 @@ object TextParser {
         return result
     }
 
-    fun validate(raw: String): Boolean {
-        return try {
-            parse(raw)
-            true
-        } catch (e: Exception) {
-            false
-        }
-    }
-
-    fun preview(raw: String): String {
-        return when {
-            raw.contains('&') -> raw.replace("&([0-9a-fk-or])".toRegex(RegexOption.IGNORE_CASE), "§$1")
-            else -> raw
-        }
-    }
-
     private fun parseAmpersandColors(raw: String): Text {
         val sectioned = raw.replace("&([0-9a-fk-or])".toRegex(RegexOption.IGNORE_CASE), "§$1")
         return parseSectionColors(sectioned)
