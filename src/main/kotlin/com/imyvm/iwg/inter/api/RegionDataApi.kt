@@ -28,24 +28,24 @@ object RegionDataApi {
     fun getRegionFoundingTime(region: Region): Long =
         parseFoundingTimeFromRegionId(region.numberID)
 
-    fun getRegionScopes(region: Region): List<Region.Companion.GeoScope> =
+    fun getRegionScopes(region: Region): List<GeoScope> =
         region.geometryScope
 
-    fun getRegionScopePair(region: Region, scopeName: String): Pair<Region, Region.Companion.GeoScope?> =
+    fun getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?> =
         RegionDatabase.getRegionAndScope(region, scopeName)
 
-    fun getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, Region.Companion.GeoScope?> =
+    fun getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, GeoScope?> =
         RegionDatabase.getRegionAndScope(regionId, scopeName)
 
-    fun getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, Region.Companion.GeoScope>? =
+    fun getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(x, z)
 
-    fun getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, Region.Companion.GeoScope>? =
+    fun getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(blockPos.x, blockPos.z)
 
-    fun getScopeShape(scope: Region.Companion.GeoScope): Region.Companion.GeoShape? = scope.geoShape
+    fun getScopeShape(scope: GeoScope): GeoShape? = scope.geoShape
 
-    fun getScopeArea(scope: Region.Companion.GeoScope): Double? =
+    fun getScopeArea(scope: GeoScope): Double? =
         scope.geoShape?.calculateArea()
 
     fun getRegionArea(region: Region): Double = region.calculateTotalArea()
@@ -66,20 +66,20 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(region.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
-    fun getScopeGlobalSettings(scope: Region.Companion.GeoScope): List<Setting> =
+    fun getScopeGlobalSettings(scope: GeoScope): List<Setting> =
         scope.settings.toSet().filter { !it.isPersonal }
 
     fun getScopeGlobalSettingsByType(
-        scope: Region.Companion.GeoScope,
+        scope: GeoScope,
         settingTypes: SettingTypes
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = false)
 
-    fun getScopePersonalSettings(scope: Region.Companion.GeoScope, playerUUID: UUID): List<Setting> =
+    fun getScopePersonalSettings(scope: GeoScope, playerUUID: UUID): List<Setting> =
         scope.settings.toSet().filter { it.isPersonal && it.playerUUID == playerUUID }
 
     fun getScopePersonalSettingsByType(
-        scope: Region.Companion.GeoScope,
+        scope: GeoScope,
         playerUUID: UUID,
         settingTypes: SettingTypes
     ): List<Setting> =

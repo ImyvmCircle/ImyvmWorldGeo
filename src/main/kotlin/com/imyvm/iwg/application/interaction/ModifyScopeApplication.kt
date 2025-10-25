@@ -3,6 +3,8 @@ package com.imyvm.iwg.application.interaction
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.interaction.scope.shape.*
+import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.GeoShapeType
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
@@ -15,16 +17,16 @@ fun onModifyScope(
     try {
         val existingScope = targetRegion.getScopeByName(scopeName)
         val selectedPositions = checkAndGetPlayerPositions(player) ?: return 0
-        val shapeType = existingScope.geoShape?.geoShapeType ?: Region.Companion.GeoShapeType.UNKNOWN
-        if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
+        val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
+        if (shapeType == GeoShapeType.UNKNOWN) {
             player.sendMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type"))
             return 0
         }
 
         return when (shapeType) {
-            Region.Companion.GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
-            Region.Companion.GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
-            Region.Companion.GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
+            GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
+            GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
+            GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
             else -> 0
         }
     } catch (e: IllegalArgumentException) {
@@ -45,7 +47,7 @@ private fun checkAndGetPlayerPositions(player: ServerPlayerEntity): MutableList<
 private fun modifyPolygonScope(
     player: ServerPlayerEntity,
     targetRegion: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ): Int {
     return when (selectedPositions.size) {
@@ -59,7 +61,7 @@ private fun modifyPolygonScope(
 private fun modifyCircleScope(
     player: ServerPlayerEntity,
     targetRegion: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ): Int {
     if (selectedPositions.size == 1) modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
@@ -70,7 +72,7 @@ private fun modifyCircleScope(
 private fun modifyRectangleScope(
     player: ServerPlayerEntity,
     targetRegion: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ): Int {
     modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)

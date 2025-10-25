@@ -1,10 +1,7 @@
 package com.imyvm.iwg.inter.register.command.helper
 
+import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.domain.EffectKey
-import com.imyvm.iwg.domain.PermissionKey
-import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.domain.RuleKey
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.server.command.ServerCommandSource
@@ -12,8 +9,8 @@ import java.util.*
 import java.util.concurrent.CompletableFuture
 
 val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSource> = SuggestionProvider { _, builder ->
-    Region.Companion.GeoShapeType.entries
-        .filter { it != Region.Companion.GeoShapeType.UNKNOWN }
+    GeoShapeType.entries
+        .filter { it != GeoShapeType.UNKNOWN }
         .forEach { builder.suggest(it.name.lowercase(Locale.getDefault())) }
     CompletableFuture.completedFuture(builder.build())
 }

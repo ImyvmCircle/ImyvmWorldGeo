@@ -4,6 +4,8 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
+import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
@@ -12,9 +14,9 @@ import net.minecraft.util.math.BlockPos
 fun recreateScope(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     newPositions: MutableList<BlockPos>,
-    shapeType: Region.Companion.GeoShapeType,
+    shapeType: GeoShapeType,
     successMessageKey: String,
     vararg extraArgs: Any
 ) {

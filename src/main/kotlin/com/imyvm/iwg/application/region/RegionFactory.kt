@@ -1,7 +1,6 @@
 package com.imyvm.iwg.application.region
 
-import com.imyvm.iwg.domain.CreationError
-import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.util.math.BlockPos
@@ -14,14 +13,14 @@ object RegionFactory {
         name: String,
         numberID: Int,
         selectedPositions: MutableList<BlockPos>,
-        shapeType: Region.Companion.GeoShapeType
+        shapeType: GeoShapeType
     ): Result<Region, CreationError> {
         val mainScopeResult = createScope("main_scope", selectedPositions, shapeType)
 
         if (mainScopeResult is Result.Err) return mainScopeResult
 
         val mainScope = (mainScopeResult as Result.Ok).value
-        val geometryScope = mutableListOf<Region.Companion.GeoScope>()
+        val geometryScope = mutableListOf<GeoScope>()
         geometryScope.add(mainScope)
 
         val newRegion = Region(name, numberID, geometryScope)
@@ -32,32 +31,32 @@ object RegionFactory {
     fun createScope(
         scopeName: String,
         selectedPositions: MutableList<BlockPos>,
-        shapeType: Region.Companion.GeoShapeType
-    ): Result<Region.Companion.GeoScope, CreationError> {
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> {
         val geoShapeResult = createGeoShape(selectedPositions, shapeType)
 
         if (geoShapeResult is Result.Err) {
             return Result.Err(geoShapeResult.error)
         }
 
-        val geoScope = Region.Companion.GeoScope(scopeName, (geoShapeResult as Result.Ok).value)
+        val geoScope = GeoScope(scopeName, (geoShapeResult as Result.Ok).value)
 
         return Result.Ok(geoScope)
     }
 
     private fun createGeoShape(
         positions: List<BlockPos>,
-        shapeType: Region.Companion.GeoShapeType
-    ): Result<Region.Companion.GeoShape, CreationError> {
+        shapeType: GeoShapeType
+    ): Result<GeoShape, CreationError> {
         val requiredPoints = requiredPoints(shapeType)
         if (positions.size < requiredPoints) {
             return Result.Err(CreationError.InsufficientPoints)
         }
 
         val geoShapeResult = when (shapeType) {
-            Region.Companion.GeoShapeType.RECTANGLE -> createRectangle(positions)
-            Region.Companion.GeoShapeType.CIRCLE -> createCircle(positions)
-            Region.Companion.GeoShapeType.POLYGON -> createPolygon(positions)
+            GeoShapeType.RECTANGLE -> createRectangle(positions)
+            GeoShapeType.CIRCLE -> createCircle(positions)
+            GeoShapeType.POLYGON -> createPolygon(positions)
             else -> Result.Err(CreationError.InsufficientPoints)
         }
 
@@ -73,15 +72,15 @@ object RegionFactory {
         return Result.Ok(geoShape)
     }
 
-    private fun requiredPoints(shapeType: Region.Companion.GeoShapeType): Int =
+    private fun requiredPoints(shapeType: GeoShapeType): Int =
         when (shapeType) {
-            Region.Companion.GeoShapeType.CIRCLE,
-            Region.Companion.GeoShapeType.RECTANGLE -> 2
-            Region.Companion.GeoShapeType.POLYGON -> 3
+            GeoShapeType.CIRCLE,
+            GeoShapeType.RECTANGLE -> 2
+            GeoShapeType.POLYGON -> 3
             else -> 0
         }
 
-    private fun createRectangle(positions: List<BlockPos>): Result<Region.Companion.GeoShape, CreationError> {
+    private fun createRectangle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val pos1 = positions[0]
         val pos2 = positions[1]
 
@@ -99,11 +98,11 @@ object RegionFactory {
         val south = maxOf(pos1.z, pos2.z)
 
         return Result.Ok(
-            Region.Companion.GeoShape(Region.Companion.GeoShapeType.RECTANGLE, mutableListOf(west, north, east, south))
+            GeoShape(GeoShapeType.RECTANGLE, mutableListOf(west, north, east, south))
         )
     }
 
-    private fun createCircle(positions: List<BlockPos>): Result<Region.Companion.GeoShape, CreationError> {
+    private fun createCircle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val center = positions[0]
         val circumference = positions[1]
 
@@ -115,14 +114,11 @@ object RegionFactory {
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
 
         return Result.Ok(
-            Region.Companion.GeoShape(
-                Region.Companion.GeoShapeType.CIRCLE,
-                mutableListOf(center.x, center.z, radius.toInt())
-            )
+            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))
         )
     }
 
-    private fun createPolygon(positions: List<BlockPos>): Result<Region.Companion.GeoShape, CreationError> {
+    private fun createPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val distinct = positions.distinct()
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
@@ -131,8 +127,8 @@ object RegionFactory {
         if (error != null) return Result.Err(error)
 
         return Result.Ok(
-            Region.Companion.GeoShape(
-                geoShapeType = Region.Companion.GeoShapeType.POLYGON,
+            GeoShape(
+                geoShapeType = GeoShapeType.POLYGON,
                 positions.flatMap { listOf(it.x, it.z) }.toMutableList()
             )
         )

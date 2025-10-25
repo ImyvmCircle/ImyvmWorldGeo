@@ -1,11 +1,13 @@
 package com.imyvm.iwg.util.geo
 
-import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.GeoShape
+import com.imyvm.iwg.domain.GeoShapeType
 import net.minecraft.util.math.BlockPos
 
 fun checkIntersection(
-    newShape: Region.Companion.GeoShape,
-    existingScopes: List<Region.Companion.GeoScope>
+    newShape: GeoShape,
+    existingScopes: List<GeoScope>
 ): Boolean {
     for (scope in existingScopes) {
         val existingGeo = scope.geoShape ?: continue
@@ -14,31 +16,31 @@ fun checkIntersection(
     return false
 }
 
-private fun geoOverlap(a: Region.Companion.GeoShape, b: Region.Companion.GeoShape): Boolean {
+private fun geoOverlap(a: GeoShape, b: GeoShape): Boolean {
     return when (a.geoShapeType) {
-        Region.Companion.GeoShapeType.RECTANGLE -> when (b.geoShapeType) {
-            Region.Companion.GeoShapeType.RECTANGLE -> rectOverlapRect(a, b)
-            Region.Companion.GeoShapeType.CIRCLE -> rectOverlapCircle(a, b)
-            Region.Companion.GeoShapeType.POLYGON -> rectOverlapPolygon(a, b)
+        GeoShapeType.RECTANGLE -> when (b.geoShapeType) {
+            GeoShapeType.RECTANGLE -> rectOverlapRect(a, b)
+            GeoShapeType.CIRCLE -> rectOverlapCircle(a, b)
+            GeoShapeType.POLYGON -> rectOverlapPolygon(a, b)
             else -> false
         }
-        Region.Companion.GeoShapeType.CIRCLE -> when (b.geoShapeType) {
-            Region.Companion.GeoShapeType.RECTANGLE -> rectOverlapCircle(b, a)
-            Region.Companion.GeoShapeType.CIRCLE -> circleOverlapCircle(a, b)
-            Region.Companion.GeoShapeType.POLYGON -> polygonOverlapCircle(b, a)
+        GeoShapeType.CIRCLE -> when (b.geoShapeType) {
+            GeoShapeType.RECTANGLE -> rectOverlapCircle(b, a)
+            GeoShapeType.CIRCLE -> circleOverlapCircle(a, b)
+            GeoShapeType.POLYGON -> polygonOverlapCircle(b, a)
             else -> false
         }
-        Region.Companion.GeoShapeType.POLYGON -> when (b.geoShapeType) {
-            Region.Companion.GeoShapeType.RECTANGLE -> rectOverlapPolygon(b, a)
-            Region.Companion.GeoShapeType.CIRCLE -> polygonOverlapCircle(a, b)
-            Region.Companion.GeoShapeType.POLYGON -> polygonOverlapPolygon(a, b)
+        GeoShapeType.POLYGON -> when (b.geoShapeType) {
+            GeoShapeType.RECTANGLE -> rectOverlapPolygon(b, a)
+            GeoShapeType.CIRCLE -> polygonOverlapCircle(a, b)
+            GeoShapeType.POLYGON -> polygonOverlapPolygon(a, b)
             else -> false
         }
         else -> false
     }
 }
 
-private fun rectOverlapRect(a: Region.Companion.GeoShape, b: Region.Companion.GeoShape): Boolean {
+private fun rectOverlapRect(a: GeoShape, b: GeoShape): Boolean {
     val ax1 = a.shapeParameter[0]
     val az1 = a.shapeParameter[1]
     val ax2 = a.shapeParameter[2]
@@ -52,7 +54,7 @@ private fun rectOverlapRect(a: Region.Companion.GeoShape, b: Region.Companion.Ge
     return ax1 <= bx2 && ax2 >= bx1 && az1 <= bz2 && az2 >= bz1
 }
 
-private fun rectOverlapCircle(rect: Region.Companion.GeoShape, circle: Region.Companion.GeoShape): Boolean {
+private fun rectOverlapCircle(rect: GeoShape, circle: GeoShape): Boolean {
     val rx1 = rect.shapeParameter[0]
     val rz1 = rect.shapeParameter[1]
     val rx2 = rect.shapeParameter[2]
@@ -70,14 +72,14 @@ private fun rectOverlapCircle(rect: Region.Companion.GeoShape, circle: Region.Co
     return dx * dx + dz * dz <= r * r
 }
 
-private fun circleOverlapCircle(a: Region.Companion.GeoShape, b: Region.Companion.GeoShape): Boolean {
+private fun circleOverlapCircle(a: GeoShape, b: GeoShape): Boolean {
     val dx = a.shapeParameter[0] - b.shapeParameter[0]
     val dz = a.shapeParameter[1] - b.shapeParameter[1]
     val rSum = a.shapeParameter[2] + b.shapeParameter[2]
     return dx * dx + dz * dz <= rSum * rSum
 }
 
-private fun rectOverlapPolygon(rect: Region.Companion.GeoShape, poly: Region.Companion.GeoShape): Boolean {
+private fun rectOverlapPolygon(rect:GeoShape, poly: GeoShape): Boolean {
     val rectPoly = listOf(
         BlockPos(rect.shapeParameter[0], 0, rect.shapeParameter[1]),
         BlockPos(rect.shapeParameter[2], 0, rect.shapeParameter[1]),
@@ -87,14 +89,14 @@ private fun rectOverlapPolygon(rect: Region.Companion.GeoShape, poly: Region.Com
     return polygonsIntersect(rectPoly, poly.shapeParameter.chunked(2).map { BlockPos(it[0], 0, it[1]) })
 }
 
-private fun polygonOverlapPolygon(a: Region.Companion.GeoShape, b: Region.Companion.GeoShape): Boolean {
+private fun polygonOverlapPolygon(a: GeoShape, b: GeoShape): Boolean {
     return polygonsIntersect(
         a.shapeParameter.chunked(2).map { BlockPos(it[0], 0, it[1]) },
         b.shapeParameter.chunked(2).map { BlockPos(it[0], 0, it[1]) }
     )
 }
 
-private fun polygonOverlapCircle(poly: Region.Companion.GeoShape, circle: Region.Companion.GeoShape): Boolean {
+private fun polygonOverlapCircle(poly: GeoShape, circle: GeoShape): Boolean {
     val cx = circle.shapeParameter[0]
     val cz = circle.shapeParameter[1]
     val r = circle.shapeParameter[2]

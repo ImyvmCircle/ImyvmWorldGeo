@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.interaction.scope.shape
 
 import com.imyvm.iwg.application.interaction.scope.recreateScope
+import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
@@ -9,7 +11,7 @@ import net.minecraft.util.math.BlockPos
 fun modifyScopeCircleRadius(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
     val shapeParams = existingScope.geoShape?.shapeParameter
@@ -39,7 +41,7 @@ fun modifyScopeCircleRadius(
 fun modifyScopeCircleCenter(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
     val shapeParams = existingScope.geoShape?.shapeParameter
@@ -73,7 +75,7 @@ private fun checkCircleParams(
 private fun recreateCircleScope(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     centerX: Int,
     centerZ: Int,
     radius: Int,
@@ -87,7 +89,7 @@ private fun recreateCircleScope(
 
     recreateScope(
         player, region, existingScope, newPositions,
-        Region.Companion.GeoShapeType.CIRCLE,
+        GeoShapeType.CIRCLE,
         successKey,
         *params
     )

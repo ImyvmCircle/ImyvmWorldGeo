@@ -87,7 +87,7 @@ object RegionDatabase {
             ?: throw RegionNotFoundException("Region with ID '$id' not found.")
     }
 
-    fun getRegionAndScope(regionId: Int, scopeName: String): Pair<Region?, Region.Companion.GeoScope?> {
+    fun getRegionAndScope(regionId: Int, scopeName: String): Pair<Region?, GeoScope?> {
         val region = try {
             getRegionByNumberId(regionId)
         } catch (e: RegionNotFoundException) {
@@ -97,12 +97,12 @@ object RegionDatabase {
         return Pair(region, scope)
     }
 
-    fun getRegionAndScope(region: Region, scopeName: String): Pair<Region, Region.Companion.GeoScope?> {
+    fun getRegionAndScope(region: Region, scopeName: String): Pair<Region, GeoScope?> {
         val scope = region.geometryScope.find { it.scopeName == scopeName }
         return Pair(region, scope)
     }
 
-    fun getRegionAndScopeAt(x: Int, z: Int): Pair<Region, Region.Companion.GeoScope>? {
+    fun getRegionAndScopeAt(x: Int, z: Int): Pair<Region, GeoScope>? {
         for (region in regions) {
             for (scope in region.geometryScope) {
                 val geoShape = scope.geoShape
@@ -116,7 +116,7 @@ object RegionDatabase {
         return null
     }
 
-    private fun saveGeoScopes(stream: DataOutputStream, scopes: List<Region.Companion.GeoScope>) {
+    private fun saveGeoScopes(stream: DataOutputStream, scopes: List<GeoScope>) {
         stream.writeInt(scopes.size)
         for (scope in scopes) {
             stream.writeUTF(scope.scopeName)
@@ -125,16 +125,16 @@ object RegionDatabase {
         }
     }
 
-    private fun loadGeoScopes(stream: DataInputStream): MutableList<Region.Companion.GeoScope> {
+    private fun loadGeoScopes(stream: DataInputStream): MutableList<GeoScope> {
         val count = stream.readInt()
-        val list = ArrayList<Region.Companion.GeoScope>(count)
+        val list = ArrayList<GeoScope>(count)
 
         repeat(count) {
             val scopeName = stream.readUTF()
             val geoShape = loadGeoShape(stream)
             val scopeSettings = loadSettings(stream)
 
-            val scope = Region.Companion.GeoScope(scopeName, geoShape)
+            val scope = GeoScope(scopeName, geoShape)
             scope.settings.addAll(scopeSettings)
             list.add(scope)
         }
@@ -142,7 +142,7 @@ object RegionDatabase {
         return list
     }
 
-    private fun saveGeoShape(stream: DataOutputStream, shape: Region.Companion.GeoShape?) {
+    private fun saveGeoShape(stream: DataOutputStream, shape: GeoShape?) {
         if (shape == null) {
             stream.writeBoolean(false)
         } else {
@@ -153,15 +153,15 @@ object RegionDatabase {
         }
     }
 
-    private fun loadGeoShape(stream: DataInputStream): Region.Companion.GeoShape? {
+    private fun loadGeoShape(stream: DataInputStream): GeoShape? {
         val hasShape = stream.readBoolean()
         return if (!hasShape) null
         else {
             val typeOrdinal = stream.readInt()
-            val geoShapeType = Region.Companion.GeoShapeType.entries[typeOrdinal]
+            val geoShapeType = GeoShapeType.entries[typeOrdinal]
             val paramCount = stream.readInt()
             val params = MutableList(paramCount) { stream.readInt() }
-            Region.Companion.GeoShape(geoShapeType, params)
+            GeoShape(geoShapeType, params)
         }
     }
 

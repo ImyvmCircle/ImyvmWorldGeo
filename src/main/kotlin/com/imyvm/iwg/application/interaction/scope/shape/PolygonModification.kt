@@ -3,6 +3,8 @@ package com.imyvm.iwg.application.interaction.scope.shape
 import com.imyvm.iwg.application.interaction.scope.getPolygonPoints
 import com.imyvm.iwg.application.interaction.scope.recreateScope
 import com.imyvm.iwg.application.interaction.scope.validatePolygon
+import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.text.Translator
@@ -12,7 +14,7 @@ import net.minecraft.util.math.BlockPos
 fun modifyScopePolygonMonoPoint(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
     if (!validatePolygon(player, existingScope)) return
@@ -32,7 +34,7 @@ fun modifyScopePolygonMonoPoint(
 fun modifyScopePolygonMove(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
     if (!validatePolygon(player, existingScope)) return
@@ -59,7 +61,7 @@ fun modifyScopePolygonMove(
 
     recreateScope(
         player, region, existingScope, newPositions,
-        Region.Companion.GeoShapeType.POLYGON,
+        GeoShapeType.POLYGON,
         "interaction.meta.scope.modify.polygon_move_success"
     )
 }
@@ -67,7 +69,7 @@ fun modifyScopePolygonMove(
 fun modifyScopePolygonInsertPoint(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
     if (!validatePolygon(player, existingScope)) return
@@ -85,7 +87,7 @@ fun modifyScopePolygonInsertPoint(
 
     recreateScope(
         player, region, existingScope, blockPosList,
-        Region.Companion.GeoShapeType.POLYGON,
+        GeoShapeType.POLYGON,
         "interaction.meta.scope.modify.polygon_insert_success"
     )
 }
@@ -93,7 +95,7 @@ fun modifyScopePolygonInsertPoint(
 fun modifyScopePolygonDeletePoint(
     player: ServerPlayerEntity,
     region: Region,
-    existingScope: Region.Companion.GeoScope,
+    existingScope: GeoScope,
     point: BlockPos
 ) {
     val blockPosList = getPolygonPoints(existingScope).toMutableList()
@@ -105,7 +107,7 @@ fun modifyScopePolygonDeletePoint(
 
     recreateScope(
         player, region, existingScope, blockPosList,
-        Region.Companion.GeoShapeType.POLYGON,
+        GeoShapeType.POLYGON,
         "interaction.meta.scope.modify.polygon_delete_success"
     )
 }

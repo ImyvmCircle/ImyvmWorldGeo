@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.region.PlayerRegionChecker
+import com.imyvm.iwg.domain.GeoScope
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.domain.Region
 import net.minecraft.server.network.ServerPlayerEntity
@@ -20,12 +21,12 @@ fun updateGeographicActionBarForPlayer(player: ServerPlayerEntity) {
 private fun isActionBarEnabled(player: ServerPlayerEntity) =
     ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)
 
-private fun getPlayerRegionScope(player: ServerPlayerEntity): Pair<Region?, Region.Companion.GeoScope?> {
+private fun getPlayerRegionScope(player: ServerPlayerEntity): Pair<Region?, GeoScope?> {
     val pair = PlayerRegionChecker.getAllRegionScopesWithPlayers()[player.uuid]
     return pair?.first to pair?.second
 }
 
-private fun buildRegionScopeText(region: Region?, scope: Region.Companion.GeoScope?): Pair<String, String> {
+private fun buildRegionScopeText(region: Region?, scope: GeoScope?): Pair<String, String> {
     val regionPrefix = Translator.tr("scoreboard.region.prefix")?.string ?: "Region:"
     val scopePrefix = Translator.tr("scoreboard.scope.prefix")?.string ?: "Scope:"
 

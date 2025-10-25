@@ -9,6 +9,8 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
+import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.GeoShapeType
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
@@ -72,7 +74,7 @@ fun onTryingScopeCreationWithReturn (
     scopeNameArg: String?,
     shapeTypeName: String,
     isApi: Boolean = true
-): Pair<Region, Region.Companion.GeoScope>? {
+): Pair<Region, GeoScope>? {
     val playerUUID = player.uuid
     if (!selectionModeCheck(player)) return null
     val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
@@ -111,11 +113,11 @@ private fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
 private fun getShapeTypeCheck(
     player: ServerPlayerEntity,
     shapeTypeName: String,
-): Region.Companion.GeoShapeType? {
-    val shapeType = Region.Companion.GeoShapeType.entries
+): GeoShapeType? {
+    val shapeType = GeoShapeType.entries
         .find { it.name == shapeTypeName }
-        ?: Region.Companion.GeoShapeType.UNKNOWN
-    if (shapeType == Region.Companion.GeoShapeType.UNKNOWN) {
+        ?: GeoShapeType.UNKNOWN
+    if (shapeType == GeoShapeType.UNKNOWN) {
         player.sendMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeName))
         return null
     }
@@ -125,7 +127,7 @@ private fun getShapeTypeCheck(
 private fun tryRegionCreation(
     player: ServerPlayerEntity,
     regionName: String,
-    shapeType: Region.Companion.GeoShapeType,
+    shapeType: GeoShapeType,
     idMark: Int
 ): Result<Region, CreationError> {
     val playerUUID = player.uuid
@@ -142,8 +144,8 @@ private fun tryRegionCreation(
 private fun tryScopeCreation(
     playerUUID: UUID,
     scopeName: String,
-    shapeType: Region.Companion.GeoShapeType
-): Result<Region.Companion.GeoScope, CreationError> {
+    shapeType: GeoShapeType
+): Result<GeoScope, CreationError> {
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
     return RegionFactory.createScope(
         scopeName = scopeName,
@@ -168,7 +170,7 @@ private fun handleRegionCreateSuccess(
 
 private fun handleScopeCreateSuccess(
     player: ServerPlayerEntity,
-    creationResult: Result.Ok<Region.Companion.GeoScope>,
+    creationResult: Result.Ok<GeoScope>,
     region: Region,
     notify: Boolean
 ) {
