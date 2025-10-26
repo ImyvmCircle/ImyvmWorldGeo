@@ -11,6 +11,7 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
+import com.imyvm.iwg.util.translator.resolvePlayerName
 import net.minecraft.server.MinecraftServer
 import net.minecraft.util.math.BlockPos
 import java.util.*
@@ -91,5 +92,9 @@ object RegionDataApi {
 
     fun getPlayerUUID(server: MinecraftServer, playerName: String): UUID? {
         return getUUIDFromPlayerName(server, playerName)
+    }
+
+    fun getPlayerName(server: MinecraftServer, uuid: UUID?): String {
+        return resolvePlayerName(server, uuid)
     }
 }
