@@ -1,6 +1,9 @@
 package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.*
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShape
+import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.util.math.BlockPos

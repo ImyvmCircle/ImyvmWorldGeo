@@ -9,8 +9,8 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
-import com.imyvm.iwg.domain.GeoScope
-import com.imyvm.iwg.domain.GeoShapeType
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 

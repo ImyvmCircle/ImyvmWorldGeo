@@ -1,6 +1,6 @@
 package com.imyvm.iwg.inter.api.helper
 
-import com.imyvm.iwg.domain.*
+import com.imyvm.iwg.domain.component.*
 import java.util.*
 
 fun filterSettingsByType(

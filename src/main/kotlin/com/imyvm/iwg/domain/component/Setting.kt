@@ -1,4 +1,4 @@
-package com.imyvm.iwg.domain
+package com.imyvm.iwg.domain.component
 
 import java.util.UUID
 

@@ -1,6 +1,7 @@
 package com.imyvm.iwg.infra
 
 import com.imyvm.iwg.domain.*
+import com.imyvm.iwg.domain.component.*
 import net.fabricmc.loader.api.FabricLoader
 import java.io.DataInputStream
 import java.io.DataOutputStream

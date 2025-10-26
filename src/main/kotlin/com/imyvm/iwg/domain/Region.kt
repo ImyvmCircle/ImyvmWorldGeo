@@ -1,6 +1,7 @@
 package com.imyvm.iwg.domain
 
-import com.imyvm.iwg.util.geo.*
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.Setting
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer

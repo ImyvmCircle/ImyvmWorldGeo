@@ -4,7 +4,7 @@ import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
 import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.domain.PermissionKey
+import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.application.region.permission.helper.hasPermissionWhitelist
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity

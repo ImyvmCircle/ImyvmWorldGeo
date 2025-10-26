@@ -1,8 +1,8 @@
 package com.imyvm.iwg.util.geo
 
-import com.imyvm.iwg.domain.GeoScope
-import com.imyvm.iwg.domain.GeoShape
-import com.imyvm.iwg.domain.GeoShapeType
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShape
+import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.util.math.BlockPos
 
 fun checkIntersection(
@@ -79,7 +79,7 @@ private fun circleOverlapCircle(a: GeoShape, b: GeoShape): Boolean {
     return dx * dx + dz * dz <= rSum * rSum
 }
 
-private fun rectOverlapPolygon(rect:GeoShape, poly: GeoShape): Boolean {
+private fun rectOverlapPolygon(rect: GeoShape, poly: GeoShape): Boolean {
     val rectPoly = listOf(
         BlockPos(rect.shapeParameter[0], 0, rect.shapeParameter[1]),
         BlockPos(rect.shapeParameter[2], 0, rect.shapeParameter[1]),

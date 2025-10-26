@@ -1,5 +1,6 @@
-package com.imyvm.iwg.domain
+package com.imyvm.iwg.domain.component
 
+import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.text.Text

@@ -1,9 +1,8 @@
 package com.imyvm.iwg.application.interaction.helper
 
 import com.imyvm.iwg.util.text.Translator
-import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.CreationError
-import com.imyvm.iwg.domain.GeoShapeType
+import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.text.Text
 
 fun errorMessage(

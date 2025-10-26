@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.region
 
-import com.imyvm.iwg.domain.GeoScope
+import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.infra.RegionDatabase
 import net.minecraft.server.MinecraftServer

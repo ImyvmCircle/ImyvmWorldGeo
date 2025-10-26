@@ -1,6 +1,9 @@
 package com.imyvm.iwg.inter.register.command.helper
 
-import com.imyvm.iwg.domain.*
+import com.imyvm.iwg.domain.component.EffectKey
+import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.RuleKey
 import com.imyvm.iwg.infra.RegionDatabase
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider

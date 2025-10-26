@@ -3,8 +3,8 @@ package com.imyvm.iwg.application.interaction.scope.shape
 import com.imyvm.iwg.application.interaction.scope.getPolygonPoints
 import com.imyvm.iwg.application.interaction.scope.recreateScope
 import com.imyvm.iwg.application.interaction.scope.validatePolygon
-import com.imyvm.iwg.domain.GeoScope
-import com.imyvm.iwg.domain.GeoShapeType
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.text.Translator

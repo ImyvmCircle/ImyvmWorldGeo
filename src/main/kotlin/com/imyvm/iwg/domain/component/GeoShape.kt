@@ -1,4 +1,4 @@
-package com.imyvm.iwg.domain
+package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator

@@ -4,8 +4,8 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
-import com.imyvm.iwg.domain.GeoScope
-import com.imyvm.iwg.domain.GeoShapeType
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity

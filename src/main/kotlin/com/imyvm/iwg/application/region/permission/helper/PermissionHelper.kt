@@ -1,8 +1,9 @@
 package com.imyvm.iwg.application.region.permission.helper
 
-import com.imyvm.iwg.domain.GeoScope
-import com.imyvm.iwg.domain.PermissionKey
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.PermissionSetting
 import java.util.*
 
 fun hasPermissionBlacklist(
@@ -29,7 +30,7 @@ private fun checkPermission(
     key: PermissionKey,
     scope: GeoScope?
 ): Boolean? {
-    scope?.settings?.filterIsInstance<com.imyvm.iwg.domain.PermissionSetting>()?.let { settings ->
+    scope?.settings?.filterIsInstance<PermissionSetting>()?.let { settings ->
         settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
             return it.value
         }
@@ -37,7 +38,7 @@ private fun checkPermission(
             return it.value
         }
     }
-    region.settings.filterIsInstance<com.imyvm.iwg.domain.PermissionSetting>().let { settings ->
+    region.settings.filterIsInstance<PermissionSetting>().let { settings ->
         settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
             return it.value
         }
