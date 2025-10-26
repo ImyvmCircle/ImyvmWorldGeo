@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import net.minecraft.server.MinecraftServer
@@ -7,7 +8,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
 
 @Suppress("unused")
-class UtilApi {
+object UtilApi {
     fun getPlayerUUID(server: MinecraftServer, playerName: String): UUID? {
         return getUUIDFromPlayerName(server, playerName)
     }
@@ -22,5 +23,9 @@ class UtilApi {
 
     fun getPlayerName(player: ServerPlayerEntity, uuid: UUID?): String {
         return resolvePlayerName(player.server, uuid)
+    }
+
+    fun parseRegionFoundingTime(regionNumberId: Int): Long {
+        return parseFoundingTimeFromRegionId(regionNumberId)
     }
 }
