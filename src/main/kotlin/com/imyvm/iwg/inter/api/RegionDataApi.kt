@@ -91,19 +91,4 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
-    fun getPlayerUUID(server: MinecraftServer, playerName: String): UUID? {
-        return getUUIDFromPlayerName(server, playerName)
-    }
-
-    fun getPlayerUUID(player: ServerPlayerEntity, playerName: String): UUID? {
-        return getUUIDFromPlayerName(player.server, playerName)
-    }
-
-    fun getPlayerName(server: MinecraftServer, uuid: UUID?): String {
-        return resolvePlayerName(server, uuid)
-    }
-
-    fun getPlayerName(player: ServerPlayerEntity, uuid: UUID?): String {
-        return resolvePlayerName(player.server, uuid)
-    }
 }
