@@ -1,11 +1,11 @@
-# IMYVMWorldGeo 1.21 1.0.1
+# IMYVMWorldGeo 1.21 1.0.2
 
-## Changelog 1.0.1
+## Changelog 1.0.2
 
-This is a version mainly aimed to improve api functions and behavior.
-- API:Make RegionDataApi focused on data access and database operations only.
-- Region Creation: ID generator improved to avoid conflicts and contains more information.
-- Scope Modification: allow insert point by one click and delete point.
+This is a version with new UtilApi features.
+- API: Add UtilApi to improve usability of region data.
+- Region Behavior: handle a situation of empty newName when rename a Region.
+- Refactor: Improve the readability of code.
 
 ## Introduction
 
@@ -62,6 +62,7 @@ This mod is **server-side only** and requires the following environment:
 This API provides functionality for interacting with geographical regions in your Minecraft world. It allows extension mods to enrich and build features based on defined regions.
 
 ### Player Interaction API
+
 Handles player-triggered actions related to regions and their scopes.
 
 #### Functions:
@@ -119,6 +120,7 @@ Handles player-triggered actions related to regions and their scopes.
 ---
 
 ### Region Data API
+
 Provides access to region data and database operations for extension functions.
 
 #### Functions:
@@ -134,25 +136,25 @@ Provides access to region data and database operations for extension functions.
 - `getRegionFoundingTime(region: Region): Long`  
   Gets the founding time of a region.
 
-- `getRegionScopes(region: Region): List<Region.Companion.GeoScope>`  
+- `getRegionScopes(region: Region): List<GeoScope>`  
   Retrieves the list of scopes within a region.
 
-- `getRegionScopePair(region: Region, scopeName: String): Pair<Region, Region.Companion.GeoScope?>`  
+- `getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?>`  
   Retrieves the region-scope pair based on the region and scope name.
 
-- `getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, Region.Companion.GeoScope?>`  
+- `getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, GeoScope?>`  
   Retrieves the region-scope pair by region ID and scope name.
 
-- `getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, Region.Companion.GeoScope>?`  
+- `getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, GeoScope>?`  
   Retrieves the region-scope pair by coordinates.
 
-- `getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, Region.Companion.GeoScope>?`  
+- `getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, GeoScope>?`  
   Retrieves the region-scope pair by block position.
 
-- `getScopeShape(scope: Region.Companion.GeoScope): Region.Companion.GeoShape?`  
+- `getScopeShape(scope: GeoScope): Region.Companion.GeoShape?`  
   Retrieves the shape of a scope.
 
-- `getScopeArea(scope: Region.Companion.GeoScope): Double?`  
+- `getScopeArea(scope: GeoScope): Double?`  
   Retrieves the area of a scope.
 
 - `getRegionArea(region: Region): Double`  
@@ -170,20 +172,36 @@ Provides access to region data and database operations for extension functions.
 - `getRegionPersonalSettingsByType(region: Region, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the personal settings by type for a region for a specific playerUUID.
 
-- `getScopeGlobalSettings(scope: Region.Companion.GeoScope): List<Setting>`  
+- `getScopeGlobalSettings(scope: GeoScope): List<Setting>`  
   Retrieves the global settings for a scope.
 
-- `getScopeGlobalSettingsByType(scope: Region.Companion.GeoScope, settingTypes: SettingTypes): List<Setting>`  
+- `getScopeGlobalSettingsByType(scope: GeoScope, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the global settings by type for a scope.
 
-- `getScopePersonalSettings(scope: Region.Companion.GeoScope, playerUUID: UUID): List<Setting>`  
+- `getScopePersonalSettings(scope: GeoScope, playerUUID: UUID): List<Setting>`  
   Retrieves the personal settings for a scope for a specific playerUUID.
 
-- `getScopePersonalSettingsByType(scope: Region.Companion.GeoScope, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
+- `getScopePersonalSettingsByType(scope: GeoScope, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the personal settings by type for a scope for a specific playerUUID.
 
-- `getPlayerUUID(server: MinecraftServer, playerName: String): UUID?`
-  Retrieves the UUID of a player by their name, in a specified server with cache of player data.
+### UtilApi
+
+Provides utility functions for region data to improve usability for extension mods.
+
+- `getPlayerUUID(server: MinecraftServer, playerName: String): UUID?`  
+  Retrieves the UUID of a player by their name.
+
+- `getPlayerUUID(player: ServerPlayerEntity, playerName: String): UUID?`
+  Retrieves the UUID of a player by their name using a player entity.
+
+- `getPlayerName(server: MinecraftServer, uuid: UUID?): String`
+  Retrieves the player name by their UUID.
+
+- `getPlayerName(player: ServerPlayerEntity, uuid: UUID?): String`
+  Retrieves the player name by their UUID using a player entity.
+
+- `parseRegionFoundingTime(regionNumberId: Int): Long`
+  Parses and retrieves the founding time of a region by its numeric ID.
 
 ## Commands
 
