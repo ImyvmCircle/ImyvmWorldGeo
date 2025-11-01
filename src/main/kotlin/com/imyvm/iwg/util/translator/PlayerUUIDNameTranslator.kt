@@ -15,3 +15,7 @@ fun resolvePlayerName(server: MinecraftServer, uuid: UUID?): String {
     if (uuid == null) return "?"
     return server.userCache?.getByUuid(uuid)?.get()?.name ?: uuid.toString()
 }
+
+fun getPlayerByName(server: MinecraftServer, playerName: String) = server.playerManager.getPlayer(playerName)
+
+fun getPlayerByUuid(server: MinecraftServer, playerUuid: String) = server.playerManager.getPlayer(playerUuid)
