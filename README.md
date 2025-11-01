@@ -200,6 +200,18 @@ Provides utility functions for region data to improve usability for extension mo
 - `getPlayerName(player: ServerPlayerEntity, uuid: UUID?): String`
   Retrieves the player name by their UUID using a player entity.
 
+- `getPlayer(playerExecutor: ServerPlayerEntity, playerName: String): ServerPlayerEntity?`
+  Retrieves the player entity by their name.
+
+- `getPlayer(server: MinecraftServer, playerName: String): ServerPlayerEntity?`
+  Retrieves the player entity by their name using the server instance.
+
+- `getPlayer(playerExecutor: ServerPlayerEntity, playerUuid: UUID): ServerPlayerEntity?`
+  Retrieves the player entity by their UUID.
+
+- `getPlayer(server: MinecraftServer, playerUuid: UUID): ServerPlayerEntity?`
+  Retrieves the player entity by their UUID using the server instance.
+
 - `parseRegionFoundingTime(regionNumberId: Int): Long`
   Parses and retrieves the founding time of a region by its numeric ID.
 
