@@ -18,4 +18,4 @@ fun resolvePlayerName(server: MinecraftServer, uuid: UUID?): String {
 
 fun getPlayerByName(server: MinecraftServer, playerName: String) = server.playerManager.getPlayer(playerName)
 
-fun getPlayerByUuid(server: MinecraftServer, playerUuid: String) = server.playerManager.getPlayer(playerUuid)
+fun getPlayerByUuid(server: MinecraftServer, playerUuid: UUID) = server.playerManager.getPlayer(playerUuid)
