@@ -125,8 +125,7 @@ object RegionFactory {
         val distinct = positions.distinct()
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
-        val area = polygonArea(positions)
-        val error = checkPolygonSize(positions, area)
+        val error = checkPolygonSize(positions)
         if (error != null) return Result.Err(error)
 
         return Result.Ok(
@@ -135,16 +134,6 @@ object RegionFactory {
                 positions.flatMap { listOf(it.x, it.z) }.toMutableList()
             )
         )
-    }
-
-    private fun polygonArea(positions: List<BlockPos>): Double {
-        var area = 0.0
-        val n = positions.size
-        for (i in 0 until n) {
-            val j = (i + 1) % n
-            area += (positions[i].x * positions[j].z - positions[j].x * positions[i].z)
-        }
-        return abs(area) / 2.0
     }
 }
 

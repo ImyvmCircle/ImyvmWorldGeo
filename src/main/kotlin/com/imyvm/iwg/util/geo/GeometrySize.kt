@@ -23,11 +23,11 @@ fun checkRectangleSize(width: Int, length: Int): CreationError? {
 
 fun checkCircleSize(radius: Double) = radius >= MIN_CIRCLE_RADIUS.value
 
-fun checkPolygonSize(positions: List<BlockPos>, area: Double): CreationError? {
+fun checkPolygonSize(positions: List<BlockPos>): CreationError? {
     val xs = positions.map { it.x }
     val zs = positions.map { it.z }
 
-    return checkArea(area)
+    return checkArea(calculatePolygonArea(positions))
         ?: checkBoundingBox(xs, zs)
         ?: checkAspectRatio(xs, zs)
         ?: checkEdges(positions)
@@ -52,19 +52,17 @@ fun calculateRectangleArea(shapeParameter: MutableList<Int>) : Double {
     }
 }
 
-fun calculatePolygonArea(shapeParameter: MutableList<Int>): Double {
-    return if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) 0.0
-    else {
-        val vertices = shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
-        var area = 0.0
-        var j = vertices.size - 1
-        for (i in vertices.indices) {
-            area += (vertices[j].first + vertices[i].first).toDouble() *
-                    (vertices[j].second - vertices[i].second).toDouble()
-            j = i
-        }
-        abs(area / 2.0)
-    }
+@JvmName("calculatePolygonAreaInt")
+fun calculatePolygonArea(shapeParameter: List<Int>): Double {
+    if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) return 0.0
+    val vertices = shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
+    return calculatePolygonAreaCore(vertices)
+}
+
+fun calculatePolygonArea(positions: List<BlockPos>): Double {
+    if (positions.size < 3) return 0.0
+    val vertices = positions.map { Pair(it.x, it.z) }
+    return calculatePolygonAreaCore(vertices)
 }
 
 private fun checkArea(area: Double): CreationError? {
@@ -101,4 +99,16 @@ private fun checkEdges(positions: List<BlockPos>): CreationError? {
         }
     }
     return null
+}
+
+private fun calculatePolygonAreaCore(vertices: List<Pair<Int, Int>>): Double {
+    if (vertices.size < 3) return 0.0
+    var area = 0.0
+    val n = vertices.size
+    for (i in 0 until n) {
+        val current = vertices[i]
+        val next = vertices[(i + 1) % n]
+        area += (current.first.toDouble() * next.second.toDouble() - next.first.toDouble() * current.second.toDouble())
+    }
+    return abs(area) / 2.0
 }

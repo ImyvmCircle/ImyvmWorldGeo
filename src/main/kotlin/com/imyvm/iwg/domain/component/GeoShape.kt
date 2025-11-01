@@ -33,7 +33,7 @@ class GeoShape(
         return when (geoShapeType) {
             GeoShapeType.CIRCLE -> calculateCircleArea(this.shapeParameter)
             GeoShapeType.RECTANGLE -> calculateRectangleArea(this.shapeParameter)
-            GeoShapeType.POLYGON -> calculatePolygonArea(this.shapeParameter)
+            GeoShapeType.POLYGON -> calculatePolygonArea(shapeParameter)
             else -> 0.0
         }
     }
