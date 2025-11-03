@@ -6,6 +6,7 @@ import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_FLY_DISABLE_FALL_
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.application.region.permission.helper.hasPermissionWhitelist
+import com.imyvm.iwg.util.translator.getPlayerByUuid
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
@@ -62,7 +63,7 @@ private fun processLandingCountdown(server: MinecraftServer, currentTick: Int) {
         val entry = iterator.next()
         val uuid = entry.key
         val ticksLeft = entry.value - 20
-        val player = server.playerManager.getPlayer(uuid)
+        val player = getPlayerByUuid(server, uuid)
         if (player == null) { cleanupAbsentPlayer(uuid, iterator); continue }
         if (!isStillNoFly(player)) { iterator.remove(); continue }
         handleLandingEnd(player, uuid, ticksLeft, currentTick, iterator)
