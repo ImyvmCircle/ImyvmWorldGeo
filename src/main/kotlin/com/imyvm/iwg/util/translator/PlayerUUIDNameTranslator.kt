@@ -29,6 +29,12 @@ fun getPlayerByUuid(server: MinecraftServer, playerUuid: UUID): ServerPlayerEnti
     }
 }
 
+fun getPlayerProfileByName(server: MinecraftServer, playerName: String) =
+    server.userCache?.findByName(playerName)?.orElse(null)
+
+fun getPlayerProfileByUuid(server: MinecraftServer, playerUuid: UUID) =
+    server.userCache?.getByUuid(playerUuid)?.orElse(null)
+
 fun getOnlinePlayers(server: MinecraftServer): List<ServerPlayerEntity> {
     return server.playerManager.playerList
 }
