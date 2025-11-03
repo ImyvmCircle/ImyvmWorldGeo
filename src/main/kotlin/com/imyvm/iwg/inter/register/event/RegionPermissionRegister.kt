@@ -2,6 +2,7 @@ package com.imyvm.iwg.inter.register.event
 
 import com.imyvm.iwg.application.region.permission.*
 import com.imyvm.iwg.infra.LazyTicker
+import com.imyvm.iwg.util.translator.getOnlinePlayers
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 
@@ -28,7 +29,7 @@ fun registerFlyPermission() {
     }
 
     ServerTickEvents.END_SERVER_TICK.register{ server ->
-        for (player in server.playerManager.playerList) {
+        for (player in getOnlinePlayers(server)) {
             val currentTick = server.overworld.time.toInt()
             processFallImmunity(player, currentTick)
         }

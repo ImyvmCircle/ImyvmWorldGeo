@@ -5,6 +5,7 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.util.translator.getOnlinePlayers
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
 import net.minecraft.server.command.ServerCommandSource
@@ -31,8 +32,8 @@ val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { c
 }
 
 val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
-    val source = context.source
-    source.server.playerManager.playerList.forEach { player ->
+    val sourceServer = context.source.server
+    getOnlinePlayers(sourceServer).forEach { player ->
         builder.suggest(player.name.string)
     }
     builder.buildFuture()

@@ -6,6 +6,7 @@ import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_FLY_DISABLE_FALL_
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.application.region.permission.helper.hasPermissionWhitelist
+import com.imyvm.iwg.util.translator.getOnlinePlayers
 import com.imyvm.iwg.util.translator.getPlayerByUuid
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
@@ -17,7 +18,7 @@ private val fallImmunity: MutableMap<UUID, Int> = mutableMapOf()
 
 fun managePlayersFly(server: MinecraftServer) {
     val currentTick = server.overworld.time.toInt()
-    for (player in server.playerManager.playerList) {
+    for (player in getOnlinePlayers(server)) {
         processPlayerFly(player)
     }
     processLandingCountdown(server, currentTick)
