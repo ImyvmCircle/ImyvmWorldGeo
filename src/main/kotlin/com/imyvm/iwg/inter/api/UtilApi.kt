@@ -1,10 +1,8 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
-import com.imyvm.iwg.util.translator.getPlayerByName
-import com.imyvm.iwg.util.translator.getPlayerByUuid
-import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
-import com.imyvm.iwg.util.translator.resolvePlayerName
+import com.imyvm.iwg.util.translator.*
+import com.mojang.authlib.GameProfile
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import java.util.*
@@ -34,6 +32,14 @@ object UtilApi {
     fun getPlayer(playerExecutor: ServerPlayerEntity, playerUuid: UUID): ServerPlayerEntity? = getPlayerByUuid(playerExecutor.server, playerUuid)
 
     fun getPlayer(server: MinecraftServer, playerUuid: UUID): ServerPlayerEntity? = getPlayerByUuid(server, playerUuid)
+
+    fun getPlayerProfile(server: MinecraftServer, playerName: String): GameProfile? = getPlayerProfileByName(server, playerName)
+
+    fun getPlayerProfile(playerExecutor: ServerPlayerEntity, playerName: String): GameProfile? = getPlayerProfileByName(playerExecutor.server, playerName)
+
+    fun getPlayerProfile(server: MinecraftServer, playerUuid: UUID): GameProfile? = getPlayerProfileByUuid(server, playerUuid)
+
+    fun getPlayerProfile(playerExecutor: ServerPlayerEntity, playerUuid: UUID): GameProfile? = getPlayerProfileByUuid(playerExecutor.server, playerUuid)
 
     fun parseRegionFoundingTime(regionNumberId: Int): Long {
         return parseFoundingTimeFromRegionId(regionNumberId)

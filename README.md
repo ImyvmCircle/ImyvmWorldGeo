@@ -212,6 +212,18 @@ Provides utility functions for region data to improve usability for extension mo
 - `getPlayer(server: MinecraftServer, playerUuid: UUID): ServerPlayerEntity?`
   Retrieves the player entity by their UUID using the server instance.
 
+- `getPlayerProfile(server: MinecraftServer, playerName: String): GameProfile?`
+  Retrieves the GameProfile of a player by their name.
+
+- `getPlayerProfile(playerExecutor: ServerPlayerEntity, playerName: String): GameProfile?`
+  Retrieves the GameProfile of a player by their name using a player entity to get server.
+
+- `getPlayerProfile(server: MinecraftServer, playerUuid: UUID): GameProfile?`
+  Retrieves the GameProfile of a player by their UUID.
+
+- `getPlayerProfile(playerExecutor: ServerPlayerEntity, playerUuid: UUID): GameProfile?`
+  Retrieves the GameProfile of a player by their UUID using a player entity to get server.
+
 - `parseRegionFoundingTime(regionNumberId: Int): Long`
   Parses and retrieves the founding time of a region by its numeric ID.
 
