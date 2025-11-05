@@ -4,7 +4,7 @@
 
 This is a version with new UtilApi features.
 - API: Add UtilApi to improve usability of region data.
-- Region Behavior: handle a situation of empty newName when rename a Region.
+- Region Behavior: handle the situation of empty newName when rename a Region.
 - Refactor: Improve the readability of code.
 
 ## Introduction
@@ -59,7 +59,8 @@ This mod is **server-side only** and requires the following environment:
 
 ## API Documentation
 
-This API provides functionality for interacting with geographical regions in your Minecraft world. It allows extension mods to enrich and build features based on defined regions.
+This API provides functionality for interacting with geographical regions in a Minecraft server world,
+which allows extension mods to enrich and build features based on defined regions.
 
 ### Player Interaction API
 

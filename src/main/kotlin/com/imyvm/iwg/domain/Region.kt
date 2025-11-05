@@ -48,43 +48,60 @@ class Region(
             key: String,
             scopeName: String? = null
         ): List<Text> {
+            val (personalSettings, globalSettings) = groupAndFormatSettings(server, settings)
+
+            val result = mutableListOf<Text>()
+
+            translateAndAppend(result, globalSettings, key, scopeName, isPersonal = false)
+            translateAndAppend(result, personalSettings, key, scopeName, isPersonal = true)
+
+            return result
+        }
+
+        private fun formatSettingDisplay(server: MinecraftServer, setting: Setting): String {
+            val baseDisplay = "${setting.key}=${setting.value}"
+            return if (setting.isPersonal) {
+                val playerName = resolvePlayerName(server, setting.playerUUID)
+                "$baseDisplay (Player $playerName)"
+            } else {
+                baseDisplay
+            }
+        }
+
+        private fun groupAndFormatSettings(server: MinecraftServer, settings: List<Setting>): Pair<List<String>, List<String>> {
             val personalSettings = mutableListOf<String>()
             val globalSettings = mutableListOf<String>()
 
             settings.forEach { s ->
-                val display = if (s.isPersonal) {
-                    val playerName = resolvePlayerName(server, s.playerUUID)
-                    "${s.key}=${s.value} (Player $playerName)"
+                val display = formatSettingDisplay(server, s)
+                if (s.isPersonal) {
+                    personalSettings.add(display)
                 } else {
-                    "${s.key}=${s.value}"
+                    globalSettings.add(display)
                 }
-                if (s.isPersonal) personalSettings.add(display)
-                else globalSettings.add(display)
             }
 
-            val result = mutableListOf<Text>()
+            return Pair(personalSettings, globalSettings)
+        }
 
-            if (globalSettings.isNotEmpty()) {
-                val combined = globalSettings.joinToString(", ")
+        private fun translateAndAppend(
+            result: MutableList<Text>,
+            settings: List<String>,
+            key: String,
+            scopeName: String? = null,
+            isPersonal: Boolean = false
+        ) {
+            if (settings.isNotEmpty()) {
+                val combined = settings.joinToString(", ")
+                val translationKey = if (isPersonal) "$key.personal" else key
+
                 val text = if (scopeName == null) {
-                    Translator.tr(key, combined)
+                    Translator.tr(translationKey, combined)
                 } else {
-                    Translator.tr(key, scopeName, combined)
+                    Translator.tr(translationKey, scopeName, combined)
                 }
                 text?.let { result.add(it) }
             }
-
-            if (personalSettings.isNotEmpty()) {
-                val combined = personalSettings.joinToString(", ")
-                val text = if (scopeName == null) {
-                    Translator.tr("${key}.personal", combined)
-                } else {
-                    Translator.tr("${key}.personal", scopeName, combined)
-                }
-                text?.let { result.add(it) }
-            }
-
-            return result
         }
     }
 }
