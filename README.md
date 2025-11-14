@@ -9,7 +9,8 @@ This is a version with new UtilApi features.
 
 ## Introduction
 
-This is a mod to provide a geography system framework for Imyvm server players and groups, which is a basement for jungle system, community system and so on.
+This is a mod to provide a geography system framework for Imyvm server players and groups, 
+and is also a basement for extensions, exemplified by jungle system, community system and so on.
 
 ## Environment Requirements
 
