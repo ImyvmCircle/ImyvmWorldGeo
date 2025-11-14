@@ -1,11 +1,9 @@
-# IMYVMWorldGeo 1.21 1.0.2
+# IMYVMWorldGeo 1.21 1.1.0
 
-## Changelog 1.0.2
+## Changelog 1.1.0
 
-This is a version with new UtilApi features.
-- API: Add UtilApi to improve usability of region data.
-- Region Behavior: handle the situation of empty newName when rename a Region.
-- Refactor: Improve the readability of code.
+This is a version marking the start point of introducing new features to regions.
+
 
 ## Introduction
 
