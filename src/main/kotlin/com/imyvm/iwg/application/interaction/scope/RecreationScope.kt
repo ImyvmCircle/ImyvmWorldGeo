@@ -20,8 +20,15 @@ fun recreateScope(
     successMessageKey: String,
     vararg extraArgs: Any
 ) {
+    val existingTeleportPoint = existingScope.teleportPoint
     region.geometryScope.remove(existingScope)
-    val newScope = RegionFactory.createScope(scopeName = existingScope.scopeName, selectedPositions = newPositions, shapeType = shapeType)
+
+    val newScope = RegionFactory.createScope(
+        scopeName = existingScope.scopeName,
+        existingTeleportPoint = existingTeleportPoint,
+        selectedPositions = newPositions,
+        shapeType = shapeType
+    )
     when (newScope) {
         is Result.Ok -> {
             region.geometryScope.add(newScope.value)

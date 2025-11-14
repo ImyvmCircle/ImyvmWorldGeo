@@ -6,6 +6,7 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
+import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -15,10 +16,15 @@ object RegionFactory {
     fun createRegion(
         name: String,
         numberID: Int,
+        playerExecutor: ServerPlayerEntity? = null,
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
-        val mainScopeResult = createScope("main_scope", selectedPositions, shapeType)
+        val mainScopeResult = createScope(
+            scopeName = "main_scope",
+            playerExecutor = playerExecutor,
+            selectedPositions = selectedPositions,
+            shapeType = shapeType)
 
         if (mainScopeResult is Result.Err) return mainScopeResult
 
@@ -33,19 +39,36 @@ object RegionFactory {
 
     fun createScope(
         scopeName: String,
+        playerExecutor: ServerPlayerEntity? = null,
+        existingTeleportPoint: BlockPos? = null,
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
         val geoShapeResult = createGeoShape(selectedPositions, shapeType)
-
         if (geoShapeResult is Result.Err) {
             return Result.Err(geoShapeResult.error)
         }
 
+        val geoShape = (geoShapeResult as Result.Ok).value
+        val teleportPoint = existingTeleportPoint?: getTeleportPoint(playerExecutor, geoShape)
 
-        val geoScope = GeoScope(scopeName, null, (geoShapeResult as Result.Ok).value)
+        val geoScope = GeoScope(scopeName, teleportPoint, geoShape)
 
         return Result.Ok(geoScope)
+    }
+
+    private fun getTeleportPoint(
+        playerExecutor: ServerPlayerEntity?,
+        geoShape: GeoShape
+    ): BlockPos? {
+        if (playerExecutor == null) return null
+
+        val playerPosition = playerExecutor.blockPos
+        if (geoShape.isInside(playerPosition.x, playerPosition.z)) {
+            return playerPosition
+        }
+
+        TODO("Check if a point is suitable for being teleport point")
     }
 
     private fun createGeoShape(

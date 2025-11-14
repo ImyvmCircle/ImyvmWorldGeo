@@ -87,7 +87,7 @@ fun onTryingScopeCreationWithReturn (
         regionForScope = region
     ) ?: return null
 
-    return when (val creationResult = tryScopeCreation(playerUUID, scopeName, shapeType)) {
+    return when (val creationResult = tryScopeCreation(player, scopeName, shapeType)) {
         is Result.Ok -> {
             if (isApi) handleScopeCreateSuccess(player, creationResult, region, notify = false)
             else handleScopeCreateSuccess(player, creationResult, region, notify = true)
@@ -136,19 +136,21 @@ private fun tryRegionCreation(
     return RegionFactory.createRegion(
         name = regionName,
         numberID = newID,
+        playerExecutor = player,
         selectedPositions = selectedPositions ?: mutableListOf(),
         shapeType = shapeType
     )
 }
 
 private fun tryScopeCreation(
-    playerUUID: UUID,
+    player: ServerPlayerEntity,
     scopeName: String,
     shapeType: GeoShapeType
 ): Result<GeoScope, CreationError> {
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: mutableListOf()
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: mutableListOf()
     return RegionFactory.createScope(
         scopeName = scopeName,
+        playerExecutor = player,
         selectedPositions = selectedPositions,
         shapeType = shapeType
     )
