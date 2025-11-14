@@ -280,3 +280,7 @@ Provides utility functions for region data to improve usability for extension mo
 
 - `/imyvm-world-geo help`  
   Show this help message.
+
+## Acknowledgements
+
+Were it not for the support of IMYVM fellows and players, this project would not have been possible.
