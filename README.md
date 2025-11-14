@@ -3,7 +3,7 @@
 ## Changelog 1.1.0
 
 This is a version marking the start point of introducing new features to regions.
-
+- feat: add teleport point to GeoScope allowing tp.
 
 ## Introduction
 
