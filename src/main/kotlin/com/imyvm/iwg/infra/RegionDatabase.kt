@@ -3,6 +3,7 @@ package com.imyvm.iwg.infra
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.util.math.BlockPos
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -121,6 +122,7 @@ object RegionDatabase {
         stream.writeInt(scopes.size)
         for (scope in scopes) {
             stream.writeUTF(scope.scopeName)
+            saveTeleportPoint(stream, scope.teleportPoint)
             saveGeoShape(stream, scope.geoShape)
             saveSettings(stream, scope.settings)
         }
@@ -132,15 +134,38 @@ object RegionDatabase {
 
         repeat(count) {
             val scopeName = stream.readUTF()
+            val teleportPoint = loadTeleportPoint(stream)
             val geoShape = loadGeoShape(stream)
             val scopeSettings = loadSettings(stream)
 
-            val scope = GeoScope(scopeName, geoShape)
+            val scope = GeoScope(scopeName, teleportPoint, geoShape)
             scope.settings.addAll(scopeSettings)
             list.add(scope)
         }
 
         return list
+    }
+
+    private fun saveTeleportPoint(stream: DataOutputStream, teleportPoint: BlockPos?) {
+        if (teleportPoint == null) {
+            stream.writeBoolean(false)
+        } else {
+            stream.writeBoolean(true)
+            stream.writeInt(teleportPoint.x)
+            stream.writeInt(teleportPoint.y)
+            stream.writeInt(teleportPoint.z)
+        }
+    }
+
+    private fun loadTeleportPoint(stream: DataInputStream): BlockPos? {
+        val hasTeleportPoint = stream.readBoolean()
+        return if (!hasTeleportPoint) null
+        else {
+            val x = stream.readInt()
+            val y = stream.readInt()
+            val z = stream.readInt()
+            BlockPos(x,y,z)
+        }
     }
 
     private fun saveGeoShape(stream: DataOutputStream, shape: GeoShape?) {

@@ -42,7 +42,8 @@ object RegionFactory {
             return Result.Err(geoShapeResult.error)
         }
 
-        val geoScope = GeoScope(scopeName, (geoShapeResult as Result.Ok).value)
+
+        val geoScope = GeoScope(scopeName, null, (geoShapeResult as Result.Ok).value)
 
         return Result.Ok(geoScope)
     }
