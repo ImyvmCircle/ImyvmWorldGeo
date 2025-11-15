@@ -45,7 +45,7 @@ class GeoShape(
         return Translator.tr(
             "geoshape.circle.info",
             shapeParameter[0], // centerX
-            shapeParameter[1], // centerY
+            shapeParameter[1], // centerZ
             shapeParameter[2], // radius
             area
         )
