@@ -27,14 +27,17 @@ fun polygonContainsPoint(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
     )
 }
 
+@JvmName("circlePointContainment")
 fun circleContainsPoint(dx: Int, dy: Int, radius: Int): Boolean {
     return dx * dx + dy * dy <= radius * radius
 }
 
+@JvmName("rectanglePointContainment")
 fun rectangleContainsPoint(x: Int, z: Int, west: Int, east: Int, north: Int, south: Int): Boolean {
     return x in west..east && z in north..south
 }
 
+@JvmName("polygonPointContainment")
 fun polygonContainsPoint(x: Int, z: Int, vertices: List<Pair<Int, Int>>): Boolean {
     var inside = false
     var j = vertices.size - 1

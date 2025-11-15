@@ -65,6 +65,14 @@ fun calculatePolygonArea(positions: List<BlockPos>): Double {
     return calculatePolygonAreaCore(vertices)
 }
 
+fun getBoundingBox(shapeParameters: MutableList<Int>): IntArray {
+    val minX = shapeParameters.filterIndexed { index, _ -> index % 2 == 0 }.minOrNull() ?: 0
+    val minZ = shapeParameters.filterIndexed { index, _ -> index % 2 == 1 }.minOrNull() ?: 0
+    val maxX = shapeParameters.filterIndexed { index, _ -> index % 2 == 0 }.maxOrNull() ?: 0
+    val maxZ = shapeParameters.filterIndexed { index, _ -> index % 2 == 1 }.maxOrNull() ?: 0
+    return intArrayOf(minX, minZ, maxX, maxZ)
+}
+
 private fun checkArea(area: Double): CreationError? {
     return if (area < MIN_POLYGON_AREA.value) CreationError.UnderSizeLimit else null
 }
