@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoScope.Companion.updateTeleportPoint
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
@@ -20,11 +21,13 @@ object RegionFactory {
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
+
         val mainScopeResult = createScope(
             scopeName = "main_scope",
             playerExecutor = playerExecutor,
             selectedPositions = selectedPositions,
-            shapeType = shapeType)
+            shapeType = shapeType
+        )
 
         if (mainScopeResult is Result.Err) return mainScopeResult
 
@@ -50,7 +53,7 @@ object RegionFactory {
         }
 
         val geoShape = (geoShapeResult as Result.Ok).value
-        val teleportPoint = existingTeleportPoint?: getTeleportPoint(playerExecutor, geoShape)
+        val teleportPoint = existingTeleportPoint ?: getTeleportPoint(playerExecutor, geoShape)
 
         val geoScope = GeoScope(scopeName, teleportPoint, geoShape)
 
@@ -64,11 +67,8 @@ object RegionFactory {
         if (playerExecutor == null) return null
 
         val playerPosition = playerExecutor.blockPos
-        if (geoShape.isInside(playerPosition.x, playerPosition.z)) {
-            return playerPosition
-        }
-
-        TODO("Check if a point is suitable for being teleport point")
+        return if (geoShape.isInside(playerPosition.x, playerPosition.z)) playerPosition
+        else updateTeleportPoint(geoShape)
     }
 
     private fun createGeoShape(
@@ -119,8 +119,8 @@ object RegionFactory {
         val error = checkRectangleSize(width, length)
         if (error != null) return Result.Err(error)
 
-        val west  = minOf(pos1.x, pos2.x)
-        val east  = maxOf(pos1.x, pos2.x)
+        val west = minOf(pos1.x, pos2.x)
+        val east = maxOf(pos1.x, pos2.x)
         val north = minOf(pos1.z, pos2.z)
         val south = maxOf(pos1.z, pos2.z)
 

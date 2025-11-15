@@ -21,4 +21,15 @@ class GeoScope(
     fun getSettingInfos(server: MinecraftServer): List<Text> {
         return Region.formatSettings(server, settings, "scope.setting", scopeName)
     }
+
+    companion object {
+        fun updateTeleportPoint(geoShape: GeoShape): BlockPos?{
+            return null
+        }
+
+        fun certificateTeleportPoint(teleportPoint: BlockPos?): Boolean{
+
+            return true
+        }
+    }
 }
