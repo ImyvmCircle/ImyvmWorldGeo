@@ -109,7 +109,7 @@ object RegionDatabase {
             for (scope in region.geometryScope) {
                 val geoShape = scope.geoShape
                 if (geoShape != null) {
-                    if (geoShape.isInside(x, z)) {
+                    if (geoShape.containsPoint(x, z)) {
                         return Pair(region, scope)
                     }
                 }

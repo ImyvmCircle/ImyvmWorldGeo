@@ -1,6 +1,6 @@
 package com.imyvm.iwg.util.geo
 
-fun isInsideCircle(x: Int, y: Int, shapeParameter: List<Int>): Boolean {
+fun circleContainsPoint(x: Int, y: Int, shapeParameter: List<Int>): Boolean {
     if (shapeParameter.size < 3) return false
     val centerX = shapeParameter[0]
     val centerY = shapeParameter[1]
@@ -10,7 +10,7 @@ fun isInsideCircle(x: Int, y: Int, shapeParameter: List<Int>): Boolean {
     return circleContainsPoint(dx, dy, radius)
 }
 
-fun isInsideRectangle(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
+fun rectangleContainsPoint(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
     if (shapeParameter.size < 4) return false
     val west = shapeParameter[0]
     val north = shapeParameter[1]
@@ -19,7 +19,7 @@ fun isInsideRectangle(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
     return rectangleContainsPoint(x, z, west, east, north, south)
 }
 
-fun isInsidePolygon(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
+fun polygonContainsPoint(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
     if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) return false
     return polygonContainsPoint(
         x, z,

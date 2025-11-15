@@ -20,11 +20,11 @@ class GeoShape(
         }
     }
 
-    fun isInside(x: Int, y: Int): Boolean {
+    fun containsPoint(x: Int, y: Int): Boolean {
         return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> isInsideCircle(x, y, shapeParameter)
-            GeoShapeType.RECTANGLE -> isInsideRectangle(x, y, shapeParameter)
-            GeoShapeType.POLYGON -> isInsidePolygon(x, y, shapeParameter)
+            GeoShapeType.CIRCLE -> circleContainsPoint(x, y, shapeParameter)
+            GeoShapeType.RECTANGLE -> rectangleContainsPoint(x, y, shapeParameter)
+            GeoShapeType.POLYGON -> polygonContainsPoint(x, y, shapeParameter)
             else -> false
         }
     }
