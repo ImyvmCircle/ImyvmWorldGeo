@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoScope.Companion.certificateTeleportPoint
 import com.imyvm.iwg.domain.component.GeoScope.Companion.updateTeleportPoint
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
@@ -67,7 +68,7 @@ object RegionFactory {
         if (playerExecutor == null) return null
 
         val playerPosition = playerExecutor.blockPos
-        return if (geoShape.isInside(playerPosition.x, playerPosition.z)) playerPosition
+        return if (certificateTeleportPoint(playerPosition)) playerPosition
         else updateTeleportPoint(geoShape)
     }
 

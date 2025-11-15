@@ -24,6 +24,27 @@ class GeoScope(
 
     companion object {
         fun updateTeleportPoint(geoShape: GeoShape): BlockPos?{
+            val par = geoShape.shapeParameter
+            return when (geoShape.geoShapeType) {
+                GeoShapeType.CIRCLE -> updateTeleportPointCircle(par)
+                GeoShapeType.RECTANGLE -> updateTeleportPointRectangle(par)
+                GeoShapeType.POLYGON -> updateTeleportPointPolygon(par)
+                GeoShapeType.UNKNOWN -> null
+            }
+        }
+
+        private fun updateTeleportPointCircle(shapeParameters: MutableList<Int>): BlockPos? {
+
+            return null
+        }
+
+        private fun updateTeleportPointRectangle(shapeParameters: MutableList<Int>): BlockPos? {
+
+            return null
+        }
+
+        private fun updateTeleportPointPolygon(shapeParameters: MutableList<Int>): BlockPos? {
+
             return null
         }
 
