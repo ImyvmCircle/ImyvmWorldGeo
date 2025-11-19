@@ -69,7 +69,7 @@ object RegionFactory {
 
         val playerPosition = playerExecutor.blockPos
         return if (certificateTeleportPoint(playerPosition)) playerPosition
-        else updateTeleportPoint(geoShape)
+        else updateTeleportPoint(playerExecutor.world, geoShape)
     }
 
     private fun createGeoShape(

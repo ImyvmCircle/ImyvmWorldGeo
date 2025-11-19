@@ -6,8 +6,8 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
-import kotlin.math.pow
-import kotlin.math.sqrt
+import net.minecraft.world.Heightmap
+import net.minecraft.world.World
 
 class GeoScope(
     var scopeName: String,
@@ -26,39 +26,62 @@ class GeoScope(
     }
 
     companion object {
-        fun updateTeleportPoint(geoShape: GeoShape): BlockPos?{
+        fun updateTeleportPoint(world: World, geoShape: GeoShape): BlockPos? {
             val par = geoShape.shapeParameter
             return when (geoShape.geoShapeType) {
-                GeoShapeType.CIRCLE -> updateTeleportPoint(par, GeoShapeType.CIRCLE)
-                GeoShapeType.RECTANGLE -> updateTeleportPoint(par, GeoShapeType.RECTANGLE)
-                GeoShapeType.POLYGON -> updateTeleportPoint(par, GeoShapeType.POLYGON)
+                GeoShapeType.CIRCLE -> updateTeleportPoint(world, par, GeoShapeType.CIRCLE)
+                GeoShapeType.RECTANGLE -> updateTeleportPoint(world, par, GeoShapeType.RECTANGLE)
+                GeoShapeType.POLYGON -> updateTeleportPoint(world, par, GeoShapeType.POLYGON)
                 GeoShapeType.UNKNOWN -> null
             }
         }
 
-        fun certificateTeleportPoint(teleportPoint: BlockPos?): Boolean{
+        fun certificateTeleportPoint(teleportPoint: BlockPos?): Boolean {
 
             return true
         }
 
-        private fun updateTeleportPoint(shapeParameters: MutableList<Int>, geoShapeType: GeoShapeType): BlockPos? {
+        private fun updateTeleportPoint(
+            world: World,
+            shapeParameters: MutableList<Int>,
+            geoShapeType: GeoShapeType
+        ): BlockPos? {
             val points = when (geoShapeType) {
                 GeoShapeType.CIRCLE -> iterateCirclePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2])
-                GeoShapeType.RECTANGLE -> iterateRectanglePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
+                GeoShapeType.RECTANGLE -> iterateRectanglePoint(
+                    shapeParameters[0],
+                    shapeParameters[1],
+                    shapeParameters[2],
+                    shapeParameters[3]
+                )
+
                 GeoShapeType.POLYGON -> iteratePolygonPoint(shapeParameters)
                 GeoShapeType.UNKNOWN -> return null
             }
             for (point in points) {
-                val blockPos = generateSurfacePoint(point)
+                val blockPos = generateSurfacePoint(world, point)
                 if (blockPos != null) return blockPos
             }
             return null
         }
 
 
-        private fun generateSurfacePoint(point: Pair<Int, Int>): BlockPos? {
+        private fun generateSurfacePoint(world: World, point: Pair<Int, Int>): BlockPos? {
+            val x = point.first
+            val z = point.second
+            val topY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
 
-            return null
+            val surfaceBlockPos = BlockPos(x, topY - 1, z)
+            val surfaceBlockStatus = world.getBlockState(surfaceBlockPos)
+
+            if (
+                !surfaceBlockStatus.fluidState.isEmpty
+                || !surfaceBlockStatus.hasSolidTopSurface(world, surfaceBlockPos, null)
+            ) {
+                return null
+            }
+
+            return surfaceBlockPos.up()
         }
     }
 }
