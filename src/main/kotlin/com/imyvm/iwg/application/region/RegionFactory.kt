@@ -9,6 +9,7 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -44,6 +45,7 @@ object RegionFactory {
     fun createScope(
         scopeName: String,
         playerExecutor: ServerPlayerEntity? = null,
+        existingWorld: Identifier? = null,
         existingTeleportPoint: BlockPos? = null,
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
@@ -53,10 +55,11 @@ object RegionFactory {
             return Result.Err(geoShapeResult.error)
         }
 
+        val worldId = existingWorld ?: playerExecutor!!.world.registryKey.value
         val geoShape = (geoShapeResult as Result.Ok).value
         val teleportPoint = existingTeleportPoint ?: getTeleportPoint(playerExecutor, geoShape)
 
-        val geoScope = GeoScope(scopeName, teleportPoint, geoShape)
+        val geoScope = GeoScope(scopeName, worldId, teleportPoint, geoShape)
 
         return Result.Ok(geoScope)
     }

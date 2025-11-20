@@ -3,6 +3,7 @@ package com.imyvm.iwg.infra
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import net.fabricmc.loader.api.FabricLoader
+import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
 import java.io.DataInputStream
 import java.io.DataOutputStream
@@ -122,6 +123,7 @@ object RegionDatabase {
         stream.writeInt(scopes.size)
         for (scope in scopes) {
             stream.writeUTF(scope.scopeName)
+            stream.writeUTF(scope.worldId.toString())
             saveTeleportPoint(stream, scope.teleportPoint)
             saveGeoShape(stream, scope.geoShape)
             saveSettings(stream, scope.settings)
@@ -134,11 +136,12 @@ object RegionDatabase {
 
         repeat(count) {
             val scopeName = stream.readUTF()
+            val worldId = Identifier.of(stream.readUTF())
             val teleportPoint = loadTeleportPoint(stream)
             val geoShape = loadGeoShape(stream)
             val scopeSettings = loadSettings(stream)
 
-            val scope = GeoScope(scopeName, teleportPoint, geoShape)
+            val scope = GeoScope(scopeName, worldId, teleportPoint, geoShape)
             scope.settings.addAll(scopeSettings)
             list.add(scope)
         }
