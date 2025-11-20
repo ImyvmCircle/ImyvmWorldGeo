@@ -26,11 +26,12 @@ fun recreateScope(
 
     val newScope = RegionFactory.createScope(
         scopeName = existingScope.scopeName,
-
+        existingWorld = existingWorld,
         existingTeleportPoint = existingTeleportPoint,
         selectedPositions = newPositions,
         shapeType = shapeType
     )
+
     when (newScope) {
         is Result.Ok -> {
             region.geometryScope.add(newScope.value)
