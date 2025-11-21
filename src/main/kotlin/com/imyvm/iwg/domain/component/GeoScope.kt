@@ -3,6 +3,7 @@ package com.imyvm.iwg.domain.component
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator
+import net.minecraft.block.CarpetBlock
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.MinecraftServer
@@ -35,38 +36,33 @@ class GeoScope(
     }
 
     companion object {
+        fun certificateTeleportPoint(world: World, teleportPoint: BlockPos?): Boolean {
+            if (teleportPoint == null) return false
+            return isValidTeleportPoint(world, teleportPoint)
+        }
+
         fun updateTeleportPoint(world: World, geoShape: GeoShape): BlockPos? {
             val par = geoShape.shapeParameter
             return when (geoShape.geoShapeType) {
-                GeoShapeType.CIRCLE -> updateTeleportPoint(world, par, GeoShapeType.CIRCLE)
-                GeoShapeType.RECTANGLE -> updateTeleportPoint(world, par, GeoShapeType.RECTANGLE)
-                GeoShapeType.POLYGON -> updateTeleportPoint(world, par, GeoShapeType.POLYGON)
+                GeoShapeType.CIRCLE -> updateTeleportPointByShape(world, par, GeoShapeType.CIRCLE)
+                GeoShapeType.RECTANGLE -> updateTeleportPointByShape(world, par, GeoShapeType.RECTANGLE)
+                GeoShapeType.POLYGON -> updateTeleportPointByShape(world, par, GeoShapeType.POLYGON)
                 GeoShapeType.UNKNOWN -> null
             }
         }
 
-        fun certificateTeleportPoint(teleportPoint: BlockPos?): Boolean {
-
-            return true
-        }
-
-        private fun updateTeleportPoint(
+        private fun updateTeleportPointByShape(
             world: World,
             shapeParameters: MutableList<Int>,
             geoShapeType: GeoShapeType
         ): BlockPos? {
             val points = when (geoShapeType) {
                 GeoShapeType.CIRCLE -> iterateCirclePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2])
-                GeoShapeType.RECTANGLE -> iterateRectanglePoint(
-                    shapeParameters[0],
-                    shapeParameters[1],
-                    shapeParameters[2],
-                    shapeParameters[3]
-                )
-
+                GeoShapeType.RECTANGLE -> iterateRectanglePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
                 GeoShapeType.POLYGON -> iteratePolygonPoint(shapeParameters)
                 GeoShapeType.UNKNOWN -> return null
             }
+
             for (point in points) {
                 val blockPos = generateSurfacePoint(world, point)
                 if (blockPos != null) return blockPos
@@ -74,23 +70,28 @@ class GeoScope(
             return null
         }
 
-
         private fun generateSurfacePoint(world: World, point: Pair<Int, Int>): BlockPos? {
             val x = point.first
             val z = point.second
             val topY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
-
-            val surfaceBlockPos = BlockPos(x, topY - 1, z)
-            val surfaceBlockStatus = world.getBlockState(surfaceBlockPos)
-
-            if (
-                !surfaceBlockStatus.fluidState.isEmpty
-                || !surfaceBlockStatus.hasSolidTopSurface(world, surfaceBlockPos, null)
-            ) {
-                return null
+            val candidatePos = BlockPos(x, topY, z)
+            if (isValidTeleportPoint(world, candidatePos)) {
+                return candidatePos
             }
+            return null
+        }
 
-            return surfaceBlockPos.up()
+        private fun isValidTeleportPoint(world: World, pos: BlockPos): Boolean {
+            val feetState = world.getBlockState(pos)
+            val headState = world.getBlockState(pos.up())
+            val groundState = world.getBlockState(pos.down())
+
+            if (!feetState.isAir || !headState.isAir) return false
+
+            val isSolid = groundState.hasSolidTopSurface(world, pos.down(), null)
+            val isCarpet = feetState.block is CarpetBlock
+
+            return isSolid || isCarpet
         }
     }
 }

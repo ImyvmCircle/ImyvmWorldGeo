@@ -70,9 +70,10 @@ object RegionFactory {
     ): BlockPos? {
         if (playerExecutor == null) return null
 
+        val playerWorld = playerExecutor.world
         val playerPosition = playerExecutor.blockPos
-        return if (certificateTeleportPoint(playerPosition)) playerPosition
-        else updateTeleportPoint(playerExecutor.world, geoShape)
+        return if (certificateTeleportPoint(playerWorld, playerPosition)) playerPosition
+        else updateTeleportPoint(playerWorld, geoShape)
     }
 
     private fun createGeoShape(
