@@ -89,7 +89,7 @@ class GeoScope(
             if (!feetState.isAir || !headState.isAir) return false
 
             val isSolid = groundState.hasSolidTopSurface(world, pos.down(), null)
-            val isCarpet = feetState.block is CarpetBlock
+            val isCarpet = groundState.block is CarpetBlock
 
             return isSolid || isCarpet
         }
