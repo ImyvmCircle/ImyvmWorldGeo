@@ -2,8 +2,9 @@
 
 ## Changelog 1.1.0
 
-This is a version marking the start point of introducing new features to regions.
-- feat: add teleport point to GeoScope allowing tp.
+This release marks the beginning of new feature support for regions.
+- feat: add teleport point to GeoScope.
+- fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
 
 ## Introduction
 
@@ -145,11 +146,11 @@ Provides access to region data and database operations for extension functions.
 - `getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, GeoScope?>`  
   Retrieves the region-scope pair by region ID and scope name.
 
-- `getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, GeoScope>?`  
-  Retrieves the region-scope pair by coordinates.
+- `getRegionScopePairByLocation(world: World, x: Int, z: Int): Pair<Region, GeoScope>?`  
+  Retrieves the region-scope pair in a world by coordinates.
 
-- `getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, GeoScope>?`  
-  Retrieves the region-scope pair by block position.
+- `getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>?`  
+  Retrieves the region-scope pair in a world by block position.
 
 - `getScopeShape(scope: GeoScope): Region.Companion.GeoShape?`  
   Retrieves the shape of a scope.
