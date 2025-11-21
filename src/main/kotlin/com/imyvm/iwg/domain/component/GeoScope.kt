@@ -20,14 +20,14 @@ class GeoScope(
     var geoShape: GeoShape?,
     var settings: MutableList<Setting> = mutableListOf()
 ) {
-    fun getWorld(server: MinecraftServer): ServerWorld? {
-        val registryKey = RegistryKey.of(RegistryKeys.WORLD, worldId)
-        return server.getWorld(registryKey)
-    }
-
     fun getScopeInfo(index: Int): Text? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
         return Translator.tr("scope.info", index, scopeName, shapeInfoString)
+    }
+
+    fun getWorld(server: MinecraftServer): ServerWorld? {
+        val registryKey = RegistryKey.of(RegistryKeys.WORLD, worldId)
+        return server.getWorld(registryKey)
     }
 
     fun getSettingInfos(server: MinecraftServer): List<Text> {

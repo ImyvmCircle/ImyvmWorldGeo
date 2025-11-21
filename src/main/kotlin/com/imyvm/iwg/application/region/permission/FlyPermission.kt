@@ -26,7 +26,7 @@ fun managePlayersFly(server: MinecraftServer) {
 
 fun processPlayerFly(player: ServerPlayerEntity) {
     val uuid = player.uuid
-    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.blockX, player.blockZ)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world, player.blockX, player.blockZ)
     val canFlyNow = regionAndScope?.let { (region, scope) ->
         hasPermissionWhitelist(region, uuid, PermissionKey.FLY, scope)
     } ?: false
@@ -117,7 +117,7 @@ private fun cleanupAbsentPlayer(
 }
 
 private fun isStillNoFly(player: ServerPlayerEntity): Boolean {
-    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.blockX, player.blockZ)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world ,player.blockX, player.blockZ)
     return regionAndScope?.let { (region, scope) ->
         !hasPermissionWhitelist(region, player.uuid, PermissionKey.FLY, scope)
     } ?: true

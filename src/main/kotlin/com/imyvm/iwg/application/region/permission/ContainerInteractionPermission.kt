@@ -30,7 +30,7 @@ fun playerContainerInteraction(
 }
 
 private fun playerCanOpenContainer(player: PlayerEntity, pos: BlockPos): Boolean {
-    val regionAndScope = RegionDatabase.getRegionAndScopeAt(pos.x, pos.z)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world, pos.x, pos.z)
     regionAndScope?.let { (region, scope) ->
         return hasPermissionBlacklist(region, player.uuid, PermissionKey.CONTAINER, scope)
     }

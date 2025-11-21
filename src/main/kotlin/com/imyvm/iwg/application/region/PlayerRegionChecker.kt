@@ -15,9 +15,10 @@ object PlayerRegionChecker {
         val onlinePlayers = getOnlinePlayers(server)
 
         for (player in onlinePlayers) {
+            val playerWorld = player.world
             val playerX = player.blockX
             val playerZ = player.blockZ
-            val currentRegionAndScope = RegionDatabase.getRegionAndScopeAt(playerX, playerZ)
+            val currentRegionAndScope = RegionDatabase.getRegionAndScopeAt(playerWorld, playerX, playerZ)
             playerRegionScopeMap[player.uuid] = currentRegionAndScope ?: Pair(null, null)
         }
 

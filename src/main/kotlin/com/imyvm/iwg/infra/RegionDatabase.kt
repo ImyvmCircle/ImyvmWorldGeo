@@ -5,6 +5,7 @@ import com.imyvm.iwg.domain.component.*
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
+import net.minecraft.world.World
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -105,13 +106,16 @@ object RegionDatabase {
         return Pair(region, scope)
     }
 
-    fun getRegionAndScopeAt(x: Int, z: Int): Pair<Region, GeoScope>? {
+    fun getRegionAndScopeAt(world: World, x: Int, z: Int): Pair<Region, GeoScope>? {
+        val server = world.server
         for (region in regions) {
             for (scope in region.geometryScope) {
-                val geoShape = scope.geoShape
-                if (geoShape != null) {
-                    if (geoShape.containsPoint(x, z)) {
-                        return Pair(region, scope)
+                if (server?.let { scope.getWorld(it) } == world) {
+                    val geoShape = scope.geoShape
+                    if (geoShape != null) {
+                        if (geoShape.containsPoint(x, z)) {
+                            return Pair(region, scope)
+                        }
                     }
                 }
             }

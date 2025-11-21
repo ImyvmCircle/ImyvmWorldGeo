@@ -15,6 +15,7 @@ import com.imyvm.iwg.util.translator.resolvePlayerName
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
+import net.minecraft.world.World
 import java.util.*
 
 @Suppress("unused")
@@ -43,11 +44,11 @@ object RegionDataApi {
     fun getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, GeoScope?> =
         RegionDatabase.getRegionAndScope(regionId, scopeName)
 
-    fun getRegionScopePairByLocation(x: Int, z: Int): Pair<Region, GeoScope>? =
-        RegionDatabase.getRegionAndScopeAt(x, z)
+    fun getRegionScopePairByLocation(world: World, x: Int, z: Int): Pair<Region, GeoScope>? =
+        RegionDatabase.getRegionAndScopeAt(world, x, z)
 
-    fun getRegionScopePairByLocation(blockPos: BlockPos): Pair<Region, GeoScope>? =
-        RegionDatabase.getRegionAndScopeAt(blockPos.x, blockPos.z)
+    fun getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>? =
+        RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
 
     fun getScopeShape(scope: GeoScope): GeoShape? = scope.geoShape
 
