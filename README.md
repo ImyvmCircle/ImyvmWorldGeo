@@ -5,6 +5,7 @@
 This release marks the beginning of new feature support for regions.
 - feat: add teleport point to GeoScope.
 - fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
+- chore: update api parameters to include world context where necessary.
 
 ## Introduction
 
