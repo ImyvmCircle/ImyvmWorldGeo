@@ -7,6 +7,16 @@ This release marks the beginning of new feature support for regions.
 - fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
 - chore: update api parameters to include world context where necessary.
 
+### ROADMAP for 1.1.0
+
+- Add intertwined mechanism of teleport point, including,
+  - add new teleport point, 
+  - remove teleport point, 
+  - modify teleport point location and permission, 
+  - inquiry.
+  - Api and command calls for the above features.
+- Add api inquiry setting items, including default value when not added yet.
+
 ## Introduction
 
 This is a mod to provide a geography system framework for Imyvm server players and groups, 
