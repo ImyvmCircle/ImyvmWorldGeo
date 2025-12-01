@@ -20,7 +20,7 @@ class GeoShape(
             GeoShapeType.CIRCLE -> getCircleInfo(area)
             GeoShapeType.RECTANGLE -> getRectangleInfo(area)
             GeoShapeType.POLYGON -> getPolygonInfo(area)
-            else -> Translator.tr("geoshape.unknown.info", area)
+            else -> Translator.tr("geo.shape.unknown.info", area)
         }
     }
 
@@ -60,10 +60,10 @@ class GeoShape(
 
     private fun getCircleInfo(area: String): Text? {
         if (shapeParameter.size < 3) {
-            return Translator.tr("geoshape.circle.invalid.info", area)
+            return Translator.tr("geo.shape.circle.invalid.info", area)
         }
         return Translator.tr(
-            "geoshape.circle.info",
+            "geo.shape.circle.info",
             shapeParameter[0], // centerX
             shapeParameter[1], // centerZ
             shapeParameter[2], // radius
@@ -73,10 +73,10 @@ class GeoShape(
 
     private fun getRectangleInfo(area: String): Text? {
         if (shapeParameter.size < 4) {
-            return Translator.tr("geoshape.rectangle.invalid.info", area)
+            return Translator.tr("geo.shape.rectangle.invalid.info", area)
         }
         return Translator.tr(
-            "geoshape.rectangle.info",
+            "geo.shape.rectangle.info",
             shapeParameter[0], // west
             shapeParameter[1], // north
             shapeParameter[2], // east
@@ -87,11 +87,11 @@ class GeoShape(
 
     private fun getPolygonInfo(area: String): Text? {
         if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
-            return Translator.tr("geoshape.polygon.invalid.info", area)
+            return Translator.tr("geo.shape.polygon.invalid.info", area)
         }
         val coords = shapeParameter.chunked(2)
             .joinToString(", ") { "(${it[0]}, ${it[1]})" }
-        return Translator.tr("geoshape.polygon.info", coords, area)
+        return Translator.tr("geo.shape.polygon.info", coords, area)
     }
 
     private fun generateTeleportPointByType(

@@ -22,7 +22,7 @@ class GeoScope(
 ) {
     fun getScopeInfo(index: Int): Text? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
-        return Translator.tr("scope.info", index, scopeName, shapeInfoString)
+        return Translator.tr("geo.scope.info", index, scopeName, shapeInfoString)
     }
 
     fun getWorld(server: MinecraftServer): ServerWorld? {
@@ -31,7 +31,7 @@ class GeoScope(
     }
 
     fun getSettingInfos(server: MinecraftServer): List<Text> {
-        return Region.formatSettings(server, settings, "scope.setting", scopeName)
+        return Region.formatSettings(server, settings, "geo.scope.setting", scopeName)
     }
 
     fun certificateTeleportPoint(world: World, pointToTest: BlockPos?): Boolean {
