@@ -1,9 +1,7 @@
 package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.block.CarpetBlock
 import net.minecraft.registry.RegistryKey
 import net.minecraft.registry.RegistryKeys
 import net.minecraft.server.MinecraftServer
@@ -37,6 +35,6 @@ class GeoScope(
     fun certificateTeleportPoint(world: World, pointToTest: BlockPos?): Boolean {
         if (pointToTest == null) return false
         if (this.geoShape == null) return false
-        return this.geoShape!!.certificateTeleportPointByShape(world, pointToTest)
+        return this.geoShape!!.certificateTeleportPoint(world, pointToTest)
     }
 }

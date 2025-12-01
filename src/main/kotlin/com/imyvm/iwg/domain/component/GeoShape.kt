@@ -53,9 +53,8 @@ class GeoShape(
         }
     }
 
-    fun certificateTeleportPointByShape(world: World, pos: BlockPos): Boolean {
-        if (!isPhysicalSafe(world, pos)) return false
-        return this.containsPoint(pos.x, pos.z)
+    fun certificateTeleportPoint(world: World, pointToTest: BlockPos): Boolean {
+        return isValidTeleportPoint(world, pointToTest)
     }
 
     private fun getCircleInfo(area: String): Text? {
@@ -119,10 +118,15 @@ class GeoShape(
         val topY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
         val candidatePos = BlockPos(x, topY, z)
 
-        if (certificateTeleportPointByShape(world, candidatePos)) {
+        if (isValidTeleportPoint(world, candidatePos)) {
             return candidatePos
         }
         return null
+    }
+
+    private fun isValidTeleportPoint(world: World, pos: BlockPos): Boolean {
+        if (!isPhysicalSafe(world, pos)) return false
+        return this.containsPoint(pos.x, pos.z)
     }
 
     companion object {
