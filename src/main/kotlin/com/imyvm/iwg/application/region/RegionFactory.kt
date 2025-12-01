@@ -2,9 +2,8 @@ package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.GeoScope
-import com.imyvm.iwg.domain.component.GeoScope.Companion.certificateTeleportPoint
-import com.imyvm.iwg.domain.component.GeoScope.Companion.updateTeleportPoint
 import com.imyvm.iwg.domain.component.GeoShape
+import com.imyvm.iwg.domain.component.GeoShape.Companion.isPhysicalSafe
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
@@ -72,8 +71,8 @@ object RegionFactory {
 
         val playerWorld = playerExecutor.world
         val playerPosition = playerExecutor.blockPos
-        return if (certificateTeleportPoint(playerWorld, playerPosition)) playerPosition
-        else updateTeleportPoint(playerWorld, geoShape)
+        return if (isPhysicalSafe(playerWorld, playerPosition)) playerPosition
+        else geoShape.generateTeleportPoint(playerWorld)
     }
 
     private fun createGeoShape(

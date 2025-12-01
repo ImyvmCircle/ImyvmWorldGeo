@@ -2,7 +2,11 @@ package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator
+import net.minecraft.block.CarpetBlock
 import net.minecraft.text.Text
+import net.minecraft.util.math.BlockPos
+import net.minecraft.world.Heightmap
+import net.minecraft.world.World
 
 class GeoShape(
     var geoShapeType: GeoShapeType,
@@ -36,6 +40,22 @@ class GeoShape(
             GeoShapeType.POLYGON -> calculatePolygonArea(shapeParameter)
             else -> 0.0
         }
+    }
+
+    fun generateTeleportPoint(world: World): BlockPos? {
+        val par = this.shapeParameter
+
+        return when (this.geoShapeType) {
+            GeoShapeType.CIRCLE -> generateTeleportPointByType(world, par, GeoShapeType.CIRCLE)
+            GeoShapeType.RECTANGLE -> generateTeleportPointByType(world, par, GeoShapeType.RECTANGLE)
+            GeoShapeType.POLYGON -> generateTeleportPointByType(world, par, GeoShapeType.POLYGON)
+            GeoShapeType.UNKNOWN -> null
+        }
+    }
+
+    fun certificateTeleportPointByShape(world: World, pos: BlockPos): Boolean {
+        if (!isPhysicalSafe(world, pos)) return false
+        return this.containsPoint(pos.x, pos.z)
     }
 
     private fun getCircleInfo(area: String): Text? {
@@ -72,5 +92,51 @@ class GeoShape(
         val coords = shapeParameter.chunked(2)
             .joinToString(", ") { "(${it[0]}, ${it[1]})" }
         return Translator.tr("geoshape.polygon.info", coords, area)
+    }
+
+    private fun generateTeleportPointByType(
+        world: World,
+        shapeParameters: MutableList<Int>,
+        geoShapeType: GeoShapeType
+    ): BlockPos? {
+        val points = when (geoShapeType) {
+            GeoShapeType.CIRCLE -> iterateCirclePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2])
+            GeoShapeType.RECTANGLE -> iterateRectanglePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
+            GeoShapeType.POLYGON -> iteratePolygonPoint(shapeParameters)
+            GeoShapeType.UNKNOWN -> return null
+        }
+
+        for (point in points) {
+            val blockPos = generateSurfacePoint(world, point)
+            if (blockPos != null) return blockPos
+        }
+        return null
+    }
+
+    private fun generateSurfacePoint(world: World, point: Pair<Int, Int>): BlockPos? {
+        val x = point.first
+        val z = point.second
+        val topY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
+        val candidatePos = BlockPos(x, topY, z)
+
+        if (certificateTeleportPointByShape(world, candidatePos)) {
+            return candidatePos
+        }
+        return null
+    }
+
+    companion object {
+        fun isPhysicalSafe(world: World, pos: BlockPos): Boolean {
+            val feetState = world.getBlockState(pos)
+            val headState = world.getBlockState(pos.up())
+            val groundState = world.getBlockState(pos.down())
+
+            if (!feetState.isAir || !headState.isAir) return false
+
+            val isSolid = groundState.hasSolidTopSurface(world, pos.down(), null)
+            val isCarpet = groundState.block is CarpetBlock
+
+            return isSolid || isCarpet
+        }
     }
 }
