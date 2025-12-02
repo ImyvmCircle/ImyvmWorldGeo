@@ -5,7 +5,7 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 
-fun onAddTeleportPoint(
+fun onAddingTeleportPoint(
     playerExecutor: ServerPlayerEntity,
     targetRegion: Region,
     scopeName: String,
@@ -32,7 +32,7 @@ fun onAddTeleportPoint(
     }
 }
 
-fun onResetTeleportPoint(
+fun onResettingTeleportPoint(
     playerExecutor: ServerPlayerEntity,
     targetRegion: Region,
     scopeName: String
@@ -42,6 +42,43 @@ fun onResetTeleportPoint(
         geoScope.teleportPoint = null
         playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scopeName, targetRegion))
         1
+    } catch (e: IllegalArgumentException) {
+        playerExecutor.sendMessage(Translator.tr(e.message))
+        0
+    }
+}
+
+fun onGettingTeleportPoint(
+    playerExecutor: ServerPlayerEntity,
+    targetRegion: Region,
+    scopeName: String
+): BlockPos? {
+    return try {
+        val geoScope = targetRegion.getScopeByName(scopeName)
+        geoScope.teleportPoint
+    } catch (e: IllegalArgumentException) {
+        playerExecutor.sendMessage(Translator.tr(e.message))
+        null
+    }
+}
+
+fun onTeleportingPlayer(
+    playerExecutor: ServerPlayerEntity,
+    targetRegion: Region,
+    scopeName: String
+): Int {
+    return try {
+        val teleportPoint = onGettingTeleportPoint(playerExecutor, targetRegion, scopeName)
+
+        return if (teleportPoint != null) {
+            playerExecutor.teleport(teleportPoint.x.toDouble(), teleportPoint.y.toDouble(),
+                teleportPoint.z.toDouble(), true)
+            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.teleported", scopeName, targetRegion))
+            1
+        } else {
+            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.null", scopeName, targetRegion))
+            0
+        }
     } catch (e: IllegalArgumentException) {
         playerExecutor.sendMessage(Translator.tr(e.message))
         0
