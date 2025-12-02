@@ -32,10 +32,18 @@ fun onAddTeleportPoint(
     }
 }
 
-fun onRemoveTeleportPoint(
+fun onResetTeleportPoint(
     playerExecutor: ServerPlayerEntity,
     targetRegion: Region,
     scopeName: String
 ): Int {
-    TODO()
+    return try {
+        val geoScope = targetRegion.getScopeByName(scopeName)
+        geoScope.teleportPoint = null
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scopeName))
+        1
+    } catch (e: IllegalArgumentException) {
+        playerExecutor.sendMessage(Translator.tr(e.message))
+        0
+    }
 }
