@@ -61,7 +61,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("addscope")
+                literal("add-scope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
@@ -78,7 +78,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("deletescope")
+                literal("delete-scope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
@@ -91,7 +91,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("modifyscope")
+                literal("modify-scope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
@@ -157,7 +157,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("settingscope")
+                literal("setting-scope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         literal("add")

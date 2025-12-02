@@ -263,13 +263,13 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvm-world-geo rename <regionIdentifier> <newName>`  
   Rename an existing region.
 
-- `/imyvm-world-geo addscope <shapeType> <regionIdentifier> [scopeName]`  
+- `/imyvm-world-geo add-scope <shapeType> <regionIdentifier> [scopeName]`  
   Add a new scope to the region with the given shape and optional scope name.
 
-- `/imyvm-world-geo deletescope <regionIdentifier> <scopeName>`  
+- `/imyvm-world-geo delete-scope <regionIdentifier> <scopeName>`  
   Delete a scope from a region.
 
-- `/imyvm-world-geo modifyscope <regionIdentifier> <scopeName> [newName]`  
+- `/imyvm-world-geo modify-scope <regionIdentifier> <scopeName> [newName]`  
   Modify a scope's properties or rename it.
 
 - `/imyvm-world-geo setting add <regionIdentifier> <settingType> <key> <value> [playerName]`  
@@ -278,10 +278,10 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvm-world-geo setting remove <regionIdentifier> <settingType> <key> [playerName]`  
   Remove a setting from a region, optionally for a specific player.
 
-- `/imyvm-world-geo settingscope add <regionIdentifier> <scopeName> <settingType> <key> <value> [playerName]`  
+- `/imyvm-world-geo setting-scope add <regionIdentifier> <scopeName> <settingType> <key> <value> [playerName]`  
   Add a setting to a specific scope of a region, optionally for a specific player.
 
-- `/imyvm-world-geo settingscope remove <regionIdentifier> <scopeName> <settingType> <key> [playerName]`  
+- `/imyvm-world-geo setting-scope remove <regionIdentifier> <scopeName> <settingType> <key> [playerName]`  
   Remove a setting from a specific scope, optionally for a specific player.
 
 - `/imyvm-world-geo query <regionIdentifier>`  
