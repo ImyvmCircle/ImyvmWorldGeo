@@ -14,6 +14,9 @@ This release marks the beginning of new feature support for regions.
   - remove teleport point, 
   - modify teleport point location and permission, 
   - inquiry.
+  - teleport point permission types:
+    - public: anyone can use,
+    - specific player only: only specific players can use.
   - Api and command calls for the above features.
 - Add api inquiry setting items, including default value when not added yet.
 
