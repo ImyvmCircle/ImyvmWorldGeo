@@ -59,6 +59,10 @@
   "interaction.meta.scope.rename.duplicate_scope_name": "A scope with the name {0} already exists in region {1}.",
   "interaction.meta.scope.rename.success": "Successfully renamed scope {0} to {1} in region {2}.",
 
+  "interaction.meta.scope.teleport_point.added": "Successfully added teleport point ({0},{1},{2}) to scope {3} in region {4}.",
+  "interaction.meta.scope.teleport_point.invalid": "Invalid teleport point coordinates: ({0},{1},{2}) for scope {3} in region {4}.",
+  "interaction.meta.scope.teleport_point.reset": "Successfully reset teleport points for scope {0} in region {1}.",
+
   "interaction.meta.setting.add.success": "Successfully added setting: {0} = {1}.",
   "interaction.meta.setting.delete.success": "Successfully removed setting: {0}.",
   "interaction.meta.setting.delete.error.no_such_setting": "No such setting found for key: {0}.",

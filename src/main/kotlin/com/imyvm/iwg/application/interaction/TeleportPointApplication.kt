@@ -19,10 +19,10 @@ fun onAddTeleportPoint(
 
         return if (geoScope.certificateTeleportPoint(playerExecutor.world, teleportPoint)) {
             geoScope.teleportPoint = BlockPos(x, y, z)
-            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", scopeName, x, y, z))
+            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, scopeName, targetRegion))
             1
         } else {
-            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", scopeName))
+            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, scopeName, targetRegion))
             0
         }
 
@@ -40,7 +40,7 @@ fun onResetTeleportPoint(
     return try {
         val geoScope = targetRegion.getScopeByName(scopeName)
         geoScope.teleportPoint = null
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scopeName))
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scopeName, targetRegion))
         1
     } catch (e: IllegalArgumentException) {
         playerExecutor.sendMessage(Translator.tr(e.message))
