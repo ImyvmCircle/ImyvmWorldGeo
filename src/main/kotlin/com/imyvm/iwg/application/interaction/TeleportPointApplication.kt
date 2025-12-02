@@ -68,11 +68,18 @@ fun onTeleportingPlayer(
     scopeName: String
 ): Int {
     return try {
+        val targetWorld = targetRegion.getScopeByName(scopeName).getWorld(playerExecutor.server) ?: return 0
         val teleportPoint = onGettingTeleportPoint(playerExecutor, targetRegion, scopeName)
 
         return if (teleportPoint != null) {
-            playerExecutor.teleport(teleportPoint.x.toDouble(), teleportPoint.y.toDouble(),
-                teleportPoint.z.toDouble(), true)
+            playerExecutor.teleport(
+                targetWorld,
+                teleportPoint.x.toDouble() + 0.5,
+                teleportPoint.y.toDouble(),
+                teleportPoint.z.toDouble() + 0.5,
+                playerExecutor.yaw,
+                playerExecutor.pitch
+            )
             playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.teleported", scopeName, targetRegion))
             1
         } else {
