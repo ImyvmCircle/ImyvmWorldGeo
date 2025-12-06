@@ -118,11 +118,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
                     .then(
                         literal("reset")
-
+                            .executes{ runResetTeleportPoint(it) }
                     )
                     .then(
                         literal("inquiry")
-
+                            .executes{ runInquiryTeleportPoint(it) }
                     )
                     .then(
                         literal("teleport")
@@ -320,11 +320,49 @@ private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): I
     val z = player.blockZ
     val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
     if (regionScopePair == null) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.set.no_region"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
         return 0
     }
 
     return onAddingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName, x, y, z)
+}
+
+private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val x = player.blockX
+    val z = player.blockZ
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
+    if (regionScopePair == null) {
+        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
+        return 0
+    }
+
+    return onResettingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName)
+}
+
+private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val x = player.blockX
+    val z = player.blockZ
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
+    if (regionScopePair == null) {
+        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
+        return 0
+    }
+
+    val teleportPoint = onGettingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName)
+    return if (teleportPoint != null) {
+        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
+            teleportPoint.x, teleportPoint.y, teleportPoint.z,
+            regionScopePair.second.scopeName,
+            regionScopePair.first))
+        1
+    } else {
+        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
+            regionScopePair.second.scopeName,
+            regionScopePair.first))
+        0
+    }
 }
 
 private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
