@@ -35,7 +35,7 @@
 
   "interaction.meta.scope.teleport_point.no_region": "To set a teleport point you must stay inside a region, or you must input name of region and scope.",
 
-  "interaction.meta.scope.teleport_point.inquiry.result": "Teleport of Region {4} scope {5}: x: {0}, y: {1}, z: {2}",
+  "interaction.meta.scope.teleport_point.inquiry.result": "Teleport of Region {4} and scope {5}: x: {0}, y: {1}, z: {2}",
   "interaction.meta.scope.teleport_point.inquiry.no_point": "Region {1} scope {0} has no teleport point set.",
 
   "interaction.meta.scope.modify.invalid_polygon": "Invalid polygon parameters: at least three points (6 coordinates) required, must be paired",
