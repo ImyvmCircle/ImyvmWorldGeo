@@ -1,7 +1,9 @@
 package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.interaction.*
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.command.helper.*
+import com.imyvm.iwg.util.text.Translator
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
@@ -105,6 +107,26 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                             .executes { runRenameScope(it) }
                                     )
                             )
+                    )
+            )
+            .then(
+                literal("teleport-point")
+                    .requires{ it.hasPermissionLevel(2) }
+                    .then(
+                        literal("set")
+                            .executes{ runSetTeleportPoint(it) }
+                    )
+                    .then(
+                        literal("reset")
+
+                    )
+                    .then(
+                        literal("inquiry")
+
+                    )
+                    .then(
+                        literal("teleport")
+
                     )
             )
             .then(
@@ -289,6 +311,20 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
     val newName = context.getArgument("newName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToRenameScope ->
         onScopeRename(player, regionToRenameScope, scopeName, newName)}
+}
+
+private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val x = player.blockX
+    val y = player.blockY
+    val z = player.blockZ
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
+    if (regionScopePair == null) {
+        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.set.no_region"))
+        return 0
+    }
+
+    return onAddingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName, x, y, z)
 }
 
 private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {

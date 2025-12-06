@@ -33,6 +33,8 @@
   "interaction.meta.scope.delete.success": "Successfully deleted scope {0} from region {1}.",
   "interaction.meta.scope.delete.error.last_scope": "Cannot delete the last scope of a region.",
 
+  "interaction.meta.scope.teleport_point.set.no_region": "To set a teleport point you must stay inside a region.",
+
   "interaction.meta.scope.modify.invalid_polygon": "Invalid polygon parameters: at least three points (6 coordinates) required, must be paired",
   "interaction.meta.scope.modify.polygon_duplicate_points": "The two selected points are identical, please select different points",
   "interaction.meta.scope.modify.polygon_point_not_found": "Point {0} not found in the polygon",
