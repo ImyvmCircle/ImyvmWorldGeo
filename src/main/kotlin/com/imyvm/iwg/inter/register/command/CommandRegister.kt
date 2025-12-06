@@ -328,39 +328,23 @@ private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): I
 }
 
 private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val x = player.blockX
-    val z = player.blockZ
-    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
-    if (regionScopePair == null) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
-        return 0
-    }
-
-    return onResettingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName)
+    val (player, region, scopeName) = getPlayerAndRegionInfo(context) ?: return 0
+    return onResettingTeleportPoint(player, region, scopeName)
 }
 
 private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val player = context.source.player ?: return 0
-    val x = player.blockX
-    val z = player.blockZ
-    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
-    if (regionScopePair == null) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
-        return 0
-    }
-
-    val teleportPoint = onGettingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName)
+    val (player, region, scopeName) = getPlayerAndRegionInfo(context) ?: return 0
+    val teleportPoint = onGettingTeleportPoint(player, region, scopeName)
     return if (teleportPoint != null) {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
-            regionScopePair.second.scopeName,
-            regionScopePair.first))
+            scopeName,
+            region))
         1
     } else {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
-            regionScopePair.second.scopeName,
-            regionScopePair.first))
+            scopeName,
+            region))
         0
     }
 }
@@ -396,7 +380,7 @@ private fun runToggleActionBar(context: CommandContext<ServerCommandSource>): In
     return onToggleActionBar(player)
 }
 
-fun runHelp(context: CommandContext<ServerCommandSource>): Int {
+private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     return onHelp(player)
 }
