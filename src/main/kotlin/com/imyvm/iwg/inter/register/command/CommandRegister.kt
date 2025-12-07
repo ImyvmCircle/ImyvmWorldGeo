@@ -117,11 +117,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                         literal("set")
                             .executes{ runSetTeleportPoint(it) }
                             .then(
-                                argument("x", IntegerArgumentType.integer())
+                                argument("x", StringArgumentType.word())
                                     .then(
-                                        argument("y", IntegerArgumentType.integer())
+                                        argument("y", StringArgumentType.word())
                                             .then(
-                                                argument("z", IntegerArgumentType.integer())
+                                                argument("z", StringArgumentType.word())
                                                     .executes{ runSetTeleportPoint(it) }
                                             )
                                     )
@@ -334,9 +334,9 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    var x = getOptionalArgument(context, "x")?.toInt()
-    var y = getOptionalArgument(context, "y")?.toInt()
-    var z = getOptionalArgument(context, "z")?.toInt()
+    var x = getPosArgument(context, "x")
+    var y = getPosArgument(context, "y")
+    var z = getPosArgument(context, "z")
     if (x == null || y == null || z == null) {
         x = player.blockX
         y = player.blockY

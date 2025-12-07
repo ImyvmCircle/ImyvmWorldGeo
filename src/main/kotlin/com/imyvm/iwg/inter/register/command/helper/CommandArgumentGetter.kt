@@ -19,3 +19,22 @@ fun getOptionalArgument(
 } catch (e: IllegalArgumentException) {
     null
 }
+
+fun getPosArgument(
+    context: CommandContext<ServerCommandSource>,
+    name: String
+): Int? {
+    val rawArgument = getOptionalArgument(context, name) ?: return null
+
+    val player = context.source.player ?: return null
+    return try {
+        rawArgument.toInt()
+    } catch (e: NumberFormatException) {
+        when (name.lowercase()) {
+            "x" -> player.blockPos.x
+            "y" -> player.blockPos.y
+            "z" -> player.blockPos.z
+            else -> null
+        }
+    }
+}
