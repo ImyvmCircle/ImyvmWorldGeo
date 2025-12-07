@@ -93,23 +93,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("modify-scope")
-                    .requires{ it.hasPermissionLevel(2) }
-                    .then(
-                        argument("regionIdentifier", StringArgumentType.string())
-                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runModifyScope(it) }
-                                    .then(
-                                        argument("newName", StringArgumentType.string())
-                                            .executes { runRenameScope(it) }
-                                    )
-                            )
-                    )
-            )
-            .then(
                 literal("teleport-point")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
@@ -161,6 +144,23 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .executes { runTeleportPlayer(it) }
+                                    )
+                            )
+                    )
+            )
+            .then(
+                literal("modify-scope")
+                    .requires{ it.hasPermissionLevel(2) }
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                    .executes { runModifyScope(it) }
+                                    .then(
+                                        argument("newName", StringArgumentType.string())
+                                            .executes { runRenameScope(it) }
                                     )
                             )
                     )

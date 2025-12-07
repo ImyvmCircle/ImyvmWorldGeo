@@ -269,6 +269,28 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvm-world-geo delete-scope <regionIdentifier> <scopeName>`  
   Delete a scope from a region.
 
+- `/imyvm-world-geo teleport-point set [x] [y] [z]`  
+  Set the teleport point for the current region and scope.
+  - If `x`, `y`, and `z` are provided and valid, the teleport point will be set to the specified coordinates.
+    - The adjective 'valid' means they are all numbers or '~', which represents the player's current coordinate on that axis, 
+      and it satisfies criteria for a safe teleport point physically.
+  - If `x`, `y`, and `z` are omitted or invalid, the teleport point will default to the player's current position.
+
+- `/imyvm-world-geo teleport-point reset <regionIdentifier> <scopeName>`  
+  Reset the teleport point for the specified region and scope.
+  - If `regionIdentifier` and `scopeName` are provided and valid, the teleport point for the specified scope will be reset.
+  - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be reset.
+    - If player is not in any scope, an error message will be shown.
+
+- `/imyvm-world-geo teleport-point inquiry <regionIdentifier> <scopeName>`  
+  Inquire about the teleport point for the specified region and scope.
+  - If `regionIdentifier` and `scopeName` are provided and valid, the teleport point for the specified scope will be displayed.
+  - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be displayed.
+    - If player is not in any scope, an error message will be shown.
+
+- `/imyvm-world-geo teleport-point teleport <regionIdentifier> <scopeName>`  
+  Teleport the player to the teleport point of the specified region and scope.
+
 - `/imyvm-world-geo modify-scope <regionIdentifier> <scopeName> [newName]`  
   Modify a scope's properties or rename it.
 
