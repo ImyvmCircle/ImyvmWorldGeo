@@ -1,7 +1,9 @@
 package com.imyvm.iwg.inter.register.command.helper
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.util.text.Translator
 import com.mojang.brigadier.context.CommandContext
 import net.minecraft.server.command.ServerCommandSource
@@ -45,19 +47,46 @@ fun getPlayerRegionPair(context: CommandContext<ServerCommandSource>): Pair<Serv
     return player to regionIdentifier
 }
 
-fun getPlayerRegionScopeTriple(context: CommandContext<ServerCommandSource>): Triple<ServerPlayerEntity, Region, String>? {
+fun getPlayerRegionScopeTriple(context: CommandContext<ServerCommandSource>): Triple<ServerPlayerEntity, Region, GeoScope>? {
     val player = context.source.player ?: return null
-    val x = player.blockX
-    val z = player.blockZ
-    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world, x, z)
 
-    if (regionScopePair == null) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
-        return null
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java) ?: return getPlayerRegionScopeTriple(player)
+    val scopeName = context.getArgument("scopeName", String::class.java) ?: return getPlayerRegionScopeTriple(player)
+
+    val region = try {
+        if (regionIdentifier.matches("\\d+".toRegex())) {
+            val regionId = regionIdentifier.toInt()
+            RegionDatabase.getRegionByNumberId(regionId)
+        } else {
+            RegionDatabase.getRegionByName(regionIdentifier)
+        }
+    } catch (e: RegionNotFoundException) {
+        if (regionIdentifier.matches("\\d+".toRegex())) {
+            player.sendMessage(Translator.tr("interaction.meta.not_found_id", regionIdentifier))
+        } else {
+            player.sendMessage(Translator.tr("interaction.meta.not_found_name", regionIdentifier))
+        }
+        null
+    } ?: return getPlayerRegionScopeTriple(player)
+
+    val scope = try {
+        region.getScopeByName(scopeName)
+    } catch (e: IllegalArgumentException) {
+        return getPlayerRegionScopeTriple(player)
     }
 
-    val region = regionScopePair.first
-    val scopeName = regionScopePair.second.scopeName
+    return Triple(player, region, scope)
+}
 
-    return Triple(player, region, scopeName)
+private fun getPlayerRegionScopeTriple(playerEntity: ServerPlayerEntity): Triple<ServerPlayerEntity, Region, GeoScope>? {
+    val x = playerEntity.blockX
+    val z = playerEntity.blockZ
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(playerEntity.world, x, z)
+
+    return if (regionScopePair != null) {
+        Triple(playerEntity, regionScopePair.first, regionScopePair.second)
+    } else {
+        playerEntity.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
+        null
+    }
 }

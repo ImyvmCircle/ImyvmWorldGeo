@@ -370,23 +370,23 @@ private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): I
 }
 
 private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val (player, region, scopeName) = getPlayerRegionScopeTriple(context) ?: return 0
-    return onResettingTeleportPoint(player, region, scopeName)
+    val ( _, _, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    return onResettingTeleportPoint(scope)
 }
 
 private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val (player, region, scopeName) = getPlayerRegionScopeTriple(context) ?: return 0
-    val teleportPoint = onGettingTeleportPoint(player, region, scopeName)
+    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    val teleportPoint = onGettingTeleportPoint(scope)
     return if (teleportPoint != null) {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
-            scopeName,
+            scope.scopeName,
             region)
         )
         1
     } else {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
-            scopeName,
+            scope.scopeName,
             region)
         )
         0
