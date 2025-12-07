@@ -5,6 +5,7 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator
 import com.mojang.brigadier.CommandDispatcher
+import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.server.command.CommandManager.literal
@@ -115,6 +116,16 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("set")
                             .executes{ runSetTeleportPoint(it) }
+                            .then(
+                                argument("x", IntegerArgumentType.integer())
+                                    .then(
+                                        argument("y", IntegerArgumentType.integer())
+                                            .then(
+                                                argument("z", IntegerArgumentType.integer())
+                                                    .executes{ runSetTeleportPoint(it) }
+                                            )
+                                    )
+                            )
                     )
                     .then(
                         literal("reset")
@@ -323,9 +334,15 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
 
 private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
-    val x = player.blockX
-    val y = player.blockY
-    val z = player.blockZ
+    var x = getOptionalArgument(context, "x")?.toInt()
+    var y = getOptionalArgument(context, "y")?.toInt()
+    var z = getOptionalArgument(context, "z")?.toInt()
+    if (x == null || y == null || z == null) {
+        x = player.blockX
+        y = player.blockY
+        z = player.blockZ
+    }
+
     val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
     if (regionScopePair == null) {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
