@@ -5,7 +5,6 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator
 import com.mojang.brigadier.CommandDispatcher
-import com.mojang.brigadier.arguments.IntegerArgumentType
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.server.command.CommandManager.literal
@@ -371,12 +370,12 @@ private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): I
 }
 
 private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val (player, region, scopeName) = getPlayerAndRegionInfo(context) ?: return 0
+    val (player, region, scopeName) = getPlayerRegionScopeTriple(context) ?: return 0
     return onResettingTeleportPoint(player, region, scopeName)
 }
 
 private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val (player, region, scopeName) = getPlayerAndRegionInfo(context) ?: return 0
+    val (player, region, scopeName) = getPlayerRegionScopeTriple(context) ?: return 0
     val teleportPoint = onGettingTeleportPoint(player, region, scopeName)
     return if (teleportPoint != null) {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",

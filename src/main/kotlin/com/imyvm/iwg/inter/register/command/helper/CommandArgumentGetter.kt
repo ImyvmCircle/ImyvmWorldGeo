@@ -26,6 +26,10 @@ fun getPosArgument(
     return try {
         rawArgument.toInt()
     } catch (e: NumberFormatException) {
+        if (rawArgument != "~") {
+            return null
+        }
+
         when (name.lowercase()) {
             "x" -> player.blockPos.x
             "y" -> player.blockPos.y
@@ -35,7 +39,13 @@ fun getPosArgument(
     }
 }
 
-fun getPlayerAndRegionInfo(context: CommandContext<ServerCommandSource>): Triple<ServerPlayerEntity, Region, String>? {
+fun getPlayerRegionPair(context: CommandContext<ServerCommandSource>): Pair<ServerPlayerEntity, String>? {
+    val player = context.source.player ?: return null
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    return player to regionIdentifier
+}
+
+fun getPlayerRegionScopeTriple(context: CommandContext<ServerCommandSource>): Triple<ServerPlayerEntity, Region, String>? {
     val player = context.source.player ?: return null
     val x = player.blockX
     val z = player.blockZ
@@ -50,10 +60,4 @@ fun getPlayerAndRegionInfo(context: CommandContext<ServerCommandSource>): Triple
     val scopeName = regionScopePair.second.scopeName
 
     return Triple(player, region, scopeName)
-}
-
-fun getPlayerRegionPair(context: CommandContext<ServerCommandSource>): Pair<ServerPlayerEntity, String>? {
-    val player = context.source.player ?: return null
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
-    return player to regionIdentifier
 }
