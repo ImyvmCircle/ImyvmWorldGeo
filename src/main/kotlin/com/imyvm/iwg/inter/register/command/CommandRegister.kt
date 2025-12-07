@@ -130,10 +130,28 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("reset")
                             .executes{ runResetTeleportPoint(it) }
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes{ runResetTeleportPoint(it) }
+                                    )
+                            )
                     )
                     .then(
                         literal("inquiry")
                             .executes{ runInquiryTeleportPoint(it) }
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes{ runInquiryTeleportPoint(it) }
+                                    )
+                            )
                     )
                     .then(
                         literal("teleport")
@@ -364,12 +382,14 @@ private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
             scopeName,
-            region))
+            region)
+        )
         1
     } else {
         player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
             scopeName,
-            region))
+            region)
+        )
         0
     }
 }
