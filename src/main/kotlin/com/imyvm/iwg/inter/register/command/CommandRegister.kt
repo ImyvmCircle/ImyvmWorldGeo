@@ -126,7 +126,15 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
                     .then(
                         literal("teleport")
-
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runTeleportPlayer(it) }
+                                    )
+                            )
                     )
             )
             .then(
@@ -346,6 +354,14 @@ private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>
             scopeName,
             region))
         0
+    }
+}
+
+private fun runTeleportPlayer(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    return identifierHandler(regionIdentifier, player) { regionToTeleport ->
+        onTeleportingPlayer(player, regionToTeleport, scopeName)
     }
 }
 
