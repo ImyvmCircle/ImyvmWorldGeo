@@ -9,27 +9,20 @@ import net.minecraft.util.math.BlockPos
 fun onAddingTeleportPoint(
     playerExecutor: ServerPlayerEntity,
     targetRegion: Region,
-    scopeName: String,
+    geoScope: GeoScope,
     x: Int,
     y: Int,
     z: Int
 ): Int {
-    try {
-        val geoScope = targetRegion.getScopeByName(scopeName)
-        val teleportPoint = BlockPos(x, y, z)
+    val teleportPoint = BlockPos(x, y, z)
 
-        return if (geoScope.certificateTeleportPoint(playerExecutor.world, teleportPoint)) {
-            geoScope.teleportPoint = BlockPos(x, y, z)
-            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, scopeName, targetRegion))
-            1
-        } else {
-            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, scopeName, targetRegion))
-            0
-        }
-
-    } catch (e: IllegalArgumentException) {
-        playerExecutor.sendMessage(Translator.tr(e.message))
-        return 0
+    return if (geoScope.certificateTeleportPoint(playerExecutor.world, teleportPoint)) {
+        geoScope.teleportPoint = BlockPos(x, y, z)
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion))
+        1
+    } else {
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.teleportPoint, targetRegion))
+        0
     }
 }
 

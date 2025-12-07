@@ -366,7 +366,7 @@ private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): I
         return 0
     }
 
-    return onAddingTeleportPoint(player, regionScopePair.first, regionScopePair.second.scopeName, x, y, z)
+    return onAddingTeleportPoint(player, regionScopePair.first, regionScopePair.second, x, y, z)
 }
 
 private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
