@@ -114,6 +114,21 @@ Handles player-triggered actions related to regions and their scopes.
 - `renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String)`  
   Renames a scope within a region.
 
+- `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
+  Adds a teleport point with a given location.
+
+- `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
+  Adds a teleport point at the player's current location.
+
+- `resetTeleportPoint(scope: GeoScope)`
+  Resets the teleport point of a scope.
+
+- `getTeleportPoint(scope: GeoScope)`
+  Retrieves the teleport point of a scope.
+
+- `teleportPlayerToScope(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
+  Teleports a player to the teleport point of a scope.
+
 - `modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
   Modifies the properties of a scope.
 
