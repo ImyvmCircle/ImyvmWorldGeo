@@ -2,6 +2,7 @@ package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoScope
 import net.minecraft.server.network.ServerPlayerEntity
 
 @Suppress("unused")
@@ -17,6 +18,15 @@ object PlayerInteractionApi {
     fun createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?) = onTryingScopeCreationWithReturn(player, region, name, shapeTypeName ?: "", isApi = true)
     fun deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String) = onScopeDelete(player, region, scopeName)
     fun renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String) = onScopeRename(player, region, oldName, newName)
+    fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int) = onAddingTeleportPoint(player, targetRegion, scope, x, y, z)
+    fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope): Int {
+        val x = player.blockX
+        val y = player.blockY
+        val z = player.blockZ
+        return onAddingTeleportPoint(player, targetRegion, scope, x, y, z)
+    }
+    fun resetTeleportPoint(scope: GeoScope) = onResettingTeleportPoint(scope)
+    fun getTeleportPoint(scope: GeoScope) = onGettingTeleportPoint(scope)
     fun modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String) = onModifyScope(player, region, scopeName)
     fun addSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?) = onHandleSetting(player, region, null, keyString, valueString, targetPlayerStr)
     fun addSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?) = onHandleSetting(player, region, scopeName, keyString, valueString, targetPlayerStr)
