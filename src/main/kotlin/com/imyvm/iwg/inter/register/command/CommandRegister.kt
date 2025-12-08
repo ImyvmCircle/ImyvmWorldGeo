@@ -397,7 +397,12 @@ private fun runTeleportPlayer(context: CommandContext<ServerCommandSource>): Int
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
-        onTeleportingPlayer(player, regionToTeleport, scopeName)
+        try {
+            val scope = regionToTeleport.getScopeByName(scopeName)
+            onTeleportingPlayer(player, regionToTeleport, scope)
+        } catch (e: IllegalArgumentException) {
+            player.sendMessage(Translator.tr(e.message))
+        }
     }
 }
 

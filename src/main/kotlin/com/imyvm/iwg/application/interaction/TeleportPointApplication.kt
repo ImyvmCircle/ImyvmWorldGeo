@@ -42,30 +42,28 @@ fun onGettingTeleportPoint(
 fun onTeleportingPlayer(
     playerExecutor: ServerPlayerEntity,
     targetRegion: Region,
-    scopeName: String
+    geoScope: GeoScope
 ): Int {
-    return try {
-        val scope = targetRegion.getScopeByName(scopeName)
-        val targetWorld = scope.getWorld(playerExecutor.server) ?: return 0
-        val teleportPoint = onGettingTeleportPoint(scope)
+    val targetWorld = geoScope.getWorld(playerExecutor.server) ?: return 0
+    val teleportPoint = onGettingTeleportPoint(geoScope)
 
-        return if (teleportPoint != null) {
-            playerExecutor.teleport(
-                targetWorld,
-                teleportPoint.x.toDouble() + 0.5,
-                teleportPoint.y.toDouble(),
-                teleportPoint.z.toDouble() + 0.5,
-                playerExecutor.yaw,
-                playerExecutor.pitch
-            )
-            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.teleported", scopeName, targetRegion))
-            1
-        } else {
-            playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.null", scopeName, targetRegion))
-            0
-        }
-    } catch (e: IllegalArgumentException) {
-        playerExecutor.sendMessage(Translator.tr(e.message))
+    return if (teleportPoint != null) {
+        playerExecutor.teleport(
+            targetWorld,
+            teleportPoint.x.toDouble() + 0.5,
+            teleportPoint.y.toDouble(),
+            teleportPoint.z.toDouble() + 0.5,
+            playerExecutor.yaw,
+            playerExecutor.pitch
+        )
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.teleported",
+            geoScope.scopeName,
+            targetRegion))
+        1
+    } else {
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.null",
+            geoScope.scopeName,
+            targetRegion))
         0
     }
 }
