@@ -32,6 +32,15 @@ fun onHandleSetting(
     }
 }
 
+fun onCertificatePermissionValue(
+    region: Region,
+    scopeName: String?,
+    targetPlayerStr: String?,
+    keyString: String,
+): Boolean {
+    TODO()
+}
+
 private fun parseKeyOrFail(keyString: String): Any = when {
     isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
     isEffectKey(keyString) -> EffectKey.valueOf(keyString)
@@ -194,6 +203,13 @@ private fun isDuplicateSetting(
     }
 }
 
+private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
+    return when (key) {
+        PermissionKey.BUILD_BREAK -> true
+        PermissionKey.CONTAINER -> true
+        PermissionKey.FLY -> false
+    }
+}
 
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
