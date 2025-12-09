@@ -20,9 +20,9 @@ fun onHandleSetting(
     if (!checkPlayer(player, region, scopeName, keyString, valueString, targetPlayerStr)) return
 
     try {
-        val key = parseKeyOrFail(keyString)
+        val key = parseKey(keyString)
         if (valueString != null) {
-            val value = parseValueOrFail(player, key, valueString) ?: return
+            val value = parseValue(player, key, valueString) ?: return
             handleAddSetting(player, region, scopeName, key, value, targetPlayerStr)
         } else {
             handleRemoveSetting(player, region, scopeName, key, targetPlayerStr)
@@ -41,14 +41,14 @@ fun onCertificatePermissionValue(
     TODO()
 }
 
-private fun parseKeyOrFail(keyString: String): Any = when {
+private fun parseKey(keyString: String): Any = when {
     isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
     isEffectKey(keyString) -> EffectKey.valueOf(keyString)
     isRuleKey(keyString) -> RuleKey.valueOf(keyString)
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
-private fun parseValueOrFail(player: ServerPlayerEntity, key: Any, valueString: String): Any? {
+private fun parseValue(player: ServerPlayerEntity, key: Any, valueString: String): Any? {
     return try {
         when (key) {
             is PermissionKey -> valueString.toBooleanStrict()
