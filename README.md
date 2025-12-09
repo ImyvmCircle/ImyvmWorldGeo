@@ -144,6 +144,9 @@ Handles player-triggered actions related to regions and their scopes.
 - `removeSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?)`  
   Removes a setting from a scope within a region.
 
+- `getPermissionValueRegion(player: ServerPlayerEntity, region: Region, scopeName: String? , targetPlayerStr: String?, keyString: String)`
+  Retrieves the permission value of a setting.
+
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
   Queries detailed information about a region.
 
