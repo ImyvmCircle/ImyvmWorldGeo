@@ -33,12 +33,45 @@ fun onHandleSetting(
 }
 
 fun onCertificatePermissionValue(
+    playerExecutor: ServerPlayerEntity,
     region: Region,
     scopeName: String?,
     targetPlayerStr: String?,
     keyString: String,
 ): Boolean {
-    TODO()
+    val key = parseKey(keyString)
+    if (key !is PermissionKey) {
+        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    }
+
+    val scope = if (scopeName != null) {
+        try {
+            region.getScopeByName(scopeName)
+        } catch (e: IllegalArgumentException) {
+            return getDefaultValueForPermission(key)
+        }
+    } else null
+
+    val uuid = if (targetPlayerStr != null) {
+         getUUIDFromPlayerName(playerExecutor.server, targetPlayerStr) ?: return getDefaultValueForPermission(key)
+    } else null
+
+    val settingsContainer = scope?.settings ?: region.settings
+
+    val setting = settingsContainer.firstOrNull { setting ->
+        if (setting.key != key) return@firstOrNull false
+        if (uuid == null) {
+            return@firstOrNull !setting.isPersonal
+        } else {
+            return@firstOrNull setting.playerUUID == uuid
+        }
+    }
+
+    return if (setting is PermissionSetting) {
+        setting.value
+    } else {
+        getDefaultValueForPermission(key)
+    }
 }
 
 private fun parseKey(keyString: String): Any = when {
