@@ -33,7 +33,7 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
-        val PERMISSION_DEFALUT_BUILD_BREAK = Option(
+        val PERMISSION_DEFAULT_BUILD_BREAK = Option(
             "core.permission.build_break.default",
             true,
             "the default build/break permission in regions."
