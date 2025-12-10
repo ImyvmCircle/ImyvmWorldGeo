@@ -16,24 +16,6 @@ fun hasPermission(
     return checkPermission(region, playerUUID, key, scope) ?: defaultValue
 }
 
-fun hasPermissionBlacklist(
-    region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope? = null
-): Boolean {
-    return checkPermission(region, playerUUID, key, scope) ?: true
-}
-
-fun hasPermissionWhitelist(
-    region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope? = null
-): Boolean {
-    return checkPermission(region, playerUUID, key, scope) ?: false
-}
-
 private fun checkPermission(
     region: Region,
     playerUUID: UUID,
