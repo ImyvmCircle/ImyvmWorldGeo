@@ -2,6 +2,9 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFALUT_BUILD_BREAK
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_CONTAINER
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_FLY
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -238,9 +241,9 @@ private fun isDuplicateSetting(
 
 private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
     return when (key) {
-        PermissionKey.BUILD_BREAK -> true
-        PermissionKey.CONTAINER -> true
-        PermissionKey.FLY -> false
+        PermissionKey.BUILD_BREAK -> PERMISSION_DEFALUT_BUILD_BREAK.value
+        PermissionKey.CONTAINER -> PERMISSION_DEFAULT_CONTAINER.value
+        PermissionKey.FLY -> PERMISSION_DEFAULT_FLY.value
     }
 }
 

@@ -33,7 +33,7 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
-        val PERMISSION_BUILD_BREAK_DEFAULT = Option(
+        val PERMISSION_DEFALUT_BUILD_BREAK = Option(
             "core.permission.build_break.default",
             true,
             "the default build/break permission in regions."
@@ -45,7 +45,7 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
-        val PERMISSION_CONTAINER_DEFAULT = Option(
+        val PERMISSION_DEFAULT_CONTAINER = Option(
             "core.permission.container.default",
             true,
             "the default container interaction permission in regions."
@@ -57,7 +57,7 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
-        val PERMISSION_FLY_DEFAULT = Option(
+        val PERMISSION_DEFAULT_FLY = Option(
             "core.permission.fly.default",
             false,
             "the default fly permission in regions."
