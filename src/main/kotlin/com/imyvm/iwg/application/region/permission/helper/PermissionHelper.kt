@@ -6,6 +6,16 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.PermissionSetting
 import java.util.*
 
+fun hasPermission(
+    region: Region,
+    playerUUID: UUID,
+    key: PermissionKey,
+    scope: GeoScope? = null,
+    defaultValue: Boolean = true
+): Boolean {
+    return checkPermission(region, playerUUID, key, scope) ?: defaultValue
+}
+
 fun hasPermissionBlacklist(
     region: Region,
     playerUUID: UUID,
