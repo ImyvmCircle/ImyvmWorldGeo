@@ -12,7 +12,6 @@ import com.imyvm.iwg.application.region.generateNewRegionId
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.server.network.ServerPlayerEntity
-import java.util.*
 
 fun onRegionCreation(
     player: ServerPlayerEntity,
@@ -75,7 +74,6 @@ fun onTryingScopeCreationWithReturn (
     shapeTypeName: String,
     isApi: Boolean = true
 ): Pair<Region, GeoScope>? {
-    val playerUUID = player.uuid
     if (!selectionModeCheck(player)) return null
     val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
 
