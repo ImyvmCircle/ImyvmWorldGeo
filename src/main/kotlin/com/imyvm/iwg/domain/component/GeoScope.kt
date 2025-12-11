@@ -15,6 +15,7 @@ class GeoScope(
     var scopeName: String,
     var worldId: Identifier,
     var teleportPoint: BlockPos?,
+    var isTeleportPointPublic: Boolean = false,
     var geoShape: GeoShape?,
     var settings: MutableList<Setting> = mutableListOf()
 ) {

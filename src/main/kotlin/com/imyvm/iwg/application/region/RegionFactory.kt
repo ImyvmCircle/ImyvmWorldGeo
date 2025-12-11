@@ -58,7 +58,7 @@ object RegionFactory {
         val geoShape = (geoShapeResult as Result.Ok).value
         val teleportPoint = existingTeleportPoint ?: getTeleportPoint(playerExecutor, geoShape)
 
-        val geoScope = GeoScope(scopeName, worldId, teleportPoint, geoShape)
+        val geoScope = GeoScope(scopeName, worldId, teleportPoint, false, geoShape)
 
         return Result.Ok(geoScope)
     }

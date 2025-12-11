@@ -129,6 +129,7 @@ object RegionDatabase {
             stream.writeUTF(scope.scopeName)
             stream.writeUTF(scope.worldId.toString())
             saveTeleportPoint(stream, scope.teleportPoint)
+            stream.writeBoolean(scope.isTeleportPointPublic)
             saveGeoShape(stream, scope.geoShape)
             saveSettings(stream, scope.settings)
         }
@@ -142,10 +143,11 @@ object RegionDatabase {
             val scopeName = stream.readUTF()
             val worldId = Identifier.of(stream.readUTF())
             val teleportPoint = loadTeleportPoint(stream)
+            val isTeleportPointPublic = stream.readBoolean()
             val geoShape = loadGeoShape(stream)
             val scopeSettings = loadSettings(stream)
 
-            val scope = GeoScope(scopeName, worldId, teleportPoint, geoShape)
+            val scope = GeoScope(scopeName, worldId, teleportPoint, isTeleportPointPublic, geoShape)
             scope.settings.addAll(scopeSettings)
             list.add(scope)
         }
