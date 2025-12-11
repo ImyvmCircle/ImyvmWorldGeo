@@ -126,6 +126,9 @@ Handles player-triggered actions related to regions and their scopes.
 - `getTeleportPoint(scope: GeoScope)`
   Retrieves the teleport point of a scope.
 
+- `toggleTeleportPointAccess(scope: GeoScope)`
+ Toggles the access permission of a scope's teleport point.
+
 - `teleportPlayerToScope(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
   Teleports a player to the teleport point of a scope.
 
