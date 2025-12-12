@@ -68,9 +68,9 @@ fun onTeleportingPlayer(
     }
 }
 
-fun onTogglingTeleportPointAccess(
+fun onTogglingTeleportPointAccessibility(
     scope: GeoScope
-): Boolean {
+): Int {
     scope.isTeleportPointPublic = !scope.isTeleportPointPublic
-    return scope.isTeleportPointPublic
+    return 1
 }

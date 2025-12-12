@@ -147,6 +147,18 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                     )
                             )
                     )
+                    .then(
+                        literal("toggle")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes{ runToggleTeleportPointAccessibility(it) }
+                                    )
+                            )
+                    )
             )
             .then(
                 literal("modify-scope")
@@ -404,6 +416,12 @@ private fun runTeleportPlayer(context: CommandContext<ServerCommandSource>): Int
             player.sendMessage(Translator.tr(e.message))
         }
     }
+}
+
+private fun runToggleTeleportPointAccessibility(context: CommandContext<ServerCommandSource>): Int{
+    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName))
+    return onTogglingTeleportPointAccessibility(scope)
 }
 
 private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
