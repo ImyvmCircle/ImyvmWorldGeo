@@ -74,3 +74,9 @@ fun onTogglingTeleportPointAccessibility(
     scope.isTeleportPointPublic = !scope.isTeleportPointPublic
     return 1
 }
+
+fun onGettingTeleportPointAccessibility(
+    scope: GeoScope
+): Boolean {
+    return scope.isTeleportPointPublic
+}

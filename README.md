@@ -8,18 +8,6 @@ This release marks the beginning of new feature support for regions.
 - fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
 - chore: update api parameters to include world context where necessary.
 
-### ROADMAP for 1.1.0
-
-- Add intertwined mechanism of teleport point, including,
-  - add new teleport point, 
-  - remove teleport point, 
-  - modify teleport point location and permission, 
-  - inquiry.
-  - teleport point permission types:
-    - public: anyone can use,
-    - specific player only: only specific players can use.
-  - Api and command calls for the above features.
-
 ## Introduction
 
 This is a mod to provide a geography system framework for Imyvm server players and groups, 
@@ -159,7 +147,6 @@ Handles player-triggered actions related to regions and their scopes.
 
 Provides access to region data and database operations for extension functions.
 
-#### Functions:
 - `getRegion(id: Int): Region?`  
   Retrieves a region by its numeric ID.
 
@@ -186,6 +173,9 @@ Provides access to region data and database operations for extension functions.
 
 - `getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>?`  
   Retrieves the region-scope pair in a world by block position.
+
+- `inquireTeleportPointAccessibility(scope: GeoScope)`
+  Inquires the access permission of a scope's teleport point.
 
 - `getScopeShape(scope: GeoScope): Region.Companion.GeoShape?`  
   Retrieves the shape of a scope.

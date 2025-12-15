@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
 import com.imyvm.iwg.domain.*
@@ -49,6 +50,7 @@ object RegionDataApi {
 
     fun getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
+    fun inquireTeleportPointAccessibility(scope: GeoScope) = onGettingTeleportPointAccessibility(scope)
 
     fun getScopeShape(scope: GeoScope): GeoShape? = scope.geoShape
 
