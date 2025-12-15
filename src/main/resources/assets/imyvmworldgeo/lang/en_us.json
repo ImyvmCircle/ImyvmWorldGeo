@@ -121,6 +121,7 @@
   "region.setting.personal": "§6Region personal settings§r: {0}",
 
   "geo.scope.info": "§d[{0}]§r {1}: {2}",
+  "geo.scope.info.with_teleport_point": "§d[{0}]§r {1}: {2} \n * Teleport Point(isPublic:{3}): (x:{4}, y:{5}, z:{6})",
   "geo.scope.setting": "§bScope {0} settings§r: {1}",
   "geo.scope.setting.personal": "§bScope {0} personal settings§r: {1}",
 

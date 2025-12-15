@@ -21,7 +21,21 @@ class GeoScope(
 ) {
     fun getScopeInfo(index: Int): Text? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
-        return Translator.tr("geo.scope.info", index, scopeName, shapeInfoString)
+        return if (teleportPoint == null) {
+            Translator.tr("geo.scope.info",
+                index,
+                scopeName,
+                shapeInfoString)
+        } else {
+            Translator.tr("geo.scope.info.with_teleport_point",
+                index,
+                scopeName,
+                shapeInfoString,
+                isTeleportPointPublic,
+                teleportPoint!!.x,
+                teleportPoint!!.y,
+                teleportPoint!!.z)
+        }
     }
 
     fun getWorld(server: MinecraftServer): ServerWorld? {
