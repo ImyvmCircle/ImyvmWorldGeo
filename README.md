@@ -4,7 +4,7 @@
 
 This release marks the beginning of new feature support for regions.
 - feat: add teleport point to GeoScope.
-- feat: api inquiry setting items, including default value when not added yet.
+- feat: api inquiry setting items value, including default value when not added yet.
 - fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
 - chore: update api parameters to include world context where necessary.
 
