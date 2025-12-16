@@ -1,13 +1,8 @@
-# IMYVMWorldGeo 1.21 1.1.0
+# IMYVMWorldGeo 1.21 1.2.0
 
-## Changelog 1.1.0
+## Changelog 1.2.0
 
-This release marks the beginning of new feature support for regions.
-- feat: add teleport point to GeoScope.
-- feat: api inquiry setting items value, including default value when not added yet.
-- fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
-- chore: update api parameters to include world context where necessary.
-- docs: add a new features introduction.
+This release marks the beginning of new settings added for a full geography system experience.
 
 ## Introduction
 
