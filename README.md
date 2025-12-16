@@ -295,8 +295,11 @@ Provides utility functions for region data to improve usability for extension mo
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be displayed.
     - If player is not in any scope, an error message will be shown.
 
-- `/imyvm-world-geo teleport-point teleport <regionIdentifier> <scopeName>`  
+- `/imyvm-world-geo (teleport-point) teleport <regionIdentifier> <scopeName>`  
   Teleport the player to the teleport point of the specified region and scope.
+
+- `/imyvm-world-geo teleport-point toggle <regionIdentifier> <scopeName>`  
+  Toggle the accessibility of the teleport point for the specified region and scope.
 
 - `/imyvm-world-geo modify-scope <regionIdentifier> <scopeName> [newName]`  
   Modify a scope's properties or rename it.
