@@ -7,6 +7,7 @@ This release marks the beginning of new feature support for regions.
 - feat: api inquiry setting items value, including default value when not added yet.
 - fix: add 'worldId' to scope to prevent issues with multi-dimension handling.
 - chore: update api parameters to include world context where necessary.
+- docs: add a new features introduction.
 
 ## Introduction
 
@@ -23,6 +24,27 @@ This mod is **server-side only** and requires the following environment:
 - **IMYVM Hoki Mod Version:** 1.1.4
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
+
+---
+
+## Features
+
+### Region
+
+A region is an abstract geographical area defined in the game world.
+A region is identified by a unique name and a unique numeric ID, and contains one or more scopes,
+while the combination of all scope shapes defines the overall area of the region.
+
+Regions provide game with two main functions.
+First, they allow defining and managing specific areas in the game world,
+and mark them with meaningful names and boundaries.
+Second, they serve as a foundation for building more complex systems and features,
+providing them with regional features via settings, and enabling teleportation to regions.
+
+### Scope
+
+A scope is a sub-area within a region, defined by a name unique to other scopes in the same region and a shape.
+A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters` parsed by corresponding type.
 
 ---
 
