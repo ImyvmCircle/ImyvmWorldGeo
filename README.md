@@ -46,6 +46,19 @@ providing them with regional features via settings, and enabling teleportation t
 A scope is a sub-area within a region, defined by a name unique to other scopes in the same region and a shape.
 A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters` parsed by corresponding type.
 
+### Setting
+
+Settings are key-value pairs associated with regions or scopes,
+which can be either global (applicable to all players) or personal (specific to individual players).
+When there is a conflict between regional and scope settings, scope settings take precedence,
+and personal settings are of higher priority when the corresponding global settings are added.
+
+### Teleport Point
+
+A teleport point is attached to a scope in the region,
+and the regional teleport point is defined by the teleport point of its main scope,
+technically the teleport point of the first scope in line.
+
 ---
 
 ## Usage
