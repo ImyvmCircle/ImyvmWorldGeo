@@ -18,37 +18,11 @@ and is also a basement for extensions, exemplified by jungle system, community s
 This mod is **server-side only** and requires the following environment:
 
 - **Minecraft Version:** 1.21  
-- **Fabric Loader Version:** 0.16.9 (or compatible with Minecraft 1.21)  
-- **Fabric API:** Required  
-- **Fabric Kotlin:** Required  
+- **Fabric Loader Version:** 0.16.9 (or compatible with Minecraft 1.21)
 - **Java Version:** 21  
 - **IMYVM Hoki Mod Version:** 1.1.4
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
-
----
-
-## Installation
-
-1. **Download the mod jar**  
-   Download the latest `imyvm-world-geo` jar file from the release page or build it from source.
-
-2. **Install Fabric Loader on your server**  
-   Ensure the server runs Fabric Loader compatible with Minecraft 1.21.
-
-3. **Install Fabric API and Fabric Kotlin**  
-   Download the corresponding Fabric API and Fabric Kotlin jars and place them into the server's `mods` folder:
-   - [Fabric API](https://www.curseforge.com/minecraft/mc-mods/fabric-api)  
-   - [Fabric Kotlin](https://www.curseforge.com/minecraft/mc-mods/fabric-language-kotlin)
-
-4. **Install Imyvm Hoki mod**  
-   This mod depends on Imyvm fork of Hoki, another ImyvmCircle project. Download the latest Hoki jar from [GitHub](https://github.com/ImyvmCircle/Hoki) and place it in the server's `mods` folder.
-
-5. **Add Imyvm World Geo mod jar**  
-   Place the `imyvm-world-geo` jar into the server's `mods` folder. 
-
-6. **Start the server**  
-   Run the server normally. The mod will automatically load along with its dependencies.
 
 ---
 
