@@ -161,6 +161,19 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
+                literal("teleport")
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .executes{ runTeleportPlayerToRegion(it) }
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                    .executes { runTeleportPlayer(it) }
+                            )
+                    )
+            )
+            .then(
                 literal("modify-scope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
@@ -414,6 +427,19 @@ private fun runTeleportPlayer(context: CommandContext<ServerCommandSource>): Int
             onTeleportingPlayer(player, regionToTeleport, scope)
         } catch (e: IllegalArgumentException) {
             player.sendMessage(Translator.tr(e.message))
+        }
+    }
+}
+
+private fun runTeleportPlayerToRegion(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { regionToTeleport ->
+        val (region, scope) = RegionDatabase.getRegionAndScope(regionToTeleport, regionToTeleport.geometryScope.firstOrNull()?.scopeName ?: "")
+        if (scope != null) {
+            onTeleportingPlayer(player, region, scope)
+        } else {
+            player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_scope", region.name))
+            0
         }
     }
 }
