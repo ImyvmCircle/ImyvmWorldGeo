@@ -58,15 +58,23 @@ fun onCertificatePermissionValue(
     val uuid = if (targetPlayerStr != null) {
          getUUIDFromPlayerName(playerExecutor.server, targetPlayerStr) ?: return getDefaultValueForPermission(key)
     } else null
+    return onCertificatePermissionValue(region, scope, uuid, key)
+}
 
+fun onCertificatePermissionValue(
+    region: Region,
+    scope: GeoScope?,
+    playerUuid: UUID?,
+    key: PermissionKey
+): Boolean {
     val settingsContainer = scope?.settings ?: region.settings
 
     val setting = settingsContainer.firstOrNull { setting ->
         if (setting.key != key) return@firstOrNull false
-        if (uuid == null) {
+        if (playerUuid == null) {
             return@firstOrNull !setting.isPersonal
         } else {
-            return@firstOrNull setting.playerUUID == uuid
+            return@firstOrNull setting.playerUUID == playerUuid
         }
     }
 
