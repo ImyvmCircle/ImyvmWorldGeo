@@ -1,9 +1,8 @@
-# IMYVMWorldGeo 1.21 1.1.1
+# IMYVMWorldGeo 1.21 1.1.2
 
-## Changelog 1.1.1
+## Changelog 1.1.2
 
-This release is a minor patch fixing the wrong api and implement.
-- Fix: Correct the wrong API with a new getPermissionValueRegion api in RegionDataApi.
+This release is a minor patch to fix some issues and improve stability.
 
 ## Introduction
 
