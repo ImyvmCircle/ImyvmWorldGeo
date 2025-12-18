@@ -3,6 +3,7 @@
 ## Changelog 1.1.1
 
 This release is a minor patch fixing the wrong api and implement.
+- Fix: Correct the wrong API with a new getPermissionValueRegion api in RegionDataApi.
 
 ## Introduction
 
@@ -213,6 +214,9 @@ Provides access to region data and database operations for extension functions.
 
 - `getScopePersonalSettingsByType(scope: GeoScope, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the personal settings by type for a scope for a specific playerUUID.
+
+- `getPermissionValueRegion(region: Region, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
+  Retrieves the permission value of a setting for a region and scope.
 
 ### UtilApi
 

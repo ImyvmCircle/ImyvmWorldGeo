@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
@@ -86,4 +87,8 @@ object RegionDataApi {
         settingTypes: SettingTypes
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
+
+    fun getPermissionValueRegion(region: Region, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean {
+        return onCertificatePermissionValue(region, scope, playerUUID, permissionKey)
+    }
 }
