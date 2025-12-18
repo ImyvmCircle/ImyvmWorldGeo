@@ -1,11 +1,8 @@
-# IMYVMWorldGeo 1.21 1.1.2
+# IMYVMWorldGeo 1.21 1.2.0
 
-## Changelog 1.1.2
+## Changelog 1.2.0
 
-This release is a minor patch to handle some issues.
-- feat: add setting query commands.
-- typo: rename `targetPlayerStr` to `targetPlayerNameStr` in getPermissionValueRegion api.
-- refactor: command style and implement adjustments.
+This release mainly introduces implementation of settings.
 
 ## Introduction
 
