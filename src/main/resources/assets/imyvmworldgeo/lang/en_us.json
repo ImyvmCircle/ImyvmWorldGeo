@@ -109,12 +109,12 @@
   "interaction.meta.command.help.tp.teleport": "§b/imyvmWorldGeo teleport <§bregionIdentifier§b> <§bscopeName§b>\n  §fTeleport the player to the teleport point of the specified region and scope.",
   "interaction.meta.command.help.tp.toggle": "§b/imyvmWorldGeo teleportPoint toggle <§bregionIdentifier§b> <§bscopeName§b>\n  §fToggle the accessibility of the teleport point for the specified scope.",
 
-  "interaction.meta.command.help.setting.add": "§9/imyvmWorldGeo setting add <§bregionIdentifier§9> <§bsettingType§9> <§bkey§9> <§bvalue§9> [§bplayerName§9]\n  §fAdd a setting to a region, optionally for a specific player.",
-  "interaction.meta.command.help.setting.remove": "§9/imyvmWorldGeo setting remove <§bregionIdentifier§9> <§bsettingType§9> <§bkey§9> [§bplayerName§9]\n  §fRemove a setting from a region, optionally for a specific player.",
+  "interaction.meta.command.help.setting.add": "§9/imyvmWorldGeo setting add <§bregionIdentifier§9> <§bkey§9> <§bvalue§9> [§bplayerName§9]\n  §fAdd a setting to a region, optionally for a specific player.",
+  "interaction.meta.command.help.setting.remove": "§9/imyvmWorldGeo setting remove <§bregionIdentifier§9> <§bkey§9> [§bplayerName§9]\n  §fRemove a setting from a region, optionally for a specific player.",
   "interaction.meta.command.help.setting.query": "§9/imyvmWorldGeo setting queryValue <§bregionIdentifier§9> <§bkey§9> [§bplayerName§9]\n  §fQuery the value of a setting in a region, optionally for a specific player.",
 
-  "interaction.meta.command.help.setting_scope.add": "§5/imyvmWorldGeo settingScope add <§bregionIdentifier§5> <§bscopeName§5> <§bsettingType§5> <§bkey§5> <§bvalue§5> [§bplayerName§5]\n  §fAdd a setting to a specific scope of a region, optionally for a specific player.",
-  "interaction.meta.command.help.setting_scope.remove": "§5/imyvmWorldGeo settingScope remove <§bregionIdentifier§5> <§bscopeName§5> <§bsettingType§5> <§bkey§5> [§bplayerName§5]\n  §fRemove a setting from a specific scope, optionally for a specific player.",
+  "interaction.meta.command.help.setting_scope.add": "§5/imyvmWorldGeo settingScope add <§bregionIdentifier§5> <§bscopeName§5> <§bkey§5> <§bvalue§5> [§bplayerName§5]\n  §fAdd a setting to a specific scope of a region, optionally for a specific player.",
+  "interaction.meta.command.help.setting_scope.remove": "§5/imyvmWorldGeo settingScope remove <§bregionIdentifier§5> <§bscopeName§5> <§bkey§5> [§bplayerName§5]\n  §fRemove a setting from a specific scope, optionally for a specific player.",
   "interaction.meta.command.help.setting_scope.query": "§5/imyvmWorldGeo settingScope queryValue <§bregionIdentifier§5> <§bscopeName§5> <§bkey§5> [§bplayerName§5]\n  §fQuery the value of a setting in a specific scope, optionally for a specific player.",
 
   "interaction.meta.command.help.info.query": "§6/imyvmWorldGeo query <§bregionIdentifier§6>\n  §fShow detailed information about a region.",

@@ -315,19 +315,19 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> [newName]`  
   Modify a scope's properties or rename it.
 
-- `/imyvmWorldGeo setting add <regionIdentifier> <settingType> <key> <value> [playerName]`  
+- `/imyvmWorldGeo setting add <regionIdentifier> <key> <value> [playerName]`  
   Add a setting to a region, optionally for a specific player.
 
-- `/imyvmWorldGeo setting remove <regionIdentifier> <settingType> <key> [playerName]`  
+- `/imyvmWorldGeo setting remove <regionIdentifier> <key> [playerName]`  
   Remove a setting from a region, optionally for a specific player.
 
 - `/imyvmWorldGeo setting queryValue <regionIdentifier> <key> [playerName]`  
   Query the value of a setting in a region, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope add <regionIdentifier> <scopeName> <settingType> <key> <value> [playerName]`  
+- `/imyvmWorldGeo settingScope add <regionIdentifier> <scopeName> <key> <value> [playerName]`  
   Add a setting to a specific scope of a region, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope remove <regionIdentifier> <scopeName> <settingType> <key> [playerName]`  
+- `/imyvmWorldGeo settingScope remove <regionIdentifier> <scopeName> <key> [playerName]`  
   Remove a setting from a specific scope, optionally for a specific player.
 
 - `/imyvmWorldGeo settingScope queryValue <regionIdentifier> <scopeName> <key> [playerName]`  

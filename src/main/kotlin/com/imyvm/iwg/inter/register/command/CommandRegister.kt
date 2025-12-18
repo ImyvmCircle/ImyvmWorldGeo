@@ -16,22 +16,13 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
         literal("imyvmWorldGeo")
             .then(
                 literal("select")
-                    .then(
-                        literal("start")
-                            .executes { runStartSelect(it) }
-                    )
-                    .then(
-                        literal("stop")
-                            .executes { runStopSelect(it) }
-                    )
-                    .then(
-                        literal("reset")
-                            .executes { runResetSelect(it) }
-                    )
+                    .then(literal("start").executes { runStartSelect(it) })
+                    .then(literal("stop").executes { runStopSelect(it) })
+                    .then(literal("reset").executes { runResetSelect(it) })
             )
             .then(
                 literal("create")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
@@ -44,7 +35,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("delete")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -53,18 +44,19 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("rename")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .then(argument("newName", StringArgumentType.string())
-                                .executes { runRenameRegion(it) }
+                            .then(
+                                argument("newName", StringArgumentType.string())
+                                    .executes { runRenameRegion(it) }
                             )
                     )
             )
             .then(
                 literal("addScope")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
@@ -81,7 +73,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("deleteScope")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -94,44 +86,44 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("teleportPoint")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         literal("set")
-                            .executes{ runSetTeleportPoint(it) }
+                            .executes { runSetTeleportPoint(it) }
                             .then(
                                 argument("x", StringArgumentType.word())
                                     .then(
                                         argument("y", StringArgumentType.word())
                                             .then(
                                                 argument("z", StringArgumentType.word())
-                                                    .executes{ runSetTeleportPoint(it) }
+                                                    .executes { runSetTeleportPoint(it) }
                                             )
                                     )
                             )
                     )
                     .then(
                         literal("reset")
-                            .executes{ runResetTeleportPoint(it) }
+                            .executes { runResetTeleportPoint(it) }
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes{ runResetTeleportPoint(it) }
+                                            .executes { runResetTeleportPoint(it) }
                                     )
                             )
                     )
                     .then(
                         literal("inquiry")
-                            .executes{ runInquiryTeleportPoint(it) }
+                            .executes { runInquiryTeleportPoint(it) }
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes{ runInquiryTeleportPoint(it) }
+                                            .executes { runInquiryTeleportPoint(it) }
                                     )
                             )
                     )
@@ -155,7 +147,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes{ runToggleTeleportPointAccessibility(it) }
+                                            .executes { runToggleTeleportPointAccessibility(it) }
                                     )
                             )
                     )
@@ -165,7 +157,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .executes{ runTeleportPlayerToRegion(it) }
+                            .executes { runTeleportPlayerToRegion(it) }
                             .then(
                                 argument("scopeName", StringArgumentType.string())
                                     .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
@@ -175,7 +167,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("modifyScope")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -192,26 +184,22 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("setting")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         literal("add")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
-                                        argument("settingType", StringArgumentType.string())
-                                            .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
+                                        argument("key", StringArgumentType.string())
+                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                             .then(
-                                                argument("key", StringArgumentType.string())
-                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                argument("value", StringArgumentType.string())
+                                                    .executes { runAddDeleteSetting(it) }
                                                     .then(
-                                                        argument("value", StringArgumentType.string())
-                                                            .executes{ runAddDeleteSetting(it) }
-                                                            .then(
-                                                                argument("playerName", StringArgumentType.string())
-                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                    .executes{ runAddDeleteSetting(it) }
-                                                            )
+                                                        argument("playerName", StringArgumentType.string())
+                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                            .executes { runAddDeleteSetting(it) }
                                                     )
                                             )
                                     )
@@ -223,17 +211,13 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
-                                        argument("settingType", StringArgumentType.word())
-                                            .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
+                                        argument("key", StringArgumentType.word())
+                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                            .executes { runAddDeleteSetting(it) }
                                             .then(
-                                                argument("key", StringArgumentType.word())
-                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                                    .executes{ runAddDeleteSetting(it) }
-                                                    .then(
-                                                        argument("playerName", StringArgumentType.string())
-                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                            .executes{ runAddDeleteSetting(it) }
-                                                    )
+                                                argument("playerName", StringArgumentType.string())
+                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                    .executes { runAddDeleteSetting(it) }
                                             )
                                     )
                             )
@@ -246,11 +230,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                     .then(
                                         argument("key", StringArgumentType.string())
                                             .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                            .executes{ runQuerySettingValue(it) }
+                                            .executes { runQuerySettingValue(it) }
                                             .then(
                                                 argument("playerName", StringArgumentType.string())
                                                     .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                    .executes{ runQuerySettingValue(it) }
+                                                    .executes { runQuerySettingValue(it) }
                                             )
                                     )
                             )
@@ -258,7 +242,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("settingScope")
-                    .requires{ it.hasPermissionLevel(2) }
+                    .requires { it.hasPermissionLevel(2) }
                     .then(
                         literal("add")
                             .then(
@@ -268,20 +252,15 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
-                                                argument("settingType", StringArgumentType.string())
-                                                    .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
+                                                argument("key", StringArgumentType.string())
+                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                     .then(
-                                                        argument("key", StringArgumentType.string())
-                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                        argument("value", StringArgumentType.string())
+                                                            .executes { runAddDeleteSetting(it) }
                                                             .then(
-                                                                argument("value", StringArgumentType.string())
-                                                                    .executes{ runAddDeleteSetting(it) }
-                                                                    .then(
-                                                                        argument("playerName", StringArgumentType.string())
-                                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                            .executes{ runAddDeleteSetting(it) }
-
-                                                                    )
+                                                                argument("playerName", StringArgumentType.string())
+                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                                    .executes { runAddDeleteSetting(it) }
                                                             )
                                                     )
                                             )
@@ -297,17 +276,13 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                         argument("scopeName", StringArgumentType.word())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
-                                                argument("settingType", StringArgumentType.word())
-                                                    .suggests(SETTING_TYPE_SUGGESTION_PROVIDER)
+                                                argument("key", StringArgumentType.word())
+                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                    .executes { runAddDeleteSetting(it) }
                                                     .then(
-                                                        argument("key", StringArgumentType.word())
-                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                                            .executes{ runAddDeleteSetting(it) }
-                                                            .then(
-                                                                argument("playerName", StringArgumentType.string())
-                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                    .executes{ runAddDeleteSetting(it) }
-                                                            )
+                                                        argument("playerName", StringArgumentType.string())
+                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                            .executes { runAddDeleteSetting(it) }
                                                     )
                                             )
                                     )
@@ -324,11 +299,11 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                             .then(
                                                 argument("key", StringArgumentType.string())
                                                     .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                                    .executes{ runQuerySettingValue(it) }
+                                                    .executes { runQuerySettingValue(it) }
                                                     .then(
                                                         argument("playerName", StringArgumentType.string())
                                                             .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                            .executes{ runQuerySettingValue(it) }
+                                                            .executes { runQuerySettingValue(it) }
                                                     )
                                             )
                                     )
@@ -340,21 +315,12 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .executes{ runQueryRegion(it) }
+                            .executes { runQueryRegion(it) }
                     )
             )
-            .then(
-                literal("list")
-                    .executes { runListRegions(it) }
-            )
-            .then(
-                literal("toggle")
-                    .executes{ runToggleActionBar(it) }
-            )
-            .then(
-                literal("help")
-                    .executes { runHelp(it) }
-            )
+            .then(literal("list").executes { runListRegions(it) })
+            .then(literal("toggle").executes { runToggleActionBar(it) })
+            .then(literal("help").executes { runHelp(it) })
     )
 }
 
