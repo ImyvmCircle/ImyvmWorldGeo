@@ -4,17 +4,10 @@ import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
 import com.imyvm.iwg.domain.*
-import com.imyvm.iwg.domain.component.GeoScope
-import com.imyvm.iwg.domain.component.GeoShape
-import com.imyvm.iwg.domain.component.Setting
-import com.imyvm.iwg.domain.component.SettingTypes
+import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
-import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
-import com.imyvm.iwg.util.translator.resolvePlayerName
-import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import java.util.*
@@ -93,5 +86,4 @@ object RegionDataApi {
         settingTypes: SettingTypes
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
-
 }

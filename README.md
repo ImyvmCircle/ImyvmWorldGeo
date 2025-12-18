@@ -1,8 +1,8 @@
-# IMYVMWorldGeo 1.21 1.2.0
+# IMYVMWorldGeo 1.21 1.1.1
 
-## Changelog 1.2.0
+## Changelog 1.1.1
 
-This release marks the beginning of new settings added for a full geography system experience.
+This release is a minor patch fixing the wrong api and implement.
 
 ## Introduction
 
