@@ -321,11 +321,17 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvm-world-geo setting remove <regionIdentifier> <settingType> <key> [playerName]`  
   Remove a setting from a region, optionally for a specific player.
 
+- `/imyvm-world-geo setting query-value <regionIdentifier> <key> [playerName]`  
+  Query the value of a setting in a region, optionally for a specific player.
+
 - `/imyvm-world-geo setting-scope add <regionIdentifier> <scopeName> <settingType> <key> <value> [playerName]`  
   Add a setting to a specific scope of a region, optionally for a specific player.
 
 - `/imyvm-world-geo setting-scope remove <regionIdentifier> <scopeName> <settingType> <key> [playerName]`  
   Remove a setting from a specific scope, optionally for a specific player.
+
+- `/imyvm-world-geo setting-scope query-value <regionIdentifier> <scopeName> <key> [playerName]`  
+  Query the value of a setting in a specific scope, optionally for a specific player.
 
 - `/imyvm-world-geo query <regionIdentifier>`  
   Show detailed information about a region.
