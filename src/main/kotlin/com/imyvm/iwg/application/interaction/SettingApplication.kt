@@ -39,7 +39,7 @@ fun onCertificatePermissionValue(
     playerExecutor: ServerPlayerEntity,
     region: Region,
     scopeName: String?,
-    targetPlayerStr: String?,
+    targetPlayerNameStr: String?,
     keyString: String,
 ): Boolean {
     val key = parseKey(keyString)
@@ -55,8 +55,8 @@ fun onCertificatePermissionValue(
         }
     } else null
 
-    val uuid = if (targetPlayerStr != null) {
-         getUUIDFromPlayerName(playerExecutor.server, targetPlayerStr) ?: return getDefaultValueForPermission(key)
+    val uuid = if (targetPlayerNameStr != null) {
+         getUUIDFromPlayerName(playerExecutor.server, targetPlayerNameStr) ?: return getDefaultValueForPermission(key)
     } else null
     return onCertificatePermissionValue(region, scope, uuid, key)
 }
