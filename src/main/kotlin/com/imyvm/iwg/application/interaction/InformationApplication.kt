@@ -49,6 +49,49 @@ fun onToggleActionBar(player: ServerPlayerEntity): Int {
 }
 
 fun onHelp(player: ServerPlayerEntity): Int {
-    player.sendMessage(Translator.tr("interaction.meta.command.help"))
+    val helpOrder = listOf(
+        "header",
+
+        // Selection
+        "selection.start",
+        "selection.stop",
+        "selection.reset",
+
+        // Region
+        "region.create",
+        "region.delete",
+        "region.rename",
+
+        // Scopes
+        "scope.add",
+        "scope.modify",
+        "scope.delete",
+
+        // Teleportation
+        "tp.set",
+        "tp.reset",
+        "tp.inquiry",
+        "tp.teleport",
+        "tp.toggle",
+
+        // Settings
+        "setting.add",
+        "setting.remove",
+        "setting.query",
+        "setting_scope.add",
+        "setting_scope.remove",
+        "setting_scope.query",
+
+        // Info & General
+        "info.query",
+        "info.list",
+        "info.toggle",
+        "info.help"
+    )
+
+    Translator.trBase("interaction.meta.command.help", helpOrder).forEach { line ->
+        player.sendMessage(line, false)
+    }
+
     return 1
 }

@@ -15,6 +15,10 @@ object Translator : HokiTranslator() {
         }
     }
 
+    fun trBase(base: String,subKeys: List<String>): List<Text> {
+        return subKeys.mapNotNull { tr("$base.$it") }
+    }
+
     fun tr(key: String?, vararg args: Any?): Text? {
         val raw = key?.let { languageInstance.get(it) }
         val formatted = if (args.isNotEmpty()) {
