@@ -238,6 +238,23 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                     )
                             )
                     )
+                    .then(
+                        literal("query-value")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.word())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("key", StringArgumentType.string())
+                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                            .executes{ runQuerySettingValue(it) }
+                                            .then(
+                                                argument("playerName", StringArgumentType.string())
+                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                    .executes{ runQuerySettingValue(it) }
+                                            )
+                                    )
+                            )
+                    )
             )
             .then(
                 literal("setting-scope")
@@ -291,6 +308,27 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                                                     .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
                                                                     .executes{ runAddDeleteSetting(it) }
                                                             )
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("query-value")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.word())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("key", StringArgumentType.string())
+                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                    .executes{ runQuerySettingValue(it) }
+                                                    .then(
+                                                        argument("playerName", StringArgumentType.string())
+                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                            .executes{ runQuerySettingValue(it) }
                                                     )
                                             )
                                     )
@@ -464,6 +502,15 @@ private fun runAddDeleteSetting(context: CommandContext<ServerCommandSource>): I
     val targetPlayer = getOptionalArgument(context, "playerName")
     return identifierHandler(regionIdentifier, player) { regionToAddSetting ->
         onHandleSetting(player, regionToAddSetting, scopeName, keyString, valueString, targetPlayer) }
+}
+
+private fun runQuerySettingValue(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = getOptionalArgument(context, "scopeName")
+    val keyString = context.getArgument("key", String::class.java)
+    val targetPlayer = getOptionalArgument(context, "playerName")
+    return identifierHandler(regionIdentifier, player) { regionToQuery ->
+        onCertificatePermissionValue(player, regionToQuery, scopeName, targetPlayer, keyString) }
 }
 
 private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
