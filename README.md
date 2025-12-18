@@ -2,7 +2,10 @@
 
 ## Changelog 1.1.2
 
-This release is a minor patch to fix some issues and improve stability.
+This release is a minor patch to handle some issues.
+- feat: add setting query commands.
+- typo: rename `targetPlayerStr` to `targetPlayerNameStr` in getPermissionValueRegion api.
+- refactor: command style and implement adjustments.
 
 ## Introduction
 
