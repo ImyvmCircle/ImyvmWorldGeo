@@ -262,88 +262,88 @@ Provides utility functions for region data to improve usability for extension mo
 
 ## Commands
 
-- `/imyvm-world-geo select start`  
+- `/imyvmWorldGeo select start`  
   Start selecting positions with a command block.
 
-- `/imyvm-world-geo select stop`  
+- `/imyvmWorldGeo select stop`  
   Stop selection mode.
 
-- `/imyvm-world-geo select reset`  
+- `/imyvmWorldGeo select reset`  
   Clear all selected points but keep selection mode active.
 
-- `/imyvm-world-geo create <shapeType> [name]`  
+- `/imyvmWorldGeo create <shapeType> [name]`  
   Create a region of the given shape (rectangle, circle, polygon) from selected positions.  
   Optionally give it a name.
 
-- `/imyvm-world-geo delete <regionIdentifier>`  
+- `/imyvmWorldGeo delete <regionIdentifier>`  
   Delete a region by its ID or name.
 
-- `/imyvm-world-geo rename <regionIdentifier> <newName>`  
+- `/imyvmWorldGeo rename <regionIdentifier> <newName>`  
   Rename an existing region.
 
-- `/imyvm-world-geo add-scope <shapeType> <regionIdentifier> [scopeName]`  
+- `/imyvmWorldGeo addScope <shapeType> <regionIdentifier> [scopeName]`  
   Add a new scope to the region with the given shape and optional scope name.
 
-- `/imyvm-world-geo delete-scope <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo deleteScope <regionIdentifier> <scopeName>`  
   Delete a scope from a region.
 
-- `/imyvm-world-geo teleport-point set [x] [y] [z]`  
+- `/imyvmWorldGeo teleportPoint set [x] [y] [z]`  
   Set the teleport point for the current region and scope.
   - If `x`, `y`, and `z` are provided and valid, the teleport point will be set to the specified coordinates.
-    - The adjective 'valid' means they are all numbers or '~', which represents the player's current coordinate on that axis, 
+    - The adjective 'valid' means they are all numbers or '~', which represents the player's current coordinate on that axis,
       and it satisfies criteria for a safe teleport point physically.
   - If `x`, `y`, and `z` are omitted or invalid, the teleport point will default to the player's current position.
 
-- `/imyvm-world-geo teleport-point reset <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleportPoint reset <regionIdentifier> <scopeName>`  
   Reset the teleport point for the specified region and scope.
   - If `regionIdentifier` and `scopeName` are provided and valid, the teleport point for the specified scope will be reset.
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be reset.
     - If player is not in any scope, an error message will be shown.
 
-- `/imyvm-world-geo teleport-point inquiry <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleportPoint inquiry <regionIdentifier> <scopeName>`  
   Inquire about the teleport point for the specified region and scope.
   - If `regionIdentifier` and `scopeName` are provided and valid, the teleport point for the specified scope will be displayed.
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be displayed.
     - If player is not in any scope, an error message will be shown.
 
-- `/imyvm-world-geo (teleport-point) teleport <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleport <regionIdentifier> <scopeName>`  
   Teleport the player to the teleport point of the specified region and scope.
 
-- `/imyvm-world-geo teleport-point toggle <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`  
   Toggle the accessibility of the teleport point for the specified region and scope.
 
-- `/imyvm-world-geo modify-scope <regionIdentifier> <scopeName> [newName]`  
+- `/imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> [newName]`  
   Modify a scope's properties or rename it.
 
-- `/imyvm-world-geo setting add <regionIdentifier> <settingType> <key> <value> [playerName]`  
+- `/imyvmWorldGeo setting add <regionIdentifier> <settingType> <key> <value> [playerName]`  
   Add a setting to a region, optionally for a specific player.
 
-- `/imyvm-world-geo setting remove <regionIdentifier> <settingType> <key> [playerName]`  
+- `/imyvmWorldGeo setting remove <regionIdentifier> <settingType> <key> [playerName]`  
   Remove a setting from a region, optionally for a specific player.
 
-- `/imyvm-world-geo setting query-value <regionIdentifier> <key> [playerName]`  
+- `/imyvmWorldGeo setting queryValue <regionIdentifier> <key> [playerName]`  
   Query the value of a setting in a region, optionally for a specific player.
 
-- `/imyvm-world-geo setting-scope add <regionIdentifier> <scopeName> <settingType> <key> <value> [playerName]`  
+- `/imyvmWorldGeo settingScope add <regionIdentifier> <scopeName> <settingType> <key> <value> [playerName]`  
   Add a setting to a specific scope of a region, optionally for a specific player.
 
-- `/imyvm-world-geo setting-scope remove <regionIdentifier> <scopeName> <settingType> <key> [playerName]`  
+- `/imyvmWorldGeo settingScope remove <regionIdentifier> <scopeName> <settingType> <key> [playerName]`  
   Remove a setting from a specific scope, optionally for a specific player.
 
-- `/imyvm-world-geo setting-scope query-value <regionIdentifier> <scopeName> <key> [playerName]`  
+- `/imyvmWorldGeo settingScope queryValue <regionIdentifier> <scopeName> <key> [playerName]`  
   Query the value of a setting in a specific scope, optionally for a specific player.
 
-- `/imyvm-world-geo query <regionIdentifier>`  
+- `/imyvmWorldGeo query <regionIdentifier>`  
   Show detailed information about a region.
 
-- `/imyvm-world-geo list`  
+- `/imyvmWorldGeo list`  
   List all regions.
 
-- `/imyvm-world-geo toggle`  
+- `/imyvmWorldGeo toggle`  
   Toggle the action bar display for regions.
 
-- `/imyvm-world-geo help`  
-  Show this help message.
+- `/imyvmWorldGeo help`  
+  Show the help message.
 
 ## Acknowledgements
 

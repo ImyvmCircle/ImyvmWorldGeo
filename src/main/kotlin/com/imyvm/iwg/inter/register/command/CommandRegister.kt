@@ -13,7 +13,7 @@ import net.minecraft.server.command.ServerCommandSource
 
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
-        literal("imyvm-world-geo")
+        literal("imyvmWorldGeo")
             .then(
                 literal("select")
                     .then(
@@ -63,7 +63,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("add-scope")
+                literal("addScope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
@@ -80,7 +80,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("delete-scope")
+                literal("deleteScope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
@@ -93,7 +93,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("teleport-point")
+                literal("teleportPoint")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         literal("set")
@@ -174,7 +174,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("modify-scope")
+                literal("modifyScope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
@@ -239,7 +239,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             )
                     )
                     .then(
-                        literal("query-value")
+                        literal("queryValue")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.word())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -257,7 +257,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
-                literal("setting-scope")
+                literal("settingScope")
                     .requires{ it.hasPermissionLevel(2) }
                     .then(
                         literal("add")
@@ -314,7 +314,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             )
                     )
                     .then(
-                        literal("query-value")
+                        literal("queryValue")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.word())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
