@@ -37,7 +37,7 @@ fun onHandleSetting(
 
 fun onCertificatePermissionValue(
     playerExecutor: ServerPlayerEntity,
-    region: Region,
+    region: Region?,
     scopeName: String?,
     targetPlayerNameStr: String?,
     keyString: String,
@@ -49,7 +49,7 @@ fun onCertificatePermissionValue(
 
     val scope = if (scopeName != null) {
         try {
-            region.getScopeByName(scopeName)
+            region?.getScopeByName(scopeName)
         } catch (e: IllegalArgumentException) {
             return getDefaultValueForPermission(key)
         }
@@ -62,11 +62,15 @@ fun onCertificatePermissionValue(
 }
 
 fun onCertificatePermissionValue(
-    region: Region,
+    region: Region?,
     scope: GeoScope?,
     playerUuid: UUID?,
     key: PermissionKey
 ): Boolean {
+    if (region == null) {
+        return getDefaultValueForPermission(key)
+    }
+
     val settingsContainer = scope?.settings ?: region.settings
 
     val setting = settingsContainer.firstOrNull { setting ->

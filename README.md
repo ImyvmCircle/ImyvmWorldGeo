@@ -139,7 +139,7 @@ Handles player-triggered actions related to regions and their scopes.
 - `removeSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?)`  
   Removes a setting from a scope within a region.
 
-- `getPermissionValueRegion(player: ServerPlayerEntity, region: Region, scopeName: String? , targetPlayerNameStr: String?, keyString: String)`
+- `getPermissionValueRegion(player: ServerPlayerEntity, region: Region?, scopeName: String? , targetPlayerNameStr: String?, keyString: String)`
   Retrieves the permission value of a setting.
 
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
@@ -214,7 +214,7 @@ Provides access to region data and database operations for extension functions.
 - `getScopePersonalSettingsByType(scope: GeoScope, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
   Retrieves the personal settings by type for a scope for a specific playerUUID.
 
-- `getPermissionValueRegion(region: Region, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
+- `getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
   Retrieves the permission value of a setting for a region and scope.
 
 ### UtilApi

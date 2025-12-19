@@ -30,7 +30,7 @@ object PlayerInteractionApi {
     fun addSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?) = onHandleSetting(player, region, scopeName, keyString, valueString, targetPlayerStr)
     fun removeSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, targetPlayerStr: String?) = onHandleSetting(player, region, null, keyString, null, targetPlayerStr)
     fun removeSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?) = onHandleSetting(player, region, scopeName, keyString, null, targetPlayerStr)
-    fun getPermissionValueRegion(player: ServerPlayerEntity, region: Region, scopeName: String?, targetPlayerNameStr: String?, keyString: String) =
+    fun getPermissionValueRegion(player: ServerPlayerEntity, region: Region?, scopeName: String?, targetPlayerNameStr: String?, keyString: String) =
         onCertificatePermissionValue(player, region, scopeName, targetPlayerNameStr, keyString)
     fun queryRegionInfo(player: ServerPlayerEntity, region: Region) = onQueryRegion(player, region, true)
 }

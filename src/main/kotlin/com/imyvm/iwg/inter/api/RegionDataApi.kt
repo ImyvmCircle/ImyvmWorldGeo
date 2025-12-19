@@ -88,7 +88,7 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
-    fun getPermissionValueRegion(region: Region, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean {
+    fun getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean {
         return onCertificatePermissionValue(region, scope, playerUUID, permissionKey)
     }
 }
