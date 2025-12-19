@@ -21,7 +21,7 @@ object PlayerInteractionApi {
     fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int) = onAddingTeleportPoint(player, targetRegion, scope, x, y, z)
     fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope) =
         onAddingTeleportPoint(player, targetRegion, scope, player.blockPos.x, player.blockPos.y, player.blockPos.z)
-    fun resetTeleportPoint(scope: GeoScope) = onResettingTeleportPoint(scope)
+    fun resetTeleportPoint(player: ServerPlayerEntity, region: Region, scope: GeoScope) = onResettingTeleportPoint(player, region, scope)
     fun getTeleportPoint(scope: GeoScope) = onGettingTeleportPoint(scope)
     fun teleportPlayerToScope(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope) = onTeleportingPlayer(player, targetRegion, scope)
     fun toggleTeleportPointAccessibility(scope: GeoScope) = onTogglingTeleportPointAccessibility(scope)

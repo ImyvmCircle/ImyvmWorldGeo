@@ -3,7 +3,9 @@
 ## Changelog 1.1.3
 
 This release includes several bug fixes and improvements:
-- Fixed an issue where teleport points could not be set correctly, causing errors concerning scope and region creation.
+- fix:Fixed an issue where teleport points could not be set correctly, causing errors concerning scope and region creation.
+- lang: missing lang items for teleport point.
+- refactor: Modify scope reset api.
 
 ## Introduction
 
@@ -113,7 +115,7 @@ Handles player-triggered actions related to regions and their scopes.
 - `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
   Adds a teleport point at the player's current location.
 
-- `resetTeleportPoint(scope: GeoScope)`
+- `resetTeleportPoint(player: ServerPlayerEntity, region: Region, scope: GeoScope)`
   Resets the teleport point of a scope.
 
 - `getTeleportPoint(scope: GeoScope)`

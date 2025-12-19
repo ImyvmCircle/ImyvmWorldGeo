@@ -27,8 +27,11 @@ fun onAddingTeleportPoint(
 }
 
 fun onResettingTeleportPoint(
+    playerExecutor: ServerPlayerEntity,
+    region: Region,
     scope: GeoScope
 ): Int {
+    playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name))
     scope.teleportPoint = null
     return 1
 }

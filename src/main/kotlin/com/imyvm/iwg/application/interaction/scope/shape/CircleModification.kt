@@ -27,7 +27,7 @@ fun modifyScopeCircleRadius(
     val newRadius = kotlin.math.sqrt((dx * dx + dz * dz).toDouble()).toInt()
 
     if (newRadius <= 0) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.nonpositive"))
+        player.sendMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive"))
         return
     }
 

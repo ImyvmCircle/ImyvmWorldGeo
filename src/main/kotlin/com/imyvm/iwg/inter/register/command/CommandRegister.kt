@@ -399,8 +399,8 @@ private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): I
 }
 
 private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
-    val ( _, _, scope) = getPlayerRegionScopeTriple(context) ?: return 0
-    return onResettingTeleportPoint(scope)
+    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    return onResettingTeleportPoint(player, region, scope)
 }
 
 private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
