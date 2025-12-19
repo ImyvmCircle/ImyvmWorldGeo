@@ -67,6 +67,8 @@
   "interaction.meta.scope.teleport_point.added": "Successfully added teleport point ({0},{1},{2}) to scope {3} in region {4}.",
   "interaction.meta.scope.teleport_point.invalid": "Invalid teleport point coordinates: ({0},{1},{2}) for scope {3} in region {4}.",
   "interaction.meta.scope.teleport_point.reset": "Successfully reset teleport points for scope {0} in region {1}.",
+  "interaction.meta.scope.teleport_point.teleported": "Teleported to scope {0} of region {1}.",
+  "interaction.meta.scope.teleport_point.null": "Teleport point for scope {0} in region {1} is not available.",
 
   "interaction.meta.setting.add.success": "Successfully added setting: {0} = {1}.",
   "interaction.meta.setting.delete.success": "Successfully removed setting: {0}.",

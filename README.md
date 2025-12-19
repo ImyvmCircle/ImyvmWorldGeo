@@ -1,8 +1,9 @@
-# IMYVMWorldGeo 1.21 1.2.0
+# IMYVMWorldGeo 1.21 1.1.3
 
-## Changelog 1.2.0
+## Changelog 1.1.3
 
-This release mainly introduces implementation of settings.
+This release includes several bug fixes and improvements:
+- Fixed an issue where teleport points could not be set correctly, causing errors concerning scope and region creation.
 
 ## Introduction
 

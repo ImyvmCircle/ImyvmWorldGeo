@@ -2,7 +2,6 @@ package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.block.CarpetBlock
 import net.minecraft.block.ShapeContext
 import net.minecraft.text.Text
 import net.minecraft.util.math.BlockPos
@@ -140,14 +139,12 @@ class GeoShape(
             val context = ShapeContext.absent()
 
             if (!feetState.getCollisionShape(world, pos, context).isEmpty ||
-                !headState.getCollisionShape(world, pos.up(), context).isEmpty) {
+                !headState.getCollisionShape(world, pos.up(), context).isEmpty
+            ) {
                 return false
             }
 
-            val isSolid = groundState.isSideSolidFullSquare(world, pos.down(), Direction.UP)
-            val isCarpet = feetState.block is CarpetBlock
-
-            return isSolid || isCarpet
+            return groundState.isSideSolidFullSquare(world, pos.down(), Direction.UP)
         }
     }
 }

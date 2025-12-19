@@ -58,12 +58,12 @@ fun onTeleportingPlayer(
         )
         playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.teleported",
             geoScope.scopeName,
-            targetRegion))
+            targetRegion.name))
         1
     } else {
         playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.null",
             geoScope.scopeName,
-            targetRegion))
+            targetRegion.name))
         0
     }
 }
