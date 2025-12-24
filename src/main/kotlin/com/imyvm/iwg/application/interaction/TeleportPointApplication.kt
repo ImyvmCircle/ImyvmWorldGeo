@@ -18,10 +18,10 @@ fun onAddingTeleportPoint(
 
     return if (geoScope.certificateTeleportPoint(playerExecutor.world, teleportPoint)) {
         geoScope.teleportPoint = BlockPos(x, y, z)
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion))
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name))
         1
     } else {
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.teleportPoint, targetRegion))
+        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.teleportPoint, targetRegion.name))
         0
     }
 }
