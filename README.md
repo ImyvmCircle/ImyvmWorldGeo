@@ -1,11 +1,8 @@
-# IMYVMWorldGeo 1.21 1.1.3
+# IMYVMWorldGeo 1.21 1.2.0
 
-## Changelog 1.1.3
+## Changelog 1.2.0
 
-This release includes several bug fixes and improvements:
-- fix:Fixed an issue where teleport points could not be set correctly, causing errors concerning scope and region creation.
-- lang: missing lang items for teleport point.
-- refactor: Modify scope reset api.
+This release enriches the settings system.
 
 ## Introduction
 
