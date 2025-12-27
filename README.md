@@ -145,6 +145,9 @@ Handles player-triggered actions related to regions and their scopes.
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
   Queries detailed information about a region.
 
+- `toggleActionBar(player: ServerPlayerEntity)`
+  Toggles the action bar display for regions for the player.
+
 ---
 
 ### Region Data API

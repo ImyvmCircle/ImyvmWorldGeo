@@ -33,4 +33,5 @@ object PlayerInteractionApi {
     fun getPermissionValueRegion(player: ServerPlayerEntity, region: Region?, scopeName: String?, targetPlayerNameStr: String?, keyString: String) =
         onCertificatePermissionValue(player, region, scopeName, targetPlayerNameStr, keyString)
     fun queryRegionInfo(player: ServerPlayerEntity, region: Region) = onQueryRegion(player, region, true)
+    fun toggleActionBar(player: ServerPlayerEntity) = onToggleActionBar(player)
 }
