@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
 import com.imyvm.iwg.util.translator.*
 import com.mojang.authlib.GameProfile
@@ -9,6 +10,8 @@ import java.util.*
 
 @Suppress("unused")
 object UtilApi {
+    fun isSelectingPoints(playerExecutor: ServerPlayerEntity): Boolean = ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)
+    fun isActionBarEnabled(playerExecutor: ServerPlayerEntity): Boolean = ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(playerExecutor.uuid)
     fun getPlayerUUID(server: MinecraftServer, playerName: String): UUID? {
         return getUUIDFromPlayerName(server, playerName)
     }

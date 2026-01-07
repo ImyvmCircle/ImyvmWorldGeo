@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
