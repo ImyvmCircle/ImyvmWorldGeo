@@ -224,6 +224,12 @@ Provides access to region data and database operations for extension functions.
 
 Provides utility functions for region data to improve usability for extension mods.
 
+- `isSelectingPoints(playerExecutor: ServerPlayerEntity): Boolean`  
+  Checks if the player is in selection mode.
+
+- `isActionBarEnabled(playerExecutor: ServerPlayerEntity): Boolean`
+  Checks if the action bar display is enabled for the player.
+
 - `getPlayerUUID(server: MinecraftServer, playerName: String): UUID?`  
   Retrieves the UUID of a player by their name.
 
