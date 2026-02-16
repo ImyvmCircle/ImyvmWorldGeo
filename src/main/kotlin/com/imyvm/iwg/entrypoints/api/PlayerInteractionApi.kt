@@ -1,10 +1,10 @@
 package com.imyvm.iwg.inter.api
 
-import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.util.math.BlockPos
 
 @Suppress("unused")
 object PlayerInteractionApi {
@@ -35,4 +35,6 @@ object PlayerInteractionApi {
         onCertificatePermissionValue(player, region, scopeName, targetPlayerNameStr, keyString)
     fun queryRegionInfo(player: ServerPlayerEntity, region: Region) = onQueryRegion(player, region, true)
     fun toggleActionBar(player: ServerPlayerEntity) = onToggleActionBar(player)
+    fun estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)
+    fun estimateScopeAreaChange(player: ServerPlayerEntity, region: Region, scopeName: String, customPositions: List<BlockPos>? = null) = onEstimateScopeAreaChange(player, region, scopeName, customPositions)
 }

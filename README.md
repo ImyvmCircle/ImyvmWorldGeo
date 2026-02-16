@@ -1,8 +1,16 @@
 # IMYVMWorldGeo 1.21 1.2.0
 
-## Changelog 1.2.0
+## Changelog
 
-This release enriches the settings system.
+### Version 1.2 Series - Settings System Enhancement
+
+This major version (1.2.x) focuses on enriching and improving the settings system.
+
+#### 1.2.0
+
+Added area estimation API for pre-calculation before region/scope creation or modification:
+- `estimateRegionArea`: Estimate area before creating a region
+- `estimateScopeAreaChange`: Estimate area delta before modifying a scope
 
 ## Introduction
 
@@ -147,6 +155,16 @@ Handles player-triggered actions related to regions and their scopes.
 
 - `toggleActionBar(player: ServerPlayerEntity)`
   Toggles the action bar display for regions for the player.
+
+- `estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null)`  
+  Estimates the area of a region to be created based on selected points and shape type.  
+  Returns `AreaEstimationResult` with either the estimated area or an error if the configuration is invalid.  
+  If `customPositions` is null, uses the player's current selected positions.
+
+- `estimateScopeAreaChange(player: ServerPlayerEntity, region: Region, scopeName: String, customPositions: List<BlockPos>? = null)`  
+  Estimates the area change (delta) when modifying an existing scope.  
+  Returns `AreaEstimationResult` with the area change value (positive for increase, negative for decrease) or an error.  
+  If `customPositions` is null, uses the player's current selected positions.
 
 ---
 
