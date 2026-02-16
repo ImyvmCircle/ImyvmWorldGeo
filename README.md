@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.2.0
+# IMYVMWorldGeo 1.21 1.2.1
 
 ## Changelog
 
@@ -6,11 +6,7 @@
 
 This major version (1.2.x) focuses on enriching and improving the settings system.
 
-#### 1.2.0
-
-Added area estimation API for pre-calculation before region/scope creation or modification:
-- `estimateRegionArea`: Estimate area before creating a region
-- `estimateScopeAreaChange`: Estimate area delta before modifying a scope
+#### 1.2.1
 
 ## Introduction
 
