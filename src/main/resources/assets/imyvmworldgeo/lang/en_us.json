@@ -77,7 +77,7 @@
   "teleport_point.safety.no_ground": "&7  Safety requirement: There must be a solid, full-square block directly beneath the teleport point to support the player on arrival. Without solid ground, the player would fall into a pit or void immediately.\n&c  Unsafe condition at (&e{0},{1},{2}&c): No solid ground found directly beneath the position.",
   "teleport_point.invalid.out_of_scope": "&7  Requirement: The teleport point must lie within the geographic boundary of its scope. Placing the player outside the boundary would be inconsistent with the scope's area.\n&c  Problem at (&e{0},{1},{2}&c): This position is outside the scope's geographic boundary.",
   "teleport_point.invalid.null_point": "&cTeleport point position is null.",
-  "teleport_point.invalid.no_shape": "&cThis scope has no geographic shape defined and cannot validate a teleport point."
+  "teleport_point.invalid.no_shape": "&cThis scope has no geographic shape defined and cannot validate a teleport point.",
 
   "interaction.meta.setting.add.success": "Successfully added setting: {0} = {1}.",
   "interaction.meta.setting.delete.success": "Successfully removed setting: {0}.",
