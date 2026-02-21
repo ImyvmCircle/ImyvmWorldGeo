@@ -58,6 +58,21 @@ A teleport point is attached to a scope in the region,
 and the regional teleport point is defined by the teleport point of its main scope,
 technically the teleport point of the first scope in line.
 
+A teleport point is subject to physical safety validation both when it is set and when it is used for teleportation.
+The physical safety requirements are:
+1. The block at the feet position (the teleport point's Y level) must be fully passable with no block collision.
+2. The block at the head position (one block above the teleport point) must be fully passable with no block collision.
+3. The block directly beneath the teleport point must be a solid, full-square block to support the player.
+4. Neither the feet block nor the head block may contain a liquid (water or lava), to prevent drowning or burning.
+
+These requirements allow indoor teleport points as long as the space is clear and the floor is solid.
+When teleportation is requested, the safety of the stored teleport point is rechecked against the current world state.
+If the point is no longer safe (e.g., due to subsequent block changes), the system searches a 5x5x5 cube
+centered on the original point (with height priority, meaning positions at the same vertical distance are
+checked before moving further away) for the nearest safe alternative. If a safe alternative is found,
+the teleport point is automatically updated and the player is teleported there with a warning message.
+If no safe alternative is found within the search area, teleportation is cancelled and the player is informed.
+
 ---
 
 ## Usage

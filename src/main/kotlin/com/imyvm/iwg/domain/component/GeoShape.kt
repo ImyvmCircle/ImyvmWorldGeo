@@ -58,6 +58,28 @@ class GeoShape(
         return isValidTeleportPoint(world, pointToTest)
     }
 
+    fun getTeleportPointInvalidReasonKey(world: World, pos: BlockPos): String? {
+        if (!this.containsPoint(pos.x, pos.z)) return "teleport_point.invalid.out_of_scope"
+        return getPhysicalSafetyFailureReasonKey(world, pos)
+    }
+
+    fun findNearestValidTeleportPoint(world: World, center: BlockPos, searchRadius: Int): BlockPos? {
+        val candidates = mutableListOf<BlockPos>()
+        for (dy in -searchRadius..searchRadius) {
+            for (dx in -searchRadius..searchRadius) {
+                for (dz in -searchRadius..searchRadius) {
+                    if (dx == 0 && dy == 0 && dz == 0) continue
+                    candidates.add(BlockPos(center.x + dx, center.y + dy, center.z + dz))
+                }
+            }
+        }
+        candidates.sortWith(
+            compareBy<BlockPos> { Math.abs(it.y - center.y) }
+                .thenBy { (it.x - center.x) * (it.x - center.x) + (it.z - center.z) * (it.z - center.z) }
+        )
+        return candidates.firstOrNull { isValidTeleportPoint(world, it) }
+    }
+
     private fun getCircleInfo(area: String): Text? {
         if (shapeParameter.size < 3) {
             return Translator.tr("geo.shape.circle.invalid.info", area)
@@ -138,6 +160,10 @@ class GeoShape(
 
             val context = ShapeContext.absent()
 
+            if (!feetState.fluidState.isEmpty || !headState.fluidState.isEmpty) {
+                return false
+            }
+
             if (!feetState.getCollisionShape(world, pos, context).isEmpty ||
                 !headState.getCollisionShape(world, pos.up(), context).isEmpty
             ) {
@@ -145,6 +171,27 @@ class GeoShape(
             }
 
             return groundState.isSideSolidFullSquare(world, pos.down(), Direction.UP)
+        }
+
+        fun getPhysicalSafetyFailureReasonKey(world: World, pos: BlockPos): String? {
+            val feetState = world.getBlockState(pos)
+            val headState = world.getBlockState(pos.up())
+            val groundState = world.getBlockState(pos.down())
+            val context = ShapeContext.absent()
+
+            if (!feetState.fluidState.isEmpty || !headState.fluidState.isEmpty) {
+                return "teleport_point.safety.liquid"
+            }
+            if (!feetState.getCollisionShape(world, pos, context).isEmpty) {
+                return "teleport_point.safety.feet_blocked"
+            }
+            if (!headState.getCollisionShape(world, pos.up(), context).isEmpty) {
+                return "teleport_point.safety.head_blocked"
+            }
+            if (!groundState.isSideSolidFullSquare(world, pos.down(), Direction.UP)) {
+                return "teleport_point.safety.no_ground"
+            }
+            return null
         }
     }
 }

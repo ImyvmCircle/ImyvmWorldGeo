@@ -52,4 +52,15 @@ class GeoScope(
         if (this.geoShape == null) return false
         return this.geoShape!!.certificateTeleportPoint(world, pointToTest)
     }
+
+    fun getTeleportPointInvalidReasonKey(world: World, pointToTest: BlockPos?): String? {
+        if (pointToTest == null) return "teleport_point.invalid.null_point"
+        if (this.geoShape == null) return "teleport_point.invalid.no_shape"
+        return this.geoShape!!.getTeleportPointInvalidReasonKey(world, pointToTest)
+    }
+
+    fun findNearestValidTeleportPoint(world: World, center: BlockPos, searchRadius: Int): BlockPos? {
+        if (this.geoShape == null) return null
+        return this.geoShape!!.findNearestValidTeleportPoint(world, center, searchRadius)
+    }
 }

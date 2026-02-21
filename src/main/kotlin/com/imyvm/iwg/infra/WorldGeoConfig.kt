@@ -174,5 +174,17 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
                 path
             )
         }
+
+        @JvmField
+        @ConfigOption
+        val TELEPORT_POINT_FALLBACK_SEARCH_RADIUS = Option(
+            "core.teleport_point.fallback_search_radius",
+            2,
+            "the radius of the cubic search area used to find a safe fallback teleport point when the original is unsafe. A radius of 2 means a 5x5x5 search cube."
+        ) { obj: Config, path: String? ->
+            obj.getInt(
+                path
+            )
+        }
     }
 }
