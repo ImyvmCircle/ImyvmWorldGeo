@@ -37,7 +37,7 @@ class RuleSetting(
 
 interface BaseKey
 
-enum class PermissionKey : BaseKey {
+enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     BUILD_BREAK,
     FLY,
     CONTAINER

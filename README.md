@@ -8,6 +8,8 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 #### 1.2.1
 
+- Added abstract permission hierarchy: each `PermissionKey` may declare a parent, and any ancestor with an explicit setting overrides all its descendants transitively.
+
 ## Introduction
 
 This is a mod to provide a geography system framework for Imyvm server players and groups, 
@@ -51,6 +53,8 @@ Settings are key-value pairs associated with regions or scopes,
 which can be either global (applicable to all players) or personal (specific to individual players).
 When there is a conflict between regional and scope settings, scope settings take precedence,
 and personal settings are of higher priority when the corresponding global settings are added.
+For permission settings, a parent-child hierarchy applies: if any ancestor key has an explicit setting,
+it overrides all descendant keys transitively, regardless of their own explicit values.
 
 ### Teleport Point
 

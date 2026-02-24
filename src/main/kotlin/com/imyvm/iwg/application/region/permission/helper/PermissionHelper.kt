@@ -22,6 +22,27 @@ private fun checkPermission(
     key: PermissionKey,
     scope: GeoScope?
 ): Boolean? {
+    val ancestors = buildList {
+        var current = key.parent
+        while (current != null) {
+            add(current)
+            current = current.parent
+        }
+        reverse()
+    }
+    for (ancestor in ancestors) {
+        val result = checkExplicitPermission(region, playerUUID, ancestor, scope)
+        if (result != null) return result
+    }
+    return checkExplicitPermission(region, playerUUID, key, scope)
+}
+
+private fun checkExplicitPermission(
+    region: Region,
+    playerUUID: UUID,
+    key: PermissionKey,
+    scope: GeoScope?
+): Boolean? {
     scope?.settings?.filterIsInstance<PermissionSetting>()?.let { settings ->
         settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
             return it.value
@@ -38,6 +59,5 @@ private fun checkPermission(
             return it.value
         }
     }
-
     return null
 }
