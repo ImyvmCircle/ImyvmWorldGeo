@@ -10,12 +10,18 @@ fun registerRegionPermissions() {
     registerPlayerBuildBreakPermission()
     registerPlayerContainerInteractionPermission()
     registerFlyPermission()
+    registerPlayerTogglePermission()
+    registerPlayerRedstonePermission()
+    registerPlayerTradePermission()
+    registerPlayerPvpPermission()
+    registerPlayerAnimalKillingPermission()
 }
 
 fun registerPlayerBuildBreakPermission(){
     playerBuildPermission()
     playerBreakPermission()
     playerBucketUsePermission()
+    playerBucketScoopEntityPermission()
 }
 
 fun registerPlayerContainerInteractionPermission() {
@@ -35,4 +41,24 @@ fun registerFlyPermission() {
             processFallImmunity(player, currentTick)
         }
     }
+}
+
+fun registerPlayerTogglePermission() {
+    playerTogglePermission()
+}
+
+fun registerPlayerRedstonePermission() {
+    playerRedstonePermission()
+}
+
+fun registerPlayerTradePermission() {
+    playerTradePermission()
+}
+
+fun registerPlayerPvpPermission() {
+    playerPvpPermission()
+}
+
+fun registerPlayerAnimalKillingPermission() {
+    playerAnimalKillingPermission()
 }

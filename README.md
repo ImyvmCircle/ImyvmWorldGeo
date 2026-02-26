@@ -10,6 +10,7 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 - feat: added abstract permission hierarchy where parent keys override descendant keys transitively.
 - fix: BUILD_BREAK now blocks water and lava bucket placement and pickup, including fluid placement from outside a region boundary.
+- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, and ANIMAL_KILLING.
 
 ## Introduction
 
@@ -56,6 +57,23 @@ When there is a conflict between regional and scope settings, scope settings tak
 and personal settings are of higher priority when the corresponding global settings are added.
 For permission settings, a parent-child hierarchy applies: if any ancestor key has an explicit setting,
 it overrides all descendant keys transitively, regardless of their own explicit values.
+
+#### Permission Keys
+
+| Key | Parent | Default | Description |
+| --- | --- | --- | --- |
+| BUILD_BREAK | - | true | Master switch for block placement and breaking. |
+| BUILD | BUILD_BREAK | true | Block placement permission. Also covers non-bucket block placement. |
+| BREAK | BUILD_BREAK | true | Block breaking permission. |
+| BUCKET_BUILD | BUILD | true | Non-empty bucket fluid placement permission (placing water, lava, etc.). |
+| BUCKET_SCOOP | BREAK | true | Empty bucket fluid or creature collection permission. |
+| TOGGLE | - | true | Door, trapdoor, and fence gate open/close permission. |
+| REDSTONE | TOGGLE | true | Redstone device interaction permission (buttons, levers, comparators, repeaters, note blocks, daylight sensors, bells). Excludes ancient city sculk mechanics. |
+| TRADE | - | true | Trading with villagers and wandering traders permission. |
+| PVP | - | false | Player vs player damage permission. Both the attacker and defender must have this permission for damage to be dealt. |
+| CONTAINER | - | true | Container interaction permission. |
+| FLY | - | false | Flight permission within the region. |
+| ANIMAL_KILLING | - | true | Passive animal damage permission. Does not apply to monsters or neutral mobs. |
 
 ### Teleport Point
 

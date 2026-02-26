@@ -177,6 +177,13 @@
 
   "setting.permission.build": "You dont have permission to build in this place.",
   "setting.permission.break": "You dont have permission to break in this place.",
+  "setting.permission.bucket_build": "&cPermission denied: &rYou are not allowed to place fluids in this region.",
+  "setting.permission.bucket_scoop": "&cPermission denied: &rYou are not allowed to collect fluid or creatures in this region.",
+  "setting.permission.toggle": "&cPermission denied: &rYou are not allowed to open or close doors and gates in this region.",
+  "setting.permission.redstone": "&cPermission denied: &rYou are not allowed to interact with redstone devices in this region.",
+  "setting.permission.trade": "&cPermission denied: &rYou are not allowed to trade with villagers or merchants in this region.",
+  "setting.permission.pvp": "&cPermission denied: &rPVP is not permitted in this region. Both parties must have PVP permission.",
+  "setting.permission.animal_killing": "&cPermission denied: &rYou are not allowed to harm passive animals in this region.",
   "setting.permission.container": "You dont have permission to use container in this place.",
   "setting.permission.fly.enabled": "You now have permission to fly in a flying-allowed area.",
   "setting.permission.fly.restored": "Your flight has been restored returning to a flying-allowed area.",

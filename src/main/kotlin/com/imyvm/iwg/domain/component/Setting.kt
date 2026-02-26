@@ -40,7 +40,16 @@ interface BaseKey
 enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     BUILD_BREAK,
     FLY,
-    CONTAINER
+    CONTAINER,
+    BUILD(BUILD_BREAK),
+    BREAK(BUILD_BREAK),
+    TOGGLE,
+    REDSTONE(TOGGLE),
+    TRADE,
+    PVP,
+    BUCKET_BUILD(BUILD),
+    BUCKET_SCOOP(BREAK),
+    ANIMAL_KILLING
 }
 
 enum class EffectKey : BaseKey {

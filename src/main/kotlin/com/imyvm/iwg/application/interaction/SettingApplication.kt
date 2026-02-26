@@ -5,6 +5,15 @@ import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD_BREAK
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_CONTAINER
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_FLY
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BREAK
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_TOGGLE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_REDSTONE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_TRADE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_PVP
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_BUILD
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_SCOOP
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_ANIMAL_KILLING
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -256,6 +265,15 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
         PermissionKey.BUILD_BREAK -> PERMISSION_DEFAULT_BUILD_BREAK.value
         PermissionKey.CONTAINER -> PERMISSION_DEFAULT_CONTAINER.value
         PermissionKey.FLY -> PERMISSION_DEFAULT_FLY.value
+        PermissionKey.BUILD -> PERMISSION_DEFAULT_BUILD.value
+        PermissionKey.BREAK -> PERMISSION_DEFAULT_BREAK.value
+        PermissionKey.TOGGLE -> PERMISSION_DEFAULT_TOGGLE.value
+        PermissionKey.REDSTONE -> PERMISSION_DEFAULT_REDSTONE.value
+        PermissionKey.TRADE -> PERMISSION_DEFAULT_TRADE.value
+        PermissionKey.PVP -> PERMISSION_DEFAULT_PVP.value
+        PermissionKey.BUCKET_BUILD -> PERMISSION_DEFAULT_BUCKET_BUILD.value
+        PermissionKey.BUCKET_SCOOP -> PERMISSION_DEFAULT_BUCKET_SCOOP.value
+        PermissionKey.ANIMAL_KILLING -> PERMISSION_DEFAULT_ANIMAL_KILLING.value
     }
 }
 

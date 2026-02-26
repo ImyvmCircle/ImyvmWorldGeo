@@ -3,31 +3,57 @@ package com.imyvm.iwg.application.region.permission
 import com.imyvm.iwg.application.region.permission.helper.hasPermission
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD_BREAK
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BREAK
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_BUILD
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_SCOOP
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
+import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.fabricmc.fabric.api.event.player.UseItemCallback
-import net.minecraft.entity.player.PlayerEntity
+import net.minecraft.block.AbstractRedstoneGateBlock
+import net.minecraft.block.BedBlock
+import net.minecraft.block.BellBlock
+import net.minecraft.block.BlockWithEntity
+import net.minecraft.block.ButtonBlock
+import net.minecraft.block.CakeBlock
+import net.minecraft.block.CartographyTableBlock
+import net.minecraft.block.CraftingTableBlock
+import net.minecraft.block.DaylightDetectorBlock
+import net.minecraft.block.DoorBlock
+import net.minecraft.block.FenceGateBlock
+import net.minecraft.block.GrindstoneBlock
+import net.minecraft.block.LeverBlock
+import net.minecraft.block.LoomBlock
+import net.minecraft.block.NoteBlock
+import net.minecraft.block.SmithingTableBlock
+import net.minecraft.block.StonecutterBlock
+import net.minecraft.block.TrapdoorBlock
+import net.minecraft.entity.Bucketable
+import net.minecraft.item.BlockItem
 import net.minecraft.item.BucketItem
+import net.minecraft.item.Items
 import net.minecraft.util.ActionResult
 import net.minecraft.util.TypedActionResult
 import net.minecraft.util.hit.BlockHitResult
 import net.minecraft.util.hit.HitResult
-import net.minecraft.util.math.BlockPos
 import net.minecraft.world.RaycastContext
 
-fun playerBuildPermission(){
-    UseBlockCallback.EVENT.register { player, _, _, hitResult ->
+fun playerBuildPermission() {
+    UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
+        val stack = player.getStackInHand(hand)
+        if (stack.item !is BlockItem) return@register ActionResult.PASS
         val pos = hitResult.blockPos
-        if (!playerCanBuildOrBreak(player, pos)) {
-            player.sendMessage(Translator.tr("setting.permission.build"))
-            return@register ActionResult.FAIL
-        }
+        val block = world.getBlockState(pos).block
+        if (!player.isSneaking && isInteractiveBlock(block)) return@register ActionResult.PASS
         val placePos = pos.offset(hitResult.side)
-        if (!playerCanBuildOrBreak(player, placePos)) {
-            player.sendMessage(Translator.tr("setting.permission.build"))
-            return@register ActionResult.FAIL
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
+        regionAndScope?.let { (region, scope) ->
+            if (!hasPermission(region, player.uuid, PermissionKey.BUILD, scope, PERMISSION_DEFAULT_BUILD.value)) {
+                player.sendMessage(Translator.tr("setting.permission.build"))
+                return@register ActionResult.FAIL
+            }
         }
         ActionResult.PASS
     }
@@ -45,29 +71,75 @@ fun playerBucketUsePermission() {
             RaycastContext(eyePos, targetVec, RaycastContext.ShapeType.OUTLINE, RaycastContext.FluidHandling.ANY, player)
         )
         if (hit.type != HitResult.Type.BLOCK) return@register TypedActionResult.pass(stack)
-        val pos = (hit as BlockHitResult).blockPos
-        if (!playerCanBuildOrBreak(player, pos)) {
-            player.sendMessage(Translator.tr("setting.permission.build"))
-            return@register TypedActionResult.fail(stack)
+        val blockHit = hit as BlockHitResult
+        val pos = blockHit.blockPos
+        if (stack.isOf(Items.BUCKET)) {
+            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
+            regionAndScope?.let { (region, scope) ->
+                if (!hasPermission(region, player.uuid, PermissionKey.BUCKET_SCOOP, scope, PERMISSION_DEFAULT_BUCKET_SCOOP.value)) {
+                    player.sendMessage(Translator.tr("setting.permission.bucket_scoop"))
+                    return@register TypedActionResult.fail(stack)
+                }
+            }
+        } else {
+            val placePos = pos.offset(blockHit.side)
+            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
+            regionAndScope?.let { (region, scope) ->
+                if (!hasPermission(region, player.uuid, PermissionKey.BUCKET_BUILD, scope, PERMISSION_DEFAULT_BUCKET_BUILD.value)) {
+                    player.sendMessage(Translator.tr("setting.permission.bucket_build"))
+                    return@register TypedActionResult.fail(stack)
+                }
+            }
         }
         TypedActionResult.pass(stack)
     }
 }
 
-fun playerBreakPermission(){
+fun playerBucketScoopEntityPermission() {
+    UseEntityCallback.EVENT.register { player, world, hand, entity, _ ->
+        if (entity !is Bucketable) return@register ActionResult.PASS
+        val stack = player.getStackInHand(hand)
+        if (!stack.isOf(Items.BUCKET)) return@register ActionResult.PASS
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockX, entity.blockZ)
+        regionAndScope?.let { (region, scope) ->
+            if (!hasPermission(region, player.uuid, PermissionKey.BUCKET_SCOOP, scope, PERMISSION_DEFAULT_BUCKET_SCOOP.value)) {
+                player.sendMessage(Translator.tr("setting.permission.bucket_scoop"))
+                return@register ActionResult.FAIL
+            }
+        }
+        ActionResult.PASS
+    }
+}
+
+fun playerBreakPermission() {
     PlayerBlockBreakEvents.BEFORE.register { _, player, pos, _, _ ->
-        if (!playerCanBuildOrBreak(player, pos)) {
-            player.sendMessage(Translator.tr("setting.permission.break"))
-            return@register false
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world, pos.x, pos.z)
+        regionAndScope?.let { (region, scope) ->
+            if (!hasPermission(region, player.uuid, PermissionKey.BREAK, scope, PERMISSION_DEFAULT_BREAK.value)) {
+                player.sendMessage(Translator.tr("setting.permission.break"))
+                return@register false
+            }
         }
         true
     }
 }
 
-private fun playerCanBuildOrBreak(player: PlayerEntity, pos: BlockPos): Boolean {
-    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world, pos.x, pos.z)
-    regionAndScope?.let { (region, scope) ->
-        return hasPermission(region, player.uuid, PermissionKey.BUILD_BREAK, scope, PERMISSION_DEFAULT_BUILD_BREAK.value)
-    }
-    return true
-}
+private fun isInteractiveBlock(block: net.minecraft.block.Block): Boolean =
+    block is BlockWithEntity ||
+    block is DoorBlock ||
+    block is TrapdoorBlock ||
+    block is FenceGateBlock ||
+    block is ButtonBlock ||
+    block is LeverBlock ||
+    block is NoteBlock ||
+    block is AbstractRedstoneGateBlock ||
+    block is DaylightDetectorBlock ||
+    block is BellBlock ||
+    block is CraftingTableBlock ||
+    block is GrindstoneBlock ||
+    block is LoomBlock ||
+    block is StonecutterBlock ||
+    block is CartographyTableBlock ||
+    block is SmithingTableBlock ||
+    block is BedBlock ||
+    block is CakeBlock

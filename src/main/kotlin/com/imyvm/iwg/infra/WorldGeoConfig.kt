@@ -93,6 +93,96 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_DEFAULT_BUILD = Option(
+            "core.permission.build.default",
+            true,
+            "the default build (block placement) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_BREAK = Option(
+            "core.permission.break.default",
+            true,
+            "the default break (block breaking) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_TOGGLE = Option(
+            "core.permission.toggle.default",
+            true,
+            "the default toggle (door/trapdoor/fence gate interaction) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_REDSTONE = Option(
+            "core.permission.redstone.default",
+            true,
+            "the default redstone device interaction permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_TRADE = Option(
+            "core.permission.trade.default",
+            true,
+            "the default trade (villager/merchant interaction) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_PVP = Option(
+            "core.permission.pvp.default",
+            false,
+            "the default PVP (player vs player damage) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_BUCKET_BUILD = Option(
+            "core.permission.bucket_build.default",
+            true,
+            "the default bucket build (placing fluid from a non-empty bucket) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_BUCKET_SCOOP = Option(
+            "core.permission.bucket_scoop.default",
+            true,
+            "the default bucket scoop (collecting fluid or creatures with an empty bucket) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_ANIMAL_KILLING = Option(
+            "core.permission.animal_killing.default",
+            true,
+            "the default animal killing (damage to passive animals) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,
