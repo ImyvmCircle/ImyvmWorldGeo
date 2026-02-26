@@ -8,7 +8,8 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 #### 1.2.1
 
-- Added abstract permission hierarchy: each `PermissionKey` may declare a parent, and any ancestor with an explicit setting overrides all its descendants transitively.
+- feat: added abstract permission hierarchy where parent keys override descendant keys transitively.
+- fix: BUILD_BREAK now blocks water and lava bucket placement and pickup, including fluid placement from outside a region boundary.
 
 ## Introduction
 

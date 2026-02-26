@@ -15,6 +15,7 @@ fun registerRegionPermissions() {
 fun registerPlayerBuildBreakPermission(){
     playerBuildPermission()
     playerBreakPermission()
+    playerBucketUsePermission()
 }
 
 fun registerPlayerContainerInteractionPermission() {
