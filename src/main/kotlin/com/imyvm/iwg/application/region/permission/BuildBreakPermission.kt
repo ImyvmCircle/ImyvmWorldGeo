@@ -35,6 +35,7 @@ import net.minecraft.entity.Bucketable
 import net.minecraft.item.BlockItem
 import net.minecraft.item.BucketItem
 import net.minecraft.item.Items
+import net.minecraft.item.PowderSnowBucketItem
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.TypedActionResult
@@ -45,7 +46,7 @@ import net.minecraft.world.RaycastContext
 fun playerBuildPermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
         val stack = player.getStackInHand(hand)
-        if (stack.item !is BlockItem) return@register ActionResult.PASS
+        if (stack.item !is BlockItem || stack.item is PowderSnowBucketItem) return@register ActionResult.PASS
         val pos = hitResult.blockPos
         val block = world.getBlockState(pos).block
         if (!player.isSneaking && isInteractiveBlock(block)) return@register ActionResult.PASS
@@ -65,6 +66,23 @@ fun playerBuildPermission() {
 }
 
 fun playerBucketUsePermission() {
+    UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
+        val stack = player.getStackInHand(hand)
+        if (stack.item !is PowderSnowBucketItem) return@register ActionResult.PASS
+        val placePos = hitResult.blockPos.offset(hitResult.side)
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
+        regionAndScope?.let { (region, scope) ->
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_BUILD, scope, PERMISSION_DEFAULT_BUCKET_BUILD.value)
+            if (denial != null) {
+                if (hand == Hand.MAIN_HAND) {
+                    player.sendMessage(Translator.tr("setting.permission.bucket_build", buildPermissionDenialContext(region, scope, denial)))
+                }
+                return@register ActionResult.CONSUME
+            }
+        }
+        ActionResult.PASS
+    }
+
     UseItemCallback.EVENT.register { player, world, hand ->
         val stack = player.getStackInHand(hand)
         if (stack.item !is BucketItem) return@register TypedActionResult.pass(stack)

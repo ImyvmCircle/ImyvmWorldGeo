@@ -16,6 +16,9 @@ import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_SC
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_ANIMAL_KILLING
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_VILLAGER_KILLING
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_EGG_USE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_THROWABLE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_SNOWBALL_USE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_POTION_USE
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -278,6 +281,9 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
         PermissionKey.ANIMAL_KILLING -> PERMISSION_DEFAULT_ANIMAL_KILLING.value
         PermissionKey.VILLAGER_KILLING -> PERMISSION_DEFAULT_VILLAGER_KILLING.value
         PermissionKey.EGG_USE -> PERMISSION_DEFAULT_EGG_USE.value
+        PermissionKey.THROWABLE -> PERMISSION_DEFAULT_THROWABLE.value
+        PermissionKey.SNOWBALL_USE -> PERMISSION_DEFAULT_SNOWBALL_USE.value
+        PermissionKey.POTION_USE -> PERMISSION_DEFAULT_POTION_USE.value
     }
 }
 

@@ -10,7 +10,10 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 - feat: added abstract permission hierarchy where parent keys override descendant keys transitively.
 - fix: BUILD_BREAK now blocks water and lava bucket placement and pickup, including fluid placement from outside a region boundary.
-- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, ANIMAL_KILLING, VILLAGER_KILLING, and EGG_USE.
+- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, ANIMAL_KILLING, VILLAGER_KILLING, EGG_USE, THROWABLE, SNOWBALL_USE, and POTION_USE.
+- fix: PVP, ANIMAL_KILLING, and VILLAGER_KILLING permissions now also block indirect player damage, including arrows, crossbow bolts, tridents, thrown potions, and sword sweep attacks.
+- fix: powder snow bucket placement now correctly checks BUCKET_BUILD permission instead of BUILD.
+- feat: added POTION_USE permission (child of THROWABLE) to control throwing of splash and lingering potions.
 
 ## Introduction
 
@@ -75,7 +78,10 @@ it overrides all descendant keys transitively, regardless of their own explicit 
 | FLY | - | false | Flight permission within the region. |
 | ANIMAL_KILLING | - | true | Passive animal damage permission. Does not apply to monsters or neutral mobs. |
 | VILLAGER_KILLING | - | true | Villager damage permission. Applies to villager entities only. |
-| EGG_USE | - | true | Egg throwing permission. Controls whether players can throw eggs in the region. |
+| THROWABLE | - | true | Master switch for throwing projectile items such as eggs, snowballs, and potions. |
+| EGG_USE | THROWABLE | true | Egg throwing permission. Controls whether players can throw eggs in the region. |
+| SNOWBALL_USE | THROWABLE | true | Snowball throwing permission. Controls whether players can throw snowballs in the region. |
+| POTION_USE | THROWABLE | true | Potion throwing permission. Controls whether players can throw splash or lingering potions in the region. |
 
 ### Teleport Point
 

@@ -203,6 +203,36 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_DEFAULT_THROWABLE = Option(
+            "core.permission.throwable.default",
+            true,
+            "the default throwable (throwing projectile items such as eggs and snowballs) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_SNOWBALL_USE = Option(
+            "core.permission.snowball_use.default",
+            true,
+            "the default snowball use (throwing snowballs) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_POTION_USE = Option(
+            "core.permission.potion_use.default",
+            true,
+            "the default potion use (throwing splash and lingering potions) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,

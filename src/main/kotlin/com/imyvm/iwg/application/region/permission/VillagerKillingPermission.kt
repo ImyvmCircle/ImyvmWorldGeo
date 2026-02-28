@@ -6,8 +6,10 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_VILLAGER_KILLING
 import com.imyvm.iwg.util.text.Translator
+import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.minecraft.entity.passive.VillagerEntity
+import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.util.ActionResult
 
 import net.minecraft.util.Hand
@@ -26,5 +28,19 @@ fun playerVillagerKillingPermission() {
             }
         }
         ActionResult.PASS
+    }
+
+    ServerLivingEntityEvents.ALLOW_DAMAGE.register { entity, source, _ ->
+        if (entity !is VillagerEntity) return@register true
+        val player = source.attacker as? PlayerEntity ?: return@register true
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(entity.world, entity.blockX, entity.blockZ)
+        regionAndScope?.let { (region, scope) ->
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.VILLAGER_KILLING, scope, PERMISSION_DEFAULT_VILLAGER_KILLING.value)
+            if (denial != null) {
+                player.sendMessage(Translator.tr("setting.permission.villager_killing", buildPermissionDenialContext(region, scope, denial)))
+                return@register false
+            }
+        }
+        true
     }
 }
