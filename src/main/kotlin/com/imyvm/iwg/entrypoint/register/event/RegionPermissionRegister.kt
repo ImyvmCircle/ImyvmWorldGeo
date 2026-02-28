@@ -19,6 +19,7 @@ fun registerRegionPermissions() {
     registerPlayerEggUsePermission()
     registerPlayerSnowballUsePermission()
     registerPlayerPotionUsePermission()
+    registerPlayerFarmingPermission()
 }
 
 fun registerPlayerBuildBreakPermission(){
@@ -81,4 +82,8 @@ fun registerPlayerSnowballUsePermission() {
 
 fun registerPlayerPotionUsePermission() {
     playerPotionUsePermission()
+}
+
+fun registerPlayerFarmingPermission() {
+    playerFarmingPermission()
 }

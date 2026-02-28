@@ -192,6 +192,7 @@
   "setting.permission.snowball_use": "&cPermission denied: &rYou are not allowed to throw snowballs here. &7[{0}]",
   "setting.permission.potion_use": "&cPermission denied: &rYou are not allowed to throw potions here. &7[{0}]",
   "setting.permission.container": "&cPermission denied: &rYou are not allowed to access containers here. &7[{0}]",
+  "setting.permission.farming": "&cPermission denied: &rYou are not allowed to break or plant crops on farmland here. &7[{0}]",
   "setting.permission.fly.enabled": "You now have permission to fly in a flying-allowed area.",
   "setting.permission.fly.restored": "Your flight has been restored returning to a flying-allowed area.",
   "setting.permission.fly.disabled.soon": "You will lose your flight soon in a no-fly area in {0} seconds.",

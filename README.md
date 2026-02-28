@@ -10,7 +10,8 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 - feat: added abstract permission hierarchy where parent keys override descendant keys transitively.
 - fix: BUILD_BREAK now blocks water and lava bucket placement and pickup, including fluid placement from outside a region boundary.
-- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, ANIMAL_KILLING, VILLAGER_KILLING, EGG_USE, THROWABLE, SNOWBALL_USE, and POTION_USE.
+- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, ANIMAL_KILLING, VILLAGER_KILLING, EGG_USE, THROWABLE, SNOWBALL_USE, POTION_USE, and FARMING.
+- fix: FARMING permission is independent of BUILD, BREAK, and BUILD_BREAK; it solely controls breaking and planting crops on farmland (CropBlock and SweetBerryBushBlock on a farmland block), and BUILD/BREAK permissions no longer affect such actions.
 - fix: PVP, ANIMAL_KILLING, and VILLAGER_KILLING permissions now also block indirect player damage, including arrows, crossbow bolts, tridents, thrown potions, and sword sweep attacks.
 - fix: powder snow bucket placement now correctly checks BUCKET_BUILD permission instead of BUILD.
 - feat: added POTION_USE permission (child of THROWABLE) to control throwing of splash and lingering potions.
@@ -82,6 +83,7 @@ it overrides all descendant keys transitively, regardless of their own explicit 
 | EGG_USE | THROWABLE | true | Egg throwing permission. Controls whether players can throw eggs in the region. |
 | SNOWBALL_USE | THROWABLE | true | Snowball throwing permission. Controls whether players can throw snowballs in the region. |
 | POTION_USE | THROWABLE | true | Potion throwing permission. Controls whether players can throw splash or lingering potions in the region. |
+| FARMING | - | true | Farming permission. Controls breaking and planting crops (wheat, carrots, potatoes, etc.) on farmland. Independent of BUILD, BREAK, and BUILD_BREAK. |
 
 ### Teleport Point
 

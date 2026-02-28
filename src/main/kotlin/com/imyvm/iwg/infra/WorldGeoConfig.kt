@@ -233,6 +233,16 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_DEFAULT_FARMING = Option(
+            "core.permission.farming.default",
+            true,
+            "the default farming (breaking and planting crops on farmland) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,

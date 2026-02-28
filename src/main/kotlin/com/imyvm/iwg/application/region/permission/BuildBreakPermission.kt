@@ -17,10 +17,12 @@ import net.minecraft.block.AbstractRedstoneGateBlock
 import net.minecraft.block.BedBlock
 import net.minecraft.block.BellBlock
 import net.minecraft.block.BlockWithEntity
+import net.minecraft.block.Blocks
 import net.minecraft.block.ButtonBlock
 import net.minecraft.block.CakeBlock
 import net.minecraft.block.CartographyTableBlock
 import net.minecraft.block.CraftingTableBlock
+import net.minecraft.block.CropBlock
 import net.minecraft.block.DaylightDetectorBlock
 import net.minecraft.block.DoorBlock
 import net.minecraft.block.FenceGateBlock
@@ -30,6 +32,7 @@ import net.minecraft.block.LoomBlock
 import net.minecraft.block.NoteBlock
 import net.minecraft.block.SmithingTableBlock
 import net.minecraft.block.StonecutterBlock
+import net.minecraft.block.SweetBerryBushBlock
 import net.minecraft.block.TrapdoorBlock
 import net.minecraft.entity.Bucketable
 import net.minecraft.item.BlockItem
@@ -50,6 +53,8 @@ fun playerBuildPermission() {
         val pos = hitResult.blockPos
         val block = world.getBlockState(pos).block
         if (!player.isSneaking && isInteractiveBlock(block)) return@register ActionResult.PASS
+        val cropBlock = (stack.item as BlockItem).block
+        if ((cropBlock is CropBlock || cropBlock is SweetBerryBushBlock) && block == Blocks.FARMLAND) return@register ActionResult.PASS
         val placePos = pos.offset(hitResult.side)
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
         regionAndScope?.let { (region, scope) ->
@@ -144,7 +149,8 @@ fun playerBucketScoopEntityPermission() {
 }
 
 fun playerBreakPermission() {
-    PlayerBlockBreakEvents.BEFORE.register { _, player, pos, _, _ ->
+    PlayerBlockBreakEvents.BEFORE.register { world, player, pos, blockState, _ ->
+        if (isCropOnFarmland(world, pos, blockState.block)) return@register true
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world, pos.x, pos.z)
         regionAndScope?.let { (region, scope) ->
             val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BREAK, scope, PERMISSION_DEFAULT_BREAK.value)
