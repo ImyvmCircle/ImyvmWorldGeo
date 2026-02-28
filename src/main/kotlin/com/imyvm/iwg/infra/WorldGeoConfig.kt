@@ -145,7 +145,7 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
         @ConfigOption
         val PERMISSION_DEFAULT_PVP = Option(
             "core.permission.pvp.default",
-            false,
+            true,
             "the default PVP (player vs player damage) permission in regions."
         ) { obj: Config, path: String? ->
             obj.getBoolean(path)

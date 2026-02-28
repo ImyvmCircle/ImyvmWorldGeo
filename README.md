@@ -70,7 +70,7 @@ it overrides all descendant keys transitively, regardless of their own explicit 
 | TOGGLE | - | true | Door, trapdoor, and fence gate open/close permission. |
 | REDSTONE | TOGGLE | true | Redstone device interaction permission (buttons, levers, comparators, repeaters, note blocks, daylight sensors, bells). Excludes ancient city sculk mechanics. |
 | TRADE | - | true | Trading with villagers and wandering traders permission. |
-| PVP | - | false | Player vs player damage permission. Both the attacker and defender must have this permission for damage to be dealt. |
+| PVP | - | true | Player vs player damage permission. Both the attacker and defender must have this permission for damage to be dealt. |
 | CONTAINER | - | true | Container interaction permission. |
 | FLY | - | false | Flight permission within the region. |
 | ANIMAL_KILLING | - | true | Passive animal damage permission. Does not apply to monsters or neutral mobs. |
