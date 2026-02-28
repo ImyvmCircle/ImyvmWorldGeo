@@ -8,6 +8,8 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 #### 1.2.1
 
+This version add permissions to the mod.
+
 - feat: added abstract permission hierarchy where parent keys override descendant keys transitively.
 - fix: BUILD_BREAK now blocks water and lava bucket placement and pickup, including fluid placement from outside a region boundary.
 - feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, ANIMAL_KILLING, VILLAGER_KILLING, EGG_USE, THROWABLE, SNOWBALL_USE, POTION_USE, and FARMING.
