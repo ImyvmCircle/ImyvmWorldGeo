@@ -184,6 +184,8 @@
   "setting.permission.trade": "&cPermission denied: &rYou are not allowed to trade with villagers or merchants in this region.",
   "setting.permission.pvp": "&cPermission denied: &rPVP is not permitted in this region. Both parties must have PVP permission.",
   "setting.permission.animal_killing": "&cPermission denied: &rYou are not allowed to harm passive animals in this region.",
+  "setting.permission.villager_killing": "&cPermission denied: &rYou are not allowed to harm villagers in this region.",
+  "setting.permission.egg_use": "&cPermission denied: &rYou are not allowed to throw eggs in this region.",
   "setting.permission.container": "You dont have permission to use container in this place.",
   "setting.permission.fly.enabled": "You now have permission to fly in a flying-allowed area.",
   "setting.permission.fly.restored": "Your flight has been restored returning to a flying-allowed area.",

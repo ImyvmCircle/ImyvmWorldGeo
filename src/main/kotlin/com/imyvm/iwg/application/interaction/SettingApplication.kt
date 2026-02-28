@@ -14,6 +14,8 @@ import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_PVP
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_BUILD
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_SCOOP
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_ANIMAL_KILLING
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_VILLAGER_KILLING
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_EGG_USE
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -274,6 +276,8 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
         PermissionKey.BUCKET_BUILD -> PERMISSION_DEFAULT_BUCKET_BUILD.value
         PermissionKey.BUCKET_SCOOP -> PERMISSION_DEFAULT_BUCKET_SCOOP.value
         PermissionKey.ANIMAL_KILLING -> PERMISSION_DEFAULT_ANIMAL_KILLING.value
+        PermissionKey.VILLAGER_KILLING -> PERMISSION_DEFAULT_VILLAGER_KILLING.value
+        PermissionKey.EGG_USE -> PERMISSION_DEFAULT_EGG_USE.value
     }
 }
 

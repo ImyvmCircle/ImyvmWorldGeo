@@ -49,7 +49,9 @@ enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     PVP,
     BUCKET_BUILD(BUILD),
     BUCKET_SCOOP(BREAK),
-    ANIMAL_KILLING
+    ANIMAL_KILLING,
+    VILLAGER_KILLING,
+    EGG_USE
 }
 
 enum class EffectKey : BaseKey {

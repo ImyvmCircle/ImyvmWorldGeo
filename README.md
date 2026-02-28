@@ -10,7 +10,7 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 - feat: added abstract permission hierarchy where parent keys override descendant keys transitively.
 - fix: BUILD_BREAK now blocks water and lava bucket placement and pickup, including fluid placement from outside a region boundary.
-- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, and ANIMAL_KILLING.
+- feat: added specific permission nodes BUILD, BREAK, TOGGLE, REDSTONE, TRADE, PVP, BUCKET_BUILD, BUCKET_SCOOP, ANIMAL_KILLING, VILLAGER_KILLING, and EGG_USE.
 
 ## Introduction
 
@@ -74,6 +74,8 @@ it overrides all descendant keys transitively, regardless of their own explicit 
 | CONTAINER | - | true | Container interaction permission. |
 | FLY | - | false | Flight permission within the region. |
 | ANIMAL_KILLING | - | true | Passive animal damage permission. Does not apply to monsters or neutral mobs. |
+| VILLAGER_KILLING | - | true | Villager damage permission. Applies to villager entities only. |
+| EGG_USE | - | true | Egg throwing permission. Controls whether players can throw eggs in the region. |
 
 ### Teleport Point
 

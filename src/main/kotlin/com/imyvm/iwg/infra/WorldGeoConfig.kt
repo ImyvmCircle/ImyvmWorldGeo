@@ -183,6 +183,26 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_DEFAULT_VILLAGER_KILLING = Option(
+            "core.permission.villager_killing.default",
+            true,
+            "the default villager killing (damage to villagers) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_EGG_USE = Option(
+            "core.permission.egg_use.default",
+            true,
+            "the default egg use (throwing eggs) permission in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,

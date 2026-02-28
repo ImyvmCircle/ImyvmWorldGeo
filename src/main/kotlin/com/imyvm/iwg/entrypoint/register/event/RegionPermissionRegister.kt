@@ -15,6 +15,8 @@ fun registerRegionPermissions() {
     registerPlayerTradePermission()
     registerPlayerPvpPermission()
     registerPlayerAnimalKillingPermission()
+    registerPlayerVillagerKillingPermission()
+    registerPlayerEggUsePermission()
 }
 
 fun registerPlayerBuildBreakPermission(){
@@ -61,4 +63,12 @@ fun registerPlayerPvpPermission() {
 
 fun registerPlayerAnimalKillingPermission() {
     playerAnimalKillingPermission()
+}
+
+fun registerPlayerVillagerKillingPermission() {
+    playerVillagerKillingPermission()
+}
+
+fun registerPlayerEggUsePermission() {
+    playerEggUsePermission()
 }
