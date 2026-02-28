@@ -59,8 +59,10 @@ Settings are key-value pairs associated with regions or scopes,
 which can be either global (applicable to all players) or personal (specific to individual players).
 When there is a conflict between regional and scope settings, scope settings take precedence,
 and personal settings are of higher priority when the corresponding global settings are added.
-For permission settings, a parent-child hierarchy applies: if any ancestor key has an explicit setting,
-it overrides all descendant keys transitively, regardless of their own explicit values.
+For permission settings, a parent-child hierarchy applies: if the specific (child) key has an explicit
+setting that covers the current scope and subject, it takes full precedence over any ancestor keys.
+Only when no explicit setting exists for the child key will the system fall back to the immediate parent,
+and then further ancestors in order, until a match is found.
 
 #### Permission Keys
 

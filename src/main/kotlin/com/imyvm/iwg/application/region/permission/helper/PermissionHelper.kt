@@ -7,9 +7,9 @@ import com.imyvm.iwg.domain.component.PermissionSetting
 import java.util.*
 
 sealed class PermissionDenialSource {
-    object AtScope : PermissionDenialSource()
-    object AtRegion : PermissionDenialSource()
-    object ByDefault : PermissionDenialSource()
+    data object AtScope : PermissionDenialSource()
+    data object AtRegion : PermissionDenialSource()
+    data object ByDefault : PermissionDenialSource()
 }
 
 fun hasPermission(
@@ -58,19 +58,20 @@ private fun checkPermissionWithSource(
     key: PermissionKey,
     scope: GeoScope?
 ): Pair<Boolean, PermissionDenialSource>? {
+    val explicit = checkExplicitPermissionWithSource(region, playerUUID, key, scope)
+    if (explicit != null) return explicit
     val ancestors = buildList {
         var current = key.parent
         while (current != null) {
             add(current)
             current = current.parent
         }
-        reverse()
     }
     for (ancestor in ancestors) {
         val result = checkExplicitPermissionWithSource(region, playerUUID, ancestor, scope)
         if (result != null) return result
     }
-    return checkExplicitPermissionWithSource(region, playerUUID, key, scope)
+    return null
 }
 
 private fun checkExplicitPermissionWithSource(
