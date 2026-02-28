@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.hasPermission
+import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
+import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_ANIMAL_KILLING
@@ -10,14 +11,19 @@ import net.minecraft.entity.mob.Angerable
 import net.minecraft.entity.passive.AnimalEntity
 import net.minecraft.util.ActionResult
 
+import net.minecraft.util.Hand
+
 fun playerAnimalKillingPermission() {
-    AttackEntityCallback.EVENT.register { player, world, hand, entity, _ ->
+    AttackEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (entity !is AnimalEntity || entity is Angerable) return@register ActionResult.PASS
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockX, entity.blockZ)
         regionAndScope?.let { (region, scope) ->
-            if (!hasPermission(region, player.uuid, PermissionKey.ANIMAL_KILLING, scope, PERMISSION_DEFAULT_ANIMAL_KILLING.value)) {
-                player.sendMessage(Translator.tr("setting.permission.animal_killing"))
-                return@register ActionResult.FAIL
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ANIMAL_KILLING, scope, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
+            if (denial != null) {
+                if (hitResult == null) {
+                    player.sendMessage(Translator.tr("setting.permission.animal_killing", buildPermissionDenialContext(region, scope, denial)))
+                }
+                return@register ActionResult.CONSUME
             }
         }
         ActionResult.PASS

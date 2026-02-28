@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.hasPermission
+import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
+import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_REDSTONE
@@ -14,6 +15,8 @@ import net.minecraft.block.LeverBlock
 import net.minecraft.block.NoteBlock
 import net.minecraft.util.ActionResult
 
+import net.minecraft.util.Hand
+
 fun playerRedstonePermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
         val pos = hitResult.blockPos
@@ -21,9 +24,12 @@ fun playerRedstonePermission() {
         if (!isRedstoneDevice(block)) return@register ActionResult.PASS
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
         regionAndScope?.let { (region, scope) ->
-            if (!hasPermission(region, player.uuid, PermissionKey.REDSTONE, scope, PERMISSION_DEFAULT_REDSTONE.value)) {
-                player.sendMessage(Translator.tr("setting.permission.redstone"))
-                return@register ActionResult.FAIL
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.REDSTONE, scope, PERMISSION_DEFAULT_REDSTONE.value)
+            if (denial != null) {
+                if (hand == Hand.MAIN_HAND) {
+                    player.sendMessage(Translator.tr("setting.permission.redstone", buildPermissionDenialContext(region, scope, denial)))
+                }
+                return@register ActionResult.CONSUME
             }
         }
         ActionResult.PASS

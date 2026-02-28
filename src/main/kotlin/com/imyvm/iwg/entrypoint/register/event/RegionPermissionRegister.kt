@@ -27,8 +27,8 @@ fun registerPlayerBuildBreakPermission(){
 }
 
 fun registerPlayerContainerInteractionPermission() {
-    UseBlockCallback.EVENT.register { player, world, _, hitResult ->
-        playerContainerInteraction(player, world, hitResult)
+    UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
+        playerContainerInteraction(player, world, hand, hitResult)
     }
 }
 
