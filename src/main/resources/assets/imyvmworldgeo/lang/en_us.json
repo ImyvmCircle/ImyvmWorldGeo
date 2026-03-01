@@ -1,5 +1,5 @@
 {
-  "interaction.game.point.selection": "&aSelected position: &e{0}\n&aAll positions:\n&b{1}",
+  "interaction.game.point.selection": "&aAdded point: &e{0}&a. All selected points:\n{1}",
 
   "interaction.meta.not_found_id": "&cError: &rRegion with ID &e{0}&r not found.",
   "interaction.meta.not_found_name": "&cError: &rRegion with name &e{0}&r not found.",
@@ -8,11 +8,15 @@
   "interaction.meta.name.repeated_same_name": "&eNew name &b{0}&e is the same as the current name.",
   "interaction.meta.name.duplicate_name": "&cNew name &e{0}&c is already in use by another region.",
 
-  "interaction.meta.select.start": "&aSelection mode started. &7Use a command block to select positions.",
+  "interaction.meta.select.start": "&aSelection mode started. &7Right-click a block with a command block to add a point. Left-click any block to undo the last point.",
   "interaction.meta.select.already": "&eYou are already in selection mode.",
   "interaction.meta.select.stop": "&aSelection mode stopped.",
   "interaction.meta.select.not_in_mode": "&cYou are not in selection mode. &7Use /imyvm-world-geo select start first.",
   "interaction.meta.select.reset": "&aYour selection points have been reset. &7You are still in selection mode.",
+
+  "interaction.game.point.selection.undo": "&eUndid last point: &b{0}&e. Remaining selected points:\n{1}",
+  "interaction.game.point.selection.max_reached": "&cCannot add point: maximum limit of &e{0}&c points reached. Current selection:\n{1}",
+  "interaction.game.point.selection.min_reached": "&cCannot undo: minimum limit of &e{0}&c points reached. Current selection:\n{1}",
 
   "interaction.meta.create.success": "&aRegion &b{0}&a created successfully!",
   "interaction.meta.create.name_is_digits_only": "&cRegion/scope name cannot be digits only.",
@@ -105,9 +109,9 @@
 
   "interaction.meta.command.help.header": "§6§lImyvm World Geo Commands:",
 
-  "interaction.meta.command.help.selection.start": "§e/imyvmWorldGeo select start\n  §fStart selecting positions with a command block.",
-  "interaction.meta.command.help.selection.stop": "§e/imyvmWorldGeo select stop\n  §fStop selection mode.",
-  "interaction.meta.command.help.selection.reset": "§e/imyvmWorldGeo select reset\n  §fClear all selected points but keep selection mode active.",
+  "interaction.meta.command.help.selection.start": "§e/imyvmWorldGeo select start\n  §fStart point selection mode.\n  §7- Right-click a block with a command block to add a point.\n  §7- Left-click a block with a command block to undo the last point.\n  §7- Adding beyond the maximum or undoing below the minimum shows an error with the current list.",
+  "interaction.meta.command.help.selection.stop": "§e/imyvmWorldGeo select stop\n  §fStop selection mode and discard all selected points.",
+  "interaction.meta.command.help.selection.reset": "§e/imyvmWorldGeo select reset\n  §fClear all selected points but stay in selection mode. Bypasses the minimum point limit.",
 
   "interaction.meta.command.help.region.create": "§a/imyvmWorldGeo create <§bshapeType§a> [§bname§a]\n  §fCreate a region of the given shape (§brectangle§f, §bcircle§f, §bpolygon§f) from selected positions.\n  §fOptionally give it a name.",
   "interaction.meta.command.help.region.delete": "§c/imyvmWorldGeo delete <§bregionIdentifier§c>\n  §fDelete a region by its ID or name.",

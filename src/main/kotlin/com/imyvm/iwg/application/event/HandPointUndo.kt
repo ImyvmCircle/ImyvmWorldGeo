@@ -7,19 +7,17 @@ import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Items
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
-import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 
-fun handPointSelection(
+fun handPointUndo(
     player: PlayerEntity?,
     world: World?,
-    hand: Hand?,
-    hitResult: BlockHitResult?
+    hand: Hand?
 ): ActionResult {
-    if (player == null || world == null || hand == null || hitResult == null || world.isClient) {
+    if (player == null || world == null || hand == null || world.isClient) {
         return ActionResult.PASS
     }
+    if (hand != Hand.MAIN_HAND) return ActionResult.PASS
 
     val itemStack = player.getStackInHand(hand)
     if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
@@ -27,32 +25,27 @@ fun handPointSelection(
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
 
-    val maxPoints = WorldGeoConfig.SELECTION_MAX_POINTS.value
-    if (selectedPositions.size >= maxPoints) {
+    val minPoints = WorldGeoConfig.SELECTION_MIN_POINTS.value
+    if (selectedPositions.size <= minPoints) {
         player.sendMessage(
             Translator.tr(
-                "interaction.game.point.selection.max_reached",
-                maxPoints,
+                "interaction.game.point.selection.min_reached",
+                minPoints,
                 formatPointsList(selectedPositions)
             )
         )
         return ActionResult.SUCCESS
     }
 
-    val clickedPos = hitResult.blockPos
-    selectedPositions.add(clickedPos)
+    val removed = selectedPositions.removeAt(selectedPositions.lastIndex)
 
     player.sendMessage(
         Translator.tr(
-            "interaction.game.point.selection",
-            "(${clickedPos.x},${clickedPos.y},${clickedPos.z})",
+            "interaction.game.point.selection.undo",
+            "(${removed.x},${removed.y},${removed.z})",
             formatPointsList(selectedPositions)
         )
     )
 
     return ActionResult.SUCCESS
 }
-
-internal fun formatPointsList(positions: List<BlockPos>): String =
-    if (positions.isEmpty()) "&7(none)"
-    else positions.joinToString(separator = "\n") { "&b(${it.x},${it.y},${it.z})" }

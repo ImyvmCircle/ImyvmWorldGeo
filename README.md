@@ -10,6 +10,8 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 - feat: Add rule settings (SPAWN_MONSTERS, SPAWN_PHANTOMS).
 - feat: Add effect settings with amplifier support.
+- feat: Add undo selection point: left-click with command block removes the last added point. Add `core.selection.max_points` (default 12) and `core.selection.min_points` (default 1) config options.
+- fix: Selection mode point list display now applies MOTD color to every listed point.
 - lang: Improve block position display to `(x,y,z)` format in selection feedback.
 - lang: Settings display in region/scope info now categorizes by Permission, Effect, and Rule, with each entry on its own line using `key: value` format and color-coded headers.
 - lang: All player-facing text messages now use MOTD color formatting (errors red, warnings yellow, successes green, object names cyan/gold).
@@ -401,7 +403,7 @@ Provides utility functions for region data to improve usability for extension mo
 ## Commands
 
 - `/imyvmWorldGeo select start`  
-  Start selecting positions with a command block.
+  Start selecting positions with a command block. Right-click a block to add a point; left-click (on any block or in air) to undo the last point.
 
 - `/imyvmWorldGeo select stop`  
   Stop selection mode.
