@@ -91,6 +91,8 @@
   "interaction.meta.setting.error.region.duplicate_global": "Duplicate global setting: {0} already exists in this region.",
   "interaction.meta.setting.error.scope.duplicate_personal_player": "Duplicate personal setting: {0} already exists for player {1} in scope {2}.",
   "interaction.meta.setting.error.scope.duplicate_global": "Duplicate global setting: {0} already exists in scope {2}.",
+  "interaction.meta.setting.query.result": "§6Setting§r §b{0}§r = §a{1}§r  (in {2})",
+  "interaction.meta.setting.query.rule.not_set": "§6Setting§r §b{0}§r  (in {1}): §7not set — using vanilla default§r",
 
   "interaction.meta.command.query.result": "§5Query successful!§r Showing information for Region: \n§e{0}§r (ID: §6{1}§r), total area: §a{2} m²§r",
 

@@ -81,6 +81,15 @@ and then further ancestors in order, until a match is found.
 | POTION_USE | THROWABLE | true | Potion throwing permission. Controls whether players can throw splash or lingering potions in the region. |
 | FARMING | - | true | Farming permission. Controls breaking and planting crops (wheat, carrots, potatoes, etc.) on farmland. Independent of BUILD, BREAK, and BUILD_BREAK. |
 
+#### Rule Keys
+
+Rules control server-side gameplay mechanics within a region or scope. Unlike permissions, rules are not player-specific and have no parent-child hierarchy. The effective value follows the priority: scope setting → region setting → vanilla default (null = not set, falls through to vanilla behavior).
+
+| Key | Default | Description |
+|-----|---------|-------------|
+| SPAWN_MONSTERS | (vanilla) | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
+| SPAWN_PHANTOMS | (vanilla) | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
+
 ### Teleport Point
 
 A teleport point is attached to a scope in the region,
@@ -190,6 +199,12 @@ Handles player-triggered actions related to regions and their scopes.
 - `getPermissionValueRegion(player: ServerPlayerEntity, region: Region?, scopeName: String? , targetPlayerNameStr: String?, keyString: String)`
   Retrieves the permission value of a setting.
 
+- `getRuleValueRegion(region: Region?, keyString: String): Boolean?`
+  Retrieves the effective rule value for a region. Returns `null` if the rule is not set (vanilla default applies).
+
+- `getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean?`
+  Retrieves the effective rule value for a specific scope within a region. Returns `null` if the rule is not set (vanilla default applies).
+
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
   Queries detailed information about a region.
 
@@ -277,6 +292,9 @@ Provides access to region data and database operations for extension functions.
 
 - `getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
   Retrieves the permission value of a setting for a region and scope.
+
+- `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean?`
+  Retrieves the effective rule value for a region and optional scope. Returns `null` if the rule is not set (vanilla default applies).
 
 ### UtilApi
 

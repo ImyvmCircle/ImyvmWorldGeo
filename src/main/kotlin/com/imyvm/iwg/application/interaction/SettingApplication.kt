@@ -1,5 +1,6 @@
 package com.imyvm.iwg.application.interaction
 
+import com.imyvm.iwg.application.region.rule.helper.getRuleValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD_BREAK
@@ -292,3 +293,55 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
 private fun isRuleKey(key: String) = runCatching { RuleKey.valueOf(key) }.isSuccess
+
+fun onCertificateRuleValue(
+    region: Region?,
+    scopeName: String?,
+    keyString: String,
+): Boolean? {
+    val key = parseKey(keyString)
+    if (key !is RuleKey) throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    if (region == null) return null
+    val scope = scopeName?.let {
+        try { region.getScopeByName(it) } catch (e: IllegalArgumentException) { null }
+    }
+    return getRuleValue(region, key, scope)
+}
+
+fun onQuerySettingValue(
+    player: ServerPlayerEntity,
+    region: Region,
+    scopeName: String?,
+    keyString: String,
+    targetPlayerStr: String?
+) {
+    try {
+        val key = parseKey(keyString)
+        val displayTarget = if (scopeName != null) "Scope &b${scopeName}&r of Region &b${region.name}&r" else "Region &b${region.name}&r"
+        when (key) {
+            is RuleKey -> {
+                val value = onCertificateRuleValue(region, scopeName, keyString)
+                if (value == null) {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                } else {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget))
+                }
+            }
+            is PermissionKey -> {
+                val value = onCertificatePermissionValue(player, region, scopeName, targetPlayerStr, keyString)
+                player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget))
+            }
+            is EffectKey -> {
+                val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
+                val setting = settingsContainer.filterIsInstance<EffectSetting>().firstOrNull { it.key == key }
+                if (setting == null) {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                } else {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget))
+                }
+            }
+        }
+    } catch (e: IllegalArgumentException) {
+        player.sendMessage(Translator.tr(e.message))
+    }
+}

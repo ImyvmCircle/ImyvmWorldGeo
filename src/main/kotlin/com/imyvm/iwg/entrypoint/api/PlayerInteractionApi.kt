@@ -33,6 +33,10 @@ object PlayerInteractionApi {
     fun removeSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?) = onHandleSetting(player, region, scopeName, keyString, null, targetPlayerStr)
     fun getPermissionValueRegion(player: ServerPlayerEntity, region: Region?, scopeName: String?, targetPlayerNameStr: String?, keyString: String) =
         onCertificatePermissionValue(player, region, scopeName, targetPlayerNameStr, keyString)
+    fun getRuleValueRegion(region: Region?, keyString: String) =
+        onCertificateRuleValue(region, null, keyString)
+    fun getRuleValueScope(region: Region?, scopeName: String, keyString: String) =
+        onCertificateRuleValue(region, scopeName, keyString)
     fun queryRegionInfo(player: ServerPlayerEntity, region: Region) = onQueryRegion(player, region, true)
     fun toggleActionBar(player: ServerPlayerEntity) = onToggleActionBar(player)
     fun estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)

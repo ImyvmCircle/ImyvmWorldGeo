@@ -476,7 +476,7 @@ private fun runQuerySettingValue(context: CommandContext<ServerCommandSource>): 
     val keyString = context.getArgument("key", String::class.java)
     val targetPlayer = getOptionalArgument(context, "playerName")
     return identifierHandler(regionIdentifier, player) { regionToQuery ->
-        onCertificatePermissionValue(player, regionToQuery, scopeName, targetPlayer, keyString) }
+        onQuerySettingValue(player, regionToQuery, scopeName, keyString, targetPlayer) }
 }
 
 private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {

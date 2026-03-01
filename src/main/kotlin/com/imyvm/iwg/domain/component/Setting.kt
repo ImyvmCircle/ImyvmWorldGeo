@@ -66,6 +66,5 @@ enum class EffectKey : BaseKey {
 
 enum class RuleKey : BaseKey {
     SPAWN_MONSTERS,
-    FIRE_SPREAD,
-    PVP_ALLOWED
+    SPAWN_PHANTOMS
 }
