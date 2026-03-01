@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.2.2
+# IMYVMWorldGeo 1.21 1.2.3
 
 ## Changelog
 
@@ -6,21 +6,9 @@
 
 This major version (1.2.x) focuses on enriching and improving the settings system.
 
-#### 1.2.2
+#### 1.2.3
 
-- fix: Empty bucket used on a cauldron now correctly enforces BUCKET_SCOOP (and its ancestors BUILD_BREAK, BREAK) permission via UseBlockCallback.
-- feat: Add rule settings (SPAWN_MONSTERS, SPAWN_PHANTOMS).
-- feat: Add rule setting TNT_BLOCK_PROTECTION: when true, TNT explosions do not destroy blocks inside the region.
-- feat: Add effect settings with amplifier support.
-- feat: Add undo selection point: left-click with command block removes the last added point. Add `core.selection.max_points` (default 12) and `core.selection.min_points` (default 1) config options.
-- fix: Selection mode point list display now applies MOTD color to every listed point.
-- lang: Improve block position display to `(x,y,z)` format in selection feedback.
-- lang: Settings display in region/scope info now categorizes by Permission, Effect, and Rule, with each entry on its own line using `key: value` format and color-coded headers.
-- lang: All player-facing text messages now use MOTD color formatting (errors red, warnings yellow, successes green, object names cyan/gold).
-- lang: Region list command now shows each region on its own line via translation key.
-- feat: Add IGNITE permission (flint and steel and fire charges, including TNT and creeper ignition). Independent of BUILD_BREAK and BUILD.
-- feat: Add ARMOR_STAND permission (placing, breaking, and interacting with armor stands and their equipment).
-- feat: Add ITEM_FRAME permission (placing, breaking, and interacting with item frames and glow item frames and their held items).
+This version is to make supplements and fixes bugs.
 
 ## Introduction
 
