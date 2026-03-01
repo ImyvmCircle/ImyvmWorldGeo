@@ -55,7 +55,10 @@ enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     EGG_USE(THROWABLE),
     SNOWBALL_USE(THROWABLE),
     POTION_USE(THROWABLE),
-    FARMING
+    FARMING,
+    IGNITE,
+    ARMOR_STAND,
+    ITEM_FRAME
 }
 
 enum class EffectKey(val effectId: String) : BaseKey {

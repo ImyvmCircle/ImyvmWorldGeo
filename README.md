@@ -17,6 +17,9 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 - lang: Settings display in region/scope info now categorizes by Permission, Effect, and Rule, with each entry on its own line using `key: value` format and color-coded headers.
 - lang: All player-facing text messages now use MOTD color formatting (errors red, warnings yellow, successes green, object names cyan/gold).
 - lang: Region list command now shows each region on its own line via translation key.
+- feat: Add IGNITE permission (flint and steel and fire charges, including TNT and creeper ignition). Independent of BUILD_BREAK and BUILD.
+- feat: Add ARMOR_STAND permission (placing, breaking, and interacting with armor stands and their equipment).
+- feat: Add ITEM_FRAME permission (placing, breaking, and interacting with item frames and glow item frames and their held items).
 
 ## Introduction
 
@@ -88,6 +91,9 @@ and then further ancestors in order, until a match is found.
 | SNOWBALL_USE | THROWABLE | true | Snowball throwing permission. Controls whether players can throw snowballs in the region. |
 | POTION_USE | THROWABLE | true | Potion throwing permission. Controls whether players can throw splash or lingering potions in the region. |
 | FARMING | - | true | Farming permission. Controls breaking and planting crops (wheat, carrots, potatoes, etc.) on farmland. Independent of BUILD, BREAK, and BUILD_BREAK. |
+| IGNITE | - | true | Ignite permission. Controls all use of flint and steel and fire charges, including igniting blocks, TNT, and creepers. Independent of BUILD_BREAK and BUILD: disabling BUILD or BUILD_BREAK does not prevent ignition. |
+| ARMOR_STAND | - | true | Armor stand permission. Controls placing armor stand items, breaking armor stand entities by attack, and interacting with their equipment slots. Independent of BUILD_BREAK. |
+| ITEM_FRAME | - | true | Item frame permission. Controls placing item frame and glow item frame entities, breaking them by attack, and interacting with their held items (adding, removing, or rotating). Applies to both regular and glow item frames. Independent of BUILD_BREAK. |
 
 #### Rule Keys
 

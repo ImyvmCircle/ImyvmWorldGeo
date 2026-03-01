@@ -20,6 +20,9 @@ fun registerRegionPermissions() {
     registerPlayerSnowballUsePermission()
     registerPlayerPotionUsePermission()
     registerPlayerFarmingPermission()
+    registerPlayerIgnitePermission()
+    registerPlayerArmorStandPermission()
+    registerPlayerItemFramePermission()
 }
 
 fun registerPlayerBuildBreakPermission(){
@@ -86,4 +89,16 @@ fun registerPlayerPotionUsePermission() {
 
 fun registerPlayerFarmingPermission() {
     playerFarmingPermission()
+}
+
+fun registerPlayerIgnitePermission() {
+    playerIgnitePermission()
+}
+
+fun registerPlayerArmorStandPermission() {
+    playerArmorStandPermission()
+}
+
+fun registerPlayerItemFramePermission() {
+    playerItemFramePermission()
 }

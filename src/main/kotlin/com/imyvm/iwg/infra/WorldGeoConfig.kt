@@ -243,6 +243,36 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
+        val PERMISSION_DEFAULT_IGNITE = Option(
+            "core.permission.ignite.default",
+            true,
+            "the default ignite (using flint and steel or fire charges to ignite blocks and entities, including TNT and creepers) permission in regions. Independent of BUILD and BUILD_BREAK."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_ARMOR_STAND = Option(
+            "core.permission.armor_stand.default",
+            true,
+            "the default armor stand permission (placing armor stand items, breaking armor stand entities, and interacting with their equipment slots) in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val PERMISSION_DEFAULT_ITEM_FRAME = Option(
+            "core.permission.item_frame.default",
+            true,
+            "the default item frame permission (placing item frame and glow item frame entities, breaking them, and interacting with their held items) in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
         val MIN_RECTANGLE_AREA = Option(
             "core.min_rectangle_area",
             100.0,
