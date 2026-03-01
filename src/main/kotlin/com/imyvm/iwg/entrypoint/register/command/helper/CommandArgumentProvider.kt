@@ -55,6 +55,11 @@ val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { 
         "permission" -> PermissionKey.entries.forEach { builder.suggest(it.name) }
         "effect"     -> EffectKey.entries.forEach { builder.suggest(it.name) }
         "rule"       -> RuleKey.entries.forEach { builder.suggest(it.name) }
+        else -> {
+            PermissionKey.entries.forEach { builder.suggest(it.name) }
+            EffectKey.entries.forEach { builder.suggest(it.name) }
+            RuleKey.entries.forEach { builder.suggest(it.name) }
+        }
     }
 
     builder.buildFuture()

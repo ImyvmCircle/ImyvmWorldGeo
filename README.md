@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.2.1
+# IMYVMWorldGeo 1.21 1.2.2
 
 ## Changelog
 
