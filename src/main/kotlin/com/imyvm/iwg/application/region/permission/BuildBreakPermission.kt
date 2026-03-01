@@ -73,16 +73,29 @@ fun playerBuildPermission() {
 fun playerBucketUsePermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
         val stack = player.getStackInHand(hand)
-        if (stack.item !is PowderSnowBucketItem) return@register ActionResult.PASS
-        val placePos = hitResult.blockPos.offset(hitResult.side)
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_BUILD, scope, PERMISSION_DEFAULT_BUCKET_BUILD.value)
-            if (denial != null) {
-                if (hand == Hand.MAIN_HAND) {
-                    player.sendMessage(Translator.tr("setting.permission.bucket_build", buildPermissionDenialContext(region, scope, denial)))
+        if (stack.isOf(Items.BUCKET)) {
+            val pos = hitResult.blockPos
+            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
+            regionAndScope?.let { (region, scope) ->
+                val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_SCOOP, scope, PERMISSION_DEFAULT_BUCKET_SCOOP.value)
+                if (denial != null) {
+                    if (hand == Hand.MAIN_HAND) {
+                        player.sendMessage(Translator.tr("setting.permission.bucket_scoop", buildPermissionDenialContext(region, scope, denial)))
+                    }
+                    return@register ActionResult.CONSUME
                 }
-                return@register ActionResult.CONSUME
+            }
+        } else if (stack.item is PowderSnowBucketItem) {
+            val placePos = hitResult.blockPos.offset(hitResult.side)
+            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
+            regionAndScope?.let { (region, scope) ->
+                val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_BUILD, scope, PERMISSION_DEFAULT_BUCKET_BUILD.value)
+                if (denial != null) {
+                    if (hand == Hand.MAIN_HAND) {
+                        player.sendMessage(Translator.tr("setting.permission.bucket_build", buildPermissionDenialContext(region, scope, denial)))
+                    }
+                    return@register ActionResult.CONSUME
+                }
             }
         }
         ActionResult.PASS
