@@ -105,5 +105,6 @@ enum class EffectKey(val effectId: String) : BaseKey {
 
 enum class RuleKey : BaseKey {
     SPAWN_MONSTERS,
-    SPAWN_PHANTOMS
+    SPAWN_PHANTOMS,
+    TNT_BLOCK_PROTECTION
 }

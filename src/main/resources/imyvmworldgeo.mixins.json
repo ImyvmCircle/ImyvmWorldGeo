@@ -3,7 +3,8 @@
 	"package": "com.imyvm.iwg.mixin",
 	"compatibilityLevel": "JAVA_21",
 	"mixins": [
-		"rule.ServerWorldSpawnMixin"
+		"rule.ServerWorldSpawnMixin",
+		"rule.ExplosionBlockProtectionMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

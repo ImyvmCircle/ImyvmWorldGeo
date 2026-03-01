@@ -10,6 +10,7 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 - fix: Empty bucket used on a cauldron now correctly enforces BUCKET_SCOOP (and its ancestors BUILD_BREAK, BREAK) permission via UseBlockCallback.
 - feat: Add rule settings (SPAWN_MONSTERS, SPAWN_PHANTOMS).
+- feat: Add rule setting TNT_BLOCK_PROTECTION: when true, TNT explosions do not destroy blocks inside the region.
 - feat: Add effect settings with amplifier support.
 - feat: Add undo selection point: left-click with command block removes the last added point. Add `core.selection.max_points` (default 12) and `core.selection.min_points` (default 1) config options.
 - fix: Selection mode point list display now applies MOTD color to every listed point.
@@ -103,6 +104,7 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 |-----|---------|-------------|
 | SPAWN_MONSTERS | (vanilla) | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
 | SPAWN_PHANTOMS | (vanilla) | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
+| TNT_BLOCK_PROTECTION | (vanilla) | When set to true, TNT explosions do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
 
 #### Effect Keys
 
