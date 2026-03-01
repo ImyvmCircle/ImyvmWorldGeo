@@ -8,7 +8,7 @@ import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_CONTAINER
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_FLY
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BREAK
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_TOGGLE
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_INTERACTION
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_REDSTONE
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_TRADE
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_PVP
@@ -270,11 +270,11 @@ private fun isDuplicateSetting(
 private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
     return when (key) {
         PermissionKey.BUILD_BREAK -> PERMISSION_DEFAULT_BUILD_BREAK.value
+        PermissionKey.INTERACTION -> PERMISSION_DEFAULT_INTERACTION.value
         PermissionKey.CONTAINER -> PERMISSION_DEFAULT_CONTAINER.value
         PermissionKey.FLY -> PERMISSION_DEFAULT_FLY.value
         PermissionKey.BUILD -> PERMISSION_DEFAULT_BUILD.value
         PermissionKey.BREAK -> PERMISSION_DEFAULT_BREAK.value
-        PermissionKey.TOGGLE -> PERMISSION_DEFAULT_TOGGLE.value
         PermissionKey.REDSTONE -> PERMISSION_DEFAULT_REDSTONE.value
         PermissionKey.TRADE -> PERMISSION_DEFAULT_TRADE.value
         PermissionKey.PVP -> PERMISSION_DEFAULT_PVP.value

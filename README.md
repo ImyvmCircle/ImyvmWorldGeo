@@ -75,11 +75,11 @@ and then further ancestors in order, until a match is found.
 | BREAK | BUILD_BREAK | true | Block breaking permission. |
 | BUCKET_BUILD | BUILD | true | Non-empty bucket fluid placement permission (placing water, lava, etc.). |
 | BUCKET_SCOOP | BREAK | true | Empty bucket fluid or creature collection permission. |
-| TOGGLE | - | true | Door, trapdoor, and fence gate open/close permission. |
-| REDSTONE | TOGGLE | true | Redstone device interaction permission (buttons, levers, comparators, repeaters, note blocks, daylight sensors, bells). Excludes ancient city sculk mechanics. |
+| INTERACTION | - | true | State-changing block interaction permission. Covers doors, trapdoors, fence gates, lecterns, chiseled bookshelves, cakes, candle cakes, flower pots, composters, dragon eggs, respawn anchors, jukeboxes, cauldrons, beehives, and vaults. |
+| CONTAINER | INTERACTION | true | Container interaction permission. |
+| REDSTONE | INTERACTION | true | Redstone device interaction permission (buttons, levers, comparators, repeaters, note blocks, daylight sensors, bells). Excludes ancient city sculk mechanics. |
 | TRADE | - | true | Trading with villagers and wandering traders permission. |
 | PVP | - | true | Player vs player damage permission. Both the attacker and defender must have this permission for damage to be dealt. |
-| CONTAINER | - | true | Container interaction permission. |
 | FLY | - | false | Flight permission within the region. |
 | ANIMAL_KILLING | - | true | Passive animal damage permission. Does not apply to monsters or neutral mobs. |
 | VILLAGER_KILLING | - | true | Villager damage permission. Applies to villager entities only. |

@@ -10,7 +10,7 @@ fun registerRegionPermissions() {
     registerPlayerBuildBreakPermission()
     registerPlayerContainerInteractionPermission()
     registerFlyPermission()
-    registerPlayerTogglePermission()
+    registerPlayerInteractionPermission()
     registerPlayerRedstonePermission()
     registerPlayerTradePermission()
     registerPlayerPvpPermission()
@@ -48,8 +48,8 @@ fun registerFlyPermission() {
     }
 }
 
-fun registerPlayerTogglePermission() {
-    playerTogglePermission()
+fun registerPlayerInteractionPermission() {
+    playerInteractionPermission()
 }
 
 fun registerPlayerRedstonePermission() {

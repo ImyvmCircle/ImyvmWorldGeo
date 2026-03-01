@@ -113,10 +113,10 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
 
         @JvmField
         @ConfigOption
-        val PERMISSION_DEFAULT_TOGGLE = Option(
-            "core.permission.toggle.default",
+        val PERMISSION_DEFAULT_INTERACTION = Option(
+            "core.permission.interaction.default",
             true,
-            "the default toggle (door/trapdoor/fence gate interaction) permission in regions."
+            "the default interaction (state-changing block interactions: doors, trapdoors, fence gates, cauldrons, composters, lecterns, chiseled bookshelves, cakes, flower pots, jukeboxes, respawn anchors, beehives, vaults, and dragon eggs) permission in regions."
         ) { obj: Config, path: String? ->
             obj.getBoolean(path)
         }

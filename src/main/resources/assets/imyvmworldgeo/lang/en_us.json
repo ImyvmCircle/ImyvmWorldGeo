@@ -200,7 +200,7 @@
   "setting.permission.break": "&cPermission denied: &rYou are not allowed to break blocks here. &7[{0}]",
   "setting.permission.bucket_build": "&cPermission denied: &rYou are not allowed to place fluids here. &7[{0}]",
   "setting.permission.bucket_scoop": "&cPermission denied: &rYou are not allowed to collect fluids or creatures here. &7[{0}]",
-  "setting.permission.toggle": "&cPermission denied: &rYou are not allowed to open or close doors and gates here. &7[{0}]",
+  "setting.permission.interaction": "&cPermission denied: &rYou are not allowed to interact with blocks that change their state here (doors, gates, cauldrons, composters, etc.). &7[{0}]",
   "setting.permission.redstone": "&cPermission denied: &rYou are not allowed to interact with redstone devices here. &7[{0}]",
   "setting.permission.trade": "&cPermission denied: &rYou are not allowed to trade with villagers or merchants here. &7[{0}]",
   "setting.permission.pvp.attacker_only": "&cPVP blocked: &rYou do not have PVP permission here. Your target is not restricted. &7[{0}]",
