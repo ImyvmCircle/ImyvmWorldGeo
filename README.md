@@ -8,7 +8,7 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 #### 1.2.2
 
-This version add rules to the mod.
+This version add rules and effects to the mod.
 
 ## Introduction
 
@@ -89,6 +89,54 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 |-----|---------|-------------|
 | SPAWN_MONSTERS | (vanilla) | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
 | SPAWN_PHANTOMS | (vanilla) | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
+
+#### Effect Keys
+
+Effect settings apply Minecraft status effects to players inside a region or scope. The value is the effect amplifier (0-indexed: 0 = Level 1, 1 = Level 2, etc.). Effects are refreshed every lazy ticker interval and last for `effect.duration_seconds` (default 5 s) after each application. Effect settings can be global or personal. The effective value follows the priority: scope personal → scope global → region personal → region global.
+
+Effects are applied silently (ambient-style: icon shown, no particles).
+
+| Key | Minecraft Effect | Description |
+|-----|-----------------|-------------|
+| SPEED | speed | Increases movement speed. |
+| JUMP | jump_boost | Increases jump height. |
+| DAMAGE_RESISTANCE | resistance | Reduces damage taken. |
+| SLOWNESS | slowness | Decreases movement speed. |
+| HASTE | haste | Increases mining and attack speed. |
+| MINING_FATIGUE | mining_fatigue | Decreases mining and attack speed. |
+| STRENGTH | strength | Increases melee attack damage. |
+| INSTANT_HEALTH | instant_health | Instantly restores health (applied each tick cycle). |
+| INSTANT_DAMAGE | instant_damage | Instantly deals damage (applied each tick cycle). |
+| NAUSEA | nausea | Causes a wobbling/distortion screen effect. |
+| REGENERATION | regeneration | Restores health over time. |
+| FIRE_RESISTANCE | fire_resistance | Grants immunity to fire and lava damage. |
+| WATER_BREATHING | water_breathing | Prevents drowning and allows breathing underwater. |
+| INVISIBILITY | invisibility | Makes the player invisible to other entities. |
+| BLINDNESS | blindness | Reduces vision range significantly. |
+| NIGHT_VISION | night_vision | Allows the player to see clearly in darkness. |
+| HUNGER | hunger | Increases food exhaustion rate. |
+| WEAKNESS | weakness | Decreases melee attack damage. |
+| POISON | poison | Deals damage over time (does not kill below 1 HP). |
+| WITHER | wither | Deals damage over time and can kill. |
+| HEALTH_BOOST | health_boost | Increases maximum health. |
+| ABSORPTION | absorption | Adds extra hearts that absorb damage before health. |
+| SATURATION | saturation | Restores food and saturation (applied each tick cycle). |
+| GLOWING | glowing | Causes the player to glow with an outline visible to others. |
+| LEVITATION | levitation | Causes the player to float upward. |
+| LUCK | luck | Increases loot quality from fishing and loot tables. |
+| UNLUCK | unluck | Decreases loot quality from fishing and loot tables. |
+| SLOW_FALLING | slow_falling | Reduces fall speed and nullifies fall damage. |
+| CONDUIT_POWER | conduit_power | Grants water breathing, night vision, and haste underwater. |
+| DOLPHINS_GRACE | dolphins_grace | Increases swimming speed. |
+| BAD_OMEN | bad_omen | Triggers a raid when the player enters a village. |
+| HERO_OF_THE_VILLAGE | hero_of_the_village | Grants discounts from villagers and gifts from villagers. |
+| DARKNESS | darkness | Periodically dims the player's vision. |
+| TRIAL_OMEN | trial_omen | Causes trial spawners to become ominous. |
+| RAID_OMEN | raid_omen | Converts to Bad Omen when entering a village. |
+| WIND_CHARGED | wind_charged | Causes a wind burst on death. |
+| WEAVING | weaving | Leaves cobweb blocks on death. |
+| OOZING | oozing | Spawns slimes on death. |
+| INFESTED | infested | Spawns silverfish when taking damage. |
 
 ### Teleport Point
 

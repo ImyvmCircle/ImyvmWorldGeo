@@ -5,6 +5,7 @@ import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.event.registerPointSelection
 import com.imyvm.iwg.inter.register.event.registerRegionPermissions
+import com.imyvm.iwg.inter.register.event.registerRegionEffects
 import com.imyvm.iwg.inter.register.command.register
 import com.imyvm.iwg.inter.register.registerDataLoadSave
 import net.fabricmc.api.ModInitializer
@@ -24,6 +25,7 @@ class ImyvmWorldGeo : ModInitializer {
 		registerPlayerGeographyPair()
 		registerLocationDisplay()
 		registerRegionPermissions()
+		registerRegionEffects()
 
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
 		registerPointSelection()
