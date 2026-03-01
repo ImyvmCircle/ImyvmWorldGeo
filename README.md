@@ -8,7 +8,12 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 #### 1.2.2
 
-This version add rules and effects to the mod.
+- feat: Add rule settings (SPAWN_MONSTERS, SPAWN_PHANTOMS).
+- feat: Add effect settings with amplifier support.
+- lang: Improve block position display to `(x,y,z)` format in selection feedback.
+- lang: Settings display in region/scope info now categorizes by Permission, Effect, and Rule, with each entry on its own line using `key: value` format and color-coded headers.
+- lang: All player-facing text messages now use MOTD color formatting (errors red, warnings yellow, successes green, object names cyan/gold).
+- lang: Region list command now shows each region on its own line via translation key.
 
 ## Introduction
 

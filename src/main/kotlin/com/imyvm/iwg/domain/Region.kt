@@ -2,6 +2,9 @@ package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.Setting
+import com.imyvm.iwg.domain.component.PermissionSetting
+import com.imyvm.iwg.domain.component.EffectSetting
+import com.imyvm.iwg.domain.component.RuleSetting
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
@@ -48,59 +51,48 @@ class Region(
             key: String,
             scopeName: String? = null
         ): List<Text> {
-            val (personalSettings, globalSettings) = groupAndFormatSettings(server, settings)
+            if (settings.isEmpty()) return emptyList()
 
             val result = mutableListOf<Text>()
 
-            translateAndAppend(result, globalSettings, key, scopeName, isPersonal = false)
-            translateAndAppend(result, personalSettings, key, scopeName, isPersonal = true)
+            val headerText = if (scopeName == null) Translator.tr("$key.header")
+                             else Translator.tr("$key.header", scopeName)
+            headerText?.let { result.add(it) }
+
+            val globalSettings = settings.filter { !it.isPersonal }
+            if (globalSettings.isNotEmpty()) {
+                Translator.tr("$key.global.header")?.let { result.add(it) }
+                appendTypeGroups(result, globalSettings, key)
+            }
+
+            settings.filter { it.isPersonal }
+                .groupBy { it.playerUUID }
+                .forEach { (uuid, playerSettings) ->
+                    val playerName = resolvePlayerName(server, uuid)
+                    Translator.tr("$key.personal.header", playerName)?.let { result.add(it) }
+                    appendTypeGroups(result, playerSettings, key)
+                }
 
             return result
         }
 
-        private fun formatSettingDisplay(server: MinecraftServer, setting: Setting): String {
-            val baseDisplay = "${setting.key}=${setting.value}"
-            return if (setting.isPersonal) {
-                val playerName = resolvePlayerName(server, setting.playerUUID)
-                "$baseDisplay (Player $playerName)"
-            } else {
-                baseDisplay
-            }
-        }
-
-        private fun groupAndFormatSettings(server: MinecraftServer, settings: List<Setting>): Pair<List<String>, List<String>> {
-            val personalSettings = mutableListOf<String>()
-            val globalSettings = mutableListOf<String>()
-
-            settings.forEach { s ->
-                val display = formatSettingDisplay(server, s)
-                if (s.isPersonal) {
-                    personalSettings.add(display)
-                } else {
-                    globalSettings.add(display)
-                }
+        private fun appendTypeGroups(result: MutableList<Text>, settings: List<Setting>, key: String) {
+            val permissions = settings.filterIsInstance<PermissionSetting>()
+            if (permissions.isNotEmpty()) {
+                Translator.tr("$key.permission.header")?.let { result.add(it) }
+                permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
             }
 
-            return Pair(personalSettings, globalSettings)
-        }
+            val effects = settings.filterIsInstance<EffectSetting>()
+            if (effects.isNotEmpty()) {
+                Translator.tr("$key.effect.header")?.let { result.add(it) }
+                effects.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+            }
 
-        private fun translateAndAppend(
-            result: MutableList<Text>,
-            settings: List<String>,
-            key: String,
-            scopeName: String? = null,
-            isPersonal: Boolean = false
-        ) {
-            if (settings.isNotEmpty()) {
-                val combined = settings.joinToString(", ")
-                val translationKey = if (isPersonal) "$key.personal" else key
-
-                val text = if (scopeName == null) {
-                    Translator.tr(translationKey, combined)
-                } else {
-                    Translator.tr(translationKey, scopeName, combined)
-                }
-                text?.let { result.add(it) }
+            val rules = settings.filterIsInstance<RuleSetting>()
+            if (rules.isNotEmpty()) {
+                Translator.tr("$key.rule.header")?.let { result.add(it) }
+                rules.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
             }
         }
     }

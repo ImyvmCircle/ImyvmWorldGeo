@@ -30,7 +30,9 @@ fun handPointSelection(
 
     player.sendMessage(
         Translator.tr(
-        "interaction.game.point.selection", clickedPos, selectedPositions.joinToString(separator = "\n") { it.toString() })
+        "interaction.game.point.selection",
+        "(${clickedPos.x},${clickedPos.y},${clickedPos.z})",
+        selectedPositions.joinToString(separator = "\n") { "(${it.x},${it.y},${it.z})" })
     )
 
     return ActionResult.SUCCESS

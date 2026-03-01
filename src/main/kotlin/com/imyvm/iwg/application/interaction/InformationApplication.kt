@@ -32,8 +32,10 @@ fun onListRegions(player: ServerPlayerEntity): Int {
         player.sendMessage(Translator.tr("interaction.meta.command.list.empty"))
         return 0
     }
-    val regionList = regions.joinToString("\n") { "Region: ${it.name}, ID: ${it.numberID}" }
-    player.sendMessage(Translator.tr("interaction.meta.command.list.header", regionList))
+    player.sendMessage(Translator.tr("interaction.meta.command.list.header"))
+    regions.forEach { region ->
+        player.sendMessage(Translator.tr("interaction.meta.command.list.item", region.name, region.numberID))
+    }
     return 1
 }
 
