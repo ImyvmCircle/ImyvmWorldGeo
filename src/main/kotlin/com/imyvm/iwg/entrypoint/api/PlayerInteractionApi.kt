@@ -41,4 +41,12 @@ object PlayerInteractionApi {
     fun toggleActionBar(player: ServerPlayerEntity) = onToggleActionBar(player)
     fun estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)
     fun estimateScopeAreaChange(player: ServerPlayerEntity, region: Region, scopeName: String, customPositions: List<BlockPos>? = null) = onEstimateScopeAreaChange(player, region, scopeName, customPositions)
+
+    fun addEntryExitSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?) = onHandleSetting(player, region, null, keyString, valueString, null)
+
+    fun addEntryExitSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?) = onHandleSetting(player, region, scopeName, keyString, valueString, null)
+
+    fun removeEntryExitSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String) = onHandleSetting(player, region, null, keyString, null, null)
+
+    fun removeEntryExitSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String) = onHandleSetting(player, region, scopeName, keyString, null, null)
 }

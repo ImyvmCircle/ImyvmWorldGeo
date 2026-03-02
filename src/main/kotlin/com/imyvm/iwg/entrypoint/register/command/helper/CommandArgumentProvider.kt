@@ -2,6 +2,8 @@ package com.imyvm.iwg.inter.register.command.helper
 
 import com.imyvm.iwg.domain.component.EffectKey
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.EntryExitMessageKey
+import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
 import com.imyvm.iwg.infra.RegionDatabase
@@ -40,7 +42,7 @@ val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> 
 }
 
 val SETTING_TYPE_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
-    listOf("permission", "effect", "rule").forEach { builder.suggest(it) }
+    listOf("permission", "effect", "rule", "entry_exit").forEach { builder.suggest(it) }
     builder.buildFuture()
 }
 
@@ -55,10 +57,16 @@ val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { 
         "permission" -> PermissionKey.entries.forEach { builder.suggest(it.name) }
         "effect"     -> EffectKey.entries.forEach { builder.suggest(it.name) }
         "rule"       -> RuleKey.entries.forEach { builder.suggest(it.name) }
+        "entry_exit" -> {
+            EntryExitToggleKey.entries.forEach { builder.suggest(it.name) }
+            EntryExitMessageKey.entries.forEach { builder.suggest(it.name) }
+        }
         else -> {
             PermissionKey.entries.forEach { builder.suggest(it.name) }
             EffectKey.entries.forEach { builder.suggest(it.name) }
             RuleKey.entries.forEach { builder.suggest(it.name) }
+            EntryExitToggleKey.entries.forEach { builder.suggest(it.name) }
+            EntryExitMessageKey.entries.forEach { builder.suggest(it.name) }
         }
     }
 

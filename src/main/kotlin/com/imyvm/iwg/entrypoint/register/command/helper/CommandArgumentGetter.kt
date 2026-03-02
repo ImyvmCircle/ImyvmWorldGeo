@@ -1,4 +1,4 @@
-package com.imyvm.iwg.inter.register.command.helper
+package com.imyvm.iwg.entrypoint.register.command.helper
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope

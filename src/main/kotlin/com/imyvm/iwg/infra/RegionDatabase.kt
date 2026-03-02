@@ -207,6 +207,8 @@ object RegionDatabase {
                 is PermissionSetting -> savePermissionSetting(stream, setting)
                 is EffectSetting -> saveEffectSetting(stream, setting)
                 is RuleSetting -> saveRuleSetting(stream, setting)
+                is EntryExitToggleSetting -> saveEntryExitToggleSetting(stream, setting)
+                is EntryExitMessageSetting -> saveEntryExitMessageSetting(stream, setting)
             }
         }
     }
@@ -220,6 +222,8 @@ object RegionDatabase {
                 0 -> loadPermissionSetting(stream)
                 1 -> loadEffectSetting(stream)
                 2 -> loadRuleSetting(stream)
+                3 -> loadEntryExitToggleSetting(stream)
+                4 -> loadEntryExitMessageSetting(stream)
                 else -> throw IOException("Unknown setting type")
             }
             list.add(setting)
@@ -268,6 +272,30 @@ object RegionDatabase {
         val key = RuleKey.entries[stream.readInt()]
         val value = stream.readBoolean()
         return RuleSetting(key, value)
+    }
+
+    private fun saveEntryExitToggleSetting(stream: DataOutputStream, setting: EntryExitToggleSetting) {
+        stream.writeInt(3)
+        stream.writeInt(setting.key.ordinal)
+        stream.writeBoolean(setting.value)
+    }
+
+    private fun loadEntryExitToggleSetting(stream: DataInputStream): EntryExitToggleSetting {
+        val key = EntryExitToggleKey.entries[stream.readInt()]
+        val value = stream.readBoolean()
+        return EntryExitToggleSetting(key, value)
+    }
+
+    private fun saveEntryExitMessageSetting(stream: DataOutputStream, setting: EntryExitMessageSetting) {
+        stream.writeInt(4)
+        stream.writeInt(setting.key.ordinal)
+        stream.writeUTF(setting.value)
+    }
+
+    private fun loadEntryExitMessageSetting(stream: DataInputStream): EntryExitMessageSetting {
+        val key = EntryExitMessageKey.entries[stream.readInt()]
+        val value = stream.readUTF()
+        return EntryExitMessageSetting(key, value)
     }
 
     private fun getDatabasePath(): Path {

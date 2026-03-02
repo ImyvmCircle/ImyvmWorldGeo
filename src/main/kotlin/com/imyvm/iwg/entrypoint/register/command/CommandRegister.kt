@@ -1,6 +1,7 @@
 package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.interaction.*
+import com.imyvm.iwg.entrypoint.register.command.helper.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator

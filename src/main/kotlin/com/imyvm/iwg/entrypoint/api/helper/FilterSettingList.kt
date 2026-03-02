@@ -14,6 +14,7 @@ fun filterSettingsByType(
         SettingTypes.PERMISSION -> settingsSet.filterIsInstance<PermissionSetting>()
         SettingTypes.EFFECT -> settingsSet.filterIsInstance<EffectSetting>()
         SettingTypes.RULE -> settingsSet.filterIsInstance<RuleSetting>()
+        SettingTypes.ENTRY_EXIT -> settingsSet.filter { it is EntryExitToggleSetting || it is EntryExitMessageSetting }
     }.filter { setting ->
         setting.isPersonal == isPersonal && (playerUUID == null || setting.playerUUID == playerUUID)
     }

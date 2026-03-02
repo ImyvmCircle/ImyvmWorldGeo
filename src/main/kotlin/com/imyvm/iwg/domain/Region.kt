@@ -5,6 +5,8 @@ import com.imyvm.iwg.domain.component.Setting
 import com.imyvm.iwg.domain.component.PermissionSetting
 import com.imyvm.iwg.domain.component.EffectSetting
 import com.imyvm.iwg.domain.component.RuleSetting
+import com.imyvm.iwg.domain.component.EntryExitToggleSetting
+import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
@@ -93,6 +95,14 @@ class Region(
             if (rules.isNotEmpty()) {
                 Translator.tr("$key.rule.header")?.let { result.add(it) }
                 rules.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+            }
+
+            val notifToggles = settings.filterIsInstance<EntryExitToggleSetting>()
+            val notifMessages = settings.filterIsInstance<EntryExitMessageSetting>()
+            if (notifToggles.isNotEmpty() || notifMessages.isNotEmpty()) {
+                Translator.tr("$key.entry_exit.header")?.let { result.add(it) }
+                notifToggles.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                notifMessages.forEach { s -> Translator.tr("$key.item", s.key, "&r\"${s.value}\"")?.let { result.add(it) } }
             }
         }
     }

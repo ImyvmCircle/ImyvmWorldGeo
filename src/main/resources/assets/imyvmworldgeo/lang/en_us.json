@@ -91,6 +91,7 @@
   "interaction.meta.setting.error.invalid_value_int": "&cInvalid value for &e{0}&c. &7Expected an integer, but got: &e{1}&c.",
   "interaction.meta.setting.error.invalid_target_player": "&cInvalid target player: &e{0}&c.",
   "interaction.meta.setting.error.missing_target_player": "&cMissing target player name.",
+  "interaction.meta.setting.error.entry_exit_no_personal": "&cEntry-exit settings do not support personal player assignment.",
   "interaction.meta.setting.error.region.duplicate_player": "&cDuplicate personal setting: &e{0}&c already exists for player &b{1}&c in this region.",
   "interaction.meta.setting.error.region.duplicate_global": "&cDuplicate global setting: &e{0}&c already exists in this region.",
   "interaction.meta.setting.error.scope.duplicate_personal_player": "&cDuplicate personal setting: &e{0}&c already exists for player &b{1}&c in scope &b{2}&c.",
@@ -176,6 +177,8 @@
   "region.setting.rule.header": "&a    [ Rule ]",
   "region.setting.item": "&e      {0}&r: &a{1}",
 
+  "region.setting.entry_exit.header": "&d    [ Entry-Exit ]",
+
   "geo.scope.info": "&d&l[{0}]&r &b{1}&r: &7{2}",
   "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r: &7{2}&r\n &aTeleport Point &7(isPublic: &e{3}&7)&r: &e({4}, {5}, {6})",
   "geo.scope.setting": "§bScope {0} settings§r: {1}",
@@ -186,6 +189,7 @@
   "geo.scope.setting.permission.header": "&c    [ Permission ]",
   "geo.scope.setting.effect.header": "&3    [ Effect ]",
   "geo.scope.setting.rule.header": "&a    [ Rule ]",
+  "geo.scope.setting.entry_exit.header": "&d    [ Entry-Exit ]",
   "geo.scope.setting.item": "&e      {0}&r: &a{1}",
 
   "geo.shape.circle.info": "&7Shape&r: &aCircle&r | Center: &e({0}, {1})&r, Radius: &e{2}&r | Area: &a{3} m\u00b2&r",

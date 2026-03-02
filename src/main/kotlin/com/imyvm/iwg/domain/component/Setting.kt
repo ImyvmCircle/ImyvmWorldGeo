@@ -15,7 +15,8 @@ abstract class Setting(
 enum class SettingTypes{
     PERMISSION,
     EFFECT,
-    RULE
+    RULE,
+    ENTRY_EXIT
 }
 
 class PermissionSetting(
@@ -107,4 +108,23 @@ enum class RuleKey : BaseKey {
     SPAWN_MONSTERS,
     SPAWN_PHANTOMS,
     TNT_BLOCK_PROTECTION
+}
+
+class EntryExitToggleSetting(
+    override val key: EntryExitToggleKey,
+    override val value: Boolean
+) : Setting(null)
+
+class EntryExitMessageSetting(
+    override val key: EntryExitMessageKey,
+    override val value: String
+) : Setting(null)
+
+enum class EntryExitToggleKey : BaseKey {
+    ENTRY_EXIT_MESSAGE_ENABLED
+}
+
+enum class EntryExitMessageKey : BaseKey {
+    ENTER_MESSAGE,
+    EXIT_MESSAGE
 }

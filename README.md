@@ -10,6 +10,9 @@ This major version (1.2.x) focuses on enriching and improving the settings syste
 
 This version is to make supplements and fixes bugs.
 
+  - fix: default value of rules.
+  - feat: notification of entry and exit a region and scope.
+
 ## Introduction
 
 This is a mod to provide a geography system framework for Imyvm server players and groups, 
@@ -142,6 +145,24 @@ Effects are applied silently (ambient-style: icon shown, no particles).
 | OOZING | oozing | Spawns slimes on death. |
 | INFESTED | infested | Spawns silverfish when taking damage. |
 
+#### Entry-Exit Keys
+
+Entry-exit settings control entry and exit notifications displayed to players when they cross region or scope boundaries. These settings are always global (not player-specific). Region-level notifications are shown as a title displayed in the center of the screen; scope-level notifications are shown as chat messages. Message values support MOTD-style color and formatting codes (e.g. `&6&lWelcome to {0}!`). The placeholder `{0}` is replaced by the region name and `{1}` by the scope name where applicable. If a toggle is enabled and the corresponding message is not set, a default message is applied automatically.
+
+For region-level entry, a debounce rule applies: the title is suppressed if the player re-enters the same region within `entry_exit.region_delay_seconds` seconds (default 5) without having visited any other region in between. GeoScope notifications are always immediate with no debounce.
+
+| Key | Type | Default | Description |
+|-----|------|---------|-------------|
+| ENTRY_EXIT_MESSAGE_ENABLED | Boolean | true | Toggle entry and exit notifications for the region or scope. |
+| ENTER_MESSAGE | String | (auto) | Message shown on entry. For regions, displayed as a title; for scopes, sent to chat. If not set and `ENTRY_EXIT_MESSAGE_ENABLED` is `true`, a default message is applied. |
+| EXIT_MESSAGE | String | (auto) | Message shown on exit. For regions, displayed as a title; for scopes, sent to chat. If not set and `ENTRY_EXIT_MESSAGE_ENABLED` is `true`, a default message is applied. |
+
+Default auto-applied messages:
+- Region enter: `&6&lWelcome to &e{0}&6&l!`
+- Region exit: `&7You have left &e{0}&7.`
+- Scope enter: `&aWelcome to &e{0}&a territory, zone &b{1}&a.`
+- Scope exit: `&7You have left zone &b{1}&7 of &e{0}&7.`
+
 ### Teleport Point
 
 A teleport point is attached to a scope in the region,
@@ -257,6 +278,18 @@ Handles player-triggered actions related to regions and their scopes.
 - `getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean?`
   Retrieves the explicitly set rule value for a specific scope within a region. Returns `null` if the rule is not explicitly set.
 
+- `addEntryExitSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?)`  
+  Adds an entry-exit setting to a region (`ENTER_ENABLED`, `EXIT_ENABLED`, `ENTER_MESSAGE`, or `EXIT_MESSAGE`).
+
+- `addEntryExitSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?)`  
+  Adds an entry-exit setting to a scope within a region.
+
+- `removeEntryExitSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String)`  
+  Removes an entry-exit setting from a region.
+
+- `removeEntryExitSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String)`  
+  Removes an entry-exit setting from a scope within a region.
+
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
   Queries detailed information about a region.
 
@@ -347,6 +380,18 @@ Provides access to region data and database operations for extension functions.
 
 - `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean`
   Retrieves the effective rule value for a region and optional scope. Returns the config default if the rule is not explicitly set.
+
+- `getRegionEntryExitToggle(region: Region): Boolean`  
+  Returns whether entry-exit notifications are enabled for a region. Defaults to `true` if not set.
+
+- `getRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): String?`  
+  Retrieves the entry-exit message for a region. Returns `null` if not set.
+
+- `getScopeEntryExitToggle(scope: GeoScope): Boolean`  
+  Returns whether entry-exit notifications are enabled for a scope. Defaults to `true` if not set.
+
+- `getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String?`  
+  Retrieves the entry-exit message for a scope. Returns `null` if not set.
 
 ### UtilApi
 
@@ -453,7 +498,8 @@ Provides utility functions for region data to improve usability for extension mo
   Modify a scope's properties or rename it.
 
 - `/imyvmWorldGeo setting add <regionIdentifier> <key> <value> [playerName]`  
-  Add a setting to a region, optionally for a specific player.
+  Add a setting to a region, optionally for a specific player.  
+  Entry-exit keys (`ENTER_ENABLED`, `EXIT_ENABLED`, `ENTER_MESSAGE`, `EXIT_MESSAGE`) do not support personal player assignment.
 
 - `/imyvmWorldGeo setting remove <regionIdentifier> <key> [playerName]`  
   Remove a setting from a region, optionally for a specific player.

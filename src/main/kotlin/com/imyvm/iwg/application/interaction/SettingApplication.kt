@@ -115,6 +115,8 @@ private fun parseKey(keyString: String): Any = when {
     isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
     isEffectKey(keyString) -> EffectKey.valueOf(keyString)
     isRuleKey(keyString) -> RuleKey.valueOf(keyString)
+    isEntryExitToggleKey(keyString) -> EntryExitToggleKey.valueOf(keyString)
+    isEntryExitMessageKey(keyString) -> EntryExitMessageKey.valueOf(keyString)
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
@@ -124,11 +126,13 @@ private fun parseValue(player: ServerPlayerEntity, key: Any, valueString: String
             is PermissionKey -> valueString.toBooleanStrict()
             is EffectKey -> valueString.toInt()
             is RuleKey -> valueString.toBooleanStrict()
+            is EntryExitToggleKey -> valueString.toBooleanStrict()
+            is EntryExitMessageKey -> valueString
             else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
         }
     } catch (e: Exception) {
         val errorMsg = when (key) {
-            is PermissionKey, is RuleKey -> "interaction.meta.setting.error.invalid_value_boolean"
+            is PermissionKey, is RuleKey, is EntryExitToggleKey -> "interaction.meta.setting.error.invalid_value_boolean"
             is EffectKey -> "interaction.meta.setting.error.invalid_value_int"
             else -> "interaction.meta.setting.error.invalid_key"
         }
@@ -183,6 +187,8 @@ private fun buildSetting(
     is PermissionKey -> PermissionSetting(key, value as Boolean, targetPlayerUUID)
     is EffectKey -> EffectSetting(key, value as Int, targetPlayerUUID)
     is RuleKey -> RuleSetting(key, value as Boolean)
+    is EntryExitToggleKey -> EntryExitToggleSetting(key, value as Boolean)
+    is EntryExitMessageKey -> EntryExitMessageSetting(key, value as String)
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
@@ -225,6 +231,13 @@ private fun checkPlayer(
     targetPlayerStr: String?
 ): Boolean {
     val server = player.server
+
+    if (isEntryExitToggleKey(keyString) || isEntryExitMessageKey(keyString)) {
+        if (targetPlayerStr != null) {
+            player.sendMessage(Translator.tr("interaction.meta.setting.error.entry_exit_no_personal"))
+            return false
+        }
+    }
 
     if (valueString != null) {
         val container = try {
@@ -310,6 +323,8 @@ fun getDefaultValueForRule(key: RuleKey): Boolean {
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
 private fun isRuleKey(key: String) = runCatching { RuleKey.valueOf(key) }.isSuccess
+private fun isEntryExitToggleKey(key: String) = runCatching { EntryExitToggleKey.valueOf(key) }.isSuccess
+private fun isEntryExitMessageKey(key: String) = runCatching { EntryExitMessageKey.valueOf(key) }.isSuccess
 
 fun onCertificateRuleValue(
     region: Region?,
@@ -347,6 +362,24 @@ fun onQuerySettingValue(
             is PermissionKey -> {
                 val value = onCertificatePermissionValue(player, region, scopeName, targetPlayerStr, keyString)
                 player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget))
+            }
+            is EntryExitToggleKey -> {
+                val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
+                val setting = settingsContainer.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == key }
+                if (setting == null) {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                } else {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget))
+                }
+            }
+            is EntryExitMessageKey -> {
+                val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
+                val setting = settingsContainer.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }
+                if (setting == null) {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                } else {
+                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget))
+                }
             }
             is EffectKey -> {
                 val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings

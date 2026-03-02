@@ -14,7 +14,6 @@ import com.imyvm.iwg.inter.api.helper.filterSettingsByType
 import net.minecraft.util.math.BlockPos
 import net.minecraft.world.World
 import java.util.*
-
 @Suppress("unused")
 object RegionDataApi {
     fun getRegion(id: Int): Region? {
@@ -97,4 +96,16 @@ object RegionDataApi {
     fun getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean {
         return getEffectiveRuleValue(region, ruleKey, scope)
     }
+
+    fun getRegionEntryExitToggle(region: Region): Boolean =
+        region.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
+
+    fun getRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): String? =
+        region.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
+
+    fun getScopeEntryExitToggle(scope: GeoScope): Boolean =
+        scope.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
+
+    fun getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String? =
+        scope.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
 }

@@ -4,10 +4,11 @@ import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.event.registerPointSelection
-import com.imyvm.iwg.inter.register.event.registerRegionPermissions
 import com.imyvm.iwg.inter.register.event.registerRegionEffects
+import com.imyvm.iwg.inter.register.event.registerRegionEntryExit
+import com.imyvm.iwg.inter.register.event.registerRegionPermissions
 import com.imyvm.iwg.inter.register.command.register
-import com.imyvm.iwg.inter.register.registerDataLoadSave
+import com.imyvm.iwg.entrypoint.register.registerDataLoadSave
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
 import net.minecraft.util.math.BlockPos
@@ -23,6 +24,7 @@ class ImyvmWorldGeo : ModInitializer {
 
 		registerLazyTicker()
 		registerPlayerGeographyPair()
+		registerRegionEntryExit()
 		registerLocationDisplay()
 		registerRegionPermissions()
 		registerRegionEffects()

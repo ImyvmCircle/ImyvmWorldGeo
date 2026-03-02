@@ -428,5 +428,15 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
         ) { obj: Config, path: String? ->
             obj.getBoolean(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val ENTRY_EXIT_REGION_DELAY_SECONDS = Option(
+            "core.entry_exit.region_delay_seconds",
+            5,
+            "the number of seconds a player must remain outside a region before the region entry or exit title is displayed."
+        ) { obj: Config, path: String? ->
+            obj.getInt(path)
+        }
     }
 }
