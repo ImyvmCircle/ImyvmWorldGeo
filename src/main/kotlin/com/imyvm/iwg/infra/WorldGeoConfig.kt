@@ -398,5 +398,35 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
         ) { obj: Config, path: String? ->
             obj.getInt(path)
         }
+
+        @JvmField
+        @ConfigOption
+        val RULE_DEFAULT_SPAWN_MONSTERS = Option(
+            "core.rule.spawn_monsters.default",
+            true,
+            "the default monster spawning rule in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_DEFAULT_SPAWN_PHANTOMS = Option(
+            "core.rule.spawn_phantoms.default",
+            true,
+            "the default phantom spawning rule in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
+
+        @JvmField
+        @ConfigOption
+        val RULE_DEFAULT_TNT_BLOCK_PROTECTION = Option(
+            "core.rule.tnt_block_protection.default",
+            false,
+            "the default TNT block protection rule in regions."
+        ) { obj: Config, path: String? ->
+            obj.getBoolean(path)
+        }
     }
 }

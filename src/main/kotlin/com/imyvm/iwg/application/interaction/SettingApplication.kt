@@ -24,6 +24,9 @@ import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_FARMING
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_IGNITE
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_ARMOR_STAND
 import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_ITEM_FRAME
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.RULE_DEFAULT_SPAWN_MONSTERS
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.RULE_DEFAULT_SPAWN_PHANTOMS
+import com.imyvm.iwg.infra.WorldGeoConfig.Companion.RULE_DEFAULT_TNT_BLOCK_PROTECTION
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -293,6 +296,14 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
         PermissionKey.IGNITE -> PERMISSION_DEFAULT_IGNITE.value
         PermissionKey.ARMOR_STAND -> PERMISSION_DEFAULT_ARMOR_STAND.value
         PermissionKey.ITEM_FRAME -> PERMISSION_DEFAULT_ITEM_FRAME.value
+    }
+}
+
+fun getDefaultValueForRule(key: RuleKey): Boolean {
+    return when (key) {
+        RuleKey.SPAWN_MONSTERS -> RULE_DEFAULT_SPAWN_MONSTERS.value
+        RuleKey.SPAWN_PHANTOMS -> RULE_DEFAULT_SPAWN_PHANTOMS.value
+        RuleKey.TNT_BLOCK_PROTECTION -> RULE_DEFAULT_TNT_BLOCK_PROTECTION.value
     }
 }
 

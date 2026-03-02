@@ -86,13 +86,13 @@ and then further ancestors in order, until a match is found.
 
 #### Rule Keys
 
-Rules control server-side gameplay mechanics within a region or scope. Unlike permissions, rules are not player-specific and have no parent-child hierarchy. The effective value follows the priority: scope setting → region setting → vanilla default (null = not set, falls through to vanilla behavior).
+Rules control server-side gameplay mechanics within a region or scope. Unlike permissions, rules are not player-specific and have no parent-child hierarchy. The effective value follows the priority: scope setting → region setting → config default.
 
 | Key | Default | Description |
 |-----|---------|-------------|
-| SPAWN_MONSTERS | (vanilla) | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
-| SPAWN_PHANTOMS | (vanilla) | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
-| TNT_BLOCK_PROTECTION | (vanilla) | When set to true, TNT explosions do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
+| SPAWN_MONSTERS | true | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
+| SPAWN_PHANTOMS | true | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
+| TNT_BLOCK_PROTECTION | false | When set to true, TNT explosions do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
 
 #### Effect Keys
 
@@ -252,10 +252,10 @@ Handles player-triggered actions related to regions and their scopes.
   Retrieves the permission value of a setting.
 
 - `getRuleValueRegion(region: Region?, keyString: String): Boolean?`
-  Retrieves the effective rule value for a region. Returns `null` if the rule is not set (vanilla default applies).
+  Retrieves the explicitly set rule value for a region. Returns `null` if the rule is not explicitly set.
 
 - `getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean?`
-  Retrieves the effective rule value for a specific scope within a region. Returns `null` if the rule is not set (vanilla default applies).
+  Retrieves the explicitly set rule value for a specific scope within a region. Returns `null` if the rule is not explicitly set.
 
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
   Queries detailed information about a region.
@@ -345,8 +345,8 @@ Provides access to region data and database operations for extension functions.
 - `getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
   Retrieves the permission value of a setting for a region and scope.
 
-- `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean?`
-  Retrieves the effective rule value for a region and optional scope. Returns `null` if the rule is not set (vanilla default applies).
+- `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean`
+  Retrieves the effective rule value for a region and optional scope. Returns the config default if the rule is not explicitly set.
 
 ### UtilApi
 
