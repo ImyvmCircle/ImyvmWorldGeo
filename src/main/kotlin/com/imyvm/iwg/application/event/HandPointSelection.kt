@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.infra.WorldGeoConfig
+import com.imyvm.iwg.infra.config.SelectionConfig
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.entity.player.PlayerEntity
 import net.minecraft.item.Items
@@ -27,7 +27,7 @@ fun handPointSelection(
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
 
-    val maxPoints = WorldGeoConfig.SELECTION_MAX_POINTS.value
+    val maxPoints = SelectionConfig.SELECTION_MAX_POINTS.value
     if (selectedPositions.size >= maxPoints) {
         player.sendMessage(
             Translator.tr(

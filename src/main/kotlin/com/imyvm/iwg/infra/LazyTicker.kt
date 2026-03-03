@@ -1,6 +1,6 @@
 package com.imyvm.iwg.infra
 
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.LAZY_TICKER_SECONDS
+import com.imyvm.iwg.infra.config.CoreConfig.LAZY_TICKER_SECONDS
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 

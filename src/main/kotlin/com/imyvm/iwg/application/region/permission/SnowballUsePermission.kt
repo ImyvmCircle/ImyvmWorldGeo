@@ -4,7 +4,7 @@ import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialC
 import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_SNOWBALL_USE
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_SNOWBALL_USE
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.item.Items

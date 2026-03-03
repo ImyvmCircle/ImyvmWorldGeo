@@ -2,7 +2,7 @@ package com.imyvm.iwg.application.region.effect
 
 import com.imyvm.iwg.application.region.effect.helper.getActiveEffects
 import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.EFFECT_DURATION_SECONDS
+import com.imyvm.iwg.infra.config.EffectConfig.EFFECT_DURATION_SECONDS
 import com.imyvm.iwg.util.translator.getOnlinePlayers
 import net.minecraft.entity.effect.StatusEffectInstance
 import net.minecraft.registry.Registries

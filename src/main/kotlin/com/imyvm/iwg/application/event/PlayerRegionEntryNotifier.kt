@@ -7,21 +7,21 @@ import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
-import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.ENTRY_EXIT_REGION_DELAY_SECONDS
+import com.imyvm.iwg.infra.config.EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS
+import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_ENTER_I18N_KEY
+import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_EXIT_I18N_KEY
+import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_ENTER_I18N_KEY
+import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_EXIT_I18N_KEY
 import com.imyvm.iwg.util.text.TextParser
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket
 import net.minecraft.network.packet.s2c.play.TitleS2CPacket
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.text.Text
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
-
-private const val DEFAULT_REGION_ENTER_TEMPLATE = "&6&lWelcome to &e{0}&6&l!"
-private const val DEFAULT_REGION_EXIT_TEMPLATE = "&7You have left &e{0}&7."
-private const val DEFAULT_SCOPE_ENTER_TEMPLATE = "&aWelcome to &e{0}&a territory, zone &b{1}&a."
-private const val DEFAULT_SCOPE_EXIT_TEMPLATE = "&7You have left zone &b{1}&7 of &e{0}&7."
 
 private data class PendingWildernessExit(val fromRegion: Region, val startedAt: Long)
 
@@ -145,32 +145,36 @@ object PlayerRegionEntryExitTracker {
 
     private fun sendRegionExitTitle(player: ServerPlayerEntity, region: Region) {
         if (!isRegionNotificationEnabled(region)) return
-        val template = getOrAutoSetRegionMessage(region, EntryExitMessageKey.EXIT_MESSAGE, DEFAULT_REGION_EXIT_TEMPLATE)
-        val message = template.replace("{0}", region.name)
+        val text = getRegionMessage(region, EntryExitMessageKey.EXIT_MESSAGE)
+            ?: Translator.tr(REGION_EXIT_I18N_KEY.value, region.name)
+            ?: return
         player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 50, 15))
-        player.networkHandler.sendPacket(TitleS2CPacket(TextParser.parse(message)))
+        player.networkHandler.sendPacket(TitleS2CPacket(text))
     }
 
     private fun sendRegionEntryTitle(player: ServerPlayerEntity, region: Region) {
         if (!isRegionNotificationEnabled(region)) return
-        val template = getOrAutoSetRegionMessage(region, EntryExitMessageKey.ENTER_MESSAGE, DEFAULT_REGION_ENTER_TEMPLATE)
-        val message = template.replace("{0}", region.name)
+        val text = getRegionMessage(region, EntryExitMessageKey.ENTER_MESSAGE)
+            ?: Translator.tr(REGION_ENTER_I18N_KEY.value, region.name)
+            ?: return
         player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 50, 15))
-        player.networkHandler.sendPacket(TitleS2CPacket(TextParser.parse(message)))
+        player.networkHandler.sendPacket(TitleS2CPacket(text))
     }
 
     private fun sendScopeExitMessage(player: ServerPlayerEntity, region: Region?, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
-        val template = getOrAutoSetScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, DEFAULT_SCOPE_EXIT_TEMPLATE)
-        val message = template.replace("{0}", region?.name ?: "").replace("{1}", scope.scopeName)
-        player.sendMessage(TextParser.parse(message))
+        val text = getScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, region?.name ?: "", scope.scopeName)
+            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+            ?: return
+        player.sendMessage(text)
     }
 
     private fun sendScopeEntryMessage(player: ServerPlayerEntity, region: Region?, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
-        val template = getOrAutoSetScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, DEFAULT_SCOPE_ENTER_TEMPLATE)
-        val message = template.replace("{0}", region?.name ?: "").replace("{1}", scope.scopeName)
-        player.sendMessage(TextParser.parse(message))
+        val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region?.name ?: "", scope.scopeName)
+            ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+            ?: return
+        player.sendMessage(text)
     }
 
     private fun isRegionNotificationEnabled(region: Region): Boolean {
@@ -187,23 +191,19 @@ object PlayerRegionEntryExitTracker {
             ?.value ?: true
     }
 
-    private fun getOrAutoSetRegionMessage(region: Region, key: EntryExitMessageKey, defaultTemplate: String): String {
-        val existing = region.settings
+    private fun getRegionMessage(region: Region, key: EntryExitMessageKey): Text? {
+        val raw = region.settings
             .filterIsInstance<EntryExitMessageSetting>()
             .firstOrNull { it.key == key }
-        if (existing != null) return existing.value
-        region.settings.add(EntryExitMessageSetting(key, defaultTemplate))
-        RegionDatabase.save()
-        return defaultTemplate
+            ?.value ?: return null
+        return TextParser.parse(raw)
     }
 
-    private fun getOrAutoSetScopeMessage(scope: GeoScope, key: EntryExitMessageKey, defaultTemplate: String): String {
-        val existing = scope.settings
+    private fun getScopeMessage(scope: GeoScope, key: EntryExitMessageKey, regionName: String, scopeName: String): Text? {
+        val raw = scope.settings
             .filterIsInstance<EntryExitMessageSetting>()
             .firstOrNull { it.key == key }
-        if (existing != null) return existing.value
-        scope.settings.add(EntryExitMessageSetting(key, defaultTemplate))
-        RegionDatabase.save()
-        return defaultTemplate
+            ?.value ?: return null
+        return TextParser.parse(raw.replace("{0}", regionName).replace("{1}", scopeName))
     }
 }

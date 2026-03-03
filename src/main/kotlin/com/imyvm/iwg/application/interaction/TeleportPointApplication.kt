@@ -4,7 +4,7 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.infra.WorldGeoConfig
+import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
@@ -78,7 +78,7 @@ fun onTeleportingPlayer(
     }
 
     val reasonKey = GeoShape.getPhysicalSafetyFailureReasonKey(targetWorld, teleportPoint)
-    val searchRadius = WorldGeoConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
+    val searchRadius = TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
     val fallback = geoScope.findNearestValidTeleportPoint(targetWorld, teleportPoint, searchRadius)
 
     return if (fallback != null) {

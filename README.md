@@ -12,6 +12,7 @@ This version is to make supplements and fixes bugs.
 
   - fix: default value of rules.
   - feat: notification of entry and exit a region and scope.
+  - refactor: split WorldGeoConfig into typed config classes under infra/config/.
 
 ## Introduction
 
@@ -158,10 +159,10 @@ For region-level entry, a debounce rule applies: the title is suppressed if the 
 | EXIT_MESSAGE | String | (auto) | Message shown on exit. For regions, displayed as a title; for scopes, sent to chat. If not set and `ENTRY_EXIT_MESSAGE_ENABLED` is `true`, a default message is applied. |
 
 Default auto-applied messages:
-- Region enter: `&6&lWelcome to &e{0}&6&l!`
-- Region exit: `&7You have left &e{0}&7.`
-- Scope enter: `&aWelcome to &e{0}&a territory, zone &b{1}&a.`
-- Scope exit: `&7You have left zone &b{1}&7 of &e{0}&7.`
+- Region enter: `&6&l踏入 &e{0}&6&l 境界`
+- Region exit: `&7离开 &e{0}&7 境界`
+- Scope enter: `&a踏入 &e{0}&a 境界 &b{1}&a 地方`
+- Scope exit: `&7离开 &e{0}&7 境界 &b{1}&7 地方`
 
 ### Teleport Point
 

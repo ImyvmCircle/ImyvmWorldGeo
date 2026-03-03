@@ -2,11 +2,11 @@ package com.imyvm.iwg.application.region.permission
 
 import com.imyvm.iwg.application.region.permission.helper.hasPermission
 import com.imyvm.iwg.util.text.Translator
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_FLY
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FLY
 import com.imyvm.iwg.util.translator.getOnlinePlayers
 import com.imyvm.iwg.util.translator.getPlayerByUuid
 import net.minecraft.server.MinecraftServer

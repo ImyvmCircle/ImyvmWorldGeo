@@ -4,10 +4,10 @@ import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialC
 import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BREAK
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_BUILD
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUCKET_SCOOP
-import com.imyvm.iwg.infra.WorldGeoConfig.Companion.PERMISSION_DEFAULT_BUILD
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BREAK
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUCKET_BUILD
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUCKET_SCOOP
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUILD
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback

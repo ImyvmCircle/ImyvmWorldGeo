@@ -224,5 +224,10 @@
   "setting.permission.fly.enabled": "&aYou now have permission to fly in a flying-allowed area.",
   "setting.permission.fly.restored": "&aYour flight has been restored returning to a flying-allowed area.",
   "setting.permission.fly.disabled.soon": "&eYou will lose your flight soon in a no-fly area in &b{0}&e seconds.",
-  "setting.permission.fly.disabled": "&cYour flight has been disabled in a no-fly area."
+  "setting.permission.fly.disabled": "&cYour flight has been disabled in a no-fly area.",
+
+  "notification.region.enter": "&6&lWelcome to &e{0}&6&l!",
+  "notification.region.exit": "&7You have left &e{0}&7.",
+  "notification.scope.enter": "&aWelcome to &e{0}&a territory, zone &b{1}&a.",
+  "notification.scope.exit": "&7You have left zone &b{1}&7 of &e{0}&7."
 }

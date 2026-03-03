@@ -224,5 +224,10 @@
   "setting.permission.fly.enabled": "&a您现在在允许飞行的区域中拥有飞行权限。",
   "setting.permission.fly.restored": "&a您已返回允许飞行的区域，飞行已恢复。",
   "setting.permission.fly.disabled.soon": "&e您将在 &b{0}&e 秒后在禁飞区域失去飞行能力。",
-  "setting.permission.fly.disabled": "&c您的飞行已在禁飞区域被禁用。"
+  "setting.permission.fly.disabled": "&c您的飞行已在禁飞区域被禁用。",
+
+  "notification.region.enter": "&6&l踏入 &e{0}&6&l 境界",
+  "notification.region.exit": "&7离开 &e{0}&7 境界",
+  "notification.scope.enter": "&a踏入 &e{0}&a 境界 &b{1}&a 地方",
+  "notification.scope.exit": "&7离开 &e{0}&7 境界 &b{1}&7 地方"
 }
