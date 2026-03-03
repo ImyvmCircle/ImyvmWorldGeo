@@ -1,18 +1,10 @@
-# IMYVMWorldGeo 1.21 1.2.3
+# IMYVMWorldGeo 1.21 1.3.0
 
 ## Changelog
 
-### Version 1.2 Series - Settings System Enhancement
+### 1.3.0
 
-This major version (1.2.x) focuses on enriching and improving the settings system.
-
-#### 1.2.3
-
-This version is to make supplements and fixes bugs.
-
-  - fix: default value of rules.
-  - feat: notification of entry and exit a region and scope.
-  - refactor: split WorldGeoConfig into typed config classes under infra/config/.
+This major version (1.3.x) focuses on new features. 
 
 ## Introduction
 
