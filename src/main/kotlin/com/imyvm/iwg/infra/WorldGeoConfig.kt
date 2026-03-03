@@ -11,7 +11,7 @@ class WorldGeoConfig : HokiConfig("Imyvm_world_geo.conf") {
         @ConfigOption
         val LANGUAGE = Option(
             "core.language",
-            "en_us",
+            "zh_cn",
             "the display language of Imyvm World Geo."
         ) { obj: Config, path: String? ->
             obj.getString(
