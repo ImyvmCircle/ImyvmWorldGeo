@@ -49,12 +49,12 @@ object RegionFactory {
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
-        val geoShapeResult = createGeoShape(selectedPositions, shapeType)
+        val worldId = existingWorld ?: playerExecutor!!.world.registryKey.value
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
         if (geoShapeResult is Result.Err) {
             return Result.Err(geoShapeResult.error)
         }
 
-        val worldId = existingWorld ?: playerExecutor!!.world.registryKey.value
         val geoShape = (geoShapeResult as Result.Ok).value
         val teleportPoint = existingTeleportPoint ?: getTeleportPoint(playerExecutor, geoShape)
 
@@ -77,7 +77,8 @@ object RegionFactory {
 
     private fun createGeoShape(
         positions: List<BlockPos>,
-        shapeType: GeoShapeType
+        shapeType: GeoShapeType,
+        worldId: Identifier
     ): Result<GeoShape, CreationError> {
         val requiredPoints = requiredPoints(shapeType)
         if (positions.size < requiredPoints) {
@@ -95,7 +96,7 @@ object RegionFactory {
 
         val geoShape = (geoShapeResult as Result.Ok).value
 
-        val existingScopes = RegionDatabase.getRegionList().flatMap { it.geometryScope }
+        val existingScopes = RegionDatabase.getRegionList().flatMap { it.geometryScope }.filter { it.worldId == worldId }
         if (checkIntersection(geoShape, existingScopes)) {
             return Result.Err(CreationError.IntersectionBetweenScopes)
         }

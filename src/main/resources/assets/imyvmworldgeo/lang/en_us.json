@@ -179,8 +179,8 @@
 
   "region.setting.entry_exit.header": "&d    [ Entry-Exit ]",
 
-  "geo.scope.info": "&d&l[{0}]&r &b{1}&r: &7{2}",
-  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r: &7{2}&r\n &aTeleport Point &7(isPublic: &e{3}&7)&r: &e({4}, {5}, {6})",
+  "geo.scope.info": "&d&l[{0}]&r &b{1}&r &8[&7{3}&8]&r: &7{2}",
+  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r &8[&7{7}&8]&r: &7{2}&r\n &aTeleport Point &7(isPublic: &e{3}&7)&r: &e({4}, {5}, {6})",
   "geo.scope.setting": "§bScope {0} settings§r: {1}",
   "geo.scope.setting.personal": "§bScope {0} personal settings§r: {1}",
   "geo.scope.setting.header": "&b&l[ Scope &e{0}&b Settings ]",
@@ -191,6 +191,10 @@
   "geo.scope.setting.rule.header": "&a    [ Rule ]",
   "geo.scope.setting.entry_exit.header": "&d    [ Entry-Exit ]",
   "geo.scope.setting.item": "&e      {0}&r: &a{1}",
+
+  "geo.dimension.minecraft.overworld": "Overworld",
+  "geo.dimension.minecraft.the_nether": "Nether",
+  "geo.dimension.minecraft.the_end": "The End",
 
   "geo.shape.circle.info": "&7Shape&r: &aCircle&r | Center: &e({0}, {1})&r, Radius: &e{2}&r | Area: &a{3} m\u00b2&r",
   "geo.shape.circle.invalid.info": "&7Shape&r: &cInvalid Circle&r | Area: &a{0} m\u00b2&r",

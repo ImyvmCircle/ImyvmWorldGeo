@@ -21,11 +21,13 @@ class GeoScope(
 ) {
     fun getScopeInfo(index: Int): Text? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
+        val dimensionDisplay = getDimensionDisplayName()
         return if (teleportPoint == null) {
             Translator.tr("geo.scope.info",
                 index,
                 scopeName,
-                shapeInfoString)
+                shapeInfoString,
+                dimensionDisplay)
         } else {
             Translator.tr("geo.scope.info.with_teleport_point",
                 index,
@@ -34,8 +36,14 @@ class GeoScope(
                 isTeleportPointPublic,
                 teleportPoint!!.x,
                 teleportPoint!!.y,
-                teleportPoint!!.z)
+                teleportPoint!!.z,
+                dimensionDisplay)
         }
+    }
+
+    private fun getDimensionDisplayName(): String {
+        val key = "geo.dimension.${worldId.namespace}.${worldId.path}"
+        return Translator.tr(key)?.string ?: worldId.toString()
     }
 
     fun getWorld(server: MinecraftServer): ServerWorld? {

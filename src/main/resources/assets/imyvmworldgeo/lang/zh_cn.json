@@ -179,8 +179,8 @@
 
   "region.setting.entry_exit.header": "&d    [ 进出 ]",
 
-  "geo.scope.info": "&d&l[{0}]&r &b{1}&r：&7{2}",
-  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r：&7{2}&r\n &a传送点 &7（公开：&e{3}&7）&r：&e({4}, {5}, {6})",
+  "geo.scope.info": "&d&l[{0}]&r &b{1}&r &8[&7{3}&8]&r：&7{2}",
+  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r &8[&7{7}&8]&r：&7{2}&r\n &a传送点 &7（公开：&e{3}&7）&r：&e({4}, {5}, {6})",
   "geo.scope.setting": "§b地方 {0} 设置§r：{1}",
   "geo.scope.setting.personal": "§b地方 {0} 个人设置§r：{1}",
   "geo.scope.setting.header": "&b&l[ 地方 &e{0}&b 设置 ]",
@@ -191,6 +191,10 @@
   "geo.scope.setting.rule.header": "&a    [ 规则 ]",
   "geo.scope.setting.entry_exit.header": "&d    [ 进出 ]",
   "geo.scope.setting.item": "&e      {0}&r：&a{1}",
+
+  "geo.dimension.minecraft.overworld": "主世界",
+  "geo.dimension.minecraft.the_nether": "下界",
+  "geo.dimension.minecraft.the_end": "末地",
 
   "geo.shape.circle.info": "&7形状&r：&a圆形&r | 圆心：&e({0}, {1})&r，半径：&e{2}&r | 面积：&a{3} m\u00b2&r",
   "geo.shape.circle.invalid.info": "&7形状&r：&c无效圆形&r | 面积：&a{0} m\u00b2&r",
