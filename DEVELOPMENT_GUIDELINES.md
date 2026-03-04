@@ -10,3 +10,4 @@
    - 对于每次的版本更改描述应当简洁。
 7. 原则上不要添加任何Comments.
 8. 不要使用git.
+9. 测试要包含./gradlew runServer.
