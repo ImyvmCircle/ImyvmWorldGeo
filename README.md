@@ -99,7 +99,7 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 |-----|---------|-------------|
 | SPAWN_MONSTERS | true | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
 | SPAWN_PHANTOMS | true | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
-| TNT_BLOCK_PROTECTION | false | When set to true, TNT explosions do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
+| TNT_BLOCK_PROTECTION | false | When set to true, explosions from TNT, TNT minecarts, end crystals, beds used in the End, respawn anchors used outside the Nether, wither spawning, and wither skulls do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
 | ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. When set to false, the enderman PickUpBlockGoal is suppressed for the region. |
 | SCULK_SPREAD | true | Controls whether sculk can spread inside the region. When set to false, the sculk catalyst tick is suppressed, preventing all sculk spread within the region. |
 | SNOW_GOLEM_TRAIL | true | Controls whether snow golems leave snow trails inside the region. When set to false, the setBlockState call for snow placement is suppressed. |

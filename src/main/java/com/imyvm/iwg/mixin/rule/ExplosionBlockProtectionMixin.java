@@ -6,7 +6,14 @@ import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.RuleKey;
 import com.imyvm.iwg.infra.RegionDatabase;
 import kotlin.Pair;
+import net.minecraft.entity.Entity;
 import net.minecraft.entity.TntEntity;
+import net.minecraft.entity.boss.WitherEntity;
+import net.minecraft.entity.damage.DamageSource;
+import net.minecraft.entity.damage.DamageTypes;
+import net.minecraft.entity.decoration.EndCrystalEntity;
+import net.minecraft.entity.projectile.WitherSkullEntity;
+import net.minecraft.entity.vehicle.TntMinecartEntity;
 import net.minecraft.world.World;
 import net.minecraft.world.explosion.Explosion;
 import org.spongepowered.asm.mixin.Mixin;
@@ -21,10 +28,20 @@ public class ExplosionBlockProtectionMixin {
     @Shadow
     private World world;
 
+    @Shadow
+    private DamageSource damageSource;
+
     @Inject(at = @At("HEAD"), method = "affectWorld")
     private void filterProtectedRegionBlocks(boolean createParticles, CallbackInfo ci) {
         Explosion self = (Explosion) (Object) this;
-        if (!(self.getEntity() instanceof TntEntity)) return;
+        Entity entity = self.getEntity();
+        boolean covered = entity instanceof TntEntity
+                || entity instanceof TntMinecartEntity
+                || entity instanceof EndCrystalEntity
+                || entity instanceof WitherEntity
+                || entity instanceof WitherSkullEntity
+                || (damageSource != null && damageSource.isOf(DamageTypes.BAD_RESPAWN_POINT));
+        if (!covered) return;
 
         self.getAffectedBlocks().removeIf(pos -> {
             Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
