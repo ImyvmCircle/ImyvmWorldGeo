@@ -24,6 +24,7 @@ import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FARMING
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_IGNITE
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ARMOR_STAND
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ITEM_FRAME
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_WIND_CHARGE_USE
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_MONSTERS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_PHANTOMS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_TNT_BLOCK_PROTECTION
@@ -315,6 +316,7 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
         PermissionKey.IGNITE -> PERMISSION_DEFAULT_IGNITE.value
         PermissionKey.ARMOR_STAND -> PERMISSION_DEFAULT_ARMOR_STAND.value
         PermissionKey.ITEM_FRAME -> PERMISSION_DEFAULT_ITEM_FRAME.value
+        PermissionKey.WIND_CHARGE_USE -> PERMISSION_DEFAULT_WIND_CHARGE_USE.value
     }
 }
 

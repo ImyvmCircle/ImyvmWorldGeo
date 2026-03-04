@@ -95,4 +95,8 @@ object PermissionConfig {
     @JvmField
     val PERMISSION_DEFAULT_ITEM_FRAME = Option("core.permission.item_frame.default", true,
         "the default item frame permission (placing item frame and glow item frame entities, breaking them, and interacting with their held items) in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val PERMISSION_DEFAULT_WIND_CHARGE_USE = Option("core.permission.wind_charge_use.default", true,
+        "the default wind charge use (throwing wind charges) permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
 }

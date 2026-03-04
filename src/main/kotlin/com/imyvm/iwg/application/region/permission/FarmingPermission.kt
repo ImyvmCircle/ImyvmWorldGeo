@@ -13,6 +13,7 @@ import net.minecraft.block.Blocks
 import net.minecraft.block.CropBlock
 import net.minecraft.block.SweetBerryBushBlock
 import net.minecraft.item.BlockItem
+import net.minecraft.item.BoneMealItem
 import net.minecraft.util.ActionResult
 import net.minecraft.util.Hand
 import net.minecraft.util.math.BlockPos
@@ -52,9 +53,31 @@ fun playerFarmingPermission() {
         }
         ActionResult.PASS
     }
+
+    registerBoneMealFarmingPermission()
 }
 
 internal fun isCropOnFarmland(world: World, pos: BlockPos, block: Block): Boolean {
     if (block !is CropBlock && block !is SweetBerryBushBlock) return false
     return world.getBlockState(pos.down()).block == Blocks.FARMLAND
+}
+
+private fun registerBoneMealFarmingPermission() {
+    UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
+        val stack = player.getStackInHand(hand)
+        if (stack.item !is BoneMealItem) return@register ActionResult.PASS
+        val pos = hitResult.blockPos
+        if (!isCropOnFarmland(world, pos, world.getBlockState(pos).block)) return@register ActionResult.PASS
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
+        regionAndScope?.let { (region, scope) ->
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.FARMING, scope, PERMISSION_DEFAULT_FARMING.value)
+            if (denial != null) {
+                if (hand == Hand.MAIN_HAND) {
+                    player.sendMessage(Translator.tr("setting.permission.farming", buildPermissionDenialContext(region, scope, denial)))
+                }
+                return@register ActionResult.CONSUME
+            }
+        }
+        ActionResult.PASS
+    }
 }

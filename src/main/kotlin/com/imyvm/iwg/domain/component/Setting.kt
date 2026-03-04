@@ -59,7 +59,8 @@ enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     FARMING,
     IGNITE,
     ARMOR_STAND,
-    ITEM_FRAME
+    ITEM_FRAME,
+    WIND_CHARGE_USE(THROWABLE)
 }
 
 enum class EffectKey(val effectId: String) : BaseKey {

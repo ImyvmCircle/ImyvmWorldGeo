@@ -74,7 +74,7 @@ and then further ancestors in order, until a match is found.
 | BREAK | BUILD_BREAK | true | Block breaking permission. |
 | BUCKET_BUILD | BUILD | true | Non-empty bucket fluid placement permission (placing water, lava, etc.). |
 | BUCKET_SCOOP | BREAK | true | Empty bucket fluid or creature collection permission. |
-| INTERACTION | - | true | State-changing block interaction permission. Covers doors, trapdoors, fence gates, lecterns, chiseled bookshelves, cakes, candle cakes, flower pots, composters, dragon eggs, respawn anchors, jukeboxes, cauldrons, beehives, and vaults. |
+| INTERACTION | - | true | State-changing block interaction permission. Covers doors, trapdoors, fence gates, lecterns, chiseled bookshelves, cakes, candle cakes, candles, campfires, decorated pots, flower pots, composters, dragon eggs, respawn anchors, jukeboxes, cauldrons, beehives, vaults, log stripping (axe), copper waxing/dewaxing/deoxidation (honeycomb/axe), grass path creation (shovel), and water bottle to mud conversion. |
 | CONTAINER | INTERACTION | true | Container interaction permission. |
 | REDSTONE | INTERACTION | true | Redstone device interaction permission (buttons, levers, comparators, repeaters, note blocks, daylight sensors, bells). Excludes ancient city sculk mechanics. |
 | TRADE | - | true | Trading with villagers and wandering traders permission. |
@@ -86,7 +86,8 @@ and then further ancestors in order, until a match is found.
 | EGG_USE | THROWABLE | true | Egg throwing permission. Controls whether players can throw eggs in the region. |
 | SNOWBALL_USE | THROWABLE | true | Snowball throwing permission. Controls whether players can throw snowballs in the region. |
 | POTION_USE | THROWABLE | true | Potion throwing permission. Controls whether players can throw splash or lingering potions in the region. |
-| FARMING | - | true | Farming permission. Controls breaking and planting crops (wheat, carrots, potatoes, etc.) on farmland. Independent of BUILD, BREAK, and BUILD_BREAK. |
+| WIND_CHARGE_USE | THROWABLE | true | Wind charge throwing permission. Controls whether players can throw wind charges in the region. |
+| FARMING | - | true | Farming permission. Controls breaking, planting, and using bone meal on crops (wheat, carrots, potatoes, etc.) on farmland. Independent of BUILD, BREAK, and BUILD_BREAK. |
 | IGNITE | - | true | Ignite permission. Controls all use of flint and steel and fire charges, including igniting blocks, TNT, and creepers. Independent of BUILD_BREAK and BUILD: disabling BUILD or BUILD_BREAK does not prevent ignition. |
 | ARMOR_STAND | - | true | Armor stand permission. Controls placing armor stand items, breaking armor stand entities by attack, and interacting with their equipment slots. Independent of BUILD_BREAK. |
 | ITEM_FRAME | - | true | Item frame permission. Controls placing item frame and glow item frame entities, breaking them by attack, and interacting with their held items (adding, removing, or rotating). Applies to both regular and glow item frames. Independent of BUILD_BREAK. |

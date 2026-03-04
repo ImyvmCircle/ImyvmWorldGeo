@@ -23,6 +23,7 @@ fun registerRegionPermissions() {
     registerPlayerIgnitePermission()
     registerPlayerArmorStandPermission()
     registerPlayerItemFramePermission()
+    registerPlayerWindChargeUsePermission()
 }
 
 fun registerPlayerBuildBreakPermission(){
@@ -101,4 +102,8 @@ fun registerPlayerArmorStandPermission() {
 
 fun registerPlayerItemFramePermission() {
     playerItemFramePermission()
+}
+
+fun registerPlayerWindChargeUsePermission() {
+    playerWindChargeUsePermission()
 }
