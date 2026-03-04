@@ -231,5 +231,9 @@
   "notification.scope.enter": "&aWelcome to &e{0}&a territory, zone &b{1}&a.",
   "notification.scope.exit": "&7You have left zone &b{1}&7 of &e{0}&7.",
 
-  "setting.rule.sculk_spread.blocked": "&8[Sculk spread is disabled in this area]"
+  "setting.rule.sculk_spread.blocked": "&8[Sculk spread is disabled in this area]",
+  "setting.rule.snow_golem_trail.blocked": "&8[Snow golem trail is disabled in this area]",
+  "setting.rule.dispenser.blocked": "&8[Dispenser is disabled in this area]",
+  "setting.rule.pressure_plate.blocked": "&8[Pressure plate is disabled in this area]",
+  "setting.rule.piston.blocked": "&8[Piston is disabled in this area]"
 }

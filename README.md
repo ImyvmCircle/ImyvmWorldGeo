@@ -6,12 +6,16 @@
 
 This major version (1.3.x) focuses on perfection of current system.
 
-#### 1.3.1
+#### 1.3.0
 
 This version includes the following changes:
 
 - feat: Added `ENDERMAN_BLOCK_PICKUP` rule to control whether endermen can pick up blocks within a region or scope (default: true).
 - feat: Added `SCULK_SPREAD` rule to control whether sculk can spread within a region or scope (default: true).
+- feat: Added `SNOW_GOLEM_TRAIL` rule to control whether snow golems leave snow trails within a region or scope (default: true).
+- feat: Added `DISPENSER` rule to block dispenser output from affecting a region's interior, including dispensers placed outside the region (default: true).
+- feat: Added `PRESSURE_PLATE` rule to prevent pressure plates inside a region from being activated (default: true).
+- feat: Added `PISTON` rule to block pistons from pushing or breaking blocks inside a region, including pistons placed outside the region (default: true).
 
 ## Introduction
 
@@ -98,6 +102,10 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | TNT_BLOCK_PROTECTION | false | When set to true, TNT explosions do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
 | ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. When set to false, the enderman PickUpBlockGoal is suppressed for the region. |
 | SCULK_SPREAD | true | Controls whether sculk can spread inside the region. When set to false, the sculk catalyst tick is suppressed, preventing all sculk spread within the region. |
+| SNOW_GOLEM_TRAIL | true | Controls whether snow golems leave snow trails inside the region. When set to false, the setBlockState call for snow placement is suppressed. |
+| DISPENSER | true | Controls whether dispensers can fire into the region. When set to false, any dispenser whose output face points into the region is blocked, including dispensers placed outside the region. |
+| PRESSURE_PLATE | true | Controls whether pressure plates inside the region can be activated. When set to false, entity collision with pressure plates in the region is suppressed. |
+| PISTON | true | Controls whether pistons can push or break blocks inside the region. When set to false, any piston move that would affect a block inside the region is cancelled, including pistons placed outside the region. |
 
 #### Effect Keys
 

@@ -109,7 +109,11 @@ enum class RuleKey : BaseKey {
     SPAWN_PHANTOMS,
     TNT_BLOCK_PROTECTION,
     ENDERMAN_BLOCK_PICKUP,
-    SCULK_SPREAD
+    SCULK_SPREAD,
+    SNOW_GOLEM_TRAIL,
+    DISPENSER,
+    PRESSURE_PLATE,
+    PISTON
 }
 
 class EntryExitToggleSetting(

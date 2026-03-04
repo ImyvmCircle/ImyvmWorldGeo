@@ -29,6 +29,10 @@ import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_PHANTOMS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_TNT_BLOCK_PROTECTION
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_ENDERMAN_BLOCK_PICKUP
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SCULK_SPREAD
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SNOW_GOLEM_TRAIL
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_DISPENSER
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_PRESSURE_PLATE
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_PISTON
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -321,6 +325,10 @@ fun getDefaultValueForRule(key: RuleKey): Boolean {
         RuleKey.TNT_BLOCK_PROTECTION -> RULE_DEFAULT_TNT_BLOCK_PROTECTION.value
         RuleKey.ENDERMAN_BLOCK_PICKUP -> RULE_DEFAULT_ENDERMAN_BLOCK_PICKUP.value
         RuleKey.SCULK_SPREAD -> RULE_DEFAULT_SCULK_SPREAD.value
+        RuleKey.SNOW_GOLEM_TRAIL -> RULE_DEFAULT_SNOW_GOLEM_TRAIL.value
+        RuleKey.DISPENSER -> RULE_DEFAULT_DISPENSER.value
+        RuleKey.PRESSURE_PLATE -> RULE_DEFAULT_PRESSURE_PLATE.value
+        RuleKey.PISTON -> RULE_DEFAULT_PISTON.value
     }
 }
 

@@ -6,7 +6,11 @@
 		"rule.ServerWorldSpawnMixin",
 		"rule.ExplosionBlockProtectionMixin",
 		"rule.EndermanBlockPickupMixin",
-		"rule.SculkSpreadMixin"
+		"rule.SculkSpreadMixin",
+		"rule.SnowGolemTrailMixin",
+		"rule.DispenserMixin",
+		"rule.PressurePlateMixin",
+		"rule.PistonMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

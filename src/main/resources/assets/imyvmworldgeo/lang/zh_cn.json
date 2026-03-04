@@ -231,5 +231,9 @@
   "notification.scope.enter": "&a踏入 &e{0}&a 境界 &b{1}&a 地方",
   "notification.scope.exit": "&7离开 &e{0}&7 境界 &b{1}&7 地方",
 
-  "setting.rule.sculk_spread.blocked": "&8[幽匿蔓延已在此区域禁用]"
+  "setting.rule.sculk_spread.blocked": "&8[幽匿蔓延已在此区域禁用]",
+  "setting.rule.snow_golem_trail.blocked": "&8[雪傀儡制造雪已在此区域禁用]",
+  "setting.rule.dispenser.blocked": "&8[发射器在此区域已被禁用]",
+  "setting.rule.pressure_plate.blocked": "&8[压力板在此区域已被禁用]",
+  "setting.rule.piston.blocked": "&8[活塞在此区域已被禁用]"
 }
