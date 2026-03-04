@@ -80,7 +80,7 @@ and then further ancestors in order, until a match is found.
 | TRADE | - | true | Trading with villagers and wandering traders permission. |
 | PVP | - | true | Player vs player damage permission. Both the attacker and defender must have this permission for damage to be dealt. |
 | FLY | - | false | Flight permission within the region. |
-| ANIMAL_KILLING | - | true | Passive animal damage permission. Does not apply to monsters or neutral mobs. |
+| ANIMAL_KILLING | - | true | Passive animal damage permission. Covers passive AnimalEntity (excluding goats), fish (cod, salmon, tropical fish, pufferfish, tadpole), squid, glow squid, dolphin, allay, and snow golem. Does not apply to monsters, neutral mobs, or goats. |
 | VILLAGER_KILLING | - | true | Villager damage permission. Applies to villager entities only. |
 | THROWABLE | - | true | Master switch for throwing projectile items such as eggs, snowballs, and potions. |
 | EGG_USE | THROWABLE | true | Egg throwing permission. Controls whether players can throw eggs in the region. |
