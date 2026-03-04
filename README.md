@@ -6,18 +6,9 @@
 
 This major version (1.3.x) focuses on perfection of current system.
 
-#### 1.3.0
+#### 1.3.1
 
 This version includes the following changes:
-
-- feat: Added `ENDERMAN_BLOCK_PICKUP` rule to control whether endermen can pick up blocks within a region or scope (default: true).
-- feat: Added `SCULK_SPREAD` rule to control whether sculk can spread within a region or scope (default: true).
-- feat: Added `SNOW_GOLEM_TRAIL` rule to control whether snow golems leave snow trails within a region or scope (default: true).
-- feat: Added `DISPENSER` rule to block dispenser output from affecting a region's interior, including dispensers placed outside the region (default: true).
-- feat: Added `PRESSURE_PLATE` rule to prevent pressure plates inside a region from being activated (default: true).
-- feat: Added `PISTON` rule to block pistons from pushing or breaking blocks inside a region, including pistons placed outside the region (default: true).
-- fix: GeoScope info display now includes the dimension (e.g. Overworld, Nether, The End) in human-readable form.
-- fix: Overlap detection when creating a Region or GeoScope now only checks scopes within the same dimension.
 
 ## Introduction
 
