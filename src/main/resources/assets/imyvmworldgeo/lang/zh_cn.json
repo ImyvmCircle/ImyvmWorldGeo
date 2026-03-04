@@ -229,5 +229,7 @@
   "notification.region.enter": "&6&l踏入 &e{0}&6&l 境界",
   "notification.region.exit": "&7离开 &e{0}&7 境界",
   "notification.scope.enter": "&a踏入 &e{0}&a 境界 &b{1}&a 地方",
-  "notification.scope.exit": "&7离开 &e{0}&7 境界 &b{1}&7 地方"
+  "notification.scope.exit": "&7离开 &e{0}&7 境界 &b{1}&7 地方",
+
+  "setting.rule.sculk_spread.blocked": "&8[幽匿蔓延已在此区域禁用]"
 }

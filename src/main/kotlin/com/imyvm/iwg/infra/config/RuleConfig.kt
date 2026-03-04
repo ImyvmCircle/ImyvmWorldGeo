@@ -19,4 +19,8 @@ object RuleConfig {
     @JvmField
     val RULE_DEFAULT_ENDERMAN_BLOCK_PICKUP = Option("core.rule.enderman_block_pickup.default", true,
         "the default enderman block pickup rule in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val RULE_DEFAULT_SCULK_SPREAD = Option("core.rule.sculk_spread.default", true,
+        "the default sculk spread rule in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
 }

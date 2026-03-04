@@ -2,11 +2,16 @@
 
 ## Changelog
 
-### 1.3.0
+### 1.3.x
 
-This major version (1.3.x) focuses on new features.
+This major version (1.3.x) focuses on perfection of current system.
+
+#### 1.3.1
+
+This version includes the following changes:
 
 - feat: Added `ENDERMAN_BLOCK_PICKUP` rule to control whether endermen can pick up blocks within a region or scope (default: true).
+- feat: Added `SCULK_SPREAD` rule to control whether sculk can spread within a region or scope (default: true).
 
 ## Introduction
 
@@ -92,6 +97,7 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | SPAWN_PHANTOMS | true | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
 | TNT_BLOCK_PROTECTION | false | When set to true, TNT explosions do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
 | ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. When set to false, the enderman PickUpBlockGoal is suppressed for the region. |
+| SCULK_SPREAD | true | Controls whether sculk can spread inside the region. When set to false, the sculk catalyst tick is suppressed, preventing all sculk spread within the region. |
 
 #### Effect Keys
 

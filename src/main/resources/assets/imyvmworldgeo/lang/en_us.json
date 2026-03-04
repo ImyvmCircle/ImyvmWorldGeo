@@ -229,5 +229,7 @@
   "notification.region.enter": "&6&lWelcome to &e{0}&6&l!",
   "notification.region.exit": "&7You have left &e{0}&7.",
   "notification.scope.enter": "&aWelcome to &e{0}&a territory, zone &b{1}&a.",
-  "notification.scope.exit": "&7You have left zone &b{1}&7 of &e{0}&7."
+  "notification.scope.exit": "&7You have left zone &b{1}&7 of &e{0}&7.",
+
+  "setting.rule.sculk_spread.blocked": "&8[Sculk spread is disabled in this area]"
 }

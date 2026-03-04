@@ -5,7 +5,8 @@
 	"mixins": [
 		"rule.ServerWorldSpawnMixin",
 		"rule.ExplosionBlockProtectionMixin",
-		"rule.EndermanBlockPickupMixin"
+		"rule.EndermanBlockPickupMixin",
+		"rule.SculkSpreadMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
