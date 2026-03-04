@@ -15,4 +15,8 @@ object RuleConfig {
     @JvmField
     val RULE_DEFAULT_TNT_BLOCK_PROTECTION = Option("core.rule.tnt_block_protection.default", false,
         "the default TNT block protection rule in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val RULE_DEFAULT_ENDERMAN_BLOCK_PICKUP = Option("core.rule.enderman_block_pickup.default", true,
+        "the default enderman block pickup rule in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
 }

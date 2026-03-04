@@ -27,6 +27,7 @@ import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ITEM_FRAME
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_MONSTERS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_PHANTOMS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_TNT_BLOCK_PROTECTION
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_ENDERMAN_BLOCK_PICKUP
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -317,6 +318,7 @@ fun getDefaultValueForRule(key: RuleKey): Boolean {
         RuleKey.SPAWN_MONSTERS -> RULE_DEFAULT_SPAWN_MONSTERS.value
         RuleKey.SPAWN_PHANTOMS -> RULE_DEFAULT_SPAWN_PHANTOMS.value
         RuleKey.TNT_BLOCK_PROTECTION -> RULE_DEFAULT_TNT_BLOCK_PROTECTION.value
+        RuleKey.ENDERMAN_BLOCK_PICKUP -> RULE_DEFAULT_ENDERMAN_BLOCK_PICKUP.value
     }
 }
 
