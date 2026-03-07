@@ -13,6 +13,10 @@
   "interaction.meta.select.stop": "&aSelection mode stopped.",
   "interaction.meta.select.not_in_mode": "&cYou are not in selection mode. &7Use /imyvm-world-geo select start first.",
   "interaction.meta.select.reset": "&aYour selection points have been reset. &7You are still in selection mode.",
+  "interaction.meta.select.start.with_shape": "&aSelection mode started with shape hint: &e{0}&a.",
+  "interaction.meta.select.reset.with_shape": "&aSelection points cleared with shape hint: &e{0}&a. You are still in selection mode.",
+  "interaction.meta.select.shape.success": "&aShape hint for this selection updated to: &e{0}&a.",
+  "interaction.meta.select.shape.cannot_change_modify": "&cCannot change shape hint: this selection is for scope modification, shape is fixed.",
 
   "interaction.game.point.selection.undo": "&eUndid last point: &b{0}&e. Remaining selected points:\n{1}",
   "interaction.game.point.selection.max_reached": "&cCannot add point: maximum limit of &e{0}&c points reached. Current selection:\n{1}",
@@ -113,12 +117,13 @@
   "interaction.meta.command.help.selection.start": "§e/imyvmWorldGeo select start\n  §fStart point selection mode.\n  §7- Right-click a block with a command block to add a point.\n  §7- Left-click a block with a command block to undo the last point.\n  §7- Adding beyond the maximum or undoing below the minimum shows an error with the current list.",
   "interaction.meta.command.help.selection.stop": "§e/imyvmWorldGeo select stop\n  §fStop selection mode and discard all selected points.",
   "interaction.meta.command.help.selection.reset": "§e/imyvmWorldGeo select reset\n  §fClear all selected points but stay in selection mode. Bypasses the minimum point limit.",
+  "interaction.meta.command.help.selection.shape": "§e/imyvmWorldGeo select shape <shapeType>\n  §fChange the shape hint for the current selection. Cannot be used in scope-modification mode.",
 
-  "interaction.meta.command.help.region.create": "§a/imyvmWorldGeo create <§bshapeType§a> [§bname§a]\n  §fCreate a region of the given shape (§brectangle§f, §bcircle§f, §bpolygon§f) from selected positions.\n  §fOptionally give it a name.",
+  "interaction.meta.command.help.region.create": "§a/imyvmWorldGeo create [§bshapeType§a] [§bname§a]\n  §fCreate a region of the given shape (§brectangle§f, §bcircle§f, §bpolygon§f) from selected positions. If shapeType is omitted, shape is inferred from selection state.\n  §fOptionally give it a name.",
   "interaction.meta.command.help.region.delete": "§c/imyvmWorldGeo delete <§bregionIdentifier§c>\n  §fDelete a region by its ID or name.",
   "interaction.meta.command.help.region.rename": "§c/imyvmWorldGeo rename <§bregionIdentifier§c> <§bnewName§c>\n  §fRename an existing region.",
 
-  "interaction.meta.command.help.scope.add": "§d/imyvmWorldGeo addScope <§bshapeType§d> <§bregionIdentifier§d> [§bscopeName§d]\n  §fAdd a new scope to the region with the given shape and optional scope name.",
+  "interaction.meta.command.help.scope.add": "§d/imyvmWorldGeo addScope [§bshapeType§d] <§bregionIdentifier§d> [§bscopeName§d]\n  §fAdd a new scope to the region. If shapeType is omitted, shape is inferred from selection state. Optional scope name.",
   "interaction.meta.command.help.scope.modify": "§d/imyvmWorldGeo modifyScope <§bregionIdentifier§d> <§bscopeName§d> [§bnewName§d]\n  §fModify a scope's properties or rename it.",
   "interaction.meta.command.help.scope.delete": "§d/imyvmWorldGeo deleteScope <§bregionIdentifier§d> <§bscopeName§d>\n  §fDelete a scope from a region.",
 

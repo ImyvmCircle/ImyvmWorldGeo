@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.helper.*
+import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
@@ -16,7 +17,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 fun onRegionCreation(
     player: ServerPlayerEntity,
     regionNameArg: String?,
-    shapeTypeName: String,
+    shapeTypeName: String?,
     isApi: Boolean = false,
     idMark: Int
 ): Int {
@@ -27,7 +28,7 @@ fun onRegionCreation(
 fun onTryingRegionCreationWithReturn(
     player: ServerPlayerEntity,
     regionNameArg: String?,
-    shapeTypeName: String,
+    shapeTypeName: String?,
     isApi: Boolean = true,
     idMark: Int
 ): Region? {
@@ -60,7 +61,7 @@ fun onScopeCreation(
     player: ServerPlayerEntity,
     region: Region,
     scopeNameArg: String?,
-    shapeTypeName: String,
+    shapeTypeName: String?,
     isApi: Boolean = false
 ): Int {
     val resultPair = onTryingScopeCreationWithReturn(player, region, scopeNameArg, shapeTypeName, isApi)
@@ -71,7 +72,7 @@ fun onTryingScopeCreationWithReturn (
     player: ServerPlayerEntity,
     region: Region,
     scopeNameArg: String?,
-    shapeTypeName: String,
+    shapeTypeName: String?,
     isApi: Boolean = true
 ): Pair<Region, GeoScope>? {
     if (!selectionModeCheck(player)) return null
@@ -110,8 +111,12 @@ private fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
 
 private fun getShapeTypeCheck(
     player: ServerPlayerEntity,
-    shapeTypeName: String,
+    shapeTypeName: String?,
 ): GeoShapeType? {
+    if (shapeTypeName.isNullOrEmpty()) {
+        val selectionState = ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: return null
+        return selectionState.getEffectiveShapeType()
+    }
     val shapeType = GeoShapeType.entries
         .find { it.name == shapeTypeName }
         ?: GeoShapeType.UNKNOWN
@@ -129,7 +134,7 @@ private fun tryRegionCreation(
     idMark: Int
 ): Result<Region, CreationError> {
     val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points
     val newID = generateNewRegionId(idMark)
     return RegionFactory.createRegion(
         name = regionName,
@@ -145,7 +150,7 @@ private fun tryScopeCreation(
     scopeName: String,
     shapeType: GeoShapeType
 ): Result<GeoScope, CreationError> {
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: mutableListOf()
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: mutableListOf()
     return RegionFactory.createScope(
         scopeName = scopeName,
         playerExecutor = player,

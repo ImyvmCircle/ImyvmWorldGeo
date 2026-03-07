@@ -13,6 +13,10 @@
   "interaction.meta.select.stop": "&a圈地模式已停止。",
   "interaction.meta.select.not_in_mode": "&c您未处于圈地模式。&7请先使用 /imyvm-world-geo select start。",
   "interaction.meta.select.reset": "&a您的选点已重置。&7您仍处于圈地模式中。",
+  "interaction.meta.select.start.with_shape": "&a圈地模式已启动，形状预设为: &e{0}&a。",
+  "interaction.meta.select.reset.with_shape": "&a选点已清空，形状预设为: &e{0}&a。您仍处于圈地模式中。",
+  "interaction.meta.select.shape.success": "&a当前选择的形状预设已更新为: &e{0}&a。",
+  "interaction.meta.select.shape.cannot_change_modify": "&c无法更改形状预设：当前选择处于区域修改模式，形状已固定。",
 
   "interaction.game.point.selection.undo": "&e已撤销上一个点位：&b{0}&e。当前已选点位：\n{1}",
   "interaction.game.point.selection.max_reached": "&c无法添加点位：已达到 &e{0}&c 个点位的上限。当前选点：\n{1}",
@@ -113,12 +117,13 @@
   "interaction.meta.command.help.selection.start": "§e/imyvmWorldGeo select start\n  §f启动圈地模式。\n  §7- 手持命令方块右键点击方块以添加点位。\n  §7- 手持命令方块左键点击方块以撤销上一个点位。\n  §7- 超出上限或撤销低于下限时，会显示错误及当前点位列表。",
   "interaction.meta.command.help.selection.stop": "§e/imyvmWorldGeo select stop\n  §f停止圈地模式并丢弃所有已选点位。",
   "interaction.meta.command.help.selection.reset": "§e/imyvmWorldGeo select reset\n  §f清空所有已选点位但保持在圈地模式中。可绕过最小点位数限制。",
+  "interaction.meta.command.help.selection.shape": "§e/imyvmWorldGeo select shape <形状类型>\n  §f更改当前选择的形状预设。不能在区域修改模式下使用。",
 
-  "interaction.meta.command.help.region.create": "§a/imyvmWorldGeo create <§b形状类型§a> [§b名称§a]\n  §f根据已选点位创建指定形状（§b矩形§f、§b圆形§f、§b多边形§f）的境界。\n  §f可选地为境界指定名称。",
+  "interaction.meta.command.help.region.create": "§a/imyvmWorldGeo create [§b形状类型§a] [§b名称§a]\n  §f根据已选点位创建指定形状（§b矩形§f、§b圆形§f、§b多边形§f）的境界。若省略形状类型，则从选择状态自动推断。\n  §f可选地为境界指定名称。",
   "interaction.meta.command.help.region.delete": "§c/imyvmWorldGeo delete <§b境界标识符§c>\n  §f通过 ID 或名称删除一个境界。",
   "interaction.meta.command.help.region.rename": "§c/imyvmWorldGeo rename <§b境界标识符§c> <§b新名称§c>\n  §f重命名一个已有境界。",
 
-  "interaction.meta.command.help.scope.add": "§d/imyvmWorldGeo addScope <§b形状类型§d> <§b境界标识符§d> [§b地方名称§d]\n  §f向境界添加一个指定形状和可选名称的新地方。",
+  "interaction.meta.command.help.scope.add": "§d/imyvmWorldGeo addScope [§b形状类型§d] <§b境界标识符§d> [§b地方名称§d]\n  §f向境界添加新地方。若省略形状类型，则从选择状态自动推断。可选地指定地方名称。",
   "interaction.meta.command.help.scope.modify": "§d/imyvmWorldGeo modifyScope <§b境界标识符§d> <§b地方名称§d> [§b新名称§d]\n  §f修改地方的属性或将其重命名。",
   "interaction.meta.command.help.scope.delete": "§d/imyvmWorldGeo deleteScope <§b境界标识符§d> <§b地方名称§d>\n  §f从境界中删除一个地方。",
 

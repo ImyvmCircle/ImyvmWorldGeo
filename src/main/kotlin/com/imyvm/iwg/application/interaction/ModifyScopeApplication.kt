@@ -41,7 +41,7 @@ private fun checkAndGetPlayerPositions(player: ServerPlayerEntity): MutableList<
         player.sendMessage(Translator.tr("interaction.meta.select.not_in_mode"))
         return null
     }
-    return ImyvmWorldGeo.pointSelectingPlayers[playerUUID]
+    return ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points
 }
 
 private fun modifyPolygonScope(

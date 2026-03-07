@@ -3,20 +3,23 @@ package com.imyvm.iwg.inter.api
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.server.network.ServerPlayerEntity
 import net.minecraft.util.math.BlockPos
 
 @Suppress("unused")
 object PlayerInteractionApi {
-    fun startSelection(player: ServerPlayerEntity) = onStartSelection(player)
+    fun startSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null) = onStartSelection(player, shapeType)
     fun stopSelection(player: ServerPlayerEntity) = onStopSelection(player)
-    fun resetSelection(player: ServerPlayerEntity) = onResetSelection(player)
-    fun createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?, idMark: Int = 0) = onRegionCreation(player, name, shapeTypeName ?: "", isApi = true, idMark)
-    fun createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, shapeTypeName ?: "", isApi = true, idMark)
+    fun resetSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null) = onResetSelection(player, shapeType)
+    fun setSelectionShape(player: ServerPlayerEntity, shapeType: GeoShapeType) = onSetSelectionShape(player, shapeType)
+    fun startSelectionForModify(player: ServerPlayerEntity, scope: GeoScope) = onStartSelectionForModify(player, scope)
+    fun createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0) = onRegionCreation(player, name, shapeTypeName, isApi = true, idMark)
+    fun createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, shapeTypeName, isApi = true, idMark)
     fun deleteRegion(player: ServerPlayerEntity, region: Region) = onRegionDelete(player, region, isApi = true)
     fun renameRegion(player: ServerPlayerEntity, region: Region, newName: String) = onRegionRename(player, region, newName)
-    fun addScope(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?) = onScopeCreation(player, region, name, shapeTypeName ?: "", isApi = true)
-    fun createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?) = onTryingScopeCreationWithReturn(player, region, name, shapeTypeName ?: "", isApi = true)
+    fun addScope(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String? = null) = onScopeCreation(player, region, name, shapeTypeName, isApi = true)
+    fun createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String? = null) = onTryingScopeCreationWithReturn(player, region, name, shapeTypeName, isApi = true)
     fun deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String) = onScopeDelete(player, region, scopeName)
     fun renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String) = onScopeRename(player, region, oldName, newName)
     fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int) = onAddingTeleportPoint(player, targetRegion, scope, x, y, z)

@@ -15,6 +15,11 @@ This major version (1.3.x) focuses on perfection of current system.
 
 This version includes the following changes:
 
+- Selection display: Players in selection mode now see real-time particle effects visualizing their selection (beacon pillars at each point, line particles between edges). The display updates periodically via the lazy ticker.
+- Selection shape hints: `/imyvmWorldGeo select start [shapeType]`, `reset [shapeType]`, and `shape <shapeType>` allow setting a shape hint on the selection state.
+- Shape inference: When creating a region or scope without specifying a shape type, the shape is inferred from the selection state (shape hint or point count).
+- Scope modification preview: When in scope-modification mode (via API), the selection display shows the original scope outline and a preview of the modified shape.
+
 ## Introduction
 
 This is a mod to provide a geography system framework for Imyvm server players and groups, 
@@ -212,19 +217,25 @@ which allows extension mods to enrich and build features based on defined region
 Handles player-triggered actions related to regions and their scopes.
 
 #### Functions:
-- `startSelection(player: ServerPlayerEntity)`  
-  Starts selection mode for the player.
+- `startSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null)`  
+  Starts selection mode for the player. Optionally sets a shape hint.
 
 - `stopSelection(player: ServerPlayerEntity)`  
   Stops selection mode for the player.
 
-- `resetSelection(player: ServerPlayerEntity)`  
-  Resets the player's selected positions.
+- `resetSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null)`  
+  Resets the player's selected positions. Optionally updates the shape hint.
 
-- `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?, idMark: Int = 0)`  
-  Creates a region with an optional name, shape, and ID marker.
+- `setSelectionShape(player: ServerPlayerEntity, shapeType: GeoShapeType)`  
+  Changes the shape hint for the current selection. Fails if in scope-modification mode.
 
-- `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String?, idMark: Int = 0)`  
+- `startSelectionForModify(player: ServerPlayerEntity, scope: GeoScope)`  
+  Starts selection mode locked to scope-modification for the given scope.
+
+- `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
+  Creates a region with an optional name, shape, and ID marker. If shapeTypeName is null, shape is inferred from selection state.
+
+- `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
   Creates a region and returns the created region.
 
 - `deleteRegion(player: ServerPlayerEntity, region: Region)`  
@@ -453,17 +464,20 @@ Provides utility functions for region data to improve usability for extension mo
 
 ## Commands
 
-- `/imyvmWorldGeo select start`  
-  Start selecting positions with a command block. Right-click a block to add a point; left-click (on any block or in air) to undo the last point.
+- `/imyvmWorldGeo select start [shapeType]`  
+  Start selecting positions with a command block. Right-click a block to add a point; left-click (on any block or in air) to undo the last point. Optionally provide a shape hint (rectangle, circle, polygon).
 
 - `/imyvmWorldGeo select stop`  
   Stop selection mode.
 
-- `/imyvmWorldGeo select reset`  
-  Clear all selected points but keep selection mode active.
+- `/imyvmWorldGeo select reset [shapeType]`  
+  Clear all selected points but keep selection mode active. Optionally update the shape hint.
 
-- `/imyvmWorldGeo create <shapeType> [name]`  
-  Create a region of the given shape (rectangle, circle, polygon) from selected positions.  
+- `/imyvmWorldGeo select shape <shapeType>`  
+  Change the shape hint for the current selection. Cannot be used in scope-modification mode.
+
+- `/imyvmWorldGeo create [shapeType] [name]`  
+  Create a region of the given shape (rectangle, circle, polygon) from selected positions. If shapeType is omitted, the shape is inferred from the selection state.  
   Optionally give it a name.
 
 - `/imyvmWorldGeo delete <regionIdentifier>`  
@@ -472,8 +486,8 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo rename <regionIdentifier> <newName>`  
   Rename an existing region.
 
-- `/imyvmWorldGeo addScope <shapeType> <regionIdentifier> [scopeName]`  
-  Add a new scope to the region with the given shape and optional scope name.
+- `/imyvmWorldGeo addScope [shapeType] <regionIdentifier> [scopeName]`  
+  Add a new scope to the region. If shapeType is omitted, the shape is inferred from the selection state. Optionally provide a scope name.
 
 - `/imyvmWorldGeo deleteScope <regionIdentifier> <scopeName>`  
   Delete a scope from a region.

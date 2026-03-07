@@ -25,7 +25,7 @@ fun handPointSelection(
     if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
 
     val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points ?: return ActionResult.PASS
 
     val maxPoints = SelectionConfig.SELECTION_MAX_POINTS.value
     if (selectedPositions.size >= maxPoints) {

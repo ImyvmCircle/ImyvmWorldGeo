@@ -23,7 +23,7 @@ fun handPointUndo(
     if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
 
     val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
+    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points ?: return ActionResult.PASS
 
     val minPoints = SelectionConfig.SELECTION_MIN_POINTS.value
     if (selectedPositions.size <= minPoints) {

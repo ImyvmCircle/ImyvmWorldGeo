@@ -18,7 +18,7 @@ fun onEstimateRegionArea(
     if (shapeType == GeoShapeType.UNKNOWN) {
         return AreaEstimationResult.Error(com.imyvm.iwg.domain.CreationError.InsufficientPoints)
     }
-    val positions = customPositions ?: ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: emptyList()
+    val positions = customPositions ?: ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: emptyList()
     return AreaEstimator.estimateShapeArea(positions, shapeType)
 }
 
@@ -30,7 +30,7 @@ fun onEstimateScopeAreaChange(
 ): AreaEstimationResult {
     return try {
         val existingScope = region.getScopeByName(scopeName)
-        val positions = customPositions ?: ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: emptyList()
+        val positions = customPositions ?: ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: emptyList()
         ScopeAreaChangeEstimator.estimateScopeModificationAreaChange(existingScope, positions)
     } catch (e: IllegalArgumentException) {
         AreaEstimationResult.Error(com.imyvm.iwg.domain.CreationError.InsufficientPoints)

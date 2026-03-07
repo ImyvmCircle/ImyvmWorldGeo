@@ -2,6 +2,7 @@ package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.entrypoint.register.command.helper.*
+import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator
@@ -11,19 +12,33 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.server.command.CommandManager.literal
 import net.minecraft.server.command.CommandManager.argument
 import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.server.network.ServerPlayerEntity
 
 fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
     dispatcher.register(
         literal("imyvmWorldGeo")
             .then(
                 literal("select")
-                    .then(literal("start").executes { runStartSelect(it) })
+                    .then(
+                        literal("start")
+                            .executes { runStartSelect(it) }
+                            .then(argument("shapeType", StringArgumentType.word()).suggests(SHAPE_TYPE_SUGGESTION_PROVIDER).executes { runStartSelectWithShape(it) })
+                    )
                     .then(literal("stop").executes { runStopSelect(it) })
-                    .then(literal("reset").executes { runResetSelect(it) })
+                    .then(
+                        literal("reset")
+                            .executes { runResetSelect(it) }
+                            .then(argument("shapeType", StringArgumentType.word()).suggests(SHAPE_TYPE_SUGGESTION_PROVIDER).executes { runResetSelectWithShape(it) })
+                    )
+                    .then(
+                        literal("shape")
+                            .then(argument("shapeType", StringArgumentType.word()).suggests(SHAPE_TYPE_SUGGESTION_PROVIDER).executes { runSetSelectionShape(it) })
+                    )
             )
             .then(
                 literal("create")
                     .requires { it.hasPermissionLevel(2) }
+                    .executes { runCreateRegion(it) }
                     .then(
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
@@ -58,6 +73,15 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             .then(
                 literal("addScope")
                     .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .executes { runAddScope(it) }
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .executes { runAddScope(it) }
+                            )
+                    )
                     .then(
                         argument("shapeType", StringArgumentType.word())
                             .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
@@ -340,10 +364,40 @@ private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
     return onResetSelection(player)
 }
 
+private fun runStartSelectWithShape(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val shapeTypeStr = StringArgumentType.getString(context, "shapeType").uppercase()
+    val shapeType = parseShapeType(shapeTypeStr, player) ?: return 0
+    return onStartSelection(player, shapeType)
+}
+
+private fun runResetSelectWithShape(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val shapeTypeStr = StringArgumentType.getString(context, "shapeType").uppercase()
+    val shapeType = parseShapeType(shapeTypeStr, player) ?: return 0
+    return onResetSelection(player, shapeType)
+}
+
+private fun runSetSelectionShape(context: CommandContext<ServerCommandSource>): Int {
+    val player = context.source.player ?: return 0
+    val shapeTypeStr = StringArgumentType.getString(context, "shapeType").uppercase()
+    val shapeType = parseShapeType(shapeTypeStr, player) ?: return 0
+    return onSetSelectionShape(player, shapeType)
+}
+
+private fun parseShapeType(shapeTypeStr: String, player: ServerPlayerEntity): GeoShapeType? {
+    val shapeType = GeoShapeType.entries.find { it.name == shapeTypeStr } ?: GeoShapeType.UNKNOWN
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeStr))
+        return null
+    }
+    return shapeType
+}
+
 private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val nameArg = getOptionalArgument(context, "name")
-    val shapeTypeArg = StringArgumentType.getString(context, "shapeType").uppercase()
+    val shapeTypeArg = getOptionalArgument(context, "shapeType")?.uppercase()
     return onRegionCreation(player, nameArg, shapeTypeArg, idMark = 0)
 }
 
@@ -361,7 +415,7 @@ private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
 private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeNameArg = getOptionalArgument(context, "scopeName")
-    val shapeTypeName = getOptionalArgument(context, "shapeType")?.uppercase() ?: return 0
+    val shapeTypeName = getOptionalArgument(context, "shapeType")?.uppercase()
     return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, shapeTypeName)}
 }
 

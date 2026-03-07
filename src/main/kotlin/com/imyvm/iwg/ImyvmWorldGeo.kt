@@ -7,11 +7,12 @@ import com.imyvm.iwg.inter.register.event.registerPointSelection
 import com.imyvm.iwg.inter.register.event.registerRegionEffects
 import com.imyvm.iwg.inter.register.event.registerRegionEntryExit
 import com.imyvm.iwg.inter.register.event.registerRegionPermissions
+import com.imyvm.iwg.inter.register.event.registerSelectionDisplay
 import com.imyvm.iwg.inter.register.command.register
 import com.imyvm.iwg.entrypoint.register.registerDataLoadSave
+import com.imyvm.iwg.domain.component.SelectionState
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
-import net.minecraft.util.math.BlockPos
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import java.util.*
@@ -31,6 +32,7 @@ class ImyvmWorldGeo : ModInitializer {
 
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
 		registerPointSelection()
+		registerSelectionDisplay()
 
 		logger.info("$MOD_ID initialized successfully.")
 	}
@@ -39,7 +41,7 @@ class ImyvmWorldGeo : ModInitializer {
 		const val MOD_ID = "imyvmworldgeo"
 		val logger: Logger = LoggerFactory.getLogger(MOD_ID)
 
-		val pointSelectingPlayers: ConcurrentHashMap<UUID, MutableList<BlockPos>> = ConcurrentHashMap()
+		val pointSelectingPlayers: ConcurrentHashMap<UUID, SelectionState> = ConcurrentHashMap()
 		val locationActionBarEnabledPlayers: MutableSet<UUID> = Collections.synchronizedSet(mutableSetOf())
 	}
 }
