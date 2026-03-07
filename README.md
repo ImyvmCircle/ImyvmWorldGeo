@@ -6,6 +6,11 @@
 
 This major version (1.3.x) focuses on perfection of current system.
 
+#### 1.3.x ROADMAP
+
+1. Improvement of selection mode.
+2. Provide compatibility for new features.
+
 #### 1.3.1
 
 This version includes the following changes:
