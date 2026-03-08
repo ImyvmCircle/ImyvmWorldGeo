@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.3.1
+# IMYVMWorldGeo 1.21 1.3.2
 
 ## Changelog
 
@@ -6,16 +6,9 @@
 
 This major version (1.3.x) focuses on perfection of current system.
 
-#### 1.3.x ROADMAP
+#### 1.3.2
 
-1. Improvement of selection mode.
-2. Provide compatibility for new features.
-
-#### 1.3.1
-
-- feat: Selection mode now shows real-time particle effects and supports shape hints with automatic shape inference when creating regions or scopes.
-- feat: Intersection check improvement and error messages now detail each conflicting scope with shape parameters and list which vertices of the new shape fall inside each conflict.
-- feat: Selection tool item changed from command block to nether star.
+This version includes:
 
 ## Introduction
 
