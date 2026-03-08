@@ -13,13 +13,9 @@ This major version (1.3.x) focuses on perfection of current system.
 
 #### 1.3.1
 
-This version includes the following changes:
-
-- Selection display: Players in selection mode now see real-time particle effects visualizing their selection (beacon pillars at each point, line particles between edges). The display updates periodically via the lazy ticker.
-- Selection shape hints: `/imyvmWorldGeo select start [shapeType]`, `reset [shapeType]`, and `shape <shapeType>` allow setting a shape hint on the selection state.
-- Shape inference: When creating a region or scope without specifying a shape type, the shape is inferred from the selection state (shape hint or point count).
-- Scope modification preview: When in scope-modification mode (via API), the selection display shows the original scope outline and a preview of the modified shape.
-- Intersection error detail: When creating a polygon or rectangle fails due to overlap with an existing scope, the error message now lists each intersecting region and scope with its readable shape parameters (type, coordinates and meaning). For polygons and rectangles, the message also indents and lists which vertices of the new shape fall inside each conflicting scope.
+- feat: Selection mode now shows real-time particle effects and supports shape hints with automatic shape inference when creating regions or scopes.
+- feat: Intersection check improvement and error messages now detail each conflicting scope with shape parameters and list which vertices of the new shape fall inside each conflict.
+- feat: Selection tool item changed from command block to nether star.
 
 ## Introduction
 

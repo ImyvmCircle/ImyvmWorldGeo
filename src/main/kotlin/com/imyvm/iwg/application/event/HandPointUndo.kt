@@ -21,7 +21,7 @@ fun handPointUndo(
     if (hand != Hand.MAIN_HAND) return ActionResult.PASS
 
     val itemStack = player.getStackInHand(hand)
-    if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
+    if (itemStack.item != Items.NETHER_STAR) return ActionResult.PASS
 
     val playerUUID = player.uuid
     val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
