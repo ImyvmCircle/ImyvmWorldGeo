@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.helper.*
+import com.imyvm.iwg.application.selection.display.clearBeaconBeams
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.CreationError
@@ -170,6 +171,7 @@ private fun handleRegionCreateSuccess(
     if (notify) {
         player.sendMessage(Translator.tr("interaction.meta.create.success", newRegion.name))
     }
+    clearBeaconBeams(player)
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
 }
 
@@ -187,6 +189,7 @@ private fun handleScopeCreateSuccess(
             Translator.tr("interaction.meta.scope.add.success", newScope.scopeName, region.name)
         )
     }
+    clearBeaconBeams(player)
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
 }
 

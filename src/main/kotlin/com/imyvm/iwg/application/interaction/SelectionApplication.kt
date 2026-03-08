@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.selection.display.clearBeaconBeams
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
@@ -29,6 +30,7 @@ fun onStartSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null
 fun onStopSelection(player: ServerPlayerEntity): Int {
     val playerUUID = player.uuid
     return if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+        clearBeaconBeams(player)
         ImyvmWorldGeo.pointSelectingPlayers.remove(playerUUID)
         player.sendMessage(Translator.tr("interaction.meta.select.stop"))
         1
