@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.selection.buildPointUndoMessage
 import com.imyvm.iwg.infra.config.SelectionConfig
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.entity.player.PlayerEntity
@@ -23,7 +24,8 @@ fun handPointUndo(
     if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
 
     val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points ?: return ActionResult.PASS
+    val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
+    val selectedPositions = selectionState.points
 
     val minPoints = SelectionConfig.SELECTION_MIN_POINTS.value
     if (selectedPositions.size <= minPoints) {
@@ -31,7 +33,7 @@ fun handPointUndo(
             Translator.tr(
                 "interaction.game.point.selection.min_reached",
                 minPoints,
-                formatPointsList(selectedPositions)
+                formatSimpleXZList(selectedPositions)
             )
         )
         return ActionResult.SUCCESS
@@ -39,13 +41,7 @@ fun handPointUndo(
 
     val removed = selectedPositions.removeAt(selectedPositions.lastIndex)
 
-    player.sendMessage(
-        Translator.tr(
-            "interaction.game.point.selection.undo",
-            "(${removed.x},${removed.y},${removed.z})",
-            formatPointsList(selectedPositions)
-        )
-    )
+    player.sendMessage(buildPointUndoMessage(selectionState, removed))
 
     return ActionResult.SUCCESS
 }

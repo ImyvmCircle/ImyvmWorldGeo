@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.selection.buildPointAddedMessage
+import com.imyvm.iwg.application.selection.formatXZOnly
 import com.imyvm.iwg.infra.config.SelectionConfig
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.entity.player.PlayerEntity
@@ -25,7 +27,8 @@ fun handPointSelection(
     if (itemStack.item != Items.COMMAND_BLOCK) return ActionResult.PASS
 
     val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points ?: return ActionResult.PASS
+    val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
+    val selectedPositions = selectionState.points
 
     val maxPoints = SelectionConfig.SELECTION_MAX_POINTS.value
     if (selectedPositions.size >= maxPoints) {
@@ -33,7 +36,7 @@ fun handPointSelection(
             Translator.tr(
                 "interaction.game.point.selection.max_reached",
                 maxPoints,
-                formatPointsList(selectedPositions)
+                formatSimpleXZList(selectedPositions)
             )
         )
         return ActionResult.SUCCESS
@@ -42,17 +45,11 @@ fun handPointSelection(
     val clickedPos = hitResult.blockPos
     selectedPositions.add(clickedPos)
 
-    player.sendMessage(
-        Translator.tr(
-            "interaction.game.point.selection",
-            "(${clickedPos.x},${clickedPos.y},${clickedPos.z})",
-            formatPointsList(selectedPositions)
-        )
-    )
+    player.sendMessage(buildPointAddedMessage(selectionState, clickedPos))
 
     return ActionResult.SUCCESS
 }
 
-internal fun formatPointsList(positions: List<BlockPos>): String =
+internal fun formatSimpleXZList(positions: List<BlockPos>): String =
     if (positions.isEmpty()) "&7(none)"
-    else positions.joinToString(separator = "\n") { "&b(${it.x},${it.y},${it.z})" }
+    else positions.joinToString(separator = "\n") { "&b(${it.x},${it.z})" }

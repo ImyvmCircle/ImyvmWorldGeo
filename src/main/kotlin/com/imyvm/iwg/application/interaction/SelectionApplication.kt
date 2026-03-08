@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.selection.buildModifyStartMessage
 import com.imyvm.iwg.application.selection.display.clearBeaconBeams
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
@@ -80,7 +81,7 @@ fun onStartSelectionForModify(player: ServerPlayerEntity, scope: GeoScope): Int 
         ImyvmWorldGeo.pointSelectingPlayers[playerUUID] = SelectionState(
             hypotheticalShape = HypotheticalShape.ModifyExisting(scope)
         )
-        player.sendMessage(Translator.tr("interaction.meta.select.start"))
+        player.sendMessage(buildModifyStartMessage(scope))
         1
     } else {
         player.sendMessage(Translator.tr("interaction.meta.select.already"))

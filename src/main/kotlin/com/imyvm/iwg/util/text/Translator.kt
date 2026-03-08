@@ -29,6 +29,15 @@ object Translator : HokiTranslator() {
         return formatted?.let { TextParser.parse(it) }
     }
 
+    fun raw(key: String?, vararg args: Any?): String? {
+        val rawStr = key?.let { languageInstance.get(it) }
+        return if (args.isNotEmpty()) {
+            rawStr?.let { java.text.MessageFormat.format(it, *args) }
+        } else {
+            rawStr
+        }
+    }
+
     private fun createLanguage(languageId: String) = HokiLanguage.create(
         HokiLanguage.getResourcePath(MOD_ID, languageId)
             .let { Translator::class.java.getResourceAsStream(it) }

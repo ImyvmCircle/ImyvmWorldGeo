@@ -34,19 +34,27 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                         literal("shape")
                             .then(argument("shapeType", StringArgumentType.word()).suggests(SHAPE_TYPE_SUGGESTION_PROVIDER).executes { runSetSelectionShape(it) })
                     )
+                    .then(
+                        literal("modifyScope")
+                            .requires { it.hasPermissionLevel(2) }
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runStartSelectForModify(it) }
+                                    )
+                            )
+                    )
             )
             .then(
                 literal("create")
                     .requires { it.hasPermissionLevel(2) }
                     .executes { runCreateRegion(it) }
                     .then(
-                        argument("shapeType", StringArgumentType.word())
-                            .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                        argument("name", StringArgumentType.word())
                             .executes { runCreateRegion(it) }
-                            .then(
-                                argument("name", StringArgumentType.word())
-                                    .executes { runCreateRegion(it) }
-                            )
                     )
             )
             .then(
@@ -80,19 +88,6 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                             .then(
                                 argument("scopeName", StringArgumentType.string())
                                     .executes { runAddScope(it) }
-                            )
-                    )
-                    .then(
-                        argument("shapeType", StringArgumentType.word())
-                            .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runAddScope(it) }
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .executes { runAddScope(it) }
-                                    )
                             )
                     )
             )
@@ -397,8 +392,7 @@ private fun parseShapeType(shapeTypeStr: String, player: ServerPlayerEntity): Ge
 private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     val nameArg = getOptionalArgument(context, "name")
-    val shapeTypeArg = getOptionalArgument(context, "shapeType")?.uppercase()
-    return onRegionCreation(player, nameArg, shapeTypeArg, idMark = 0)
+    return onRegionCreation(player, nameArg, null, idMark = 0)
 }
 
 private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
@@ -415,8 +409,7 @@ private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
 private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeNameArg = getOptionalArgument(context, "scopeName")
-    val shapeTypeName = getOptionalArgument(context, "shapeType")?.uppercase()
-    return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, shapeTypeName)}
+    return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, null)}
 }
 
 private fun runDeleteScope(context: CommandContext<ServerCommandSource>): Int {
@@ -552,4 +545,18 @@ private fun runToggleActionBar(context: CommandContext<ServerCommandSource>): In
 private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
     val player = context.source.player ?: return 0
     return onHelp(player)
+}
+
+private fun runStartSelectForModify(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    return identifierHandler(regionIdentifier, player) { region ->
+        try {
+            val scope = region.getScopeByName(scopeName)
+            onStartSelectionForModify(player, scope)
+        } catch (e: IllegalArgumentException) {
+            player.sendMessage(Translator.tr("interaction.meta.scope.add.not_found_generic"))
+            0
+        }
+    }
 }
