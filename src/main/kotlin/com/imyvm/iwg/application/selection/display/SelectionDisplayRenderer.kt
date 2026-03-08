@@ -26,6 +26,10 @@ private fun displayForPlayer(player: ServerPlayerEntity, state: SelectionState) 
     points.forEach { emitBeaconPillar(player, it.x, it.z) }
 
     if (points.isEmpty()) {
+        val shape = state.hypotheticalShape
+        if (shape is HypotheticalShape.ModifyExisting) {
+            displayOriginalScope(player, shape.scope)
+        }
         commitBeaconPillars(player)
         return
     }
@@ -97,22 +101,22 @@ private fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {
             val west = params[0]; val north = params[1]; val east = params[2]; val south = params[3]
             val corners = listOf(BlockPos(west, 0, north), BlockPos(east, 0, north), BlockPos(east, 0, south), BlockPos(west, 0, south))
             corners.forEach { emitBeaconPillar(player, it.x, it.z) }
-            emitLineSurface(player, corners[0], corners[1])
-            emitLineSurface(player, corners[1], corners[2])
-            emitLineSurface(player, corners[2], corners[3])
-            emitLineSurface(player, corners[3], corners[0])
+            emitLineSurfaceOld(player, corners[0], corners[1])
+            emitLineSurfaceOld(player, corners[1], corners[2])
+            emitLineSurfaceOld(player, corners[2], corners[3])
+            emitLineSurfaceOld(player, corners[3], corners[0])
         }
         GeoShapeType.CIRCLE -> {
             val centerX = params[0]; val centerZ = params[1]; val radius = params[2]
             emitBeaconPillar(player, centerX, centerZ)
             emitBeaconPillar(player, centerX, centerZ + radius)
-            drawCircleOutline(player, centerX, centerZ, radius)
+            drawCircleOutlineOld(player, centerX, centerZ, radius)
         }
         GeoShapeType.POLYGON -> {
             val vertices = params.chunked(2).map { BlockPos(it[0], 0, it[1]) }
             vertices.forEach { emitBeaconPillar(player, it.x, it.z) }
             for (i in vertices.indices) {
-                emitLineSurface(player, vertices[i], vertices[(i + 1) % vertices.size])
+                emitLineSurfaceOld(player, vertices[i], vertices[(i + 1) % vertices.size])
             }
         }
         else -> {}
@@ -179,6 +183,12 @@ private fun displayModifyPolygonPreview(player: ServerPlayerEntity, newPoints: L
             }
             emitLineSurface(player, oldVertex, newVertex)
         }
-        else -> {}
+        3 -> {
+            val adj1 = newPoints[0]; val adj2 = newPoints[1]; val ins = newPoints[2]
+            val newPolygon = evaluateModifyPolygonExplicitInsert(adj1, adj2, ins, existingVertices) ?: return
+            for (i in newPolygon.indices) {
+                emitLineSurface(player, newPolygon[i], newPolygon[(i + 1) % newPolygon.size])
+            }
+        }
     }
 }

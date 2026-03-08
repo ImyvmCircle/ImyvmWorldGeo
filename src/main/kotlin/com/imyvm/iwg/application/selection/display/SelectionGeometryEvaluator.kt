@@ -93,3 +93,16 @@ fun evaluateModifyPolygonReplace(existingVertex: BlockPos, newPoint: BlockPos, e
     if (checkPolygonSize(newPolygon) != null) return null
     return newPolygon
 }
+
+fun evaluateModifyPolygonExplicitInsert(adj1: BlockPos, adj2: BlockPos, newPoint: BlockPos, existingPoints: List<BlockPos>): List<BlockPos>? {
+    val n = existingPoints.size
+    val indexA = existingPoints.indexOfFirst { it.x == adj1.x && it.z == adj1.z }
+    val indexB = existingPoints.indexOfFirst { it.x == adj2.x && it.z == adj2.z }
+    if (indexA == -1 || indexB == -1) return null
+    val insertIndex = if ((indexA + 1) % n == indexB) indexB else indexA
+    val newPolygon = existingPoints.toMutableList()
+    newPolygon.add(insertIndex, newPoint)
+    if (!isConvex(newPolygon)) return null
+    if (checkPolygonSize(newPolygon) != null) return null
+    return newPolygon
+}
