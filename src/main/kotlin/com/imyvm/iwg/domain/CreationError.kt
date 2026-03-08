@@ -1,5 +1,7 @@
 package com.imyvm.iwg.domain
 
+import com.imyvm.iwg.util.geo.IntersectionDetail
+
 sealed class CreationError {
     data object DuplicatedPoints : CreationError()
     data object InsufficientPoints : CreationError()
@@ -9,5 +11,5 @@ sealed class CreationError {
     data object AspectRatioInvalid : CreationError()
     data object EdgeTooShort : CreationError()
     data object NotConvex : CreationError()
-    data object IntersectionBetweenScopes : CreationError()
+    data class IntersectionBetweenScopes(val details: List<IntersectionDetail>) : CreationError()
 }

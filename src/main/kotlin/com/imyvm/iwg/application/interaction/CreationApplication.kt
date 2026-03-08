@@ -51,8 +51,7 @@ fun onTryingRegionCreationWithReturn(
             creationResult.value
         }
         is Result.Err -> {
-            val errorMsg = errorMessage(creationResult.error, shapeType)
-            player.sendMessage(errorMsg)
+            errorMessage(creationResult.error, shapeType).forEach { player.sendMessage(it) }
             null
         }
     }
@@ -94,8 +93,7 @@ fun onTryingScopeCreationWithReturn (
             Pair(region, creationResult.value)
         }
         is Result.Err -> {
-            val errorMsg = errorMessage(creationResult.error, shapeType)
-            player.sendMessage(errorMsg)
+            errorMessage(creationResult.error, shapeType).forEach { player.sendMessage(it) }
             null
         }
     }

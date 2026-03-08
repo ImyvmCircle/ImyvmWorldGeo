@@ -43,7 +43,7 @@ fun recreateScope(
         is Result.Err -> {
             region.geometryScope.add(existingScope)
             val errorMsg = errorMessage(newScope.error, shapeType)
-            player.sendMessage(errorMsg)
+            errorMsg.forEach { player.sendMessage(it) }
         }
     }
 }

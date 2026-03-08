@@ -5,15 +5,43 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.util.math.BlockPos
 
+data class VertexInsideInfo(val index: Int, val x: Int, val z: Int)
+
+data class IntersectionDetail(
+    val regionName: String,
+    val scopeName: String,
+    val shape: GeoShape,
+    val verticesInside: List<VertexInsideInfo>
+)
+
 fun checkIntersection(
     newShape: GeoShape,
-    existingScopes: List<GeoScope>
-): Boolean {
-    for (scope in existingScopes) {
+    existingScopes: List<Pair<GeoScope, String>>
+): List<IntersectionDetail> {
+    val newShapeVertices = getShapeVertices(newShape)
+    val result = mutableListOf<IntersectionDetail>()
+    for ((scope, regionName) in existingScopes) {
         val existingGeo = scope.geoShape ?: continue
-        if (geoOverlap(newShape, existingGeo)) return true
+        if (geoOverlap(newShape, existingGeo)) {
+            val verticesInside = newShapeVertices.mapIndexedNotNull { idx, (x, z) ->
+                if (existingGeo.containsPoint(x, z)) VertexInsideInfo(idx + 1, x, z) else null
+            }
+            result.add(IntersectionDetail(regionName, scope.scopeName, existingGeo, verticesInside))
+        }
     }
-    return false
+    return result
+}
+
+private fun getShapeVertices(shape: GeoShape): List<Pair<Int, Int>> {
+    return when (shape.geoShapeType) {
+        GeoShapeType.POLYGON -> shape.shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
+        GeoShapeType.RECTANGLE -> {
+            val w = shape.shapeParameter[0]; val n = shape.shapeParameter[1]
+            val e = shape.shapeParameter[2]; val s = shape.shapeParameter[3]
+            listOf(Pair(w, n), Pair(e, n), Pair(e, s), Pair(w, s))
+        }
+        else -> emptyList()
+    }
 }
 
 private fun geoOverlap(a: GeoShape, b: GeoShape): Boolean {

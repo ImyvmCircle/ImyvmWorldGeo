@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.3.0
+# IMYVMWorldGeo 1.21 1.3.1
 
 ## Changelog
 
@@ -19,6 +19,7 @@ This version includes the following changes:
 - Selection shape hints: `/imyvmWorldGeo select start [shapeType]`, `reset [shapeType]`, and `shape <shapeType>` allow setting a shape hint on the selection state.
 - Shape inference: When creating a region or scope without specifying a shape type, the shape is inferred from the selection state (shape hint or point count).
 - Scope modification preview: When in scope-modification mode (via API), the selection display shows the original scope outline and a preview of the modified shape.
+- Intersection error detail: When creating a polygon or rectangle fails due to overlap with an existing scope, the error message now lists each intersecting region and scope with its readable shape parameters (type, coordinates and meaning). For polygons and rectangles, the message also indents and lists which vertices of the new shape fall inside each conflicting scope.
 
 ## Introduction
 
