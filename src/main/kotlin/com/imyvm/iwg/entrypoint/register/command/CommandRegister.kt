@@ -53,7 +53,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .requires { it.hasPermissionLevel(2) }
                     .executes { runCreateRegion(it) }
                     .then(
-                        argument("name", StringArgumentType.word())
+                        argument("name", StringArgumentType.string())
                             .executes { runCreateRegion(it) }
                     )
             )
@@ -231,7 +231,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
-                                        argument("key", StringArgumentType.word())
+                                        argument("key", StringArgumentType.string())
                                             .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                             .executes { runAddDeleteSetting(it) }
                                             .then(
@@ -245,7 +245,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("queryValue")
                             .then(
-                                argument("regionIdentifier", StringArgumentType.word())
+                                argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("key", StringArgumentType.string())
@@ -293,10 +293,10 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
-                                        argument("scopeName", StringArgumentType.word())
+                                        argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
                                             .then(
-                                                argument("key", StringArgumentType.word())
+                                                argument("key", StringArgumentType.string())
                                                     .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
                                                     .executes { runAddDeleteSetting(it) }
                                                     .then(
@@ -311,7 +311,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     .then(
                         literal("queryValue")
                             .then(
-                                argument("regionIdentifier", StringArgumentType.word())
+                                argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                                     .then(
                                         argument("scopeName", StringArgumentType.string())

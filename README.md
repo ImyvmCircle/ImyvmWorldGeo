@@ -12,6 +12,8 @@ This version includes:
 
 - feat: display all scope boundaries in the player's world when the ActionBar is toggled on, rendered periodically via the tick system
 - refactor: remove SelectionBeaconEmitter wrapper, use SelectionPillarEmitter directly
+- feat: name validation for regions and scopes now enforces allowed character sets (UN working languages, Japanese, Korean, Greek, digits mixed with letters, non-consecutive single quotes and spaces); command name arguments now support quoted strings for names containing spaces; suggestion providers wrap names with spaces in double quotes
+- api: expose `UtilApi.isValidName(name)` for use by dependent mods
 
 ## Introduction
 

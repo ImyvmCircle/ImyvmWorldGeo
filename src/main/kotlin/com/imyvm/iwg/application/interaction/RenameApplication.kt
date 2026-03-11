@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
-import com.imyvm.iwg.application.interaction.helper.checkNameDigit
 import com.imyvm.iwg.application.interaction.helper.checkNameEmpty
+import com.imyvm.iwg.application.interaction.helper.checkNameFormat
 import com.imyvm.iwg.application.interaction.helper.checkNameRepeat
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
@@ -10,7 +10,7 @@ import net.minecraft.server.network.ServerPlayerEntity
 
 fun onRegionRename(player: ServerPlayerEntity, region: Region, newName: String): Int {
     if (!checkNameEmpty(newName, player)) return 0
-    if(!checkNameDigit(newName, player)) return 0
+    if (!checkNameFormat(newName, player)) return 0
     val oldName = region.name
     if(!checkNameRepeat(oldName, newName, player)) return 0
 
@@ -32,6 +32,9 @@ fun onScopeRename(
 ): Int {
     try {
         val existingScope = targetRegion.getScopeByName(scopeName)
+
+        if (!checkNameEmpty(newName, player)) return 0
+        if (!checkNameFormat(newName, player)) return 0
 
         if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
             player.sendMessage(Translator.tr("interaction.meta.scope.rename.repeated_same_name"))

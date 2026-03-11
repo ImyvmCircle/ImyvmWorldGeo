@@ -23,13 +23,17 @@ val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSource> = Su
 
 val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { _, builder ->
     val regionNames = RegionDatabase.getRegionList().map { it.name }
-    regionNames.forEach { builder.suggest(it) }
+    regionNames.forEach { name ->
+        if (name.contains(' ')) builder.suggest("\"$name\"") else builder.suggest(name)
+    }
     builder.buildFuture()
 }
 
 val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
     val regionIdentifier = StringArgumentType.getString(context, "regionIdentifier")
-    getScopesForRegion(regionIdentifier).forEach { builder.suggest(it) }
+    getScopesForRegion(regionIdentifier).forEach { name ->
+        if (name.contains(' ')) builder.suggest("\"$name\"") else builder.suggest(name)
+    }
     builder.buildFuture()
 }
 

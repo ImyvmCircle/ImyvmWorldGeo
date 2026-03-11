@@ -1,6 +1,7 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.interaction.helper.isValidName as isValidNameImpl
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
 import com.imyvm.iwg.util.translator.*
 import com.mojang.authlib.GameProfile
@@ -47,4 +48,6 @@ object UtilApi {
     fun parseRegionFoundingTime(regionNumberId: Int): Long {
         return parseFoundingTimeFromRegionId(regionNumberId)
     }
+
+    fun isValidName(name: String): Boolean = isValidNameImpl(name)
 }

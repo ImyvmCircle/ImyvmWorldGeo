@@ -4,6 +4,7 @@
   "interaction.meta.not_found_name": "&c错误：&r未找到名为 &e{0}&r 的境界。",
   "interaction.meta.name.name_is_empty": "&c新境界名称不能为空。",
   "interaction.meta.name.name_is_digits_only": "&c境界名称不能只含数字。",
+  "interaction.meta.name.name_format_invalid": "&c名称无效。名称只能包含支持文字的字母、数字（须与字母混用）、不连续的单引号及空格。",
   "interaction.meta.name.repeated_same_name": "&e新名称 &b{0}&e 与当前名称相同。",
   "interaction.meta.name.duplicate_name": "&c新名称 &e{0}&c 已被另一境界使用。",
   "interaction.meta.select.start": "&a圈地模式已启动。&7手持下界之星右键点击方块以添加点位；左键点击任意方块以撤销上一个点位。",

@@ -4,6 +4,7 @@
   "interaction.meta.not_found_name": "&cError: &rRegion with name &e{0}&r not found.",
   "interaction.meta.name.name_is_empty": "&cNew region name input is empty.",
   "interaction.meta.name.name_is_digits_only": "&cNew region name cannot be digits only.",
+  "interaction.meta.name.name_format_invalid": "&cInvalid name. Names may only contain letters from supported scripts, digits (when mixed with letters), non-consecutive single quotes, and spaces.",
   "interaction.meta.name.repeated_same_name": "&eNew name &b{0}&e is the same as the current name.",
   "interaction.meta.name.duplicate_name": "&cNew name &e{0}&c is already in use by another region.",
   "interaction.meta.select.start": "&aSelection mode started. &7Right-click a block with a nether star to add a point. Left-click any block to undo the last point.",
