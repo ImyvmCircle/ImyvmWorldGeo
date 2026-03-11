@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.selection.display.displayScopeBoundariesForPlayer
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
@@ -46,6 +47,12 @@ fun onToggleActionBar(player: ServerPlayerEntity): Int {
     } else {
         ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
         player.sendMessage(Translator.tr("interaction.meta.command.toggle.enabled"))
+        val server = player.server ?: return 1
+        val playerWorld = player.serverWorld
+        val scopes = RegionDatabase.getRegionList()
+            .flatMap { it.geometryScope }
+            .filter { it.geoShape != null && it.getWorld(server) == playerWorld }
+        displayScopeBoundariesForPlayer(player, scopes)
     }
     return 1
 }

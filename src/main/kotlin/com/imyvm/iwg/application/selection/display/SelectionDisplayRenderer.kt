@@ -6,6 +6,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.domain.component.SelectionState
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.isConvex
 import net.minecraft.server.MinecraftServer
@@ -19,18 +20,30 @@ fun displaySelectionForAllPlayers(server: MinecraftServer) {
     }
 }
 
+fun displayScopeBoundariesForActionBarPlayers(server: MinecraftServer) {
+    server.playerManager.playerList
+        .filter { it.uuid in ImyvmWorldGeo.locationActionBarEnabledPlayers && !ImyvmWorldGeo.pointSelectingPlayers.containsKey(it.uuid) }
+        .forEach { player ->
+            val playerWorld = player.serverWorld
+            val scopes = RegionDatabase.getRegionList()
+                .flatMap { it.geometryScope }
+                .filter { it.geoShape != null && it.getWorld(server) == playerWorld }
+            displayScopeBoundariesForPlayer(player, scopes)
+        }
+}
+
 private fun displayForPlayer(player: ServerPlayerEntity, state: SelectionState) {
     val points = state.points
 
-    beginBeaconPillarTracking()
-    points.forEach { emitBeaconPillar(player, it.x, it.z) }
+    beginPillarTracking()
+    points.forEach { emitPillar(player, it.x, it.z) }
 
     if (points.isEmpty()) {
         val shape = state.hypotheticalShape
         if (shape is HypotheticalShape.ModifyExisting) {
             displayOriginalScope(player, shape.scope)
         }
-        commitBeaconPillars(player)
+        commitPillars(player)
         return
     }
 
@@ -40,7 +53,7 @@ private fun displayForPlayer(player: ServerPlayerEntity, state: SelectionState) 
         null -> displayForShape(player, points, state.getEffectiveShapeType())
     }
 
-    commitBeaconPillars(player)
+    commitPillars(player)
 }
 
 private fun displayForShape(player: ServerPlayerEntity, points: List<BlockPos>, shapeType: GeoShapeType) {
@@ -64,7 +77,7 @@ private fun displayRectangleSelection(player: ServerPlayerEntity, points: List<B
     val params = evaluateRectangleShape(points[0], points[1]) ?: return
     val west = params[0]; val north = params[1]; val east = params[2]; val south = params[3]
     val corners = listOf(BlockPos(west, 0, north), BlockPos(east, 0, north), BlockPos(east, 0, south), BlockPos(west, 0, south))
-    corners.forEach { emitBeaconPillar(player, it.x, it.z) }
+    corners.forEach { emitPillar(player, it.x, it.z) }
     emitLineSurface(player, corners[0], corners[1])
     emitLineSurface(player, corners[1], corners[2])
     emitLineSurface(player, corners[2], corners[3])
@@ -93,14 +106,27 @@ private fun displayForModifyExisting(player: ServerPlayerEntity, newPoints: List
     }
 }
 
-private fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {
+fun displayScopeBoundaryForPlayer(player: ServerPlayerEntity, scope: GeoScope) {
+    beginPillarTracking()
+    displayOriginalScope(player, scope)
+    commitPillars(player)
+}
+
+fun displayScopeBoundariesForPlayer(player: ServerPlayerEntity, scopes: List<GeoScope>) {
+    if (scopes.isEmpty()) return
+    beginPillarTracking()
+    scopes.forEach { displayOriginalScope(player, it) }
+    commitPillars(player)
+}
+
+fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {
     val geoShape = scope.geoShape ?: return
     val params = geoShape.shapeParameter
     when (geoShape.geoShapeType) {
         GeoShapeType.RECTANGLE -> {
             val west = params[0]; val north = params[1]; val east = params[2]; val south = params[3]
             val corners = listOf(BlockPos(west, 0, north), BlockPos(east, 0, north), BlockPos(east, 0, south), BlockPos(west, 0, south))
-            corners.forEach { emitBeaconPillar(player, it.x, it.z) }
+            corners.forEach { emitPillar(player, it.x, it.z) }
             emitLineSurfaceOld(player, corners[0], corners[1])
             emitLineSurfaceOld(player, corners[1], corners[2])
             emitLineSurfaceOld(player, corners[2], corners[3])
@@ -108,13 +134,13 @@ private fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {
         }
         GeoShapeType.CIRCLE -> {
             val centerX = params[0]; val centerZ = params[1]; val radius = params[2]
-            emitBeaconPillar(player, centerX, centerZ)
-            emitBeaconPillar(player, centerX, centerZ + radius)
+            emitPillar(player, centerX, centerZ)
+            emitPillar(player, centerX, centerZ + radius)
             drawCircleOutlineOld(player, centerX, centerZ, radius)
         }
         GeoShapeType.POLYGON -> {
             val vertices = params.chunked(2).map { BlockPos(it[0], 0, it[1]) }
-            vertices.forEach { emitBeaconPillar(player, it.x, it.z) }
+            vertices.forEach { emitPillar(player, it.x, it.z) }
             for (i in vertices.indices) {
                 emitLineSurfaceOld(player, vertices[i], vertices[(i + 1) % vertices.size])
             }
@@ -128,7 +154,7 @@ private fun displayModifyRectanglePreview(player: ServerPlayerEntity, newPoints:
     val newParams = evaluateModifyRectangle(newPoints[0], existingParams) ?: return
     val west = newParams[0]; val north = newParams[1]; val east = newParams[2]; val south = newParams[3]
     val corners = listOf(BlockPos(west, 0, north), BlockPos(east, 0, north), BlockPos(east, 0, south), BlockPos(west, 0, south))
-    corners.forEach { emitBeaconPillar(player, it.x, it.z) }
+    corners.forEach { emitPillar(player, it.x, it.z) }
     emitLineSurface(player, corners[0], corners[1])
     emitLineSurface(player, corners[1], corners[2])
     emitLineSurface(player, corners[2], corners[3])

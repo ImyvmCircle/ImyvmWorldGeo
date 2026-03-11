@@ -10,6 +10,9 @@ This major version (1.3.x) focuses on perfection of current system.
 
 This version includes:
 
+- feat: display all scope boundaries in the player's world when the ActionBar is toggled on, rendered periodically via the tick system
+- refactor: remove SelectionBeaconEmitter wrapper, use SelectionPillarEmitter directly
+
 ## Introduction
 
 This is a mod to provide a geography system framework for Imyvm server players and groups, 
@@ -304,7 +307,7 @@ Handles player-triggered actions related to regions and their scopes.
   Queries detailed information about a region.
 
 - `toggleActionBar(player: ServerPlayerEntity)`
-  Toggles the action bar display for regions for the player.
+  Toggles the action bar display for regions for the player. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered using the scope boundary visual effect.
 
 - `estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null)`  
   Estimates the area of a region to be created based on selected points and shape type.  
@@ -536,7 +539,7 @@ Provides utility functions for region data to improve usability for extension mo
   List all regions.
 
 - `/imyvmWorldGeo toggle`  
-  Toggle the action bar display for regions.
+  Toggle the action bar display for regions. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered.
 
 - `/imyvmWorldGeo help`  
   Show the help message.

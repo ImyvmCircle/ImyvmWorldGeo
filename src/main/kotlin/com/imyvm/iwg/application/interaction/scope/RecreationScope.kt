@@ -4,7 +4,7 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
-import com.imyvm.iwg.application.selection.display.clearBeaconBeams
+import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
@@ -37,7 +37,7 @@ fun recreateScope(
         is Result.Ok -> {
             region.geometryScope.add(newScope.value)
             player.sendMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs))
-            clearBeaconBeams(player)
+            clearSelectionDisplay(player)
             ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {
