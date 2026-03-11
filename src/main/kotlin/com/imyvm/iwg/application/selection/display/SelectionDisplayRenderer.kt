@@ -22,12 +22,13 @@ fun displaySelectionForAllPlayers(server: MinecraftServer) {
 
 fun displayScopeBoundariesForActionBarPlayers(server: MinecraftServer) {
     server.playerManager.playerList
-        .filter { it.uuid in ImyvmWorldGeo.locationActionBarEnabledPlayers && !ImyvmWorldGeo.pointSelectingPlayers.containsKey(it.uuid) }
+        .filter { it.uuid in ImyvmWorldGeo.locationActionBarEnabledPlayers }
         .forEach { player ->
             val playerWorld = player.serverWorld
+            val modifyingScope = (ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope
             val scopes = RegionDatabase.getRegionList()
                 .flatMap { it.geometryScope }
-                .filter { it.geoShape != null && it.getWorld(server) == playerWorld }
+                .filter { it.geoShape != null && it.getWorld(server) == playerWorld && it !== modifyingScope }
             displayScopeBoundariesForPlayer(player, scopes)
         }
 }
@@ -41,7 +42,7 @@ private fun displayForPlayer(player: ServerPlayerEntity, state: SelectionState) 
     if (points.isEmpty()) {
         val shape = state.hypotheticalShape
         if (shape is HypotheticalShape.ModifyExisting) {
-            displayOriginalScope(player, shape.scope)
+            displayModifyingScope(player, shape.scope)
         }
         commitPillars(player)
         return
@@ -94,7 +95,7 @@ private fun displayPolygonSelection(player: ServerPlayerEntity, points: List<Blo
 }
 
 private fun displayForModifyExisting(player: ServerPlayerEntity, newPoints: List<BlockPos>, scope: GeoScope) {
-    displayOriginalScope(player, scope)
+    displayModifyingScope(player, scope)
     val shapeType = scope.geoShape?.geoShapeType ?: return
     val existingParams = scope.geoShape?.shapeParameter ?: return
 
@@ -117,6 +118,36 @@ fun displayScopeBoundariesForPlayer(player: ServerPlayerEntity, scopes: List<Geo
     beginPillarTracking()
     scopes.forEach { displayOriginalScope(player, it) }
     commitPillars(player)
+}
+
+fun displayModifyingScope(player: ServerPlayerEntity, scope: GeoScope) {
+    val geoShape = scope.geoShape ?: return
+    val params = geoShape.shapeParameter
+    when (geoShape.geoShapeType) {
+        GeoShapeType.RECTANGLE -> {
+            val west = params[0]; val north = params[1]; val east = params[2]; val south = params[3]
+            val corners = listOf(BlockPos(west, 0, north), BlockPos(east, 0, north), BlockPos(east, 0, south), BlockPos(west, 0, south))
+            corners.forEach { emitPillar(player, it.x, it.z) }
+            emitLineSurfaceModifying(player, corners[0], corners[1])
+            emitLineSurfaceModifying(player, corners[1], corners[2])
+            emitLineSurfaceModifying(player, corners[2], corners[3])
+            emitLineSurfaceModifying(player, corners[3], corners[0])
+        }
+        GeoShapeType.CIRCLE -> {
+            val centerX = params[0]; val centerZ = params[1]; val radius = params[2]
+            emitPillar(player, centerX, centerZ)
+            emitPillar(player, centerX, centerZ + radius)
+            drawCircleOutlineModifying(player, centerX, centerZ, radius)
+        }
+        GeoShapeType.POLYGON -> {
+            val vertices = params.chunked(2).map { BlockPos(it[0], 0, it[1]) }
+            vertices.forEach { emitPillar(player, it.x, it.z) }
+            for (i in vertices.indices) {
+                emitLineSurfaceModifying(player, vertices[i], vertices[(i + 1) % vertices.size])
+            }
+        }
+        else -> {}
+    }
 }
 
 fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {

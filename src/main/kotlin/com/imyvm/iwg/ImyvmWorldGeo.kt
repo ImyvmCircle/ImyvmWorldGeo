@@ -18,7 +18,8 @@ import org.slf4j.Logger
 import java.util.*
 import java.util.concurrent.ConcurrentHashMap
 
-class ImyvmWorldGeo : ModInitializer {
+class
+ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
 		registerDataLoadSave()
