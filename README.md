@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.3.3
+# IMYVMWorldGeo 1.21 1.3.4
 
 ## Changelog
 
@@ -6,12 +6,9 @@
 
 This major version (1.3.x) focuses on perfection of current system.
 
-#### 1.3.3
+#### 1.3.4
 
 This version includes:
-
-- feat: keep other scope boundaries visible during selection mode; use orange particle for the boundary of the scope being modified.
-
 
 ## Introduction
 

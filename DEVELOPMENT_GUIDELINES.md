@@ -14,3 +14,4 @@
 9. 测试要包含./gradlew runServer.
 10. 未说明清楚的机制、语言文件用名和感到机制模糊的地方等等应该向操作者提问。不要为了确认需求终止对话。
 11. 命令参数中涉及 Region 名称或 GeoScope 名称的所有 SuggestionProvider，必须对不满足"全部字符均为 ASCII 字母或数字"条件的名称用双引号包裹后再 suggest，即使用 `if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)` 的形式。这是因为包含中文等非 ASCII 字符或空格的名称，在 Brigadier 命令解析中若不加引号将无法被正确识别。
+12. 本项目跟CommunityAddon要高度协作，互相参考。
