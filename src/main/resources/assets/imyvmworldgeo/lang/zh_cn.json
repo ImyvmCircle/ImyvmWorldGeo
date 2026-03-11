@@ -299,7 +299,7 @@
   "selection.feedback.particles.rect_complete": "&b粒子效果：&74个角点生成白色光柱；&6橙色熔岩粒子&7描绘4条矩形边。",
   "selection.feedback.particles.polygon_valid": "&b粒子效果：&7每个顶点生成白色光柱；&6橙色熔岩粒子&7描绘所有多边形边。",
   "selection.feedback.particles.polygon_invalid": "&b粒子效果：&7仅在每个顶点生成白色光柱（多边形尚未有效，不显示边）。",
-  "selection.feedback.particles.modify": "&b粒子效果：&9蓝色光点&7显示现有地方边界；&6橙色熔岩粒子&7显示新几何形状预览；白色光柱标记所有选点。",
+  "selection.feedback.particles.modify": "&b粒子效果：&6橙色光点&7显示现有地方边界；&6熔岩粒子&7显示新几何形状预览；白色光柱标记所有选点。",
   "selection.feedback.separator": "&8-----",
   "selection.feedback.modify.guidance.rect.excess": "&c矩形修改只需1个点。&e左键手持下界之星&c删除多余点位。",
   "selection.feedback.modify.guidance.polygon.excess": "&c多边形修改最多3个点（第3个为待插入顶点）。&e左键手持下界之星&c删除多余点位。",

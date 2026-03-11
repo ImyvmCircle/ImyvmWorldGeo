@@ -299,7 +299,7 @@
   "selection.feedback.particles.rect_complete": "&bParticles: &7white columns at all 4 corners; &6orange lava&7 traces the 4 rectangle edges.",
   "selection.feedback.particles.polygon_valid": "&bParticles: &7white columns at each vertex; &6orange lava&7 traces all polygon edges.",
   "selection.feedback.particles.polygon_invalid": "&bParticles: &7white columns at each vertex only (polygon not yet valid, edges not shown).",
-  "selection.feedback.particles.modify": "&bParticles: &9blue dots&7 show existing scope boundary; &6orange lava&7 shows new geometry preview; white columns mark all selected points.",
+  "selection.feedback.particles.modify": "&bParticles: &6orange dots&7 show existing scope boundary; &6lava&7 shows new geometry preview; white columns mark all selected points.",
   "selection.feedback.separator": "&8-----",
   "selection.feedback.modify.guidance.rect.excess": "&cRectangle modification requires only 1 point. &eLeft-click with nether star&c to remove extra points.",
   "selection.feedback.modify.guidance.polygon.excess": "&cPolygon modification uses at most 3 points (3rd = new vertex to insert). &eLeft-click with nether star&c to remove extra points.",
