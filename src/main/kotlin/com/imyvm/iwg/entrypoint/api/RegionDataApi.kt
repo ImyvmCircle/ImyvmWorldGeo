@@ -41,6 +41,9 @@ object RegionDataApi {
     fun getRegionFoundingTime(region: Region): Long =
         parseFoundingTimeFromRegionId(region.numberID)
 
+    fun getRegionAge(region: Region): Long =
+        System.currentTimeMillis() - parseFoundingTimeFromRegionId(region.numberID)
+
     fun getRegionScopes(region: Region): List<GeoScope> =
         region.geometryScope
 

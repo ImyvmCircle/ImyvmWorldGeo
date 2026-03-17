@@ -11,7 +11,7 @@ This major version (1.3.x) focuses on perfection of current system.
 This version includes:
 - feat: Added `transferScope` command and API to transfer a GeoScope from one region to another, with automatic name conflict resolution.
 - feat: Added `mergeRegion` command and API to merge one region into another, moving all scopes and inheriting scope settings, then deleting the source region.
-- feat: Added `getRegionByName`, `getScopeTeleportPoint`, `getEffectValueForRegion`, `getActiveEffectsForRegion`, and `getRegionScopeCount` to `RegionDataApi` for more convenient region data querying.
+- feat: Added `getRegionByName`, `getScopeTeleportPoint`, `getEffectValueForRegion`, `getActiveEffectsForRegion`, `getRegionScopeCount`, and `getRegionAge` to `RegionDataApi` for more convenient region data querying.
 
 ## Introduction
 
@@ -345,6 +345,9 @@ Provides access to region data and database operations for extension functions.
 
 - `getRegionFoundingTime(region: Region): Long`  
   Gets the founding time of a region.
+
+- `getRegionAge(region: Region): Long`  
+  Returns the elapsed time in milliseconds since the region was created. Note that the precision is 1 hour due to the encoding of the founding time in the region ID.
 
 - `getRegionScopes(region: Region): List<GeoScope>`  
   Retrieves the list of scopes within a region.
