@@ -33,6 +33,6 @@
 		"fabric-language-kotlin": "*"
 	},
 	"suggests": {
-		"another-mod": "*"
+		"dynmap": "*"
 	}
 }

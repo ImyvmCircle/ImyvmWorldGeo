@@ -8,7 +8,7 @@ This major version (1.4.x) introduces a dynamic map mechanism.
 
 #### 1.4.0
 
-Target: Introduce a dynamic map system that allows regions and scopes to be rendered and updated in real time on a world map, providing visual representation of geographical boundaries and their associated metadata.
+Target: Introduce optional Dynmap integration that renders regions and scopes on the dynamic world map when Dynmap is present, with no impact when it is absent.
 
 ## Introduction
 
@@ -23,6 +23,10 @@ This mod is **server-side only** and requires the following environment:
 - **Fabric Loader Version:** 0.16.9 (or compatible with Minecraft 1.21)
 - **Java Version:** 21  
 - **IMYVM Hoki Mod Version:** 1.1.4
+
+**Optional:**
+
+- **Dynmap Version:** 3.7-beta (Fabric 1.21) - enables region map rendering when present
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
 
@@ -187,6 +191,16 @@ centered on the original point (with height priority, meaning positions at the s
 checked before moving further away) for the nearest safe alternative. If a safe alternative is found,
 the teleport point is automatically updated and the player is teleported there with a warning message.
 If no safe alternative is found within the search area, teleportation is cancelled and the player is informed.
+
+### Dynmap Integration
+
+When Dynmap (3.7-beta or later, Fabric edition) is present on the server, all regions and their scopes are automatically rendered on the dynamic world map. If Dynmap is absent, this feature is silently skipped.
+
+Each scope is displayed as a labeled overlay in the format `RegionName:ScopeName`. The shape type determines the marker type: rectangle and polygon scopes use area overlays; circle scopes use circle overlays. Teleport points are shown as house-icon markers at their exact coordinates.
+
+All scopes belonging to the same region share one color. The color is derived from the first color keyword found in the region name, supporting both Chinese (e.g. 红, 蓝, 绿) and English (e.g. red, blue, green) color words. When no color keyword is present, a distinct color is selected from a fixed palette using the region's numeric ID.
+
+Markers are updated automatically whenever region data is saved.
 
 ---
 

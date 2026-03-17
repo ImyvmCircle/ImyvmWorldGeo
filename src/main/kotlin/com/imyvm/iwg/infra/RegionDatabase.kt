@@ -19,6 +19,7 @@ object RegionDatabase {
 
     private lateinit var regions: MutableList<Region>
     private const val DATABASE_FILENAME = "iwg_regions.db"
+    internal var onSave: (() -> Unit)? = null
 
     @Throws(IOException::class)
     fun save() {
@@ -32,6 +33,7 @@ object RegionDatabase {
                 saveSettings(stream, region.settings)
             }
         }
+        onSave?.invoke()
     }
 
     @Throws(IOException::class)

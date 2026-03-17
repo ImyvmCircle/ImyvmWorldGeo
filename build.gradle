@@ -30,6 +30,10 @@ repositories {
 		name = 'Fabric'
 		url = 'https://maven.fabricmc.net/'
 	}
+
+	maven {
+		url = 'https://repo.mikeprimm.com/'
+	}
 }
 
 loom {
@@ -62,6 +66,9 @@ dependencies {
 
 	// ImyvmCircle Projects.
 	modImplementation("com.imyvm:imyvm-hoki:${project.imyvm_hoki_version}")
+
+	// Optional integrations.
+	modCompileOnly("us.dynmap:DynmapCoreAPI:${project.dynmap_version}")
 }
 
 processResources {
