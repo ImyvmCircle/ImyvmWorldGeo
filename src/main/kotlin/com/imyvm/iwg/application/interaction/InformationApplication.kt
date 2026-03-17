@@ -70,11 +70,13 @@ fun onHelp(player: ServerPlayerEntity): Int {
         "region.create",
         "region.delete",
         "region.rename",
+        "region.merge",
 
         // Scopes
         "scope.add",
         "scope.modify",
         "scope.delete",
+        "scope.transfer",
 
         // Teleportation
         "tp.set",

@@ -22,6 +22,8 @@ object PlayerInteractionApi {
     fun createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?) = onTryingScopeCreationWithReturn(player, region, name, null, isApi = true)
     fun deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String) = onScopeDelete(player, region, scopeName)
     fun renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String) = onScopeRename(player, region, oldName, newName)
+    fun transferScope(player: ServerPlayerEntity, sourceRegion: Region, scopeName: String, targetRegion: Region) = onScopeTransfer(player, sourceRegion, scopeName, targetRegion)
+    fun mergeRegion(player: ServerPlayerEntity, sourceRegion: Region, targetRegion: Region) = onRegionMerge(player, sourceRegion, targetRegion)
     fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int) = onAddingTeleportPoint(player, targetRegion, scope, x, y, z)
     fun addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope) =
         onAddingTeleportPoint(player, targetRegion, scope, player.blockPos.x, player.blockPos.y, player.blockPos.z)

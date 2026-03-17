@@ -9,6 +9,8 @@ This major version (1.3.x) focuses on perfection of current system.
 #### 1.3.4
 
 This version includes:
+- feat: Added `transferScope` command and API to transfer a GeoScope from one region to another, with automatic name conflict resolution.
+- feat: Added `mergeRegion` command and API to merge one region into another, moving all scopes and inheriting scope settings, then deleting the source region.
 
 ## Introduction
 
@@ -246,6 +248,12 @@ Handles player-triggered actions related to regions and their scopes.
 - `renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String)`  
   Renames a scope within a region.
 
+- `transferScope(player: ServerPlayerEntity, sourceRegion: Region, scopeName: String, targetRegion: Region)`  
+  Transfers a scope from one region to another. If a scope with the same name already exists in the target region, the scope is automatically renamed by appending a numeric suffix.
+
+- `mergeRegion(player: ServerPlayerEntity, sourceRegion: Region, targetRegion: Region)`  
+  Merges one region into another: all scopes are moved to the target (with automatic renaming on conflict). The source region's overall settings are discarded. The source region is deleted afterward.
+
 - `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
   Adds a teleport point with a given location.
 
@@ -481,6 +489,12 @@ Provides utility functions for region data to improve usability for extension mo
 
 - `/imyvmWorldGeo deleteScope <regionIdentifier> <scopeName>`  
   Delete a scope from a region.
+
+- `/imyvmWorldGeo transferScope <regionIdentifier> <scopeName> <targetRegionIdentifier>`  
+  Transfer a scope from one region to another. If a scope with the same name already exists in the target region, the scope is automatically renamed by appending a numeric suffix (e.g., `scopeName1`, `scopeName2`).
+
+- `/imyvmWorldGeo mergeRegion <regionIdentifier> <targetRegionIdentifier>`  
+  Merge one region into another: all scopes are moved (with automatic renaming on conflict), the source region's overall settings are discarded, and the source region is deleted.
 
 - `/imyvmWorldGeo teleportPoint set [x] [y] [z]`  
   Set the teleport point for the current region and scope.

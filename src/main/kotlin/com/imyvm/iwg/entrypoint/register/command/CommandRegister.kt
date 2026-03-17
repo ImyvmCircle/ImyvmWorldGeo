@@ -203,6 +203,36 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
+                literal("transferScope")
+                    .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("targetRegionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runTransferScope(it) }
+                                    )
+                            )
+                    )
+            )
+            .then(
+                literal("mergeRegion")
+                    .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .then(
+                                argument("targetRegionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .executes { runMergeRegion(it) }
+                            )
+                    )
+            )
+            .then(
                 literal("setting")
                     .requires { it.hasPermissionLevel(2) }
                     .then(
@@ -424,6 +454,27 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
     val newName = context.getArgument("newName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToRenameScope ->
         onScopeRename(player, regionToRenameScope, scopeName, newName)}
+}
+
+private fun runTransferScope(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val targetRegionIdentifier = context.getArgument("targetRegionIdentifier", String::class.java)
+    return identifierHandler(regionIdentifier, player) { sourceRegion ->
+        identifierHandler(targetRegionIdentifier, player) { targetRegion ->
+            onScopeTransfer(player, sourceRegion, scopeName, targetRegion)
+        }
+    }
+}
+
+private fun runMergeRegion(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val targetRegionIdentifier = context.getArgument("targetRegionIdentifier", String::class.java)
+    return identifierHandler(regionIdentifier, player) { sourceRegion ->
+        identifierHandler(targetRegionIdentifier, player) { targetRegion ->
+            onRegionMerge(player, sourceRegion, targetRegion)
+        }
+    }
 }
 
 private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
