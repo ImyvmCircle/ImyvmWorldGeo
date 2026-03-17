@@ -1,17 +1,14 @@
-# IMYVMWorldGeo 1.21 1.3.4
+# IMYVMWorldGeo 1.21 1.4.0
 
 ## Changelog
 
-### 1.3.x
+### 1.4.x
 
-This major version (1.3.x) focuses on perfection of current system.
+This major version (1.4.x) introduces a dynamic map mechanism.
 
-#### 1.3.4
+#### 1.4.0
 
-This version includes:
-- feat: Added `transferScope` command and API to transfer a GeoScope from one region to another, with automatic name conflict resolution.
-- feat: Added `mergeRegion` command and API to merge one region into another, moving all scopes and inheriting scope settings, then deleting the source region.
-- feat: Added `getRegionByName`, `getScopeTeleportPoint`, `getEffectValueForRegion`, `getActiveEffectsForRegion`, `getRegionScopeCount`, and `getRegionAge` to `RegionDataApi` for more convenient region data querying.
+Target: Introduce a dynamic map system that allows regions and scopes to be rendered and updated in real time on a world map, providing visual representation of geographical boundaries and their associated metadata.
 
 ## Introduction
 
