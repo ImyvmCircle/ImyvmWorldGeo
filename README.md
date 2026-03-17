@@ -11,6 +11,7 @@ This major version (1.3.x) focuses on perfection of current system.
 This version includes:
 - feat: Added `transferScope` command and API to transfer a GeoScope from one region to another, with automatic name conflict resolution.
 - feat: Added `mergeRegion` command and API to merge one region into another, moving all scopes and inheriting scope settings, then deleting the source region.
+- feat: Added `getRegionByName`, `getScopeTeleportPoint`, `getEffectValueForRegion`, `getActiveEffectsForRegion`, and `getRegionScopeCount` to `RegionDataApi` for more convenient region data querying.
 
 ## Introduction
 
@@ -333,6 +334,9 @@ Provides access to region data and database operations for extension functions.
 - `getRegion(id: Int): Region?`  
   Retrieves a region by its numeric ID.
 
+- `getRegionByName(name: String): Region?`  
+  Retrieves a region by its name. Returns `null` if no region with the given name exists.
+
 - `getRegionList(): List<Region>`  
   Retrieves the list of all regions.
 
@@ -359,6 +363,9 @@ Provides access to region data and database operations for extension functions.
 
 - `inquireTeleportPointAccessibility(scope: GeoScope)`
   Inquires the access permission of a scope's teleport point.
+
+- `getScopeTeleportPoint(scope: GeoScope): BlockPos?`  
+  Retrieves the teleport point coordinates of a scope. Returns `null` if no teleport point is set.
 
 - `getScopeShape(scope: GeoScope): Region.Companion.GeoShape?`  
   Retrieves the shape of a scope.
@@ -398,6 +405,15 @@ Provides access to region data and database operations for extension functions.
 
 - `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean`
   Retrieves the effective rule value for a region and optional scope. Returns the config default if the rule is not explicitly set.
+
+- `getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int?`  
+  Retrieves the resolved effect amplifier for a specific player and effect key, considering scope and region settings in priority order. Returns `null` if the effect is not set.
+
+- `getActiveEffectsForRegion(region: Region, scope: GeoScope?, playerUUID: UUID): Map<EffectKey, Int>`  
+  Retrieves a map of all active effects and their amplifiers for a specific player in a region and optional scope.
+
+- `getRegionScopeCount(region: Region): Int`  
+  Returns the number of scopes in a region.
 
 - `getRegionEntryExitToggle(region: Region): Boolean`  
   Returns whether entry-exit notifications are enabled for a region. Defaults to `true` if not set.

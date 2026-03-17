@@ -6,6 +6,11 @@ import com.imyvm.iwg.domain.component.EffectSetting
 import com.imyvm.iwg.domain.component.GeoScope
 import java.util.UUID
 
+fun getEffectValue(region: Region?, playerUUID: UUID, key: EffectKey, scope: GeoScope? = null): Int? {
+    if (region == null) return null
+    return resolveEffectValue(region, playerUUID, key, scope)
+}
+
 fun getActiveEffects(region: Region, playerUUID: UUID, scope: GeoScope? = null): Map<EffectKey, Int> {
     val allKeys = mutableSetOf<EffectKey>()
     scope?.settings?.filterIsInstance<EffectSetting>()?.forEach { allKeys.add(it.key) }

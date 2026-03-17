@@ -6,6 +6,8 @@ import com.imyvm.iwg.application.region.rule.helper.getEffectiveRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
+import com.imyvm.iwg.application.region.effect.helper.getActiveEffects
+import com.imyvm.iwg.application.region.effect.helper.getEffectValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
@@ -19,6 +21,14 @@ object RegionDataApi {
     fun getRegion(id: Int): Region? {
         return try {
             RegionDatabase.getRegionByNumberId(id)
+        } catch (e: RegionNotFoundException) {
+            null
+        }
+    }
+
+    fun getRegionByName(name: String): Region? {
+        return try {
+            RegionDatabase.getRegionByName(name)
         } catch (e: RegionNotFoundException) {
             null
         }
@@ -46,6 +56,8 @@ object RegionDataApi {
     fun getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
     fun inquireTeleportPointAccessibility(scope: GeoScope) = onGettingTeleportPointAccessibility(scope)
+
+    fun getScopeTeleportPoint(scope: GeoScope): BlockPos? = scope.teleportPoint
 
     fun getScopeShape(scope: GeoScope): GeoShape? = scope.geoShape
 
@@ -96,6 +108,14 @@ object RegionDataApi {
     fun getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean {
         return getEffectiveRuleValue(region, ruleKey, scope)
     }
+
+    fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? =
+        getEffectValue(region, playerUUID, effectKey, scope)
+
+    fun getActiveEffectsForRegion(region: Region, scope: GeoScope?, playerUUID: UUID): Map<EffectKey, Int> =
+        getActiveEffects(region, playerUUID, scope)
+
+    fun getRegionScopeCount(region: Region): Int = region.geometryScope.size
 
     fun getRegionEntryExitToggle(region: Region): Boolean =
         region.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
