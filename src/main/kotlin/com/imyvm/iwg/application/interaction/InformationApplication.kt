@@ -18,7 +18,8 @@ fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) : 
         Translator.tr(messageKey,
             region.name,
             region.numberID.toString(),
-            region.calculateTotalArea())
+            region.calculateTotalArea(),
+            region.showOnDynmap)
     )
 
     val server = player.server
@@ -97,7 +98,11 @@ fun onHelp(player: ServerPlayerEntity): Int {
         "info.query",
         "info.list",
         "info.toggle",
-        "info.help"
+        "info.help",
+
+        // Dynmap
+        "dynmap.toggle",
+        "dynmap.toggle_scope"
     )
 
     Translator.trBase("interaction.meta.command.help", helpOrder).forEach { line ->

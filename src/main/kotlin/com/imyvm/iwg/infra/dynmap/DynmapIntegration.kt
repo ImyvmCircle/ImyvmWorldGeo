@@ -44,8 +44,10 @@ object DynmapIntegration : DynmapCommonAPIListener() {
             set.circleMarkers.toList().forEach { it.deleteMarker() }
             set.markers.toList().forEach { it.deleteMarker() }
             for (region in RegionDatabase.getRegionList()) {
+                if (!region.showOnDynmap) continue
                 val color = DynmapColorResolver.resolveColor(region)
                 for (scope in region.geometryScope) {
+                    if (!scope.showOnDynmap) continue
                     DynmapRegionRenderer.renderScope(set, api, region, scope, color)
                 }
             }

@@ -16,7 +16,8 @@ class Region(
     var name: String,
     var numberID: Int,
     var geometryScope: MutableList<GeoScope>,
-    var settings: MutableList<Setting> = mutableListOf()
+    var settings: MutableList<Setting> = mutableListOf(),
+    var showOnDynmap: Boolean = true
 ) {
     fun getScopeByName(scopeName: String): GeoScope {
         return geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }

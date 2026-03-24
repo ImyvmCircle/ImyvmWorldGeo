@@ -17,7 +17,8 @@ class GeoScope(
     var teleportPoint: BlockPos?,
     var isTeleportPointPublic: Boolean = false,
     var geoShape: GeoShape?,
-    var settings: MutableList<Setting> = mutableListOf()
+    var settings: MutableList<Setting> = mutableListOf(),
+    var showOnDynmap: Boolean = true
 ) {
     fun getScopeInfo(index: Int): Text? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
@@ -27,7 +28,8 @@ class GeoScope(
                 index,
                 scopeName,
                 shapeInfoString,
-                dimensionDisplay)
+                dimensionDisplay,
+                showOnDynmap)
         } else {
             Translator.tr("geo.scope.info.with_teleport_point",
                 index,
@@ -37,7 +39,8 @@ class GeoScope(
                 teleportPoint!!.x,
                 teleportPoint!!.y,
                 teleportPoint!!.z,
-                dimensionDisplay)
+                dimensionDisplay,
+                showOnDynmap)
         }
     }
 

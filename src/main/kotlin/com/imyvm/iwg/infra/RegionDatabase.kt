@@ -2,6 +2,9 @@ package com.imyvm.iwg.infra
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
+import com.google.gson.Gson
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.util.Identifier
 import net.minecraft.util.math.BlockPos
@@ -19,6 +22,8 @@ object RegionDatabase {
 
     private lateinit var regions: MutableList<Region>
     private const val DATABASE_FILENAME = "iwg_regions.db"
+    private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
+    private val gson = Gson()
     internal var onSave: (() -> Unit)? = null
 
     @Throws(IOException::class)
@@ -33,6 +38,7 @@ object RegionDatabase {
                 saveSettings(stream, region.settings)
             }
         }
+        saveDynmapVisibility()
         onSave?.invoke()
     }
 
@@ -59,6 +65,7 @@ object RegionDatabase {
                 regions.add(region)
             }
         }
+        loadDynmapVisibility()
     }
 
     fun addRegion(region: Region) {
@@ -298,6 +305,75 @@ object RegionDatabase {
         val key = EntryExitMessageKey.entries[stream.readInt()]
         val value = stream.readUTF()
         return EntryExitMessageSetting(key, value)
+    }
+
+    private fun loadDynmapVisibility() {
+        val file = getDynmapConfigPath()
+        val root = if (file.toFile().exists()) {
+            runCatching { JsonParser.parseReader(file.toFile().reader()).asJsonObject }.getOrElse { JsonObject() }
+        } else {
+            JsonObject()
+        }
+        val regionsJson = root.getAsJsonObject("regions") ?: JsonObject()
+        var modified = false
+
+        for (region in regions) {
+            val regionKey = region.numberID.toString()
+            val regionEntry = regionsJson.getAsJsonObject(regionKey) ?: JsonObject().also {
+                regionsJson.add(regionKey, it)
+                modified = true
+            }
+            if (regionEntry.has("showOnDynmap")) {
+                region.showOnDynmap = regionEntry.get("showOnDynmap").asBoolean
+            } else {
+                regionEntry.addProperty("showOnDynmap", true)
+                modified = true
+            }
+            val scopesEntry = regionEntry.getAsJsonObject("scopes") ?: JsonObject().also {
+                regionEntry.add("scopes", it)
+                modified = true
+            }
+            for (scope in region.geometryScope) {
+                if (scopesEntry.has(scope.scopeName)) {
+                    scope.showOnDynmap = scopesEntry.get(scope.scopeName).asBoolean
+                } else {
+                    scopesEntry.addProperty(scope.scopeName, true)
+                    modified = true
+                }
+            }
+        }
+
+        if (modified) {
+            root.add("regions", regionsJson)
+            writeDynmapConfig(root)
+        }
+    }
+
+    private fun saveDynmapVisibility() {
+        val root = JsonObject()
+        val regionsJson = JsonObject()
+        for (region in regions) {
+            val regionEntry = JsonObject()
+            regionEntry.addProperty("showOnDynmap", region.showOnDynmap)
+            val scopesEntry = JsonObject()
+            for (scope in region.geometryScope) {
+                scopesEntry.addProperty(scope.scopeName, scope.showOnDynmap)
+            }
+            regionEntry.add("scopes", scopesEntry)
+            regionsJson.add(region.numberID.toString(), regionEntry)
+        }
+        root.add("regions", regionsJson)
+        writeDynmapConfig(root)
+    }
+
+    private fun writeDynmapConfig(root: JsonObject) {
+        val file = getDynmapConfigPath()
+        file.toFile().parentFile?.mkdirs()
+        file.toFile().writeText(gson.toJson(root))
+    }
+
+    private fun getDynmapConfigPath(): Path {
+        return FabricLoader.getInstance().gameDir.resolve("world").resolve(DYNMAP_CONFIG_FILENAME)
     }
 
     private fun getDatabasePath(): Path {

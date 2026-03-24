@@ -96,7 +96,7 @@
   "interaction.meta.setting.error.scope.duplicate_global": "&c重复的全局设置：地方 &b{2}&c 中 &e{0}&c 已存在。",
   "interaction.meta.setting.query.result": "&6设置&r &b{0}&r：&a{1}&r  &7（位于 {2}）",
   "interaction.meta.setting.query.rule.not_set": "&6设置&r &b{0}&r  &7（位于 {1}）：&8未设置 &7-- 使用原版默认值&r",
-  "interaction.meta.command.query.result": "&5&l查询成功！&r 境界信息：\n&e{0}&r &7（ID：&6{1}&7）&r，总面积：&a{2} m²&r",
+  "interaction.meta.command.query.result": "&5&l查询成功！&r 境界信息：\n&e{0}&r &7（ID：&6{1}&7）&r，总面积：&a{2} m²&r &8（&7地图：&e{3}&8）",
   "interaction.meta.command.list.empty": "&7未找到任何境界。",
   "interaction.meta.command.list.header": "&6&l境界列表：",
   "interaction.meta.command.list.item": "&b{0}&r &7（ID：&e{1}&7）",
@@ -130,7 +130,7 @@
   "interaction.meta.command.help.info.list": "§6/imyvmWorldGeo list\n  §f列出所有境界。",
   "interaction.meta.command.help.info.toggle": "§6/imyvmWorldGeo toggle\n  §f切换信息栏中的境界显示。",
   "interaction.meta.command.help.info.help": "§6/imyvmWorldGeo help\n  §f显示帮助信息。",
-  "interaction.meta.api.query.result": "&6境界：&b{0}&r &7（ID：&e{1}&7）&r，总面积：&a{2} m²&r\n",
+  "interaction.meta.api.query.result": "&6境界：&b{0}&r &7（ID：&e{1}&7）&r，总面积：&a{2} m²&r &8（&7地图：&e{3}&8）\n",
   "error.duplicated_points": "&c无法创建含有重复点位的境界。",
   "error.insufficient_points": "&c您必须为 &e{0}&c 类型境界选择足够数量的点位。",
   "error.coincident_points": "&c矩形的前两个点不能具有相同的 X 或 Z 坐标。",
@@ -170,8 +170,8 @@
   "region.setting.rule.header": "&a    [ 规则 ]",
   "region.setting.item": "&e      {0}&r：&a{1}",
   "region.setting.entry_exit.header": "&d    [ 进出 ]",
-  "geo.scope.info": "&d&l[{0}]&r &b{1}&r &8[&7{3}&8]&r：&7{2}",
-  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r &8[&7{7}&8]&r：&7{2}&r\n &a传送点 &7（公开：&e{3}&7）&r：&e({4}, {5}, {6})",
+  "geo.scope.info": "&d&l[{0}]&r &b{1}&r &8[&7{3}&8]&r：&7{2}&r &8（&7地图：&e{4}&8）",
+  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r &8[&7{7}&8]&r：&7{2}&r &8（&7地图：&e{8}&8）&r\n &a传送点 &7（公开：&e{3}&7）&r：&e({4}, {5}, {6})",
   "geo.scope.setting": "§b地方 {0} 设置§r：{1}",
   "geo.scope.setting.personal": "§b地方 {0} 个人设置§r：{1}",
   "geo.scope.setting.header": "&b&l[ 地方 &e{0}&b 设置 ]",
@@ -332,5 +332,10 @@
   "selection.feedback.modify.guidance.polygon.3pts_adj_same": "&c前两个点相同，需要选择两个不同的相邻现有顶点作为参考。",
   "selection.feedback.modify.guidance.polygon.3pts_not_adjacent": "&c(&e{0},{1}&c) 和 (&e{2},{3}&c) 不是相邻顶点。需选择多边形中直接相邻的两个顶点。",
   "selection.feedback.modify.role.polygon_delete_or_move_src": " &7（现有顶点：确认删除或选第2点移动）",
-  "selection.feedback.modify.role.polygon_adj_invalid": " &c（错误：参考点{0}不是现有顶点）"
+  "selection.feedback.modify.role.polygon_adj_invalid": " &c（错误：参考点{0}不是现有顶点）",
+
+  "interaction.meta.region.dynmap.toggle": "&a已切换境界 &b{0}&a 的动态地图显示为：&e{1}",
+  "interaction.meta.scope.dynmap.toggle": "&a已切换境界 &b{0}&a 的地方 &b{1}&a 的动态地图显示为：&e{2}",
+  "interaction.meta.command.help.dynmap.toggle": "§b/imyvmWorldGeo dynmapToggle <§b境界标识符§b>\n  §f切换境界在动态地图上的显示。境界级别的设置优先于地方级别。",
+  "interaction.meta.command.help.dynmap.toggle_scope": "§b/imyvmWorldGeo dynmapToggleScope <§b境界标识符§b> <§b地方名称§b>\n  §f切换指定地方在动态地图上的显示。若境界本身已被隐藏，则此设置无效。"
 }

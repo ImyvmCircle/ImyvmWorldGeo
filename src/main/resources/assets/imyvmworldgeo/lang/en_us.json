@@ -96,7 +96,7 @@
   "interaction.meta.setting.error.scope.duplicate_global": "&cDuplicate global setting: &e{0}&c already exists in scope &b{2}&c.",
   "interaction.meta.setting.query.result": "&6Setting&r &b{0}&r: &a{1}&r  &7(in {2})",
   "interaction.meta.setting.query.rule.not_set": "&6Setting&r &b{0}&r  &7(in {1}): &8not set &7-- using vanilla default&r",
-  "interaction.meta.command.query.result": "&5&lQuery successful!&r Showing information for Region:\n&e{0}&r &7(ID: &6{1}&7)&r, total area: &a{2} m²&r",
+  "interaction.meta.command.query.result": "&5&lQuery successful!&r Showing information for Region:\n&e{0}&r &7(ID: &6{1}&7)&r, total area: &a{2} m²&r &8(map: &e{3}&8)",
   "interaction.meta.command.list.empty": "&7No regions found.",
   "interaction.meta.command.list.header": "&6&lRegions:",
   "interaction.meta.command.list.item": "&b{0}&r &7(ID: &e{1}&7)",
@@ -130,7 +130,7 @@
   "interaction.meta.command.help.info.list": "§6/imyvmWorldGeo list\n  §fList all regions.",
   "interaction.meta.command.help.info.toggle": "§6/imyvmWorldGeo toggle\n  §fToggle the action bar display for regions.",
   "interaction.meta.command.help.info.help": "§6/imyvmWorldGeo help\n  §fShow the help message.",
-  "interaction.meta.api.query.result": "&6Region: &b{0}&r &7(ID: &e{1}&7)&r, total area: &a{2} m²&r\n",
+  "interaction.meta.api.query.result": "&6Region: &b{0}&r &7(ID: &e{1}&7)&r, total area: &a{2} m²&r &8(map: &e{3}&8)\n",
   "error.duplicated_points": "&cCannot create a region with duplicated points.",
   "error.insufficient_points": "&cYou must select enough points for a &e{0}&c region.",
   "error.coincident_points": "&cFor a rectangle, the first two points must not share the same X or Z coordinate.",
@@ -170,8 +170,8 @@
   "region.setting.rule.header": "&a    [ Rule ]",
   "region.setting.item": "&e      {0}&r: &a{1}",
   "region.setting.entry_exit.header": "&d    [ Entry-Exit ]",
-  "geo.scope.info": "&d&l[{0}]&r &b{1}&r &8[&7{3}&8]&r: &7{2}",
-  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r &8[&7{7}&8]&r: &7{2}&r\n &aTeleport Point &7(isPublic: &e{3}&7)&r: &e({4}, {5}, {6})",
+  "geo.scope.info": "&d&l[{0}]&r &b{1}&r &8[&7{3}&8]&r: &7{2}&r &8(map: &e{4}&8)",
+  "geo.scope.info.with_teleport_point": "&d&l[{0}]&r &b{1}&r &8[&7{7}&8]&r: &7{2}&r &8(map: &e{8}&8)&r\n &aTeleport Point &7(isPublic: &e{3}&7)&r: &e({4}, {5}, {6})",
   "geo.scope.setting": "§bScope {0} settings§r: {1}",
   "geo.scope.setting.personal": "§bScope {0} personal settings§r: {1}",
   "geo.scope.setting.header": "&b&l[ Scope &e{0}&b Settings ]",
@@ -332,5 +332,10 @@
   "selection.feedback.modify.guidance.polygon.3pts_adj_same": "&cFirst two points are identical. Select two different adjacent existing vertices as reference.",
   "selection.feedback.modify.guidance.polygon.3pts_not_adjacent": "&c(&e{0},{1}&c) and (&e{2},{3}&c) are not adjacent vertices. Select two directly adjacent vertices of the polygon.",
   "selection.feedback.modify.role.polygon_delete_or_move_src": " &7(existing vertex: confirm to delete or select 2nd pt to move)",
-  "selection.feedback.modify.role.polygon_adj_invalid": " &c(error: adj ref {0} is not an existing vertex)"
+  "selection.feedback.modify.role.polygon_adj_invalid": " &c(error: adj ref {0} is not an existing vertex)",
+
+  "interaction.meta.region.dynmap.toggle": "&aToggled dynmap visibility for region &b{0}&a to: &e{1}",
+  "interaction.meta.scope.dynmap.toggle": "&aToggled dynmap visibility for scope &b{1}&a in region &b{0}&a to: &e{2}",
+  "interaction.meta.command.help.dynmap.toggle": "§b/imyvmWorldGeo dynmapToggle <§bregionIdentifier§b>\n  §fToggle a region''s visibility on the dynamic map. Region-level setting takes priority over scope-level.",
+  "interaction.meta.command.help.dynmap.toggle_scope": "§b/imyvmWorldGeo dynmapToggleScope <§bregionIdentifier§b> <§bscopeName§b>\n  §fToggle a scope''s visibility on the dynamic map. Has no effect if the region itself is hidden."
 }

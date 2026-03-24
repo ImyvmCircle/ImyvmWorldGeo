@@ -361,6 +361,28 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
             )
             .then(
+                literal("dynmapToggle")
+                    .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .executes { runToggleRegionDynmap(it) }
+                    )
+            )
+            .then(
+                literal("dynmapToggleScope")
+                    .requires { it.hasPermissionLevel(2) }
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .then(
+                                argument("scopeName", StringArgumentType.string())
+                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                    .executes { runToggleScopeDynmap(it) }
+                            )
+                    )
+            )
+            .then(
                 literal("query")
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
@@ -610,4 +632,14 @@ private fun runStartSelectForModify(context: CommandContext<ServerCommandSource>
             0
         }
     }
+}
+
+private fun runToggleRegionDynmap(context: CommandContext<ServerCommandSource>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region -> onTogglingRegionDynmap(player, region) }
+}
+
+private fun runToggleScopeDynmap(context: CommandContext<ServerCommandSource>): Int {
+    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    return onTogglingScopeDynmap(player, region, scope)
 }

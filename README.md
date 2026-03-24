@@ -202,6 +202,8 @@ All scopes belonging to the same region share one color. The color is derived fr
 
 Markers are updated automatically whenever region data is saved.
 
+Each region and each scope has a `showOnDynmap` flag (default: `true`). The region-level flag takes precedence: if a region's `showOnDynmap` is `false`, none of its scopes will appear on the map regardless of their individual flags. If the region flag is `true`, each scope is rendered only if its own `showOnDynmap` is also `true`.
+
 ---
 
 ## Usage
@@ -572,6 +574,12 @@ Provides utility functions for region data to improve usability for extension mo
 
 - `/imyvmWorldGeo settingScope queryValue <regionIdentifier> <scopeName> <key> [playerName]`  
   Query the value of a setting in a specific scope, optionally for a specific player.
+
+- `/imyvmWorldGeo dynmapToggle <regionIdentifier>`  
+  Toggle the region's visibility on the dynamic map. When a region is hidden, all its scopes are hidden regardless of their individual settings.
+
+- `/imyvmWorldGeo dynmapToggleScope <regionIdentifier> <scopeName>`  
+  Toggle a scope's visibility on the dynamic map. Has no effect if the region itself is hidden.
 
 - `/imyvmWorldGeo query <regionIdentifier>`  
   Show detailed information about a region.
