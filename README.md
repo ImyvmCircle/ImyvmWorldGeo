@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.4.0
+# IMYVMWorldGeo 1.21 1.4.1
 
 ## Changelog
 
@@ -6,9 +6,9 @@
 
 This major version (1.4.x) introduces a dynamic map mechanism.
 
-#### 1.4.0
+#### 1.4.1
 
-feat: add optional dynamic map display.
+
 
 ## Introduction
 
