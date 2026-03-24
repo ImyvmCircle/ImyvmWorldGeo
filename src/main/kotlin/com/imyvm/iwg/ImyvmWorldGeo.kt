@@ -1,7 +1,6 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
-import com.imyvm.iwg.infra.dynmap.DynmapIntegration
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.event.registerPointSelection
@@ -14,6 +13,7 @@ import com.imyvm.iwg.entrypoint.register.registerDataLoadSave
 import com.imyvm.iwg.domain.component.SelectionState
 import net.fabricmc.api.ModInitializer
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback
+import net.fabricmc.loader.api.FabricLoader
 import org.slf4j.LoggerFactory
 import org.slf4j.Logger
 import java.util.*
@@ -36,7 +36,13 @@ ImyvmWorldGeo : ModInitializer {
 		registerPointSelection()
 		registerSelectionDisplay()
 
-		DynmapIntegration.registerIfLoaded()
+		if (FabricLoader.getInstance().isModLoaded("dynmap")) {
+			runCatching {
+				val clazz = Class.forName("com.imyvm.iwg.infra.dynmap.DynmapIntegration")
+				val instance = clazz.getDeclaredField("INSTANCE").get(null)
+				clazz.getDeclaredMethod("registerIfLoaded").invoke(instance)
+			}.onFailure { logger.error("Failed to initialize dynmap integration: ${it.message}") }
+		}
 
 		logger.info("$MOD_ID initialized successfully.")
 	}

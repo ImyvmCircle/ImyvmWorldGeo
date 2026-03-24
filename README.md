@@ -8,7 +8,7 @@ This major version (1.4.x) introduces a dynamic map mechanism.
 
 #### 1.4.0
 
-Target: Introduce optional Dynmap integration that renders regions and scopes on the dynamic world map when Dynmap is present, with no impact when it is absent.
+feat: add optional dynamic map display.
 
 ## Introduction
 
