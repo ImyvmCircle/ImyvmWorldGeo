@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 1.21 1.4.1
+# IMYVMWorldGeo 26.1 1.4.1
 
 ## Changelog
 
@@ -19,14 +19,14 @@ and is also a basement for extensions, exemplified by jungle system, community s
 
 This mod is **server-side only** and requires the following environment:
 
-- **Minecraft Version:** 1.21  
-- **Fabric Loader Version:** 0.16.9 (or compatible with Minecraft 1.21)
-- **Java Version:** 21  
+- **Minecraft Version:** 26.1  
+- **Fabric Loader Version:** 0.18.5 (or compatible with Minecraft 26.1)
+- **Java Version:** 25  
 - **IMYVM Hoki Mod Version:** 1.1.4
 
 **Optional:**
 
-- **Dynmap Version:** 3.7-beta (Fabric 1.21) - enables region map rendering when present
+- **Dynmap Version:** 3.7-beta (Fabric 26.1) - enables region map rendering when present
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
 
