@@ -17,6 +17,7 @@ object DynmapIntegration : DynmapCommonAPIListener() {
     private var markerSet: MarkerSet? = null
 
     fun registerIfLoaded() {
+        return
         if (FabricLoader.getInstance().isModLoaded("dynmap")) {
             RegionDatabase.onSave = { syncRegions() }
             DynmapCommonAPIListener.register(this)

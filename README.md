@@ -8,7 +8,7 @@ This major version (1.4.x) introduces a dynamic map mechanism.
 
 #### 1.4.1
 
-chore: upgrade to Minecraft 26.1, Java 25, Fabric Loader 0.18.5, Kotlin 2.3.20.
+chore: upgrade to Minecraft 26.1, Java 25, Fabric Loader 0.18.5, Kotlin 2.3.20; temporarily disable Dynmap integration pending MC 26.1 compatible release.
 
 ## Introduction
 
@@ -27,6 +27,8 @@ This mod is **server-side only** and requires the following environment:
 **Optional:**
 
 - **Dynmap Version:** 3.7-beta (Fabric 26.1) - enables region map rendering when present
+
+> Note: Dynmap integration is temporarily disabled pending a Dynmap release compatible with MC 26.1. Do not install Dynmap until a compatible version is available; Fabric Loader will reject server startup if an incompatible Dynmap version is present.
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
 
@@ -193,6 +195,8 @@ the teleport point is automatically updated and the player is teleported there w
 If no safe alternative is found within the search area, teleportation is cancelled and the player is informed.
 
 ### Dynmap Integration
+
+> Dynmap integration is temporarily disabled pending a Dynmap release compatible with MC 26.1. All integration code is retained and will be re-enabled once a compatible version is released.
 
 When Dynmap (3.7-beta or later, Fabric edition) is present on the server, all regions and their scopes are automatically rendered on the dynamic world map. If Dynmap is absent, this feature is silently skipped.
 
