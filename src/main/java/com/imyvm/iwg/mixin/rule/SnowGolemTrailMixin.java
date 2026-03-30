@@ -6,25 +6,25 @@ import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.RuleKey;
 import com.imyvm.iwg.infra.RegionDatabase;
 import kotlin.Pair;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.passive.SnowGolemEntity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.animal.golem.SnowGolem;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Redirect;
 
-@Mixin(SnowGolemEntity.class)
+@Mixin(SnowGolem.class)
 public class SnowGolemTrailMixin {
 
-    @Redirect(method = "tickMovement", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/world/World;setBlockState(Lnet/minecraft/util/math/BlockPos;Lnet/minecraft/block/BlockState;)Z"))
-    private boolean onSetSnowBlock(World world, BlockPos pos, BlockState state) {
+    @Redirect(method = "aiStep", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/world/level/Level;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z"))
+    private boolean onSetSnowBlock(Level world, BlockPos pos, BlockState state, int flags) {
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
         if (regionAndScope != null) {
             Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.SNOW_GOLEM_TRAIL, regionAndScope.getSecond());
             if (value != null && !value) return false;
         }
-        return world.setBlockState(pos, state);
+        return world.setBlock(pos, state, flags);
     }
 }

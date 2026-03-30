@@ -1,19 +1,19 @@
 package com.imyvm.iwg.application.selection.display
 
 import com.imyvm.iwg.infra.config.SelectionConfig.SELECTION_DISPLAY_LINE_STEP
-import net.minecraft.particle.DustParticleEffect
-import net.minecraft.particle.ParticleTypes
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.Heightmap
-import org.joml.Vector3f
+import net.minecraft.core.particles.DustParticleOptions
+import net.minecraft.core.particles.ParticleTypes
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.levelgen.Heightmap
 import kotlin.math.sqrt
 
-private val OLD_SCOPE_PARTICLE = DustParticleEffect(Vector3f(0.2f, 0.6f, 1.0f), 2.5f)
-private val MODIFYING_SCOPE_PARTICLE = DustParticleEffect(Vector3f(1.0f, 0.55f, 0.0f), 2.5f)
+// ARGB colors: blue-ish (0.2, 0.6, 1.0) and orange (1.0, 0.55, 0.0)
+private val OLD_SCOPE_PARTICLE = DustParticleOptions((255 shl 24) or (51 shl 16) or (153 shl 8) or 255, 2.5f)
+private val MODIFYING_SCOPE_PARTICLE = DustParticleOptions((255 shl 24) or (255 shl 16) or (140 shl 8) or 0, 2.5f)
 
-fun emitLineSurface(player: ServerPlayerEntity, pos1: BlockPos, pos2: BlockPos) {
-    val world = player.serverWorld
+fun emitLineSurface(player: ServerPlayer, pos1: BlockPos, pos2: BlockPos) {
+    val world = player.level()
     val dx = (pos2.x - pos1.x).toDouble()
     val dz = (pos2.z - pos1.z).toDouble()
     val lineLength = sqrt(dx * dx + dz * dz)
@@ -24,16 +24,16 @@ fun emitLineSurface(player: ServerPlayerEntity, pos1: BlockPos, pos2: BlockPos) 
     while (t <= 1.0) {
         val x = (pos1.x + dx * t).toInt()
         val z = (pos1.z + dz * t).toInt()
-        if (world.chunkManager.isChunkLoaded(x shr 4, z shr 4)) {
-            val y = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
-            world.spawnParticles(player, ParticleTypes.LAVA, true, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
+        if (world.chunkSource.hasChunk(x shr 4, z shr 4)) {
+            val y = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
+            world.sendParticles(player, ParticleTypes.LAVA, true, false, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
         }
         t += stepFraction
     }
 }
 
-fun emitLineSurfaceOld(player: ServerPlayerEntity, pos1: BlockPos, pos2: BlockPos) {
-    val world = player.serverWorld
+fun emitLineSurfaceOld(player: ServerPlayer, pos1: BlockPos, pos2: BlockPos) {
+    val world = player.level()
     val dx = (pos2.x - pos1.x).toDouble()
     val dz = (pos2.z - pos1.z).toDouble()
     val lineLength = sqrt(dx * dx + dz * dz)
@@ -44,15 +44,15 @@ fun emitLineSurfaceOld(player: ServerPlayerEntity, pos1: BlockPos, pos2: BlockPo
     while (t <= 1.0) {
         val x = (pos1.x + dx * t).toInt()
         val z = (pos1.z + dz * t).toInt()
-        if (world.chunkManager.isChunkLoaded(x shr 4, z shr 4)) {
-            val y = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
-            world.spawnParticles(player, OLD_SCOPE_PARTICLE, true, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
+        if (world.chunkSource.hasChunk(x shr 4, z shr 4)) {
+            val y = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
+            world.sendParticles(player, OLD_SCOPE_PARTICLE, true, false, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
         }
         t += stepFraction
     }
 }
 
-fun drawCircleOutline(player: ServerPlayerEntity, centerX: Int, centerZ: Int, radius: Int) {
+fun drawCircleOutline(player: ServerPlayer, centerX: Int, centerZ: Int, radius: Int) {
     val numSamples = maxOf(8, (2 * Math.PI * radius / SELECTION_DISPLAY_LINE_STEP.value).toInt())
     val samples = (0 until numSamples).map { i ->
         val angle = 2 * Math.PI * i / numSamples
@@ -67,7 +67,7 @@ fun drawCircleOutline(player: ServerPlayerEntity, centerX: Int, centerZ: Int, ra
     }
 }
 
-fun drawCircleOutlineOld(player: ServerPlayerEntity, centerX: Int, centerZ: Int, radius: Int) {
+fun drawCircleOutlineOld(player: ServerPlayer, centerX: Int, centerZ: Int, radius: Int) {
     val numSamples = maxOf(8, (2 * Math.PI * radius / SELECTION_DISPLAY_LINE_STEP.value).toInt())
     val samples = (0 until numSamples).map { i ->
         val angle = 2 * Math.PI * i / numSamples
@@ -82,8 +82,8 @@ fun drawCircleOutlineOld(player: ServerPlayerEntity, centerX: Int, centerZ: Int,
     }
 }
 
-fun emitLineSurfaceModifying(player: ServerPlayerEntity, pos1: BlockPos, pos2: BlockPos) {
-    val world = player.serverWorld
+fun emitLineSurfaceModifying(player: ServerPlayer, pos1: BlockPos, pos2: BlockPos) {
+    val world = player.level()
     val dx = (pos2.x - pos1.x).toDouble()
     val dz = (pos2.z - pos1.z).toDouble()
     val lineLength = sqrt(dx * dx + dz * dz)
@@ -94,15 +94,15 @@ fun emitLineSurfaceModifying(player: ServerPlayerEntity, pos1: BlockPos, pos2: B
     while (t <= 1.0) {
         val x = (pos1.x + dx * t).toInt()
         val z = (pos1.z + dz * t).toInt()
-        if (world.chunkManager.isChunkLoaded(x shr 4, z shr 4)) {
-            val y = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
-            world.spawnParticles(player, MODIFYING_SCOPE_PARTICLE, true, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
+        if (world.chunkSource.hasChunk(x shr 4, z shr 4)) {
+            val y = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
+            world.sendParticles(player, MODIFYING_SCOPE_PARTICLE, true, false, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
         }
         t += stepFraction
     }
 }
 
-fun drawCircleOutlineModifying(player: ServerPlayerEntity, centerX: Int, centerZ: Int, radius: Int) {
+fun drawCircleOutlineModifying(player: ServerPlayer, centerX: Int, centerZ: Int, radius: Int) {
     val numSamples = maxOf(8, (2 * Math.PI * radius / SELECTION_DISPLAY_LINE_STEP.value).toInt())
     val samples = (0 until numSamples).map { i ->
         val angle = 2 * Math.PI * i / numSamples

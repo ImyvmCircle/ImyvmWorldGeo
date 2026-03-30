@@ -6,9 +6,9 @@ import com.google.gson.Gson
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import net.fabricmc.loader.api.FabricLoader
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
+import net.minecraft.resources.Identifier
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.Level
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
@@ -115,7 +115,7 @@ object RegionDatabase {
         return Pair(region, scope)
     }
 
-    fun getRegionAndScopeAt(world: World, x: Int, z: Int): Pair<Region, GeoScope>? {
+    fun getRegionAndScopeAt(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? {
         val server = world.server
         for (region in regions) {
             for (scope in region.geometryScope) {
@@ -150,7 +150,7 @@ object RegionDatabase {
 
         repeat(count) {
             val scopeName = stream.readUTF()
-            val worldId = Identifier.of(stream.readUTF())
+            val worldId = Identifier.parse(stream.readUTF())
             val teleportPoint = loadTeleportPoint(stream)
             val isTeleportPointPublic = stream.readBoolean()
             val geoShape = loadGeoShape(stream)

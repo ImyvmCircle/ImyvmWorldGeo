@@ -4,7 +4,7 @@ import com.imyvm.hoki.i18n.HokiLanguage
 import com.imyvm.hoki.i18n.HokiTranslator
 import com.imyvm.iwg.ImyvmWorldGeo.Companion.MOD_ID
 import com.imyvm.iwg.infra.config.CoreConfig
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 object Translator : HokiTranslator() {
     private var languageInstance = createLanguage(CoreConfig.LANGUAGE.value)
@@ -15,11 +15,11 @@ object Translator : HokiTranslator() {
         }
     }
 
-    fun trBase(base: String,subKeys: List<String>): List<Text> {
+    fun trBase(base: String,subKeys: List<String>): List<Component> {
         return subKeys.mapNotNull { tr("$base.$it") }
     }
 
-    fun tr(key: String?, vararg args: Any?): Text? {
+    fun tr(key: String?, vararg args: Any?): Component? {
         val raw = key?.let { languageInstance.get(it) }
         val formatted = if (args.isNotEmpty()) {
             raw?.let { java.text.MessageFormat.format(it, *args) }

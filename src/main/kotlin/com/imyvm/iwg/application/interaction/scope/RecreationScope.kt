@@ -9,11 +9,11 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
 
 fun recreateScope(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
     newPositions: MutableList<BlockPos>,
@@ -36,14 +36,14 @@ fun recreateScope(
     when (newScope) {
         is Result.Ok -> {
             region.geometryScope.add(newScope.value)
-            player.sendMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs))
+            player.sendSystemMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs)!!)
             clearSelectionDisplay(player)
             ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {
             region.geometryScope.add(existingScope)
             val errorMsg = errorMessage(newScope.error, shapeType)
-            errorMsg.forEach { player.sendMessage(it) }
+            errorMsg.forEach { player.sendSystemMessage(it) }
         }
     }
 }

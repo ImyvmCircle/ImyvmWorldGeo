@@ -10,7 +10,7 @@ import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 class Region(
     var name: String,
@@ -24,8 +24,8 @@ class Region(
             ?: throw IllegalArgumentException(Translator.tr("region.error.no_scope", scopeName, name)!!.string)
     }
 
-    fun getScopeInfos(server: MinecraftServer): List<Text> {
-        val infos = mutableListOf<Text>()
+    fun getScopeInfos(server: MinecraftServer): List<Component> {
+        val infos = mutableListOf<Component>()
         geometryScope.forEachIndexed { index, geoScope ->
             geoScope.getScopeInfo(index)?.let { infos.add(it) }
             infos.addAll(geoScope.getSettingInfos(server))
@@ -33,7 +33,7 @@ class Region(
         return infos
     }
 
-    fun getSettingInfos(server: MinecraftServer): List<Text> {
+    fun getSettingInfos(server: MinecraftServer): List<Component> {
         return formatSettings(server, settings, "region.setting")
     }
 
@@ -53,18 +53,18 @@ class Region(
             settings: List<Setting>,
             key: String,
             scopeName: String? = null
-        ): List<Text> {
+        ): List<Component> {
             if (settings.isEmpty()) return emptyList()
 
-            val result = mutableListOf<Text>()
+            val result = mutableListOf<Component>()
 
-            val headerText = if (scopeName == null) Translator.tr("$key.header")
-                             else Translator.tr("$key.header", scopeName)
+            val headerText = if (scopeName == null) Translator.tr("$key.header")!!
+                             else Translator.tr("$key.header", scopeName)!!
             headerText?.let { result.add(it) }
 
             val globalSettings = settings.filter { !it.isPersonal }
             if (globalSettings.isNotEmpty()) {
-                Translator.tr("$key.global.header")?.let { result.add(it) }
+                Translator.tr("$key.global.header")!!?.let { result.add(it) }
                 appendTypeGroups(result, globalSettings, key)
             }
 
@@ -72,38 +72,38 @@ class Region(
                 .groupBy { it.playerUUID }
                 .forEach { (uuid, playerSettings) ->
                     val playerName = resolvePlayerName(server, uuid)
-                    Translator.tr("$key.personal.header", playerName)?.let { result.add(it) }
+                    Translator.tr("$key.personal.header", playerName)!!?.let { result.add(it) }
                     appendTypeGroups(result, playerSettings, key)
                 }
 
             return result
         }
 
-        private fun appendTypeGroups(result: MutableList<Text>, settings: List<Setting>, key: String) {
+        private fun appendTypeGroups(result: MutableList<Component>, settings: List<Setting>, key: String) {
             val permissions = settings.filterIsInstance<PermissionSetting>()
             if (permissions.isNotEmpty()) {
-                Translator.tr("$key.permission.header")?.let { result.add(it) }
-                permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                Translator.tr("$key.permission.header")!!?.let { result.add(it) }
+                permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
             }
 
             val effects = settings.filterIsInstance<EffectSetting>()
             if (effects.isNotEmpty()) {
-                Translator.tr("$key.effect.header")?.let { result.add(it) }
-                effects.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                Translator.tr("$key.effect.header")!!?.let { result.add(it) }
+                effects.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
             }
 
             val rules = settings.filterIsInstance<RuleSetting>()
             if (rules.isNotEmpty()) {
-                Translator.tr("$key.rule.header")?.let { result.add(it) }
-                rules.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                Translator.tr("$key.rule.header")!!?.let { result.add(it) }
+                rules.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
             }
 
             val notifToggles = settings.filterIsInstance<EntryExitToggleSetting>()
             val notifMessages = settings.filterIsInstance<EntryExitMessageSetting>()
             if (notifToggles.isNotEmpty() || notifMessages.isNotEmpty()) {
-                Translator.tr("$key.entry_exit.header")?.let { result.add(it) }
-                notifToggles.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
-                notifMessages.forEach { s -> Translator.tr("$key.item", s.key, "&r\"${s.value}\"")?.let { result.add(it) } }
+                Translator.tr("$key.entry_exit.header")!!?.let { result.add(it) }
+                notifToggles.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
+                notifMessages.forEach { s -> Translator.tr("$key.item", s.key, "&r\"${s.value}\"")!!?.let { result.add(it) } }
             }
         }
     }

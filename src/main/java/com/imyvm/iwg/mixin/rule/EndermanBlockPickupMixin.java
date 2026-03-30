@@ -6,24 +6,24 @@ import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.RuleKey;
 import com.imyvm.iwg.infra.RegionDatabase;
 import kotlin.Pair;
-import net.minecraft.entity.mob.EndermanEntity;
-import net.minecraft.util.math.BlockPos;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.monster.EnderMan;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
-@Mixin(targets = "net.minecraft.entity.mob.EndermanEntity$PickUpBlockGoal")
+@Mixin(targets = "net.minecraft.world.entity.monster.EnderMan$EndermanTakeBlockGoal")
 public class EndermanBlockPickupMixin {
 
     @Shadow
-    private EndermanEntity enderman;
+    private EnderMan enderman;
 
-    @Inject(at = @At("HEAD"), method = "canStart", cancellable = true)
-    private void onCanStart(CallbackInfoReturnable<Boolean> cir) {
-        BlockPos pos = enderman.getBlockPos();
-        Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(enderman.getWorld(), pos.getX(), pos.getZ());
+    @Inject(at = @At("HEAD"), method = "canUse", cancellable = true)
+    private void onCanUse(CallbackInfoReturnable<Boolean> cir) {
+        BlockPos pos = enderman.blockPosition();
+        Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(enderman.level(), pos.getX(), pos.getZ());
         if (regionAndScope == null) return;
         Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.ENDERMAN_BLOCK_PICKUP, regionAndScope.getSecond());
         if (value != null && !value) {

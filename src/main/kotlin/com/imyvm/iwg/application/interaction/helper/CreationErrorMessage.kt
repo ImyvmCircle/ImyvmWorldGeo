@@ -5,37 +5,37 @@ import com.imyvm.iwg.util.geo.IntersectionDetail
 import com.imyvm.iwg.util.geo.VertexInsideInfo
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.text.Text
+import net.minecraft.network.chat.Component
 
 fun errorMessage(
     error: CreationError,
     shapeType: GeoShapeType
-): List<Text> = when (error) {
-    CreationError.DuplicatedPoints -> listOfNotNull(Translator.tr("error.duplicated_points"))
-    CreationError.InsufficientPoints -> listOfNotNull(Translator.tr("error.insufficient_points", shapeType.name.lowercase()))
-    CreationError.CoincidentPoints -> listOfNotNull(Translator.tr("error.coincident_points"))
+): List<Component> = when (error) {
+    CreationError.DuplicatedPoints -> listOfNotNull(Translator.tr("error.duplicated_points")!!)
+    CreationError.InsufficientPoints -> listOfNotNull(Translator.tr("error.insufficient_points", shapeType.name.lowercase())!!)
+    CreationError.CoincidentPoints -> listOfNotNull(Translator.tr("error.coincident_points")!!)
     CreationError.UnderSizeLimit -> listOfNotNull(when (shapeType) {
-        GeoShapeType.RECTANGLE -> Translator.tr("error.rectangle_too_small")
-        GeoShapeType.CIRCLE -> Translator.tr("error.circle_too_small")
-        GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")
-        else -> Translator.tr("error.generic_too_small")
+        GeoShapeType.RECTANGLE -> Translator.tr("error.rectangle_too_small")!!
+        GeoShapeType.CIRCLE -> Translator.tr("error.circle_too_small")!!
+        GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")!!
+        else -> Translator.tr("error.generic_too_small")!!
     })
-    CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit"))
-    CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid"))
-    CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short"))
-    CreationError.NotConvex -> listOfNotNull(Translator.tr("error.not_convex"))
+    CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit")!!)
+    CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid")!!)
+    CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short")!!)
+    CreationError.NotConvex -> listOfNotNull(Translator.tr("error.not_convex")!!)
     is CreationError.IntersectionBetweenScopes -> buildIntersectionErrorMessages(error.details, shapeType)
 }
 
-private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, shapeType: GeoShapeType): List<Text> {
-    val lines = mutableListOf<Text>()
-    Translator.tr("error.intersection_between_scopes.header")?.let { lines.add(it) }
+private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, shapeType: GeoShapeType): List<Component> {
+    val lines = mutableListOf<Component>()
+    Translator.tr("error.intersection_between_scopes.header")!!?.let { lines.add(it) }
     for (detail in details) {
         val shapeDesc = getShapeParamDescription(detail.shape)
-        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)?.let { lines.add(it) }
+        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)!!?.let { lines.add(it) }
         if (detail.verticesInside.isNotEmpty() && shapeType in listOf(GeoShapeType.POLYGON, GeoShapeType.RECTANGLE)) {
             val vertexStr = formatVertexList(detail.verticesInside, shapeType)
-            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)?.let { lines.add(it) }
+            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)!!?.let { lines.add(it) }
         }
     }
     return lines

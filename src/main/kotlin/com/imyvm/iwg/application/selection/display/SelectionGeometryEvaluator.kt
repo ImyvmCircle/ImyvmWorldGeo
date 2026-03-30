@@ -4,7 +4,7 @@ import com.imyvm.iwg.util.geo.checkCircleSize
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.checkRectangleSize
 import com.imyvm.iwg.util.geo.isConvex
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
 

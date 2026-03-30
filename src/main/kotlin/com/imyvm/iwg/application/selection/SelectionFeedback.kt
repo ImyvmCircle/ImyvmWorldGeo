@@ -13,12 +13,12 @@ import com.imyvm.iwg.util.geo.isConvex
 import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonExplicitInsert
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
+import net.minecraft.network.chat.Component
+import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
 
-fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Text {
+fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
     val shape = state.hypotheticalShape
     if (shape is HypotheticalShape.ModifyExisting) {
@@ -29,7 +29,7 @@ fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Text {
     return TextParser.parse(msg.toString())
 }
 
-fun buildPointUndoMessage(state: SelectionState, removedPos: BlockPos): Text {
+fun buildPointUndoMessage(state: SelectionState, removedPos: BlockPos): Component {
     val msg = StringBuilder()
     val shape = state.hypotheticalShape
     if (shape is HypotheticalShape.ModifyExisting) {
@@ -40,7 +40,7 @@ fun buildPointUndoMessage(state: SelectionState, removedPos: BlockPos): Text {
     return TextParser.parse(msg.toString())
 }
 
-fun buildModifyStartMessage(scope: GeoScope): Text {
+fun buildModifyStartMessage(scope: GeoScope): Component {
     val msg = StringBuilder()
     val shapeType = scope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
     msg.append(Translator.raw("selection.feedback.separator") ?: "")

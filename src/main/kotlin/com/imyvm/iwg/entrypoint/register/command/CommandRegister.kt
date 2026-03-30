@@ -6,15 +6,16 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator
+import net.minecraft.commands.Commands as MinecraftCommands
 import com.mojang.brigadier.CommandDispatcher
 import com.mojang.brigadier.context.CommandContext
 import com.mojang.brigadier.arguments.StringArgumentType
-import net.minecraft.server.command.CommandManager.literal
-import net.minecraft.server.command.CommandManager.argument
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.commands.Commands.literal
+import net.minecraft.commands.Commands.argument
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.server.level.ServerPlayer
 
-fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
+fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
     dispatcher.register(
         literal("imyvmWorldGeo")
             .then(
@@ -36,7 +37,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
                     )
                     .then(
                         literal("modifyScope")
-                            .requires { it.hasPermissionLevel(2) }
+                            .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -50,7 +51,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("create")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .executes { runCreateRegion(it) }
                     .then(
                         argument("name", StringArgumentType.string())
@@ -59,7 +60,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("delete")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -68,7 +69,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("rename")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -80,7 +81,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("addScope")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -93,7 +94,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("deleteScope")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -106,7 +107,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("teleportPoint")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         literal("set")
                             .executes { runSetTeleportPoint(it) }
@@ -187,7 +188,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("modifyScope")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -204,7 +205,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("transferScope")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -221,7 +222,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("mergeRegion")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -234,7 +235,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("setting")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         literal("add")
                             .then(
@@ -292,7 +293,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("settingScope")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         literal("add")
                             .then(
@@ -362,7 +363,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("dynmapToggle")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -371,7 +372,7 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
             )
             .then(
                 literal("dynmapToggleScope")
-                    .requires { it.hasPermissionLevel(2) }
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -396,81 +397,81 @@ fun register(dispatcher: CommandDispatcher<ServerCommandSource>) {
     )
 }
 
-private fun runStartSelect(context: CommandContext<ServerCommandSource>): Int {
+private fun runStartSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onStartSelection(player)
 }
 
-private fun runStopSelect(context: CommandContext<ServerCommandSource>): Int {
+private fun runStopSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onStopSelection(player)
 }
 
-private fun runResetSelect(context: CommandContext<ServerCommandSource>): Int {
+private fun runResetSelect(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onResetSelection(player)
 }
 
-private fun runStartSelectWithShape(context: CommandContext<ServerCommandSource>): Int {
+private fun runStartSelectWithShape(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val shapeTypeStr = StringArgumentType.getString(context, "shapeType").uppercase()
     val shapeType = parseShapeType(shapeTypeStr, player) ?: return 0
     return onStartSelection(player, shapeType)
 }
 
-private fun runResetSelectWithShape(context: CommandContext<ServerCommandSource>): Int {
+private fun runResetSelectWithShape(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val shapeTypeStr = StringArgumentType.getString(context, "shapeType").uppercase()
     val shapeType = parseShapeType(shapeTypeStr, player) ?: return 0
     return onResetSelection(player, shapeType)
 }
 
-private fun runSetSelectionShape(context: CommandContext<ServerCommandSource>): Int {
+private fun runSetSelectionShape(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val shapeTypeStr = StringArgumentType.getString(context, "shapeType").uppercase()
     val shapeType = parseShapeType(shapeTypeStr, player) ?: return 0
     return onSetSelectionShape(player, shapeType)
 }
 
-private fun parseShapeType(shapeTypeStr: String, player: ServerPlayerEntity): GeoShapeType? {
+private fun parseShapeType(shapeTypeStr: String, player: ServerPlayer): GeoShapeType? {
     val shapeType = GeoShapeType.entries.find { it.name == shapeTypeStr } ?: GeoShapeType.UNKNOWN
     if (shapeType == GeoShapeType.UNKNOWN) {
-        player.sendMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeStr))
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeStr)!!)
         return null
     }
     return shapeType
 }
 
-private fun runCreateRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runCreateRegion(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     val nameArg = getOptionalArgument(context, "name")
     return onRegionCreation(player, nameArg, null, idMark = 0)
 }
 
-private fun runDeleteRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeleteRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToDelete -> onRegionDelete(player, regionToDelete) }
 }
 
-private fun runRenameRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runRenameRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val newName = context.getArgument("newName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToRename -> onRegionRename(player, regionToRename, newName) }
 }
 
-private fun runAddScope(context: CommandContext<ServerCommandSource>): Int {
+private fun runAddScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeNameArg = getOptionalArgument(context, "scopeName")
     return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, null)}
 }
 
-private fun runDeleteScope(context: CommandContext<ServerCommandSource>): Int {
+private fun runDeleteScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToDeleteScope -> onScopeDelete(player, regionToDeleteScope, scopeName)}
 }
 
-private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
+private fun runRenameScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     val newName = context.getArgument("newName", String::class.java)
@@ -478,7 +479,7 @@ private fun runRenameScope(context: CommandContext<ServerCommandSource>): Int {
         onScopeRename(player, regionToRenameScope, scopeName, newName)}
 }
 
-private fun runTransferScope(context: CommandContext<ServerCommandSource>): Int {
+private fun runTransferScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     val targetRegionIdentifier = context.getArgument("targetRegionIdentifier", String::class.java)
@@ -489,7 +490,7 @@ private fun runTransferScope(context: CommandContext<ServerCommandSource>): Int 
     }
 }
 
-private fun runMergeRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runMergeRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val targetRegionIdentifier = context.getArgument("targetRegionIdentifier", String::class.java)
     return identifierHandler(regionIdentifier, player) { sourceRegion ->
@@ -499,51 +500,49 @@ private fun runMergeRegion(context: CommandContext<ServerCommandSource>): Int {
     }
 }
 
-private fun runSetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
+private fun runSetTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     var x = getPosArgument(context, "x")
     var y = getPosArgument(context, "y")
     var z = getPosArgument(context, "z")
     if (x == null || y == null || z == null) {
-        x = player.blockX
-        y = player.blockY
-        z = player.blockZ
+        x = player.blockPosition().x
+        y = player.blockPosition().y
+        z = player.blockPosition().z
     }
 
-    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.world,x,z)
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.level(),x,z)
     if (regionScopePair == null) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region")!!)
         return 0
     }
 
     return onAddingTeleportPoint(player, regionScopePair.first, regionScopePair.second, x, y, z)
 }
 
-private fun runResetTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
+private fun runResetTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
     val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
     return onResettingTeleportPoint(player, region, scope)
 }
 
-private fun runInquiryTeleportPoint(context: CommandContext<ServerCommandSource>): Int {
+private fun runInquiryTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
     val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
     val teleportPoint = onGettingTeleportPoint(scope)
     return if (teleportPoint != null) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
             scope.scopeName,
-            region)
-        )
+            region)!!)
         1
     } else {
-        player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
             scope.scopeName,
-            region)
-        )
+            region)!!)
         0
     }
 }
 
-private fun runTeleportPlayer(context: CommandContext<ServerCommandSource>): Int {
+private fun runTeleportPlayer(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
@@ -551,37 +550,37 @@ private fun runTeleportPlayer(context: CommandContext<ServerCommandSource>): Int
             val scope = regionToTeleport.getScopeByName(scopeName)
             onTeleportingPlayer(player, regionToTeleport, scope)
         } catch (e: IllegalArgumentException) {
-            player.sendMessage(Translator.tr(e.message))
+            player.sendSystemMessage(Translator.tr(e.message)!!)
         }
     }
 }
 
-private fun runTeleportPlayerToRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
         val (region, scope) = RegionDatabase.getRegionAndScope(regionToTeleport, regionToTeleport.geometryScope.firstOrNull()?.scopeName ?: "")
         if (scope != null) {
             onTeleportingPlayer(player, region, scope)
         } else {
-            player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_scope", region.name))
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_scope", region.name)!!)
             0
         }
     }
 }
 
-private fun runToggleTeleportPointAccessibility(context: CommandContext<ServerCommandSource>): Int{
+private fun runToggleTeleportPointAccessibility(context: CommandContext<CommandSourceStack>): Int{
     val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
-    player.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName))
+    player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName)!!)
     return onTogglingTeleportPointAccessibility(scope)
 }
 
-private fun runModifyScope(context: CommandContext<ServerCommandSource>): Int {
+private fun runModifyScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToModifyScope -> onModifyScope(player, regionToModifyScope, scopeName)}
 }
 
-private fun runAddDeleteSetting(context: CommandContext<ServerCommandSource>): Int {
+private fun runAddDeleteSetting(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = getOptionalArgument(context, "scopeName")
     val keyString = context.getArgument("key", String::class.java)
@@ -591,7 +590,7 @@ private fun runAddDeleteSetting(context: CommandContext<ServerCommandSource>): I
         onHandleSetting(player, regionToAddSetting, scopeName, keyString, valueString, targetPlayer) }
 }
 
-private fun runQuerySettingValue(context: CommandContext<ServerCommandSource>): Int {
+private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = getOptionalArgument(context, "scopeName")
     val keyString = context.getArgument("key", String::class.java)
@@ -600,27 +599,27 @@ private fun runQuerySettingValue(context: CommandContext<ServerCommandSource>): 
         onQuerySettingValue(player, regionToQuery, scopeName, keyString, targetPlayer) }
 }
 
-private fun runQueryRegion(context: CommandContext<ServerCommandSource>): Int {
+private fun runQueryRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery, false) }
 }
 
-private fun runListRegions(context: CommandContext<ServerCommandSource>): Int {
+private fun runListRegions(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onListRegions(player)
 }
 
-private fun runToggleActionBar(context: CommandContext<ServerCommandSource>): Int {
+private fun runToggleActionBar(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onToggleActionBar(player)
 }
 
-private fun runHelp(context: CommandContext<ServerCommandSource>): Int {
+private fun runHelp(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onHelp(player)
 }
 
-private fun runStartSelectForModify(context: CommandContext<ServerCommandSource>): Int {
+private fun runStartSelectForModify(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { region ->
@@ -628,18 +627,18 @@ private fun runStartSelectForModify(context: CommandContext<ServerCommandSource>
             val scope = region.getScopeByName(scopeName)
             onStartSelectionForModify(player, scope)
         } catch (e: IllegalArgumentException) {
-            player.sendMessage(Translator.tr("interaction.meta.scope.add.not_found_generic"))
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.not_found_generic")!!)
             0
         }
     }
 }
 
-private fun runToggleRegionDynmap(context: CommandContext<ServerCommandSource>): Int {
+private fun runToggleRegionDynmap(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { region -> onTogglingRegionDynmap(player, region) }
 }
 
-private fun runToggleScopeDynmap(context: CommandContext<ServerCommandSource>): Int {
+private fun runToggleScopeDynmap(context: CommandContext<CommandSourceStack>): Int {
     val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
     return onTogglingScopeDynmap(player, region, scope)
 }

@@ -8,7 +8,7 @@ This major version (1.4.x) introduces a dynamic map mechanism.
 
 #### 1.4.1
 
-
+chore: upgrade to Minecraft 26.1, Java 25, Fabric Loader 0.18.5, Kotlin 2.3.20.
 
 ## Introduction
 

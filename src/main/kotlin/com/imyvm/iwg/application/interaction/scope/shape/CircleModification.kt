@@ -5,11 +5,11 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
 
 fun modifyScopeCircleRadius(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
@@ -27,7 +27,7 @@ fun modifyScopeCircleRadius(
     val newRadius = kotlin.math.sqrt((dx * dx + dz * dz).toDouble()).toInt()
 
     if (newRadius <= 0) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive")!!)
         return
     }
 
@@ -39,7 +39,7 @@ fun modifyScopeCircleRadius(
 }
 
 fun modifyScopeCircleCenter(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
@@ -61,19 +61,19 @@ fun modifyScopeCircleCenter(
 }
 
 private fun checkCircleParams(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     shapeParams: List<Int>?,
     messageKey: String
 ): Boolean {
     if (shapeParams == null || shapeParams.size < 3) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.modify.$messageKey"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.$messageKey")!!)
         return false
     }
     return true
 }
 
 private fun recreateCircleScope(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
     centerX: Int,

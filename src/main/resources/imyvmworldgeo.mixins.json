@@ -1,7 +1,7 @@
 {
 	"required": true,
 	"package": "com.imyvm.iwg.mixin",
-	"compatibilityLevel": "JAVA_21",
+	"compatibilityLevel": "JAVA_25",
 	"mixins": [
 		"rule.ServerWorldSpawnMixin",
 		"rule.ExplosionBlockProtectionMixin",

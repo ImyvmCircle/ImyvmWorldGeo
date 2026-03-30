@@ -1,6 +1,6 @@
 package com.imyvm.iwg.domain.component
 
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 
 sealed class HypotheticalShape {
     data class Normal(val shapeType: GeoShapeType) : HypotheticalShape()

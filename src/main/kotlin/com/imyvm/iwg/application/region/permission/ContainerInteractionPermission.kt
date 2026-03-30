@@ -6,34 +6,34 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_CONTAINER
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.util.Hand
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.screen.NamedScreenHandlerFactory
-import net.minecraft.util.ActionResult
-import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.world.World
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.MenuProvider
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.world.level.Level
 
 fun playerContainerInteraction(
-    player: PlayerEntity?,
-    world: World?,
-    hand: Hand?,
+    player: Player?,
+    world: Level?,
+    hand: InteractionHand?,
     hitResult: BlockHitResult?
-): ActionResult {
-    if (player == null || world == null || hitResult == null) return ActionResult.PASS
+): InteractionResult {
+    if (player == null || world == null || hitResult == null) return InteractionResult.PASS
 
     val pos = hitResult.blockPos
     val blockEntity = world.getBlockEntity(pos)
-    if (blockEntity !is NamedScreenHandlerFactory) return ActionResult.PASS
+    if (blockEntity !is MenuProvider) return InteractionResult.PASS
 
-    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.world, pos.x, pos.z)
+    val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level(), pos.x, pos.z)
     regionAndScope?.let { (region, scope) ->
         val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.CONTAINER, scope, PERMISSION_DEFAULT_CONTAINER.value)
         if (denial != null) {
-            if (hand == Hand.MAIN_HAND) {
-                player.sendMessage(Translator.tr("setting.permission.container", buildPermissionDenialContext(region, scope, denial)))
+            if (hand == InteractionHand.MAIN_HAND) {
+                player.sendSystemMessage(Translator.tr("setting.permission.container", buildPermissionDenialContext(region, scope, denial))!!)
             }
-            return ActionResult.CONSUME
+            return InteractionResult.CONSUME
         }
     }
-    return ActionResult.PASS
+    return InteractionResult.PASS
 }

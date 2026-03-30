@@ -7,7 +7,7 @@ import com.imyvm.iwg.infra.config.GeoConfig.MIN_POLYGON_SPAN
 import com.imyvm.iwg.infra.config.GeoConfig.MIN_ASPECT_RATIO
 import com.imyvm.iwg.infra.config.GeoConfig.MIN_EDGE_LENGTH
 import com.imyvm.iwg.domain.CreationError
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 import kotlin.math.abs
 
 fun checkRectangleSize(width: Int, length: Int): CreationError? {

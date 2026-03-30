@@ -1,6 +1,6 @@
 package com.imyvm.iwg.util.geo
 
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 
 fun findNearestAdjacentPoints(
     blockPosList: List<BlockPos>,

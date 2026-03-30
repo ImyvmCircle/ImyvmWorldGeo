@@ -8,41 +8,41 @@ import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_IGNITE
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
-import net.minecraft.item.Items
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
+import net.minecraft.world.item.Items
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.InteractionHand
 
 fun playerIgnitePermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
-        val stack = player.getStackInHand(hand)
-        if (!stack.isOf(Items.FLINT_AND_STEEL) && !stack.isOf(Items.FIRE_CHARGE)) return@register ActionResult.PASS
+        val stack = player.getItemInHand(hand)
+        if (!stack.`is`(Items.FLINT_AND_STEEL) && !stack.`is`(Items.FIRE_CHARGE)) return@register InteractionResult.PASS
         val pos = hitResult.blockPos
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
         regionAndScope?.let { (region, scope) ->
             val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.IGNITE, scope, PERMISSION_DEFAULT_IGNITE.value)
             if (denial != null) {
-                if (hand == Hand.MAIN_HAND) {
-                    player.sendMessage(Translator.tr("setting.permission.ignite", buildPermissionDenialContext(region, scope, denial)))
+                if (hand == InteractionHand.MAIN_HAND) {
+                    player.sendSystemMessage(Translator.tr("setting.permission.ignite", buildPermissionDenialContext(region, scope, denial))!!)
                 }
-                return@register ActionResult.CONSUME
+                return@register InteractionResult.CONSUME
             }
         }
-        ActionResult.PASS
+        InteractionResult.PASS
     }
 
     UseEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
-        val stack = player.getStackInHand(hand)
-        if (!stack.isOf(Items.FLINT_AND_STEEL) && !stack.isOf(Items.FIRE_CHARGE)) return@register ActionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockX, entity.blockZ)
+        val stack = player.getItemInHand(hand)
+        if (!stack.`is`(Items.FLINT_AND_STEEL) && !stack.`is`(Items.FIRE_CHARGE)) return@register InteractionResult.PASS
+        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
             val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.IGNITE, scope, PERMISSION_DEFAULT_IGNITE.value)
             if (denial != null) {
                 if (hitResult == null) {
-                    player.sendMessage(Translator.tr("setting.permission.ignite", buildPermissionDenialContext(region, scope, denial)))
+                    player.sendSystemMessage(Translator.tr("setting.permission.ignite", buildPermissionDenialContext(region, scope, denial))!!)
                 }
-                return@register ActionResult.CONSUME
+                return@register InteractionResult.CONSUME
             }
         }
-        ActionResult.PASS
+        InteractionResult.PASS
     }
 }

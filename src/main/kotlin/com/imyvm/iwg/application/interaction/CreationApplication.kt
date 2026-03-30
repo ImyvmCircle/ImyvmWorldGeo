@@ -13,10 +13,10 @@ import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun onRegionCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     regionNameArg: String?,
     shapeTypeName: String?,
     isApi: Boolean = false,
@@ -27,7 +27,7 @@ fun onRegionCreation(
 }
 
 fun onTryingRegionCreationWithReturn(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     regionNameArg: String?,
     shapeTypeName: String?,
     isApi: Boolean = true,
@@ -51,14 +51,14 @@ fun onTryingRegionCreationWithReturn(
             creationResult.value
         }
         is Result.Err -> {
-            errorMessage(creationResult.error, shapeType).forEach { player.sendMessage(it) }
+            errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
             null
         }
     }
 }
 
 fun onScopeCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeNameArg: String?,
     shapeTypeName: String?,
@@ -69,7 +69,7 @@ fun onScopeCreation(
 }
 
 fun onTryingScopeCreationWithReturn (
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeNameArg: String?,
     shapeTypeName: String?,
@@ -93,23 +93,23 @@ fun onTryingScopeCreationWithReturn (
             Pair(region, creationResult.value)
         }
         is Result.Err -> {
-            errorMessage(creationResult.error, shapeType).forEach { player.sendMessage(it) }
+            errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
             null
         }
     }
 }
 
-private fun selectionModeCheck(player: ServerPlayerEntity): Boolean {
+private fun selectionModeCheck(player: ServerPlayer): Boolean {
     val playerUUID = player.uuid
     if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-        player.sendMessage(Translator.tr("interaction.meta.select.not_in_mode"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
         return false
     }
     return true
 }
 
 private fun getShapeTypeCheck(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     shapeTypeName: String?,
 ): GeoShapeType? {
     if (shapeTypeName.isNullOrEmpty()) {
@@ -120,14 +120,14 @@ private fun getShapeTypeCheck(
         .find { it.name == shapeTypeName }
         ?: GeoShapeType.UNKNOWN
     if (shapeType == GeoShapeType.UNKNOWN) {
-        player.sendMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeName))
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeName)!!)
         return null
     }
     return shapeType
 }
 
 private fun tryRegionCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     regionName: String,
     shapeType: GeoShapeType,
     idMark: Int
@@ -145,7 +145,7 @@ private fun tryRegionCreation(
 }
 
 private fun tryScopeCreation(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     scopeName: String,
     shapeType: GeoShapeType
 ): Result<GeoScope, CreationError> {
@@ -159,7 +159,7 @@ private fun tryScopeCreation(
 }
 
 private fun handleRegionCreateSuccess(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     creationResult: Result.Ok<Region>,
     notify: Boolean
 ) {
@@ -167,14 +167,14 @@ private fun handleRegionCreateSuccess(
     RegionDatabase.addRegion(newRegion)
 
     if (notify) {
-        player.sendMessage(Translator.tr("interaction.meta.create.success", newRegion.name))
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.success", newRegion.name)!!)
     }
     clearSelectionDisplay(player)
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
 }
 
 private fun handleScopeCreateSuccess(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     creationResult: Result.Ok<GeoScope>,
     region: Region,
     notify: Boolean
@@ -183,8 +183,8 @@ private fun handleScopeCreateSuccess(
     region.geometryScope.add(newScope)
 
     if (notify) {
-        player.sendMessage(
-            Translator.tr("interaction.meta.scope.add.success", newScope.scopeName, region.name)
+        player.sendSystemMessage(
+            Translator.tr("interaction.meta.scope.add.success", newScope.scopeName, region.name)!!
         )
     }
     clearSelectionDisplay(player)
@@ -192,7 +192,7 @@ private fun handleScopeCreateSuccess(
 }
 
 private fun validateNameCommon(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     nameArgument: String?,
     type: NameType,
     autoFill: Boolean = false,
@@ -221,7 +221,7 @@ private fun validateNameCommon(
 }
 
 private fun generateAndNotifyAutoName(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     type: NameType,
     region: Region?
 ): String {
@@ -233,7 +233,7 @@ private fun generateAndNotifyAutoName(
     return name
 }
 
-fun checkScopeUnique(scopeName: String, region: Region, player: ServerPlayerEntity): Boolean {
+fun checkScopeUnique(scopeName: String, region: Region, player: ServerPlayer): Boolean {
     if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
         NameValidationMessages.sendDuplicateScope(player)
         return false

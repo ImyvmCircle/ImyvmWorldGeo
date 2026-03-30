@@ -6,11 +6,11 @@ import com.imyvm.iwg.application.region.ScopeAreaChangeEstimator
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
 
 fun onEstimateRegionArea(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     shapeTypeName: String,
     customPositions: List<BlockPos>? = null
 ): AreaEstimationResult {
@@ -23,7 +23,7 @@ fun onEstimateRegionArea(
 }
 
 fun onEstimateScopeAreaChange(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeName: String,
     customPositions: List<BlockPos>? = null

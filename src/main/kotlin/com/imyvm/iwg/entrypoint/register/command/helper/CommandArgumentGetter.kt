@@ -6,11 +6,11 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.util.text.Translator
 import com.mojang.brigadier.context.CommandContext
-import net.minecraft.server.command.ServerCommandSource
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.commands.CommandSourceStack
+import net.minecraft.server.level.ServerPlayer
 
 fun getOptionalArgument(
-    context: CommandContext<ServerCommandSource>,
+    context: CommandContext<CommandSourceStack>,
     name: String
 ): String? = try {
     context.getArgument(name, String::class.java)
@@ -19,7 +19,7 @@ fun getOptionalArgument(
 }
 
 fun getPosArgument(
-    context: CommandContext<ServerCommandSource>,
+    context: CommandContext<CommandSourceStack>,
     name: String
 ): Int? {
     val rawArgument = getOptionalArgument(context, name) ?: return null
@@ -33,21 +33,21 @@ fun getPosArgument(
         }
 
         when (name.lowercase()) {
-            "x" -> player.blockPos.x
-            "y" -> player.blockPos.y
-            "z" -> player.blockPos.z
+            "x" -> player.blockPosition().x
+            "y" -> player.blockPosition().y
+            "z" -> player.blockPosition().z
             else -> null
         }
     }
 }
 
-fun getPlayerRegionPair(context: CommandContext<ServerCommandSource>): Pair<ServerPlayerEntity, String>? {
+fun getPlayerRegionPair(context: CommandContext<CommandSourceStack>): Pair<ServerPlayer, String>? {
     val player = context.source.player ?: return null
     val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
     return player to regionIdentifier
 }
 
-fun getPlayerRegionScopeTriple(context: CommandContext<ServerCommandSource>): Triple<ServerPlayerEntity, Region, GeoScope>? {
+fun getPlayerRegionScopeTriple(context: CommandContext<CommandSourceStack>): Triple<ServerPlayer, Region, GeoScope>? {
     val player = context.source.player ?: return null
 
     val regionIdentifier = context.getArgument("regionIdentifier", String::class.java) ?: return getPlayerRegionScopeTriple(player)
@@ -62,9 +62,9 @@ fun getPlayerRegionScopeTriple(context: CommandContext<ServerCommandSource>): Tr
         }
     } catch (e: RegionNotFoundException) {
         if (regionIdentifier.matches("\\d+".toRegex())) {
-            player.sendMessage(Translator.tr("interaction.meta.not_found_id", regionIdentifier))
+            player.sendSystemMessage(Translator.tr("interaction.meta.not_found_id", regionIdentifier)!!)
         } else {
-            player.sendMessage(Translator.tr("interaction.meta.not_found_name", regionIdentifier))
+            player.sendSystemMessage(Translator.tr("interaction.meta.not_found_name", regionIdentifier)!!)
         }
         null
     } ?: return getPlayerRegionScopeTriple(player)
@@ -78,15 +78,15 @@ fun getPlayerRegionScopeTriple(context: CommandContext<ServerCommandSource>): Tr
     return Triple(player, region, scope)
 }
 
-private fun getPlayerRegionScopeTriple(playerEntity: ServerPlayerEntity): Triple<ServerPlayerEntity, Region, GeoScope>? {
-    val x = playerEntity.blockX
-    val z = playerEntity.blockZ
-    val regionScopePair = RegionDatabase.getRegionAndScopeAt(playerEntity.world, x, z)
+private fun getPlayerRegionScopeTriple(playerEntity: ServerPlayer): Triple<ServerPlayer, Region, GeoScope>? {
+    val x = playerEntity.blockPosition().x
+    val z = playerEntity.blockPosition().z
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(playerEntity.level(), x, z)
 
     return if (regionScopePair != null) {
         Triple(playerEntity, regionScopePair.first, regionScopePair.second)
     } else {
-        playerEntity.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
+        playerEntity.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region")!!)
         null
     }
 }

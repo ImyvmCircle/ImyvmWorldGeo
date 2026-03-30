@@ -5,51 +5,51 @@ import com.imyvm.iwg.application.selection.display.displayScopeBoundariesForPlay
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
-fun onQueryRegion(player: ServerPlayerEntity, region: Region, isApi: Boolean) : Int{
+fun onQueryRegion(player: ServerPlayer, region: Region, isApi: Boolean) : Int{
     val messageKey = if (isApi) {
         "interaction.meta.api.query.result"
     } else {
         "interaction.meta.command.query.result"
     }
 
-    player.sendMessage(
+    player.sendSystemMessage(
         Translator.tr(messageKey,
             region.name,
             region.numberID.toString(),
             region.calculateTotalArea(),
-            region.showOnDynmap)
+            region.showOnDynmap)!!
     )
 
-    val server = player.server
-    region.getSettingInfos(server).forEach { info -> player.sendMessage(info) }
-    region.getScopeInfos(server).forEach { info -> player.sendMessage(info) }
+    val server = player.level().server
+    region.getSettingInfos(server).forEach { info -> player.sendSystemMessage(info) }
+    region.getScopeInfos(server).forEach { info -> player.sendSystemMessage(info) }
     return 1
 }
 
-fun onListRegions(player: ServerPlayerEntity): Int {
+fun onListRegions(player: ServerPlayer): Int {
     val regions = RegionDatabase.getRegionList()
     if (regions.isEmpty()) {
-        player.sendMessage(Translator.tr("interaction.meta.command.list.empty"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.list.empty")!!)
         return 0
     }
-    player.sendMessage(Translator.tr("interaction.meta.command.list.header"))
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.list.header")!!)
     regions.forEach { region ->
-        player.sendMessage(Translator.tr("interaction.meta.command.list.item", region.name, region.numberID))
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.list.item", region.name, region.numberID)!!)
     }
     return 1
 }
 
-fun onToggleActionBar(player: ServerPlayerEntity): Int {
+fun onToggleActionBar(player: ServerPlayer): Int {
     if (ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)) {
         ImyvmWorldGeo.locationActionBarEnabledPlayers.remove(player.uuid)
-        player.sendMessage(Translator.tr("interaction.meta.command.toggle.disabled"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.disabled")!!)
     } else {
         ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
-        player.sendMessage(Translator.tr("interaction.meta.command.toggle.enabled"))
-        val server = player.server ?: return 1
-        val playerWorld = player.serverWorld
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.enabled")!!)
+        val server = player.level().server ?: return 1
+        val playerWorld = player.level()
         val scopes = RegionDatabase.getRegionList()
             .flatMap { it.geometryScope }
             .filter { it.geoShape != null && it.getWorld(server) == playerWorld }
@@ -58,7 +58,7 @@ fun onToggleActionBar(player: ServerPlayerEntity): Int {
     return 1
 }
 
-fun onHelp(player: ServerPlayerEntity): Int {
+fun onHelp(player: ServerPlayer): Int {
     val helpOrder = listOf(
         "header",
 
@@ -106,7 +106,7 @@ fun onHelp(player: ServerPlayerEntity): Int {
     )
 
     Translator.trBase("interaction.meta.command.help", helpOrder).forEach { line ->
-        player.sendMessage(line, false)
+        player.sendSystemMessage(line)
     }
 
     return 1

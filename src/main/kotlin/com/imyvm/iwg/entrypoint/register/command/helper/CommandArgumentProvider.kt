@@ -10,18 +10,18 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.translator.getOnlinePlayers
 import com.mojang.brigadier.arguments.StringArgumentType
 import com.mojang.brigadier.suggestion.SuggestionProvider
-import net.minecraft.server.command.ServerCommandSource
+import net.minecraft.commands.CommandSourceStack
 import java.util.*
 import java.util.concurrent.CompletableFuture
 
-val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<ServerCommandSource> = SuggestionProvider { _, builder ->
+val SHAPE_TYPE_SUGGESTION_PROVIDER: SuggestionProvider<CommandSourceStack> = SuggestionProvider { _, builder ->
     GeoShapeType.entries
         .filter { it != GeoShapeType.UNKNOWN }
         .forEach { builder.suggest(it.name.lowercase(Locale.getDefault())) }
     CompletableFuture.completedFuture(builder.build())
 }
 
-val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { _, builder ->
+val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
     val regionNames = RegionDatabase.getRegionList().map { it.name }
     regionNames.forEach { name ->
         if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)
@@ -29,7 +29,7 @@ val REGION_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { 
     builder.buildFuture()
 }
 
-val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
     val regionIdentifier = StringArgumentType.getString(context, "regionIdentifier")
     getScopesForRegion(regionIdentifier).forEach { name ->
         if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)
@@ -37,7 +37,7 @@ val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { c
     builder.buildFuture()
 }
 
-val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
     val sourceServer = context.source.server
     getOnlinePlayers(sourceServer).forEach { player ->
         builder.suggest(player.name.string)
@@ -45,12 +45,12 @@ val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> 
     builder.buildFuture()
 }
 
-val SETTING_TYPE_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+val SETTING_TYPE_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
     listOf("permission", "effect", "rule", "entry_exit").forEach { builder.suggest(it) }
     builder.buildFuture()
 }
 
-val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<ServerCommandSource> { context, builder ->
+val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
     val type = try {
         StringArgumentType.getString(context, "settingType")
     } catch (e: Exception) {

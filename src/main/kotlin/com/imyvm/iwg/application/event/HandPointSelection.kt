@@ -5,49 +5,49 @@ import com.imyvm.iwg.application.selection.buildPointAddedMessage
 import com.imyvm.iwg.application.selection.formatXZOnly
 import com.imyvm.iwg.infra.config.SelectionConfig
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.Items
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.util.hit.BlockHitResult
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.Items
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.phys.BlockHitResult
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.Level
 
 fun handPointSelection(
-    player: PlayerEntity?,
-    world: World?,
-    hand: Hand?,
+    player: Player?,
+    world: Level?,
+    hand: InteractionHand?,
     hitResult: BlockHitResult?
-): ActionResult {
-    if (player == null || world == null || hand == null || hitResult == null || world.isClient) {
-        return ActionResult.PASS
+): InteractionResult {
+    if (player == null || world == null || hand == null || hitResult == null || world.isClientSide) {
+        return InteractionResult.PASS
     }
 
-    val itemStack = player.getStackInHand(hand)
-    if (itemStack.item != Items.NETHER_STAR) return ActionResult.PASS
+    val itemStack = player.getItemInHand(hand)
+    if (itemStack.item != Items.NETHER_STAR) return InteractionResult.PASS
 
     val playerUUID = player.uuid
-    val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
+    val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return InteractionResult.PASS
     val selectedPositions = selectionState.points
 
     val maxPoints = SelectionConfig.SELECTION_MAX_POINTS.value
     if (selectedPositions.size >= maxPoints) {
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(
                 "interaction.game.point.selection.max_reached",
                 maxPoints,
                 formatSimpleXZList(selectedPositions)
-            )
+            )!!
         )
-        return ActionResult.SUCCESS
+        return InteractionResult.SUCCESS
     }
 
     val clickedPos = hitResult.blockPos
     selectedPositions.add(clickedPos)
 
-    player.sendMessage(buildPointAddedMessage(selectionState, clickedPos))
+    player.sendSystemMessage(buildPointAddedMessage(selectionState, clickedPos))
 
-    return ActionResult.SUCCESS
+    return InteractionResult.SUCCESS
 }
 
 internal fun formatSimpleXZList(positions: List<BlockPos>): String =

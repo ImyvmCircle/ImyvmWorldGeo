@@ -4,44 +4,44 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.selection.buildPointUndoMessage
 import com.imyvm.iwg.infra.config.SelectionConfig
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.entity.player.PlayerEntity
-import net.minecraft.item.Items
-import net.minecraft.util.ActionResult
-import net.minecraft.util.Hand
-import net.minecraft.world.World
+import net.minecraft.world.entity.player.Player
+import net.minecraft.world.item.Items
+import net.minecraft.world.InteractionResult
+import net.minecraft.world.InteractionHand
+import net.minecraft.world.level.Level
 
 fun handPointUndo(
-    player: PlayerEntity?,
-    world: World?,
-    hand: Hand?
-): ActionResult {
-    if (player == null || world == null || hand == null || world.isClient) {
-        return ActionResult.PASS
+    player: Player?,
+    world: Level?,
+    hand: InteractionHand?
+): InteractionResult {
+    if (player == null || world == null || hand == null || world.isClientSide) {
+        return InteractionResult.PASS
     }
-    if (hand != Hand.MAIN_HAND) return ActionResult.PASS
+    if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS
 
-    val itemStack = player.getStackInHand(hand)
-    if (itemStack.item != Items.NETHER_STAR) return ActionResult.PASS
+    val itemStack = player.getItemInHand(hand)
+    if (itemStack.item != Items.NETHER_STAR) return InteractionResult.PASS
 
     val playerUUID = player.uuid
-    val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return ActionResult.PASS
+    val selectionState = ImyvmWorldGeo.pointSelectingPlayers[playerUUID] ?: return InteractionResult.PASS
     val selectedPositions = selectionState.points
 
     val minPoints = SelectionConfig.SELECTION_MIN_POINTS.value
     if (selectedPositions.size <= minPoints) {
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(
                 "interaction.game.point.selection.min_reached",
                 minPoints,
                 formatSimpleXZList(selectedPositions)
-            )
+            )!!
         )
-        return ActionResult.SUCCESS
+        return InteractionResult.SUCCESS
     }
 
     val removed = selectedPositions.removeAt(selectedPositions.lastIndex)
 
-    player.sendMessage(buildPointUndoMessage(selectionState, removed))
+    player.sendSystemMessage(buildPointUndoMessage(selectionState, removed))
 
-    return ActionResult.SUCCESS
+    return InteractionResult.SUCCESS
 }

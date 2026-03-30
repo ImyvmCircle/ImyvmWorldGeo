@@ -6,22 +6,23 @@ import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.RuleKey;
 import com.imyvm.iwg.infra.RegionDatabase;
 import kotlin.Pair;
-import net.minecraft.block.AbstractPressurePlateBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.entity.Entity;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.world.entity.Entity;
+import net.minecraft.world.entity.InsideBlockEffectApplier;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.BasePressurePlateBlock;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-@Mixin(AbstractPressurePlateBlock.class)
+@Mixin(BasePressurePlateBlock.class)
 public class PressurePlateMixin {
 
-    @Inject(at = @At("HEAD"), method = "onEntityCollision", cancellable = true)
-    private void onEntityCollision(BlockState state, World world, BlockPos pos, Entity entity, CallbackInfo ci) {
-        if (world.isClient()) return;
+    @Inject(at = @At("HEAD"), method = "entityInside", cancellable = true)
+    private void onEntityInside(BlockState state, Level world, BlockPos pos, Entity entity, InsideBlockEffectApplier applier, boolean bl, CallbackInfo ci) {
+        if (world.isClientSide()) return;
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
         if (regionAndScope == null) return;
         Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.PRESSURE_PLATE, regionAndScope.getSecond());

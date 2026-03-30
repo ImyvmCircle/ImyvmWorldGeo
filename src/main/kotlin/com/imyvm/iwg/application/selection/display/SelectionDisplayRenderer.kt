@@ -10,21 +10,21 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.isConvex
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
 
 fun displaySelectionForAllPlayers(server: MinecraftServer) {
-    server.playerManager.playerList.forEach { player ->
+    server.playerList.players.forEach { player ->
         val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: return@forEach
         displayForPlayer(player, state)
     }
 }
 
 fun displayScopeBoundariesForActionBarPlayers(server: MinecraftServer) {
-    server.playerManager.playerList
+    server.playerList.players
         .filter { it.uuid in ImyvmWorldGeo.locationActionBarEnabledPlayers }
         .forEach { player ->
-            val playerWorld = player.serverWorld
+            val playerWorld = player.level()
             val modifyingScope = (ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope
             val scopes = RegionDatabase.getRegionList()
                 .flatMap { it.geometryScope }
@@ -33,7 +33,7 @@ fun displayScopeBoundariesForActionBarPlayers(server: MinecraftServer) {
         }
 }
 
-private fun displayForPlayer(player: ServerPlayerEntity, state: SelectionState) {
+private fun displayForPlayer(player: ServerPlayer, state: SelectionState) {
     val points = state.points
 
     beginPillarTracking()
@@ -57,7 +57,7 @@ private fun displayForPlayer(player: ServerPlayerEntity, state: SelectionState) 
     commitPillars(player)
 }
 
-private fun displayForShape(player: ServerPlayerEntity, points: List<BlockPos>, shapeType: GeoShapeType) {
+private fun displayForShape(player: ServerPlayer, points: List<BlockPos>, shapeType: GeoShapeType) {
     when (shapeType) {
         GeoShapeType.CIRCLE -> displayCircleSelection(player, points)
         GeoShapeType.RECTANGLE -> displayRectangleSelection(player, points)
@@ -66,14 +66,14 @@ private fun displayForShape(player: ServerPlayerEntity, points: List<BlockPos>, 
     }
 }
 
-private fun displayCircleSelection(player: ServerPlayerEntity, points: List<BlockPos>) {
+private fun displayCircleSelection(player: ServerPlayer, points: List<BlockPos>) {
     if (points.size < 2) return
     val params = evaluateCircleShape(points[0], points[1]) ?: return
     emitLineSurface(player, points[0], points[1])
     drawCircleOutline(player, params[0], params[1], params[2])
 }
 
-private fun displayRectangleSelection(player: ServerPlayerEntity, points: List<BlockPos>) {
+private fun displayRectangleSelection(player: ServerPlayer, points: List<BlockPos>) {
     if (points.size < 2) return
     val params = evaluateRectangleShape(points[0], points[1]) ?: return
     val west = params[0]; val north = params[1]; val east = params[2]; val south = params[3]
@@ -85,7 +85,7 @@ private fun displayRectangleSelection(player: ServerPlayerEntity, points: List<B
     emitLineSurface(player, corners[3], corners[0])
 }
 
-private fun displayPolygonSelection(player: ServerPlayerEntity, points: List<BlockPos>) {
+private fun displayPolygonSelection(player: ServerPlayer, points: List<BlockPos>) {
     if (points.size < 3) return
     if (!isConvex(points)) return
     if (checkPolygonSize(points) != null) return
@@ -94,7 +94,7 @@ private fun displayPolygonSelection(player: ServerPlayerEntity, points: List<Blo
     }
 }
 
-private fun displayForModifyExisting(player: ServerPlayerEntity, newPoints: List<BlockPos>, scope: GeoScope) {
+private fun displayForModifyExisting(player: ServerPlayer, newPoints: List<BlockPos>, scope: GeoScope) {
     displayModifyingScope(player, scope)
     val shapeType = scope.geoShape?.geoShapeType ?: return
     val existingParams = scope.geoShape?.shapeParameter ?: return
@@ -107,20 +107,20 @@ private fun displayForModifyExisting(player: ServerPlayerEntity, newPoints: List
     }
 }
 
-fun displayScopeBoundaryForPlayer(player: ServerPlayerEntity, scope: GeoScope) {
+fun displayScopeBoundaryForPlayer(player: ServerPlayer, scope: GeoScope) {
     beginPillarTracking()
     displayOriginalScope(player, scope)
     commitPillars(player)
 }
 
-fun displayScopeBoundariesForPlayer(player: ServerPlayerEntity, scopes: List<GeoScope>) {
+fun displayScopeBoundariesForPlayer(player: ServerPlayer, scopes: List<GeoScope>) {
     if (scopes.isEmpty()) return
     beginPillarTracking()
     scopes.forEach { displayOriginalScope(player, it) }
     commitPillars(player)
 }
 
-fun displayModifyingScope(player: ServerPlayerEntity, scope: GeoScope) {
+fun displayModifyingScope(player: ServerPlayer, scope: GeoScope) {
     val geoShape = scope.geoShape ?: return
     val params = geoShape.shapeParameter
     when (geoShape.geoShapeType) {
@@ -150,7 +150,7 @@ fun displayModifyingScope(player: ServerPlayerEntity, scope: GeoScope) {
     }
 }
 
-fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {
+fun displayOriginalScope(player: ServerPlayer, scope: GeoScope) {
     val geoShape = scope.geoShape ?: return
     val params = geoShape.shapeParameter
     when (geoShape.geoShapeType) {
@@ -180,7 +180,7 @@ fun displayOriginalScope(player: ServerPlayerEntity, scope: GeoScope) {
     }
 }
 
-private fun displayModifyRectanglePreview(player: ServerPlayerEntity, newPoints: List<BlockPos>, existingParams: List<Int>) {
+private fun displayModifyRectanglePreview(player: ServerPlayer, newPoints: List<BlockPos>, existingParams: List<Int>) {
     if (newPoints.size != 1) return
     val newParams = evaluateModifyRectangle(newPoints[0], existingParams) ?: return
     val west = newParams[0]; val north = newParams[1]; val east = newParams[2]; val south = newParams[3]
@@ -192,7 +192,7 @@ private fun displayModifyRectanglePreview(player: ServerPlayerEntity, newPoints:
     emitLineSurface(player, corners[3], corners[0])
 }
 
-private fun displayModifyCirclePreview(player: ServerPlayerEntity, newPoints: List<BlockPos>, existingParams: List<Int>) {
+private fun displayModifyCirclePreview(player: ServerPlayer, newPoints: List<BlockPos>, existingParams: List<Int>) {
     val centerX = existingParams[0]; val centerZ = existingParams[1]
     when (newPoints.size) {
         1 -> {
@@ -214,7 +214,7 @@ private fun displayModifyCirclePreview(player: ServerPlayerEntity, newPoints: Li
     }
 }
 
-private fun displayModifyPolygonPreview(player: ServerPlayerEntity, newPoints: List<BlockPos>, existingParams: List<Int>) {
+private fun displayModifyPolygonPreview(player: ServerPlayer, newPoints: List<BlockPos>, existingParams: List<Int>) {
     val existingVertices = existingParams.chunked(2).map { BlockPos(it[0], 0, it[1]) }
     when (newPoints.size) {
         1 -> {

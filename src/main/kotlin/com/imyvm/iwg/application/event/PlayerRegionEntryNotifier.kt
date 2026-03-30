@@ -14,11 +14,11 @@ import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_ENTER_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_EXIT_I18N_KEY
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.network.packet.s2c.play.TitleFadeS2CPacket
-import net.minecraft.network.packet.s2c.play.TitleS2CPacket
+import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket
+import net.minecraft.network.protocol.game.ClientboundSetTitleTextPacket
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.text.Text
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.network.chat.Component
 import java.util.UUID
 import java.util.concurrent.ConcurrentHashMap
 import java.util.concurrent.ConcurrentLinkedQueue
@@ -40,7 +40,7 @@ object PlayerRegionEntryExitTracker {
         val now = System.currentTimeMillis()
 
         for ((uuid, currentPair) in allCurrent) {
-            val player = server.playerManager.getPlayer(uuid) ?: continue
+            val player = server.playerList.getPlayer(uuid) ?: continue
             val currentRegion = currentPair.first
             val currentScope = currentPair.second
 
@@ -65,7 +65,7 @@ object PlayerRegionEntryExitTracker {
     }
 
     private fun processRegionTransition(
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         currentRegion: Region?,
         now: Long
     ) {
@@ -110,7 +110,7 @@ object PlayerRegionEntryExitTracker {
     }
 
     private fun processScopeTransition(
-        player: ServerPlayerEntity,
+        player: ServerPlayer,
         currentRegion: Region?,
         currentScope: GeoScope?
     ) {
@@ -133,7 +133,7 @@ object PlayerRegionEntryExitTracker {
             val pending = iterator.next()
             if (now - pending.scheduledAt >= 1000L) {
                 iterator.remove()
-                val player = server.playerManager.getPlayer(pending.playerUUID) ?: continue
+                val player = server.playerList.getPlayer(pending.playerUUID) ?: continue
                 sendRegionEntryTitle(player, pending.region)
             }
         }
@@ -143,38 +143,38 @@ object PlayerRegionEntryExitTracker {
         pendingEntryTitles.add(ScheduledEntryTitle(uuid, region, now))
     }
 
-    private fun sendRegionExitTitle(player: ServerPlayerEntity, region: Region) {
+    private fun sendRegionExitTitle(player: ServerPlayer, region: Region) {
         if (!isRegionNotificationEnabled(region)) return
         val text = getRegionMessage(region, EntryExitMessageKey.EXIT_MESSAGE)
-            ?: Translator.tr(REGION_EXIT_I18N_KEY.value, region.name)
+            ?: Translator.tr(REGION_EXIT_I18N_KEY.value, region.name)!!
             ?: return
-        player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 50, 15))
-        player.networkHandler.sendPacket(TitleS2CPacket(text))
+        player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
+        player.connection.send(ClientboundSetTitleTextPacket(text))
     }
 
-    private fun sendRegionEntryTitle(player: ServerPlayerEntity, region: Region) {
+    private fun sendRegionEntryTitle(player: ServerPlayer, region: Region) {
         if (!isRegionNotificationEnabled(region)) return
         val text = getRegionMessage(region, EntryExitMessageKey.ENTER_MESSAGE)
-            ?: Translator.tr(REGION_ENTER_I18N_KEY.value, region.name)
+            ?: Translator.tr(REGION_ENTER_I18N_KEY.value, region.name)!!
             ?: return
-        player.networkHandler.sendPacket(TitleFadeS2CPacket(5, 50, 15))
-        player.networkHandler.sendPacket(TitleS2CPacket(text))
+        player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
+        player.connection.send(ClientboundSetTitleTextPacket(text))
     }
 
-    private fun sendScopeExitMessage(player: ServerPlayerEntity, region: Region?, scope: GeoScope) {
+    private fun sendScopeExitMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
         val text = getScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, region?.name ?: "", scope.scopeName)
-            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region?.name ?: "", scope.scopeName)!!
             ?: return
-        player.sendMessage(text)
+        player.sendSystemMessage(text)
     }
 
-    private fun sendScopeEntryMessage(player: ServerPlayerEntity, region: Region?, scope: GeoScope) {
+    private fun sendScopeEntryMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
         val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region?.name ?: "", scope.scopeName)
-            ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+            ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)!!
             ?: return
-        player.sendMessage(text)
+        player.sendSystemMessage(text)
     }
 
     private fun isRegionNotificationEnabled(region: Region): Boolean {
@@ -191,7 +191,7 @@ object PlayerRegionEntryExitTracker {
             ?.value ?: true
     }
 
-    private fun getRegionMessage(region: Region, key: EntryExitMessageKey): Text? {
+    private fun getRegionMessage(region: Region, key: EntryExitMessageKey): Component? {
         val raw = region.settings
             .filterIsInstance<EntryExitMessageSetting>()
             .firstOrNull { it.key == key }
@@ -199,7 +199,7 @@ object PlayerRegionEntryExitTracker {
         return TextParser.parse(raw)
     }
 
-    private fun getScopeMessage(scope: GeoScope, key: EntryExitMessageKey, regionName: String, scopeName: String): Text? {
+    private fun getScopeMessage(scope: GeoScope, key: EntryExitMessageKey, regionName: String, scopeName: String): Component? {
         val raw = scope.settings
             .filterIsInstance<EntryExitMessageSetting>()
             .firstOrNull { it.key == key }

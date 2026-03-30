@@ -3,7 +3,7 @@ package com.imyvm.iwg.util.geo
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 
 data class VertexInsideInfo(val index: Int, val x: Int, val z: Int)
 

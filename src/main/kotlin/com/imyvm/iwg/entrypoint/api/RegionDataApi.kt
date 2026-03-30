@@ -13,8 +13,8 @@ import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
-import net.minecraft.util.math.BlockPos
-import net.minecraft.world.World
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.Level
 import java.util.*
 @Suppress("unused")
 object RegionDataApi {
@@ -53,10 +53,10 @@ object RegionDataApi {
     fun getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, GeoScope?> =
         RegionDatabase.getRegionAndScope(regionId, scopeName)
 
-    fun getRegionScopePairByLocation(world: World, x: Int, z: Int): Pair<Region, GeoScope>? =
+    fun getRegionScopePairByLocation(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(world, x, z)
 
-    fun getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>? =
+    fun getRegionScopePairByLocation(world: Level, blockPos: BlockPos): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
     fun inquireTeleportPointAccessibility(scope: GeoScope) = onGettingTeleportPointAccessibility(scope)
 

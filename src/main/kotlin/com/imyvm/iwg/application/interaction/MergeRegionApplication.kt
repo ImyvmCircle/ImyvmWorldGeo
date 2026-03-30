@@ -3,15 +3,15 @@ package com.imyvm.iwg.application.interaction
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun onRegionMerge(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     sourceRegion: Region,
     targetRegion: Region
 ): Int {
     if (sourceRegion.numberID == targetRegion.numberID) {
-        player.sendMessage(Translator.tr("interaction.meta.region.merge.error.same_region"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.region.merge.error.same_region")!!)
         return 0
     }
 
@@ -26,11 +26,11 @@ fun onRegionMerge(
 
     RegionDatabase.removeRegion(sourceRegion)
 
-    player.sendMessage(
+    player.sendSystemMessage(
         Translator.tr(
             "interaction.meta.region.merge.success",
             sourceRegion.name, targetRegion.name, scopeCount, renamedCount
-        )
+        )!!
     )
     return 1
 }

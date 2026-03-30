@@ -6,11 +6,13 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.portal.TeleportTransition
+import net.minecraft.world.phys.Vec3
 
 fun onAddingTeleportPoint(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     targetRegion: Region,
     geoScope: GeoScope,
     x: Int,
@@ -18,25 +20,25 @@ fun onAddingTeleportPoint(
     z: Int
 ): Int {
     val teleportPoint = BlockPos(x, y, z)
-    val reasonKey = geoScope.getTeleportPointInvalidReasonKey(playerExecutor.world, teleportPoint)
+    val reasonKey = geoScope.getTeleportPointInvalidReasonKey(playerExecutor.level(), teleportPoint)
 
     return if (reasonKey == null) {
         geoScope.teleportPoint = teleportPoint
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name))
+        playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name)!!)
         1
     } else {
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.scopeName, targetRegion.name))
-        playerExecutor.sendMessage(Translator.tr(reasonKey, x, y, z))
+        playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.scopeName, targetRegion.name)!!)
+        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, x, y, z)!!)
         0
     }
 }
 
 fun onResettingTeleportPoint(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     region: Region,
     scope: GeoScope
 ): Int {
-    playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name))
+    playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
     scope.teleportPoint = null
     return 1
 }
@@ -48,32 +50,31 @@ fun onGettingTeleportPoint(
 }
 
 fun onTeleportingPlayer(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     targetRegion: Region,
     geoScope: GeoScope
 ): Int {
-    val targetWorld = geoScope.getWorld(playerExecutor.server) ?: return 0
+    val targetWorld = geoScope.getWorld(playerExecutor.level().server) ?: return 0
     val teleportPoint = onGettingTeleportPoint(geoScope)
 
     if (teleportPoint == null) {
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.null",
+        playerExecutor.sendSystemMessage(Translator.tr(
+            "interaction.meta.scope.teleport_point.null",
             geoScope.scopeName,
-            targetRegion.name))
+            targetRegion.name)!!)
         return 0
     }
 
     if (GeoShape.isPhysicalSafe(targetWorld, teleportPoint)) {
-        playerExecutor.teleport(
+        playerExecutor.teleport(TeleportTransition(
             targetWorld,
-            teleportPoint.x.toDouble() + 0.5,
-            teleportPoint.y.toDouble(),
-            teleportPoint.z.toDouble() + 0.5,
-            playerExecutor.yaw,
-            playerExecutor.pitch
-        )
-        playerExecutor.sendMessage(Translator.tr("interaction.meta.scope.teleport_point.teleported",
+            Vec3(teleportPoint.x.toDouble() + 0.5, teleportPoint.y.toDouble(), teleportPoint.z.toDouble() + 0.5),
+            Vec3.ZERO, playerExecutor.yRot, playerExecutor.xRot, TeleportTransition.DO_NOTHING
+        ))
+        playerExecutor.sendSystemMessage(Translator.tr(
+            "interaction.meta.scope.teleport_point.teleported",
             geoScope.scopeName,
-            targetRegion.name))
+            targetRegion.name)!!)
         return 1
     }
 
@@ -84,34 +85,31 @@ fun onTeleportingPlayer(
     return if (fallback != null) {
         geoScope.teleportPoint = fallback
         RegionDatabase.save()
-        playerExecutor.teleport(
+        playerExecutor.teleport(TeleportTransition(
             targetWorld,
-            fallback.x.toDouble() + 0.5,
-            fallback.y.toDouble(),
-            fallback.z.toDouble() + 0.5,
-            playerExecutor.yaw,
-            playerExecutor.pitch
-        )
-        playerExecutor.sendMessage(Translator.tr(
+            Vec3(fallback.x.toDouble() + 0.5, fallback.y.toDouble(), fallback.z.toDouble() + 0.5),
+            Vec3.ZERO, playerExecutor.yRot, playerExecutor.xRot, TeleportTransition.DO_NOTHING
+        ))
+        playerExecutor.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.teleport_point.unsafe_updated",
             geoScope.scopeName,
             targetRegion.name,
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
             fallback.x, fallback.y, fallback.z
-        ))
+        )!!)
         if (reasonKey != null) {
-            playerExecutor.sendMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z))
+            playerExecutor.sendSystemMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z)!!)
         }
         1
     } else {
-        playerExecutor.sendMessage(Translator.tr(
+        playerExecutor.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.teleport_point.unsafe_no_fallback",
             geoScope.scopeName,
             targetRegion.name,
             teleportPoint.x, teleportPoint.y, teleportPoint.z
-        ))
+        )!!)
         if (reasonKey != null) {
-            playerExecutor.sendMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z))
+            playerExecutor.sendSystemMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z)!!)
         }
         0
     }

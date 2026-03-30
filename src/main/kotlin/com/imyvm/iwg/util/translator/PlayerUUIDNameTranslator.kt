@@ -1,40 +1,35 @@
 package com.imyvm.iwg.util.translator
 
+import com.mojang.authlib.GameProfile
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 fun getUUIDFromPlayerName(server: MinecraftServer, playerName: String): UUID? {
-    return try {
-        server.userCache?.findByName(playerName)?.orElse(null)?.id
-    } catch (_: Exception) {
-        null
-    }
+    return server.playerList.getPlayer(playerName)?.uuid
 }
 
 fun resolvePlayerName(server: MinecraftServer, uuid: UUID?): String {
     if (uuid == null) return "?"
-    return server.userCache?.getByUuid(uuid)?.get()?.name ?: uuid.toString()
+    return server.playerList.getPlayer(uuid)?.scoreboardName ?: uuid.toString()
 }
 
-fun getPlayerByName(server: MinecraftServer, playerName: String): ServerPlayerEntity? {
-    return server.playerManager.getPlayer(playerName)?: server.userCache?.findByName(playerName)?.get()?.let {
-        server.playerManager.getPlayer(it.id)
-    }
+fun getPlayerByName(server: MinecraftServer, playerName: String): ServerPlayer? {
+    return server.playerList.getPlayer(playerName)
 }
 
-fun getPlayerByUuid(server: MinecraftServer, playerUuid: UUID): ServerPlayerEntity? {
-    return server.userCache?.getByUuid(playerUuid)?.get()?.let {
-        server.playerManager.getPlayer(it.id)
-    }
+fun getPlayerByUuid(server: MinecraftServer, playerUuid: UUID): ServerPlayer? {
+    return server.playerList.getPlayer(playerUuid)
 }
 
-fun getPlayerProfileByName(server: MinecraftServer, playerName: String) =
-    server.userCache?.findByName(playerName)?.orElse(null)
+fun getPlayerProfileByName(server: MinecraftServer, playerName: String): GameProfile? {
+    return server.playerList.getPlayer(playerName)?.gameProfile
+}
 
-fun getPlayerProfileByUuid(server: MinecraftServer, playerUuid: UUID) =
-    server.userCache?.getByUuid(playerUuid)?.orElse(null)
+fun getPlayerProfileByUuid(server: MinecraftServer, playerUuid: UUID): GameProfile? {
+    return server.playerList.getPlayer(playerUuid)?.gameProfile
+}
 
-fun getOnlinePlayers(server: MinecraftServer): List<ServerPlayerEntity> {
-    return server.playerManager.playerList
+fun getOnlinePlayers(server: MinecraftServer): List<ServerPlayer> {
+    return server.playerList.players
 }

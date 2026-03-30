@@ -5,18 +5,18 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
 
 fun modifyScopeRectangle(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
 ) {
     val shapeParams = existingScope.geoShape?.shapeParameter
     if (shapeParams.isNullOrEmpty() || shapeParams.size < 4) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle")!!)
         return
     }
 

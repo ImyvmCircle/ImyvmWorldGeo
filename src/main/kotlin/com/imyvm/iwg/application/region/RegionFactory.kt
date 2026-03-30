@@ -7,9 +7,9 @@ import com.imyvm.iwg.domain.component.GeoShape.Companion.isPhysicalSafe
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
-import net.minecraft.server.network.ServerPlayerEntity
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import net.minecraft.resources.Identifier
+import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
 
@@ -18,7 +18,7 @@ object RegionFactory {
     fun createRegion(
         name: String,
         numberID: Int,
-        playerExecutor: ServerPlayerEntity? = null,
+        playerExecutor: ServerPlayer? = null,
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
@@ -43,13 +43,13 @@ object RegionFactory {
 
     fun createScope(
         scopeName: String,
-        playerExecutor: ServerPlayerEntity? = null,
+        playerExecutor: ServerPlayer? = null,
         existingWorld: Identifier? = null,
         existingTeleportPoint: BlockPos? = null,
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
-        val worldId = existingWorld ?: playerExecutor!!.world.registryKey.value
+        val worldId = existingWorld ?: playerExecutor!!.level().dimension().identifier()
         val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
         if (geoShapeResult is Result.Err) {
             return Result.Err(geoShapeResult.error)
@@ -64,13 +64,13 @@ object RegionFactory {
     }
 
     private fun getTeleportPoint(
-        playerExecutor: ServerPlayerEntity?,
+        playerExecutor: ServerPlayer?,
         geoShape: GeoShape
     ): BlockPos? {
         if (playerExecutor == null) return null
 
-        val playerWorld = playerExecutor.world
-        val playerPosition = playerExecutor.blockPos
+        val playerWorld = playerExecutor.level()
+        val playerPosition = playerExecutor.blockPosition()
         return if (isPhysicalSafe(playerWorld, playerPosition)) playerPosition
         else geoShape.generateTeleportPoint(playerWorld)
     }

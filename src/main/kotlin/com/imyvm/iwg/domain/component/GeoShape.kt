@@ -2,26 +2,26 @@ package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.block.ShapeContext
-import net.minecraft.text.Text
-import net.minecraft.util.math.BlockPos
-import net.minecraft.util.math.Direction
-import net.minecraft.world.Heightmap
-import net.minecraft.world.World
+import net.minecraft.world.phys.shapes.CollisionContext
+import net.minecraft.network.chat.Component
+import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
+import net.minecraft.world.level.levelgen.Heightmap
+import net.minecraft.world.level.Level
 
 class GeoShape(
     var geoShapeType: GeoShapeType,
     var shapeParameter: MutableList<Int>
 ) {
 
-    fun getShapeInfo(): Text? {
+    fun getShapeInfo(): Component? {
         val area = "%.2f".format(calculateArea())
 
         return when (geoShapeType) {
             GeoShapeType.CIRCLE -> getCircleInfo(area)
             GeoShapeType.RECTANGLE -> getRectangleInfo(area)
             GeoShapeType.POLYGON -> getPolygonInfo(area)
-            else -> Translator.tr("geo.shape.unknown.info", area)
+            else -> Translator.tr("geo.shape.unknown.info", area)!!
         }
     }
 
@@ -43,7 +43,7 @@ class GeoShape(
         }
     }
 
-    fun generateTeleportPoint(world: World): BlockPos? {
+    fun generateTeleportPoint(world: Level): BlockPos? {
         val par = this.shapeParameter
 
         return when (this.geoShapeType) {
@@ -54,16 +54,16 @@ class GeoShape(
         }
     }
 
-    fun certificateTeleportPoint(world: World, pointToTest: BlockPos): Boolean {
+    fun certificateTeleportPoint(world: Level, pointToTest: BlockPos): Boolean {
         return isValidTeleportPoint(world, pointToTest)
     }
 
-    fun getTeleportPointInvalidReasonKey(world: World, pos: BlockPos): String? {
+    fun getTeleportPointInvalidReasonKey(world: Level, pos: BlockPos): String? {
         if (!this.containsPoint(pos.x, pos.z)) return "teleport_point.invalid.out_of_scope"
         return getPhysicalSafetyFailureReasonKey(world, pos)
     }
 
-    fun findNearestValidTeleportPoint(world: World, center: BlockPos, searchRadius: Int): BlockPos? {
+    fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
         val candidates = mutableListOf<BlockPos>()
         for (dy in -searchRadius..searchRadius) {
             for (dx in -searchRadius..searchRadius) {
@@ -80,9 +80,9 @@ class GeoShape(
         return candidates.firstOrNull { isValidTeleportPoint(world, it) }
     }
 
-    private fun getCircleInfo(area: String): Text? {
+    private fun getCircleInfo(area: String): Component? {
         if (shapeParameter.size < 3) {
-            return Translator.tr("geo.shape.circle.invalid.info", area)
+            return Translator.tr("geo.shape.circle.invalid.info", area)!!
         }
         return Translator.tr(
             "geo.shape.circle.info",
@@ -90,12 +90,12 @@ class GeoShape(
             shapeParameter[1], // centerZ
             shapeParameter[2], // radius
             area
-        )
+        )!!
     }
 
-    private fun getRectangleInfo(area: String): Text? {
+    private fun getRectangleInfo(area: String): Component? {
         if (shapeParameter.size < 4) {
-            return Translator.tr("geo.shape.rectangle.invalid.info", area)
+            return Translator.tr("geo.shape.rectangle.invalid.info", area)!!
         }
         return Translator.tr(
             "geo.shape.rectangle.info",
@@ -104,20 +104,20 @@ class GeoShape(
             shapeParameter[2], // east
             shapeParameter[3], // south
             area
-        )
+        )!!
     }
 
-    private fun getPolygonInfo(area: String): Text? {
+    private fun getPolygonInfo(area: String): Component? {
         if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
-            return Translator.tr("geo.shape.polygon.invalid.info", area)
+            return Translator.tr("geo.shape.polygon.invalid.info", area)!!
         }
         val coords = shapeParameter.chunked(2)
             .joinToString(", ") { "(${it[0]}, ${it[1]})" }
-        return Translator.tr("geo.shape.polygon.info", coords, area)
+        return Translator.tr("geo.shape.polygon.info", coords, area)!!
     }
 
     private fun generateTeleportPointByType(
-        world: World,
+        world: Level,
         shapeParameters: MutableList<Int>,
         geoShapeType: GeoShapeType
     ): BlockPos? {
@@ -135,10 +135,10 @@ class GeoShape(
         return null
     }
 
-    private fun generateSurfacePoint(world: World, point: Pair<Int, Int>): BlockPos? {
+    private fun generateSurfacePoint(world: Level, point: Pair<Int, Int>): BlockPos? {
         val x = point.first
         val z = point.second
-        val topY = world.getTopY(Heightmap.Type.MOTION_BLOCKING, x, z)
+        val topY = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
         val candidatePos = BlockPos(x, topY, z)
 
         if (isValidTeleportPoint(world, candidatePos)) {
@@ -147,37 +147,37 @@ class GeoShape(
         return null
     }
 
-    private fun isValidTeleportPoint(world: World, pos: BlockPos): Boolean {
+    private fun isValidTeleportPoint(world: Level, pos: BlockPos): Boolean {
         if (!isPhysicalSafe(world, pos)) return false
         return this.containsPoint(pos.x, pos.z)
     }
 
     companion object {
-        fun isPhysicalSafe(world: World, pos: BlockPos): Boolean {
+        fun isPhysicalSafe(world: Level, pos: BlockPos): Boolean {
             val feetState = world.getBlockState(pos)
-            val headState = world.getBlockState(pos.up())
-            val groundState = world.getBlockState(pos.down())
+            val headState = world.getBlockState(pos.above())
+            val groundState = world.getBlockState(pos.below())
 
-            val context = ShapeContext.absent()
+            val context = CollisionContext.empty()
 
             if (!feetState.fluidState.isEmpty || !headState.fluidState.isEmpty) {
                 return false
             }
 
             if (!feetState.getCollisionShape(world, pos, context).isEmpty ||
-                !headState.getCollisionShape(world, pos.up(), context).isEmpty
+                !headState.getCollisionShape(world, pos.above(), context).isEmpty
             ) {
                 return false
             }
 
-            return groundState.isSideSolidFullSquare(world, pos.down(), Direction.UP)
+            return groundState.isFaceSturdy(world, pos.below(), Direction.UP)
         }
 
-        fun getPhysicalSafetyFailureReasonKey(world: World, pos: BlockPos): String? {
+        fun getPhysicalSafetyFailureReasonKey(world: Level, pos: BlockPos): String? {
             val feetState = world.getBlockState(pos)
-            val headState = world.getBlockState(pos.up())
-            val groundState = world.getBlockState(pos.down())
-            val context = ShapeContext.absent()
+            val headState = world.getBlockState(pos.above())
+            val groundState = world.getBlockState(pos.below())
+            val context = CollisionContext.empty()
 
             if (!feetState.fluidState.isEmpty || !headState.fluidState.isEmpty) {
                 return "teleport_point.safety.liquid"
@@ -185,10 +185,10 @@ class GeoShape(
             if (!feetState.getCollisionShape(world, pos, context).isEmpty) {
                 return "teleport_point.safety.feet_blocked"
             }
-            if (!headState.getCollisionShape(world, pos.up(), context).isEmpty) {
+            if (!headState.getCollisionShape(world, pos.above(), context).isEmpty) {
                 return "teleport_point.safety.head_blocked"
             }
-            if (!groundState.isSideSolidFullSquare(world, pos.down(), Direction.UP)) {
+            if (!groundState.isFaceSturdy(world, pos.below(), Direction.UP)) {
                 return "teleport_point.safety.no_ground"
             }
             return null

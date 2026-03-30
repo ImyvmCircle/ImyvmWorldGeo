@@ -38,11 +38,11 @@ import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 fun onHandleSetting(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeName: String?,
     keyString: String,
@@ -60,12 +60,12 @@ fun onHandleSetting(
             handleRemoveSetting(player, region, scopeName, key, targetPlayerStr)
         }
     } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr(e.message))
+        player.sendSystemMessage(Translator.tr(e.message)!!)
     }
 }
 
 fun onCertificatePermissionValue(
-    playerExecutor: ServerPlayerEntity,
+    playerExecutor: ServerPlayer,
     region: Region?,
     scopeName: String?,
     targetPlayerNameStr: String?,
@@ -85,7 +85,7 @@ fun onCertificatePermissionValue(
     } else null
 
     val uuid = if (targetPlayerNameStr != null) {
-         getUUIDFromPlayerName(playerExecutor.server, targetPlayerNameStr) ?: return getDefaultValueForPermission(key)
+         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr) ?: return getDefaultValueForPermission(key)
     } else null
     return onCertificatePermissionValue(region, scope, uuid, key)
 }
@@ -127,7 +127,7 @@ private fun parseKey(keyString: String): Any = when {
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
-private fun parseValue(player: ServerPlayerEntity, key: Any, valueString: String): Any? {
+private fun parseValue(player: ServerPlayer, key: Any, valueString: String): Any? {
     return try {
         when (key) {
             is PermissionKey -> valueString.toBooleanStrict()
@@ -143,13 +143,13 @@ private fun parseValue(player: ServerPlayerEntity, key: Any, valueString: String
             is EffectKey -> "interaction.meta.setting.error.invalid_value_int"
             else -> "interaction.meta.setting.error.invalid_key"
         }
-        player.sendMessage(Translator.tr(errorMsg, key.toString(), valueString))
+        player.sendSystemMessage(Translator.tr(errorMsg, key.toString(), valueString)!!)
         null
     }
 }
 
 private fun handleAddSetting(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeName: String?,
     key: Any,
@@ -166,24 +166,24 @@ private fun handleAddSetting(
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
     settingsContainer.add(setting)
 
-    player.sendMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), value.toString()))
+    player.sendSystemMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), value.toString())!!)
 }
 
 private fun handleRemoveSetting(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeName: String?,
     key: Any,
     targetPlayerStr: String?
 ) {
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-    val removed = settingsContainer.removeIf { matchesSetting(it, key, targetPlayerStr, player.server) }
+    val removed = settingsContainer.removeIf { matchesSetting(it, key, targetPlayerStr, player.level().server) }
 
     if (!removed) {
-        player.sendMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString()))
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString())!!)
         return
     }
-    player.sendMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString()))
+    player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString())!!)
 }
 
 private fun buildSetting(
@@ -200,16 +200,16 @@ private fun buildSetting(
 }
 
 private fun resolveTargetPlayerUUID(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     targetPlayerStr: String?
 ): UUID? {
     if (targetPlayerStr == null) return null
 
-    val uuid = getUUIDFromPlayerName(player.server, targetPlayerStr)
+    val uuid = getUUIDFromPlayerName(player.level().server, targetPlayerStr)
     return if (uuid != null) {
         uuid
     } else {
-        player.sendMessage(Translator.tr("interaction.meta.setting.error.invalid_target_player", targetPlayerStr))
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.invalid_target_player", targetPlayerStr)!!)
         null
     }
 }
@@ -230,18 +230,18 @@ private fun matchesSetting(
 }
 
 private fun checkPlayer(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeName: String?,
     keyString: String,
     valueString: String?,
     targetPlayerStr: String?
 ): Boolean {
-    val server = player.server
+    val server = player.level().server
 
     if (isEntryExitToggleKey(keyString) || isEntryExitMessageKey(keyString)) {
         if (targetPlayerStr != null) {
-            player.sendMessage(Translator.tr("interaction.meta.setting.error.entry_exit_no_personal"))
+            player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.entry_exit_no_personal")!!)
             return false
         }
     }
@@ -250,7 +250,7 @@ private fun checkPlayer(
         val container = try {
             scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
         } catch (e: IllegalArgumentException) {
-            player.sendMessage(Translator.tr(e.message))
+            player.sendSystemMessage(Translator.tr(e.message)!!)
             return false
         }
 
@@ -268,7 +268,7 @@ private fun checkPlayer(
                     "interaction.meta.setting.error.scope.duplicate_player"
                 }
             }
-            player.sendMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", scopeName ?: ""))
+            player.sendSystemMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", scopeName ?: "")!!)
             return false
         }
     }
@@ -355,7 +355,7 @@ fun onCertificateRuleValue(
 }
 
 fun onQuerySettingValue(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     region: Region,
     scopeName: String?,
     keyString: String,
@@ -368,44 +368,44 @@ fun onQuerySettingValue(
             is RuleKey -> {
                 val value = onCertificateRuleValue(region, scopeName, keyString)
                 if (value == null) {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
                 }
             }
             is PermissionKey -> {
                 val value = onCertificatePermissionValue(player, region, scopeName, targetPlayerStr, keyString)
-                player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget))
+                player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
             }
             is EntryExitToggleKey -> {
                 val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
                 val setting = settingsContainer.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == key }
                 if (setting == null) {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget)!!)
                 }
             }
             is EntryExitMessageKey -> {
                 val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
                 val setting = settingsContainer.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }
                 if (setting == null) {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget)!!)
                 }
             }
             is EffectKey -> {
                 val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
                 val setting = settingsContainer.filterIsInstance<EffectSetting>().firstOrNull { it.key == key }
                 if (setting == null) {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget))
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget)!!)
                 }
             }
         }
     } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr(e.message))
+        player.sendSystemMessage(Translator.tr(e.message)!!)
     }
 }

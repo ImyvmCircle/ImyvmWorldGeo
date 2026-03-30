@@ -2,28 +2,28 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.network.ServerPlayerEntity
+import net.minecraft.server.level.ServerPlayer
 
 fun onScopeTransfer(
-    player: ServerPlayerEntity,
+    player: ServerPlayer,
     sourceRegion: Region,
     scopeName: String,
     targetRegion: Region
 ): Int {
     if (sourceRegion.numberID == targetRegion.numberID) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.transfer.error.same_region"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.same_region")!!)
         return 0
     }
 
     if (sourceRegion.geometryScope.size < 2) {
-        player.sendMessage(Translator.tr("interaction.meta.scope.transfer.error.last_scope"))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.last_scope")!!)
         return 0
     }
 
     val scope = try {
         sourceRegion.getScopeByName(scopeName)
     } catch (e: IllegalArgumentException) {
-        player.sendMessage(Translator.tr(e.message))
+        player.sendSystemMessage(Translator.tr(e.message)!!)
         return 0
     }
 
@@ -35,18 +35,18 @@ fun onScopeTransfer(
     targetRegion.geometryScope.add(scope)
 
     if (nameChanged) {
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.scope.transfer.success.renamed",
                 scopeName, resolvedName, sourceRegion.name, targetRegion.name
-            )
+            )!!
         )
     } else {
-        player.sendMessage(
+        player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.scope.transfer.success",
                 scopeName, sourceRegion.name, targetRegion.name
-            )
+            )!!
         )
     }
     return 1

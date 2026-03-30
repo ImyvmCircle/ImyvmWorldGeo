@@ -4,8 +4,8 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
-import net.minecraft.util.Identifier
-import net.minecraft.util.math.BlockPos
+import net.minecraft.resources.Identifier
+import net.minecraft.core.BlockPos
 import org.dynmap.markers.MarkerAPI
 import org.dynmap.markers.MarkerSet
 

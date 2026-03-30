@@ -4,7 +4,7 @@ import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.util.geo.*
-import net.minecraft.util.math.BlockPos
+import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
 
