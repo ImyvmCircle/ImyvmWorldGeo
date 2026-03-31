@@ -8,13 +8,13 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 
 #### 1.5.0
 
-- Add RPG permission `RPG_ITEM_PICKUP`: controls whether players can pick up items in a region.
-- Add RPG permission `RPG_BOW_SHOOT`: controls whether players can use bows and crossbows in a region.
-- Add RPG permission `RPG_VEHICLE_USE`: controls whether players can mount boats, minecarts, horses, camels, pigs, and striders in a region.
-- Add RPG permission `RPG_EATING`: controls whether players can consume food and drink items in a region.
-- Add RPG permission `RPG_FISHING`: controls whether players can cast a fishing rod in a region.
-- RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix.
-- When entering a region or scope where RPG permissions are restricted for the player, immersive notifications are shown in chat.
+- feat: Add RPG permission `RPG_ITEM_PICKUP`: controls whether players can pick up items in a region.
+- feat: Add RPG permission `RPG_BOW_SHOOT`: controls whether players can use bows and crossbows in a region.
+- feat: Add RPG permission `RPG_VEHICLE_USE`: controls whether players can mount boats, minecarts, horses, camels, pigs, and striders in a region.
+- feat: Add RPG permission `RPG_EATING`: controls whether players can consume food and drink items in a region.
+- feat: Add RPG permission `RPG_FISHING`: controls whether players can cast a fishing rod in a region.
+- lang: RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix.
+- lang: When entering a region or scope where RPG permissions are restricted for the player, immersive notifications are shown in chat.
 - feat: add RPG rule `RPG_NATURAL_REGEN` to control natural health regeneration in the region.
 - feat: add RPG rule `RPG_FIRE_SPREAD` to control whether fire spreads inside the region.
 - feat: add RPG rule `RPG_HUNGER` to control whether hunger and exhaustion drain in the region.
