@@ -39,6 +39,9 @@ import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SNOW_GOLEM_TRAIL
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_DISPENSER
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_PRESSURE_PLATE
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_PISTON
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_NATURAL_REGEN
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_FIRE_SPREAD
+import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_HUNGER
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -341,6 +344,9 @@ fun getDefaultValueForRule(key: RuleKey): Boolean {
         RuleKey.DISPENSER -> RULE_DEFAULT_DISPENSER.value
         RuleKey.PRESSURE_PLATE -> RULE_DEFAULT_PRESSURE_PLATE.value
         RuleKey.PISTON -> RULE_DEFAULT_PISTON.value
+        RuleKey.RPG_NATURAL_REGEN -> RULE_DEFAULT_RPG_NATURAL_REGEN.value
+        RuleKey.RPG_FIRE_SPREAD -> RULE_DEFAULT_RPG_FIRE_SPREAD.value
+        RuleKey.RPG_HUNGER -> RULE_DEFAULT_RPG_HUNGER.value
     }
 }
 

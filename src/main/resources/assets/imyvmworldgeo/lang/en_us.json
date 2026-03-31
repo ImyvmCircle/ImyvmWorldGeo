@@ -347,5 +347,9 @@
   "interaction.meta.region.dynmap.toggle": "&aToggled dynmap visibility for region &b{0}&a to: &e{1}",
   "interaction.meta.scope.dynmap.toggle": "&aToggled dynmap visibility for scope &b{1}&a in region &b{0}&a to: &e{2}",
   "interaction.meta.command.help.dynmap.toggle": "§b/imyvmWorldGeo dynmapToggle <§bregionIdentifier§b>\n  §fToggle a region''s visibility on the dynamic map. Region-level setting takes priority over scope-level.",
-  "interaction.meta.command.help.dynmap.toggle_scope": "§b/imyvmWorldGeo dynmapToggleScope <§bregionIdentifier§b> <§bscopeName§b>\n  §fToggle a scope''s visibility on the dynamic map. Has no effect if the region itself is hidden."
+  "interaction.meta.command.help.dynmap.toggle_scope": "§b/imyvmWorldGeo dynmapToggleScope <§bregionIdentifier§b> <§bscopeName§b>\n  §fToggle a scope''s visibility on the dynamic map. Has no effect if the region itself is hidden.",
+
+  "setting.rule.rpg_natural_regen.blocked": "&8[Ancient customs here render natural regeneration ineffective]",
+  "setting.rule.rpg_fire_spread.blocked": "&8[A mysterious force protects this land; fire cannot spread here]",
+  "setting.rule.rpg_hunger.blocked": "&8[The aura of this place keeps travellers free from hunger]"
 }

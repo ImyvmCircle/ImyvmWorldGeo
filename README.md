@@ -15,6 +15,9 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 - Add RPG permission `RPG_FISHING`: controls whether players can cast a fishing rod in a region.
 - RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix.
 - When entering a region or scope where RPG permissions are restricted for the player, immersive notifications are shown in chat.
+- feat: add RPG rule `RPG_NATURAL_REGEN` to control natural health regeneration in the region.
+- feat: add RPG rule `RPG_FIRE_SPREAD` to control whether fire spreads inside the region.
+- feat: add RPG rule `RPG_HUNGER` to control whether hunger and exhaustion drain in the region.
 
 
 ## Introduction
@@ -118,6 +121,9 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | DISPENSER | true | Controls whether dispensers can fire into the region. When set to false, any dispenser whose output face points into the region is blocked, including dispensers placed outside the region. |
 | PRESSURE_PLATE | true | Controls whether pressure plates inside the region can be activated. When set to false, entity collision with pressure plates in the region is suppressed. |
 | PISTON | true | Controls whether pistons can push or break blocks inside the region. When set to false, any piston move that would affect a block inside the region is cancelled, including pistons placed outside the region. |
+| RPG_NATURAL_REGEN | true | (RPG) Controls whether players naturally regenerate health inside the region. When set to false, the saturation-based heal from food is suppressed. |
+| RPG_FIRE_SPREAD | true | (RPG) Controls whether fire spreads inside the region. When set to false, the fire block tick is suppressed, preventing spread and natural burn-out. |
+| RPG_HUNGER | true | (RPG) Controls whether hunger and exhaustion drain for players inside the region. When set to false, all food exhaustion calls are suppressed. |
 
 #### Effect Keys
 

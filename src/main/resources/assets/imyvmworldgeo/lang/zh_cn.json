@@ -347,5 +347,9 @@
   "interaction.meta.region.dynmap.toggle": "&a已切换境界 &b{0}&a 的动态地图显示为：&e{1}",
   "interaction.meta.scope.dynmap.toggle": "&a已切换境界 &b{0}&a 的地方 &b{1}&a 的动态地图显示为：&e{2}",
   "interaction.meta.command.help.dynmap.toggle": "§b/imyvmWorldGeo dynmapToggle <§b境界标识符§b>\n  §f切换境界在动态地图上的显示。境界级别的设置优先于地方级别。",
-  "interaction.meta.command.help.dynmap.toggle_scope": "§b/imyvmWorldGeo dynmapToggleScope <§b境界标识符§b> <§b地方名称§b>\n  §f切换指定地方在动态地图上的显示。若境界本身已被隐藏，则此设置无效。"
+  "interaction.meta.command.help.dynmap.toggle_scope": "§b/imyvmWorldGeo dynmapToggleScope <§b境界标识符§b> <§b地方名称§b>\n  §f切换指定地方在动态地图上的显示。若境界本身已被隐藏，则此设置无效。",
+
+  "setting.rule.rpg_natural_regen.blocked": "&8[此地的古老习俗使得自然回血在此无效]",
+  "setting.rule.rpg_fire_spread.blocked": "&8[此地受神秘力量庇护，火焰无法蔓延]",
+  "setting.rule.rpg_hunger.blocked": "&8[此地的灵气令旅人不感饥饿]"
 }

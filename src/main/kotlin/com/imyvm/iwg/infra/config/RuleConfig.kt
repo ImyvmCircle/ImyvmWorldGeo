@@ -39,4 +39,16 @@ object RuleConfig {
     @JvmField
     val RULE_DEFAULT_PISTON = Option("core.rule.piston.default", true,
         "the default piston rule in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val RULE_DEFAULT_RPG_NATURAL_REGEN = Option("core.rule.rpg_natural_regen.default", true,
+        "the default natural health regeneration rule in RPG regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val RULE_DEFAULT_RPG_FIRE_SPREAD = Option("core.rule.rpg_fire_spread.default", true,
+        "the default fire spread rule in RPG regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val RULE_DEFAULT_RPG_HUNGER = Option("core.rule.rpg_hunger.default", true,
+        "the default hunger drain rule in RPG regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
 }

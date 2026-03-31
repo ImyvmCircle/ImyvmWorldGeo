@@ -11,6 +11,9 @@
 		"rule.DispenserMixin",
 		"rule.PressurePlateMixin",
 		"rule.PistonMixin",
+		"rule.NaturalRegenMixin",
+		"rule.FireSpreadMixin",
+		"rule.HungerDrainMixin",
 		"permission.ItemPickupMixin"
 	],
 	"injectors": {

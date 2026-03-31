@@ -119,7 +119,10 @@ enum class RuleKey : BaseKey {
     SNOW_GOLEM_TRAIL,
     DISPENSER,
     PRESSURE_PLATE,
-    PISTON
+    PISTON,
+    RPG_NATURAL_REGEN,
+    RPG_FIRE_SPREAD,
+    RPG_HUNGER
 }
 
 class EntryExitToggleSetting(
