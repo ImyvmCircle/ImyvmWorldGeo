@@ -8,6 +8,11 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 
 #### 1.5.0
 
+- Add permission `ITEM_PICKUP_`: controls whether players can pick up items in a region.
+- Add permission `BOW_SHOOT_`: controls whether players can use bows and crossbows in a region.
+- Add permission `VEHICLE_USE_`: controls whether players can mount boats, minecarts, horses, camels, pigs, and striders in a region.
+- Add permission `EATING_`: controls whether players can consume food and drink items in a region.
+- Add permission `FISHING_`: controls whether players can cast a fishing rod in a region.
 
 
 ## Introduction

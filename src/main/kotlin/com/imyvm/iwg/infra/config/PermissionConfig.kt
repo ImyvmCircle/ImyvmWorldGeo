@@ -99,4 +99,24 @@ object PermissionConfig {
     @JvmField
     val PERMISSION_DEFAULT_WIND_CHARGE_USE = Option("core.permission.wind_charge_use.default", true,
         "the default wind charge use (throwing wind charges) permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val PERMISSION_DEFAULT_ITEM_PICKUP = Option("core.permission.item_pickup.default", true,
+        "the default item pickup permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val PERMISSION_DEFAULT_BOW_SHOOT = Option("core.permission.bow_shoot.default", true,
+        "the default bow and crossbow shoot permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val PERMISSION_DEFAULT_VEHICLE_USE = Option("core.permission.vehicle_use.default", true,
+        "the default vehicle use (mounting boats, minecarts, horses, camels, pigs, and striders) permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val PERMISSION_DEFAULT_EATING = Option("core.permission.eating.default", true,
+        "the default eating (consuming food and drink items) permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
+
+    @JvmField
+    val PERMISSION_DEFAULT_FISHING = Option("core.permission.fishing.default", true,
+        "the default fishing (casting a fishing rod) permission in regions.") { obj: Config, path: String? -> obj.getBoolean(path) }
 }

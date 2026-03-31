@@ -24,6 +24,10 @@ fun registerRegionPermissions() {
     registerPlayerArmorStandPermission()
     registerPlayerItemFramePermission()
     registerPlayerWindChargeUsePermission()
+    registerPlayerBowShootPermission()
+    registerPlayerVehicleUsePermission()
+    registerPlayerEatingPermission()
+    registerPlayerFishingPermission()
 }
 
 fun registerPlayerBuildBreakPermission(){
@@ -106,4 +110,20 @@ fun registerPlayerItemFramePermission() {
 
 fun registerPlayerWindChargeUsePermission() {
     playerWindChargeUsePermission()
+}
+
+fun registerPlayerBowShootPermission() {
+    playerBowShootPermission()
+}
+
+fun registerPlayerVehicleUsePermission() {
+    playerVehicleUsePermission()
+}
+
+fun registerPlayerEatingPermission() {
+    playerEatingPermission()
+}
+
+fun registerPlayerFishingPermission() {
+    playerFishingPermission()
 }

@@ -10,7 +10,8 @@
 		"rule.SnowGolemTrailMixin",
 		"rule.DispenserMixin",
 		"rule.PressurePlateMixin",
-		"rule.PistonMixin"
+		"rule.PistonMixin",
+		"permission.ItemPickupMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1

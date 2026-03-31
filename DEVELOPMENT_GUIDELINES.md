@@ -12,7 +12,7 @@
    - 对于每次的版本更改描述应当简洁。
    - 版本更改一般加在现有版本，不要自作主张新建版本。
 7. 原则上不要新建新的class，也不要添加任何Comments.
-8. 不使用git,除非prompt要求。进行prompt提交时，应符合git log里面先前的一般commit格式，简洁规范。
+8. 不使用git,除非prompt要求。进行prompt提交时，应符合git log里面先前的一般commit格式，简洁规范，不要添加Co-authored-by等trailer。
 9. 测试要包含./gradlew runServer.
 10. 未说明清楚的机制、语言文件用名和感到机制模糊的地方等等应该向操作者提问。不要为了确认需求终止对话。
 11. 任何Command都在`CommandRegister`中的`register()`函数里面注册，并在同一文件中提取参数，并调用application对应实现。没有找到合适的调用的时候，要自己实现模块。
