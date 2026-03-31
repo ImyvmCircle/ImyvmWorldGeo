@@ -1,17 +1,20 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.application.region.PlayerRegionChecker
+import com.imyvm.iwg.application.region.permission.helper.hasPermission
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
+import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_ENTER_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_EXIT_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_ENTER_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_EXIT_I18N_KEY
+import com.imyvm.iwg.infra.config.PermissionConfig
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket
@@ -159,6 +162,7 @@ object PlayerRegionEntryExitTracker {
             ?: return
         player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
         player.connection.send(ClientboundSetTitleTextPacket(text))
+        sendRpgEntryNotifications(player, region, null, region.name)
     }
 
     private fun sendScopeExitMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
@@ -175,6 +179,7 @@ object PlayerRegionEntryExitTracker {
             ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)!!
             ?: return
         player.sendSystemMessage(text)
+        if (region != null) sendRpgEntryNotifications(player, region, scope, scope.scopeName)
     }
 
     private fun isRegionNotificationEnabled(region: Region): Boolean {
@@ -205,5 +210,25 @@ object PlayerRegionEntryExitTracker {
             .firstOrNull { it.key == key }
             ?.value ?: return null
         return TextParser.parse(raw.replace("{0}", regionName).replace("{1}", scopeName))
+    }
+
+    private fun sendRpgEntryNotifications(player: ServerPlayer, region: Region, scope: GeoScope?, locationName: String) {
+        val rpgKeys = listOf(
+            PermissionKey.RPG_ITEM_PICKUP to PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP,
+            PermissionKey.RPG_BOW_SHOOT to PermissionConfig.PERMISSION_DEFAULT_RPG_BOW_SHOOT,
+            PermissionKey.RPG_VEHICLE_USE to PermissionConfig.PERMISSION_DEFAULT_RPG_VEHICLE_USE,
+            PermissionKey.RPG_EATING to PermissionConfig.PERMISSION_DEFAULT_RPG_EATING,
+            PermissionKey.RPG_FISHING to PermissionConfig.PERMISSION_DEFAULT_RPG_FISHING
+        )
+        for ((key, configDefault) in rpgKeys) {
+            val default = configDefault.getValue() as? Boolean ?: true
+            if (!default) continue
+            val effective = hasPermission(region, player.uuid, key, scope, default)
+            if (!effective) {
+                val i18nKey = "notification.rpg.${key.name.lowercase().removePrefix("rpg_")}_restricted"
+                val msg = Translator.tr(i18nKey, locationName) ?: continue
+                player.sendSystemMessage(msg)
+            }
+        }
     }
 }

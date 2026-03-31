@@ -4,7 +4,7 @@ import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialC
 import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_EATING
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_EATING
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.core.component.DataComponents
@@ -17,7 +17,7 @@ fun playerEatingPermission() {
         if (stack.get(DataComponents.FOOD) == null) return@register InteractionResult.PASS
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, player.blockPosition().x, player.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.EATING_, scope, PERMISSION_DEFAULT_EATING.value)
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.RPG_EATING, scope, PERMISSION_DEFAULT_RPG_EATING.value)
             if (denial != null) {
                 if (hand == InteractionHand.MAIN_HAND) {
                     player.sendSystemMessage(Translator.tr("setting.permission.eating", buildPermissionDenialContext(region, scope, denial))!!)

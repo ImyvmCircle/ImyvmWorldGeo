@@ -8,11 +8,13 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 
 #### 1.5.0
 
-- Add permission `ITEM_PICKUP_`: controls whether players can pick up items in a region.
-- Add permission `BOW_SHOOT_`: controls whether players can use bows and crossbows in a region.
-- Add permission `VEHICLE_USE_`: controls whether players can mount boats, minecarts, horses, camels, pigs, and striders in a region.
-- Add permission `EATING_`: controls whether players can consume food and drink items in a region.
-- Add permission `FISHING_`: controls whether players can cast a fishing rod in a region.
+- Add RPG permission `RPG_ITEM_PICKUP`: controls whether players can pick up items in a region.
+- Add RPG permission `RPG_BOW_SHOOT`: controls whether players can use bows and crossbows in a region.
+- Add RPG permission `RPG_VEHICLE_USE`: controls whether players can mount boats, minecarts, horses, camels, pigs, and striders in a region.
+- Add RPG permission `RPG_EATING`: controls whether players can consume food and drink items in a region.
+- Add RPG permission `RPG_FISHING`: controls whether players can cast a fishing rod in a region.
+- RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix.
+- When entering a region or scope where RPG permissions are restricted for the player, immersive notifications are shown in chat.
 
 
 ## Introduction
@@ -95,6 +97,11 @@ and then further ancestors in order, until a match is found.
 | IGNITE | - | true | Ignite permission. Controls all use of flint and steel and fire charges, including igniting blocks, TNT, and creepers. Independent of BUILD_BREAK and BUILD: disabling BUILD or BUILD_BREAK does not prevent ignition. |
 | ARMOR_STAND | - | true | Armor stand permission. Controls placing armor stand items, breaking armor stand entities by attack, and interacting with their equipment slots. Independent of BUILD_BREAK. |
 | ITEM_FRAME | - | true | Item frame permission. Controls placing item frame and glow item frame entities, breaking them by attack, and interacting with their held items (adding, removing, or rotating). Applies to both regular and glow item frames. Independent of BUILD_BREAK. |
+| RPG_ITEM_PICKUP | - | true | (RPG) Item pickup permission. Controls whether players can pick up item entities. |
+| RPG_BOW_SHOOT | - | true | (RPG) Bow and crossbow permission. Controls whether players can use bows and crossbows. |
+| RPG_VEHICLE_USE | - | true | (RPG) Vehicle mounting permission. Controls whether players can mount boats, minecarts, horses, camels, pigs, and striders. |
+| RPG_EATING | - | true | (RPG) Eating permission. Controls whether players can consume food and drink items. |
+| RPG_FISHING | - | true | (RPG) Fishing permission. Controls whether players can cast a fishing rod. |
 
 #### Rule Keys
 

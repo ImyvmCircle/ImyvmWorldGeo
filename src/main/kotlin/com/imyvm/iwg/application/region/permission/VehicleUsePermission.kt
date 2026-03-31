@@ -4,7 +4,7 @@ import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialC
 import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_VEHICLE_USE
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_VEHICLE_USE
 import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.world.entity.animal.camel.Camel
@@ -25,7 +25,7 @@ fun playerVehicleUsePermission() {
         if (!isVehicleEntity(entity)) return@register InteractionResult.PASS
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.VEHICLE_USE_, scope, PERMISSION_DEFAULT_VEHICLE_USE.value)
+            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.RPG_VEHICLE_USE, scope, PERMISSION_DEFAULT_RPG_VEHICLE_USE.value)
             if (denial != null) {
                 if (hitResult == null) {
                     player.sendSystemMessage(Translator.tr("setting.permission.vehicle_use", buildPermissionDenialContext(region, scope, denial))!!)

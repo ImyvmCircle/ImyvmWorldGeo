@@ -25,11 +25,11 @@ import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_IGNITE
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ARMOR_STAND
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ITEM_FRAME
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_WIND_CHARGE_USE
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ITEM_PICKUP
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BOW_SHOOT
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_VEHICLE_USE
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_EATING
-import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FISHING
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_BOW_SHOOT
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_VEHICLE_USE
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_EATING
+import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_RPG_FISHING
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_MONSTERS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_SPAWN_PHANTOMS
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_TNT_BLOCK_PROTECTION
@@ -322,11 +322,11 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
         PermissionKey.ARMOR_STAND -> PERMISSION_DEFAULT_ARMOR_STAND.value
         PermissionKey.ITEM_FRAME -> PERMISSION_DEFAULT_ITEM_FRAME.value
         PermissionKey.WIND_CHARGE_USE -> PERMISSION_DEFAULT_WIND_CHARGE_USE.value
-        PermissionKey.ITEM_PICKUP_ -> PERMISSION_DEFAULT_ITEM_PICKUP.value
-        PermissionKey.BOW_SHOOT_ -> PERMISSION_DEFAULT_BOW_SHOOT.value
-        PermissionKey.VEHICLE_USE_ -> PERMISSION_DEFAULT_VEHICLE_USE.value
-        PermissionKey.EATING_ -> PERMISSION_DEFAULT_EATING.value
-        PermissionKey.FISHING_ -> PERMISSION_DEFAULT_FISHING.value
+        PermissionKey.RPG_ITEM_PICKUP -> PERMISSION_DEFAULT_RPG_ITEM_PICKUP.value
+        PermissionKey.RPG_BOW_SHOOT -> PERMISSION_DEFAULT_RPG_BOW_SHOOT.value
+        PermissionKey.RPG_VEHICLE_USE -> PERMISSION_DEFAULT_RPG_VEHICLE_USE.value
+        PermissionKey.RPG_EATING -> PERMISSION_DEFAULT_RPG_EATING.value
+        PermissionKey.RPG_FISHING -> PERMISSION_DEFAULT_RPG_FISHING.value
     }
 }
 

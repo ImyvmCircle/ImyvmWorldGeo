@@ -61,11 +61,11 @@ enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     ARMOR_STAND,
     ITEM_FRAME,
     WIND_CHARGE_USE(THROWABLE),
-    ITEM_PICKUP_,
-    BOW_SHOOT_,
-    VEHICLE_USE_,
-    EATING_,
-    FISHING_
+    RPG_ITEM_PICKUP,
+    RPG_BOW_SHOOT,
+    RPG_VEHICLE_USE,
+    RPG_EATING,
+    RPG_FISHING
 }
 
 enum class EffectKey(val effectId: String) : BaseKey {

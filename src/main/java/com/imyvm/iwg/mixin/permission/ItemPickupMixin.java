@@ -29,8 +29,8 @@ public class ItemPickupMixin {
         Region region = regionAndScope.getFirst();
         GeoScope scope = regionAndScope.getSecond();
         PermissionDenialSource denial = PermissionHelperKt.getPermissionDenialSource(
-                region, player.getUUID(), PermissionKey.ITEM_PICKUP_, scope,
-                PermissionConfig.PERMISSION_DEFAULT_ITEM_PICKUP.getValue());
+                region, player.getUUID(), PermissionKey.RPG_ITEM_PICKUP, scope,
+                PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP.getValue());
         if (denial == null) return;
         String ctx = PermissionHelperKt.buildPermissionDenialContext(region, scope, denial);
         player.sendSystemMessage(Translator.INSTANCE.tr("setting.permission.item_pickup", ctx));
