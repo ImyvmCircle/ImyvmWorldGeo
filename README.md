@@ -1,14 +1,14 @@
-# IMYVMWorldGeo 26.1 1.4.1
+# IMYVMWorldGeo 26.1 1.5.0
 
 ## Changelog
 
-### 1.4.x
+### 1.5.x
 
-This major version (1.4.x) introduces a dynamic map mechanism.
+This major version (1.5.x) features on new setting items for rpg map settings.
 
-#### 1.4.1
+#### 1.5.0
 
-chore: upgrade to Minecraft 26.1, Java 25, Fabric Loader 0.18.5, Kotlin 2.3.20; temporarily disable Dynmap integration pending MC 26.1 compatible release.
+
 
 ## Introduction
 
