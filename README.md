@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 26.1 1.5.0
+# IMYVMWorldGeo 26.1 1.5.1
 
 ## Changelog
 
@@ -6,12 +6,16 @@
 
 This major version (1.5.x) features on new setting items for rpg map settings.
 
+#### 1.5.1
+
+- chore: start the 1.5.1 release line after republishing the canonical 1.5.0 tag.
+
 #### 1.5.0
 
 - feat: add several RPG permissions for common survival interactions, covering item pickup, bow/crossbow use, vehicle mounting, eating/drinking, and fishing.
 - feat: add RPG rules `RPG_NATURAL_REGEN`, `RPG_FIRE_SPREAD`, and `RPG_HUNGER` for region-based survival pacing control.
-- lang: RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix, and restricted-area entry notifications are shown in chat.
 - feat: add namespaced boolean extension permission/rule registration so addon-defined setting keys can be managed through the same setting commands and RegionDataApi without hard-coding them into core enums.
+- lang: use immersive denial messages and restricted-area entry notifications for RPG-restricted areas.
 
 
 ## Introduction
