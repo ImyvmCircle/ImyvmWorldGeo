@@ -8,16 +8,10 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 
 #### 1.5.0
 
-- feat: Add RPG permission `RPG_ITEM_PICKUP`: controls whether players can pick up items in a region.
-- feat: Add RPG permission `RPG_BOW_SHOOT`: controls whether players can use bows and crossbows in a region.
-- feat: Add RPG permission `RPG_VEHICLE_USE`: controls whether players can mount boats, minecarts, horses, camels, pigs, and striders in a region.
-- feat: Add RPG permission `RPG_EATING`: controls whether players can consume food and drink items in a region.
-- feat: Add RPG permission `RPG_FISHING`: controls whether players can cast a fishing rod in a region.
-- lang: RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix.
-- lang: When entering a region or scope where RPG permissions are restricted for the player, immersive notifications are shown in chat.
-- feat: add RPG rule `RPG_NATURAL_REGEN` to control natural health regeneration in the region.
-- feat: add RPG rule `RPG_FIRE_SPREAD` to control whether fire spreads inside the region.
-- feat: add RPG rule `RPG_HUNGER` to control whether hunger and exhaustion drain in the region.
+- feat: add several RPG permissions for common survival interactions, covering item pickup, bow/crossbow use, vehicle mounting, eating/drinking, and fishing.
+- feat: add RPG rules `RPG_NATURAL_REGEN`, `RPG_FIRE_SPREAD`, and `RPG_HUNGER` for region-based survival pacing control.
+- lang: RPG permission denial messages use an immersive customs-flavored style instead of the standard system prefix, and restricted-area entry notifications are shown in chat.
+- feat: add namespaced boolean extension permission/rule registration so addon-defined setting keys can be managed through the same setting commands and RegionDataApi without hard-coding them into core enums.
 
 
 ## Introduction
@@ -124,6 +118,24 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | RPG_NATURAL_REGEN | true | (RPG) Controls whether players naturally regenerate health inside the region. When set to false, the saturation-based heal from food is suppressed. |
 | RPG_FIRE_SPREAD | true | (RPG) Controls whether fire spreads inside the region. When set to false, the fire block tick is suppressed, preventing spread and natural burn-out. |
 | RPG_HUNGER | true | (RPG) Controls whether hunger and exhaustion drain for players inside the region. When set to false, all food exhaustion calls are suppressed. |
+
+#### Namespaced Extension Boolean Keys
+
+In addition to the built-in enums above, the core also supports addon-registered namespaced boolean setting keys such as `adventure:anchor_use` or `community:treasury_use`.
+
+The first version only supports two extension categories:
+
+1. extension permissions: boolean, can be global or personal
+2. extension rules: boolean, always global
+
+These keys must be registered by an addon through `RegionDataApi` before they can be used in commands or API queries. Once registered, they can be managed through the same `/imyvmWorldGeo setting` and `/imyvmWorldGeo settingScope` commands as built-in settings.
+
+Resolution order:
+
+1. extension permissions: scope personal → scope global → region personal → region global → registered default
+2. extension rules: scope global → region global → registered default
+
+Extension settings are persisted by their string key, so addon-defined keys do not depend on core enum ordinal layout.
 
 #### Effect Keys
 
@@ -366,6 +378,18 @@ Handles player-triggered actions related to regions and their scopes.
 
 Provides access to region data and database operations for extension functions.
 
+- `registerExtensionPermissionKey(key: String, defaultValue: Boolean = true)`  
+  Registers a namespaced boolean extension permission key such as `adventure:anchor_use`.
+
+- `registerExtensionRuleKey(key: String, defaultValue: Boolean = true)`  
+  Registers a namespaced boolean extension rule key.
+
+- `getRegisteredExtensionPermissionKeys(): List<String>`  
+  Returns all currently registered extension permission keys.
+
+- `getRegisteredExtensionRuleKeys(): List<String>`  
+  Returns all currently registered extension rule keys.
+
 - `getRegion(id: Int): Region?`  
   Retrieves a region by its numeric ID.
 
@@ -441,8 +465,14 @@ Provides access to region data and database operations for extension functions.
 - `getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
   Retrieves the permission value of a setting for a region and scope.
 
+- `getExtensionPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, key: String): Boolean`
+  Retrieves the effective value of a registered namespaced extension permission key.
+
 - `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean`
   Retrieves the effective rule value for a region and optional scope. Returns the config default if the rule is not explicitly set.
+
+- `getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String): Boolean`
+  Retrieves the effective value of a registered namespaced extension rule key.
 
 - `getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int?`  
   Retrieves the resolved effect amplifier for a specific player and effect key, considering scope and region settings in priority order. Returns `null` if the effect is not set.

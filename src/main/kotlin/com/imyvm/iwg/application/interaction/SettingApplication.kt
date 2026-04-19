@@ -80,7 +80,7 @@ fun onCertificatePermissionValue(
     keyString: String,
 ): Boolean {
     val key = parseKey(keyString)
-    if (key !is PermissionKey) {
+    if (key !is PermissionKey && key !is ExtensionPermissionKey) {
         throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
 
@@ -88,12 +88,12 @@ fun onCertificatePermissionValue(
         try {
             region?.getScopeByName(scopeName)
         } catch (e: IllegalArgumentException) {
-            return getDefaultValueForPermission(key)
+            return getDefaultValueForPermissionKey(key)
         }
     } else null
 
     val uuid = if (targetPlayerNameStr != null) {
-         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr) ?: return getDefaultValueForPermission(key)
+         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr) ?: return getDefaultValueForPermissionKey(key)
     } else null
     return onCertificatePermissionValue(region, scope, uuid, key)
 }
@@ -102,28 +102,50 @@ fun onCertificatePermissionValue(
     region: Region?,
     scope: GeoScope?,
     playerUuid: UUID?,
-    key: PermissionKey
+    key: BaseKey
 ): Boolean {
-    if (region == null) {
-        return getDefaultValueForPermission(key)
+    if (key !is PermissionKey && key !is ExtensionPermissionKey) {
+        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
+    if (region == null) return getDefaultValueForPermissionKey(key)
+    return resolvePermissionSettingValue(region, scope, playerUuid, key) ?: getDefaultValueForPermissionKey(key)
+}
 
-    val settingsContainer = scope?.settings ?: region.settings
+fun onCertificateExtensionPermissionValue(
+    region: Region?,
+    scope: GeoScope?,
+    playerUuid: UUID?,
+    keyString: String
+): Boolean {
+    val key = ExtensionPermissionKey(keyString)
+    if (!ExtensionSettingRegistry.isRegisteredPermissionKey(keyString)) {
+        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    }
+    return onCertificatePermissionValue(region, scope, playerUuid, key)
+}
 
-    val setting = settingsContainer.firstOrNull { setting ->
+private fun resolvePermissionSettingValue(
+    region: Region,
+    scope: GeoScope?,
+    playerUuid: UUID?,
+    key: BaseKey
+): Boolean? {
+    findPermissionSettingValue(scope?.settings, playerUuid, key)?.let { return it }
+    return findPermissionSettingValue(region.settings, playerUuid, key)
+}
+
+private fun findPermissionSettingValue(
+    settings: List<Setting>?,
+    playerUuid: UUID?,
+    key: BaseKey
+): Boolean? {
+    if (settings == null) return null
+    val setting = settings.firstOrNull { setting ->
         if (setting.key != key) return@firstOrNull false
-        if (playerUuid == null) {
-            return@firstOrNull !setting.isPersonal
-        } else {
-            return@firstOrNull setting.playerUUID == playerUuid
-        }
-    }
-
-    return if (setting is PermissionSetting) {
-        setting.value
-    } else {
-        getDefaultValueForPermission(key)
-    }
+        if (setting !is PermissionSetting && setting !is ExtensionPermissionSetting) return@firstOrNull false
+        if (playerUuid == null) !setting.isPersonal else setting.playerUUID == playerUuid
+    } ?: return null
+    return setting.value as Boolean
 }
 
 private fun parseKey(keyString: String): Any = when {
@@ -132,22 +154,24 @@ private fun parseKey(keyString: String): Any = when {
     isRuleKey(keyString) -> RuleKey.valueOf(keyString)
     isEntryExitToggleKey(keyString) -> EntryExitToggleKey.valueOf(keyString)
     isEntryExitMessageKey(keyString) -> EntryExitMessageKey.valueOf(keyString)
+    isExtensionPermissionKey(keyString) -> ExtensionPermissionKey(keyString)
+    isExtensionRuleKey(keyString) -> ExtensionRuleKey(keyString)
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
 private fun parseValue(player: ServerPlayer, key: Any, valueString: String): Any? {
     return try {
         when (key) {
-            is PermissionKey -> valueString.toBooleanStrict()
+            is PermissionKey, is ExtensionPermissionKey -> valueString.toBooleanStrict()
             is EffectKey -> valueString.toInt()
-            is RuleKey -> valueString.toBooleanStrict()
+            is RuleKey, is ExtensionRuleKey -> valueString.toBooleanStrict()
             is EntryExitToggleKey -> valueString.toBooleanStrict()
             is EntryExitMessageKey -> valueString
             else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
         }
     } catch (e: Exception) {
         val errorMsg = when (key) {
-            is PermissionKey, is RuleKey, is EntryExitToggleKey -> "interaction.meta.setting.error.invalid_value_boolean"
+            is PermissionKey, is ExtensionPermissionKey, is RuleKey, is ExtensionRuleKey, is EntryExitToggleKey -> "interaction.meta.setting.error.invalid_value_boolean"
             is EffectKey -> "interaction.meta.setting.error.invalid_value_int"
             else -> "interaction.meta.setting.error.invalid_key"
         }
@@ -200,8 +224,10 @@ private fun buildSetting(
     targetPlayerUUID: UUID?
 ): Setting = when (key) {
     is PermissionKey -> PermissionSetting(key, value as Boolean, targetPlayerUUID)
+    is ExtensionPermissionKey -> ExtensionPermissionSetting(key, value as Boolean, targetPlayerUUID)
     is EffectKey -> EffectSetting(key, value as Int, targetPlayerUUID)
     is RuleKey -> RuleSetting(key, value as Boolean)
+    is ExtensionRuleKey -> ExtensionRuleSetting(key, value as Boolean)
     is EntryExitToggleKey -> EntryExitToggleSetting(key, value as Boolean)
     is EntryExitMessageKey -> EntryExitMessageSetting(key, value as String)
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
@@ -247,6 +273,11 @@ private fun checkPlayer(
 ): Boolean {
     val server = player.level().server
 
+    if ((isRuleKey(keyString) || isExtensionRuleKey(keyString)) && targetPlayerStr != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.rule_no_personal")!!)
+        return false
+    }
+
     if (isEntryExitToggleKey(keyString) || isEntryExitMessageKey(keyString)) {
         if (targetPlayerStr != null) {
             player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.entry_exit_no_personal")!!)
@@ -273,7 +304,7 @@ private fun checkPlayer(
                 if (targetPlayerStr == null) {
                     "interaction.meta.setting.error.scope.duplicate_global"
                 } else {
-                    "interaction.meta.setting.error.scope.duplicate_player"
+                    "interaction.meta.setting.error.scope.duplicate_personal_player"
                 }
             }
             player.sendSystemMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", scopeName ?: "")!!)
@@ -333,6 +364,18 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
     }
 }
 
+private fun getDefaultValueForPermission(key: ExtensionPermissionKey): Boolean {
+    return ExtensionSettingRegistry.getPermissionDefaultValue(key.id)
+}
+
+private fun getDefaultValueForPermissionKey(key: BaseKey): Boolean {
+    return when (key) {
+        is PermissionKey -> getDefaultValueForPermission(key)
+        is ExtensionPermissionKey -> getDefaultValueForPermission(key)
+        else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    }
+}
+
 fun getDefaultValueForRule(key: RuleKey): Boolean {
     return when (key) {
         RuleKey.SPAWN_MONSTERS -> RULE_DEFAULT_SPAWN_MONSTERS.value
@@ -350,11 +393,32 @@ fun getDefaultValueForRule(key: RuleKey): Boolean {
     }
 }
 
+private fun getDefaultValueForRule(key: ExtensionRuleKey): Boolean {
+    return ExtensionSettingRegistry.getRuleDefaultValue(key.id)
+}
+
+fun getEffectiveExtensionRuleValue(
+    region: Region?,
+    scope: GeoScope?,
+    keyString: String
+): Boolean {
+    val key = ExtensionRuleKey(keyString)
+    if (!ExtensionSettingRegistry.isRegisteredRuleKey(keyString)) {
+        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    }
+    if (region != null) {
+        getRuleValue(region, key, scope)?.let { return it }
+    }
+    return getDefaultValueForRule(key)
+}
+
 private fun isPermissionKey(key: String) = runCatching { PermissionKey.valueOf(key) }.isSuccess
 private fun isEffectKey(key: String) = runCatching { EffectKey.valueOf(key) }.isSuccess
 private fun isRuleKey(key: String) = runCatching { RuleKey.valueOf(key) }.isSuccess
 private fun isEntryExitToggleKey(key: String) = runCatching { EntryExitToggleKey.valueOf(key) }.isSuccess
 private fun isEntryExitMessageKey(key: String) = runCatching { EntryExitMessageKey.valueOf(key) }.isSuccess
+private fun isExtensionPermissionKey(key: String) = ExtensionSettingRegistry.isRegisteredPermissionKey(key)
+private fun isExtensionRuleKey(key: String) = ExtensionSettingRegistry.isRegisteredRuleKey(key)
 
 fun onCertificateRuleValue(
     region: Region?,
@@ -362,12 +426,16 @@ fun onCertificateRuleValue(
     keyString: String,
 ): Boolean? {
     val key = parseKey(keyString)
-    if (key !is RuleKey) throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    if (key !is RuleKey && key !is ExtensionRuleKey) throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     if (region == null) return null
     val scope = scopeName?.let {
         try { region.getScopeByName(it) } catch (e: IllegalArgumentException) { null }
     }
-    return getRuleValue(region, key, scope)
+    return when (key) {
+        is RuleKey -> getRuleValue(region, key, scope)
+        is ExtensionRuleKey -> getRuleValue(region, key, scope)
+        else -> null
+    }
 }
 
 fun onQuerySettingValue(
@@ -381,7 +449,7 @@ fun onQuerySettingValue(
         val key = parseKey(keyString)
         val displayTarget = if (scopeName != null) "Scope &b${scopeName}&r of Region &b${region.name}&r" else "Region &b${region.name}&r"
         when (key) {
-            is RuleKey -> {
+            is RuleKey, is ExtensionRuleKey -> {
                 val value = onCertificateRuleValue(region, scopeName, keyString)
                 if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
@@ -389,7 +457,7 @@ fun onQuerySettingValue(
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
                 }
             }
-            is PermissionKey -> {
+            is PermissionKey, is ExtensionPermissionKey -> {
                 val value = onCertificatePermissionValue(player, region, scopeName, targetPlayerStr, keyString)
                 player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
             }

@@ -89,6 +89,7 @@
   "interaction.meta.setting.error.invalid_value_int": "&c&e{0}&c 的值无效。&7期望一个整数，但得到：&e{1}&c。",
   "interaction.meta.setting.error.invalid_target_player": "&c无效的目标玩家：&e{0}&c。",
   "interaction.meta.setting.error.missing_target_player": "&c缺少目标玩家名称。",
+  "interaction.meta.setting.error.rule_no_personal": "&c规则设置不支持按玩家个人分配。",
   "interaction.meta.setting.error.entry_exit_no_personal": "&c进出设置不支持按玩家个人分配。",
   "interaction.meta.setting.error.region.duplicate_player": "&c重复的个人设置：境界中玩家 &b{1}&c 的 &e{0}&c 已存在。",
   "interaction.meta.setting.error.region.duplicate_global": "&c重复的全局设置：境界中 &e{0}&c 已存在。",

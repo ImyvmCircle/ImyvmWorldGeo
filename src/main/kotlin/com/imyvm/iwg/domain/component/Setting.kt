@@ -25,6 +25,12 @@ class PermissionSetting(
     playerUUID: UUID? = null
 ) : Setting(playerUUID)
 
+class ExtensionPermissionSetting(
+    override val key: ExtensionPermissionKey,
+    override val value: Boolean,
+    playerUUID: UUID? = null
+) : Setting(playerUUID)
+
 class EffectSetting(
     override val key: EffectKey,
     override val value: Int,
@@ -36,7 +42,20 @@ class RuleSetting(
     override val value: Boolean
 ) : Setting(null)
 
+class ExtensionRuleSetting(
+    override val key: ExtensionRuleKey,
+    override val value: Boolean
+) : Setting(null)
+
 interface BaseKey
+
+data class ExtensionPermissionKey(val id: String) : BaseKey {
+    override fun toString(): String = id
+}
+
+data class ExtensionRuleKey(val id: String) : BaseKey {
+    override fun toString(): String = id
+}
 
 enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     BUILD_BREAK,
@@ -142,4 +161,54 @@ enum class EntryExitToggleKey : BaseKey {
 enum class EntryExitMessageKey : BaseKey {
     ENTER_MESSAGE,
     EXIT_MESSAGE
+}
+
+object ExtensionSettingRegistry {
+    private val keyPattern = Regex("^[a-z0-9_.-]+:[a-z0-9_.-]+$")
+    private val permissionDefaults = linkedMapOf<String, Boolean>()
+    private val ruleDefaults = linkedMapOf<String, Boolean>()
+
+    fun registerPermissionKey(key: String, defaultValue: Boolean) {
+        validateKey(key)
+        if (ruleDefaults.containsKey(key)) {
+            throw IllegalArgumentException("Extension setting key '$key' is already registered as a rule.")
+        }
+        val existing = permissionDefaults[key]
+        if (existing != null && existing != defaultValue) {
+            throw IllegalArgumentException("Extension permission key '$key' is already registered with default=$existing.")
+        }
+        permissionDefaults[key] = defaultValue
+    }
+
+    fun registerRuleKey(key: String, defaultValue: Boolean) {
+        validateKey(key)
+        if (permissionDefaults.containsKey(key)) {
+            throw IllegalArgumentException("Extension setting key '$key' is already registered as a permission.")
+        }
+        val existing = ruleDefaults[key]
+        if (existing != null && existing != defaultValue) {
+            throw IllegalArgumentException("Extension rule key '$key' is already registered with default=$existing.")
+        }
+        ruleDefaults[key] = defaultValue
+    }
+
+    fun isRegisteredPermissionKey(key: String): Boolean = permissionDefaults.containsKey(key)
+
+    fun isRegisteredRuleKey(key: String): Boolean = ruleDefaults.containsKey(key)
+
+    fun getPermissionDefaultValue(key: String): Boolean =
+        permissionDefaults[key] ?: throw IllegalArgumentException("Extension permission key '$key' is not registered.")
+
+    fun getRuleDefaultValue(key: String): Boolean =
+        ruleDefaults[key] ?: throw IllegalArgumentException("Extension rule key '$key' is not registered.")
+
+    fun getRegisteredPermissionKeys(): List<String> = permissionDefaults.keys.toList()
+
+    fun getRegisteredRuleKeys(): List<String> = ruleDefaults.keys.toList()
+
+    private fun validateKey(key: String) {
+        require(keyPattern.matches(key)) {
+            "Extension setting key '$key' must be namespaced, using only lowercase letters, digits, '.', '_' or '-'."
+        }
+    }
 }

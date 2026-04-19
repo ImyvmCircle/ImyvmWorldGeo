@@ -4,6 +4,7 @@ import com.imyvm.iwg.domain.component.EffectKey
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
+import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.RuleKey
 import com.imyvm.iwg.infra.RegionDatabase
@@ -58,9 +59,15 @@ val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { c
     }
 
     when (type?.lowercase()) {
-        "permission" -> PermissionKey.entries.forEach { builder.suggest(it.name) }
+        "permission" -> {
+            PermissionKey.entries.forEach { builder.suggest(it.name) }
+            ExtensionSettingRegistry.getRegisteredPermissionKeys().forEach { builder.suggest(it) }
+        }
         "effect"     -> EffectKey.entries.forEach { builder.suggest(it.name) }
-        "rule"       -> RuleKey.entries.forEach { builder.suggest(it.name) }
+        "rule"       -> {
+            RuleKey.entries.forEach { builder.suggest(it.name) }
+            ExtensionSettingRegistry.getRegisteredRuleKeys().forEach { builder.suggest(it) }
+        }
         "entry_exit" -> {
             EntryExitToggleKey.entries.forEach { builder.suggest(it.name) }
             EntryExitMessageKey.entries.forEach { builder.suggest(it.name) }
@@ -69,6 +76,8 @@ val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { c
             PermissionKey.entries.forEach { builder.suggest(it.name) }
             EffectKey.entries.forEach { builder.suggest(it.name) }
             RuleKey.entries.forEach { builder.suggest(it.name) }
+            ExtensionSettingRegistry.getRegisteredPermissionKeys().forEach { builder.suggest(it) }
+            ExtensionSettingRegistry.getRegisteredRuleKeys().forEach { builder.suggest(it) }
             EntryExitToggleKey.entries.forEach { builder.suggest(it.name) }
             EntryExitMessageKey.entries.forEach { builder.suggest(it.name) }
         }

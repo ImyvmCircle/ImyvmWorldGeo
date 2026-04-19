@@ -214,8 +214,10 @@ object RegionDatabase {
         settings.forEach { setting ->
             when (setting) {
                 is PermissionSetting -> savePermissionSetting(stream, setting)
+                is ExtensionPermissionSetting -> saveExtensionPermissionSetting(stream, setting)
                 is EffectSetting -> saveEffectSetting(stream, setting)
                 is RuleSetting -> saveRuleSetting(stream, setting)
+                is ExtensionRuleSetting -> saveExtensionRuleSetting(stream, setting)
                 is EntryExitToggleSetting -> saveEntryExitToggleSetting(stream, setting)
                 is EntryExitMessageSetting -> saveEntryExitMessageSetting(stream, setting)
             }
@@ -233,6 +235,8 @@ object RegionDatabase {
                 2 -> loadRuleSetting(stream)
                 3 -> loadEntryExitToggleSetting(stream)
                 4 -> loadEntryExitMessageSetting(stream)
+                5 -> loadExtensionPermissionSetting(stream)
+                6 -> loadExtensionRuleSetting(stream)
                 else -> throw IOException("Unknown setting type")
             }
             list.add(setting)
@@ -253,6 +257,21 @@ object RegionDatabase {
         val uuidStr = stream.readUTF()
         val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
         return PermissionSetting(key, value, uuid)
+    }
+
+    private fun saveExtensionPermissionSetting(stream: DataOutputStream, setting: ExtensionPermissionSetting) {
+        stream.writeInt(5)
+        stream.writeUTF(setting.key.id)
+        stream.writeBoolean(setting.value)
+        stream.writeUTF(setting.playerUUID?.toString() ?: "")
+    }
+
+    private fun loadExtensionPermissionSetting(stream: DataInputStream): ExtensionPermissionSetting {
+        val key = ExtensionPermissionKey(stream.readUTF())
+        val value = stream.readBoolean()
+        val uuidStr = stream.readUTF()
+        val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
+        return ExtensionPermissionSetting(key, value, uuid)
     }
 
     private fun saveEffectSetting(stream: DataOutputStream, setting: EffectSetting) {
@@ -281,6 +300,18 @@ object RegionDatabase {
         val key = RuleKey.entries[stream.readInt()]
         val value = stream.readBoolean()
         return RuleSetting(key, value)
+    }
+
+    private fun saveExtensionRuleSetting(stream: DataOutputStream, setting: ExtensionRuleSetting) {
+        stream.writeInt(6)
+        stream.writeUTF(setting.key.id)
+        stream.writeBoolean(setting.value)
+    }
+
+    private fun loadExtensionRuleSetting(stream: DataInputStream): ExtensionRuleSetting {
+        val key = ExtensionRuleKey(stream.readUTF())
+        val value = stream.readBoolean()
+        return ExtensionRuleSetting(key, value)
     }
 
     private fun saveEntryExitToggleSetting(stream: DataOutputStream, setting: EntryExitToggleSetting) {

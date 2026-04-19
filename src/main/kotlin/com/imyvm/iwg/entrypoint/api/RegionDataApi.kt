@@ -1,7 +1,9 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
+import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateRuleValue
+import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
@@ -18,6 +20,20 @@ import net.minecraft.world.level.Level
 import java.util.*
 @Suppress("unused")
 object RegionDataApi {
+    fun registerExtensionPermissionKey(key: String, defaultValue: Boolean = true) {
+        ExtensionSettingRegistry.registerPermissionKey(key, defaultValue)
+    }
+
+    fun registerExtensionRuleKey(key: String, defaultValue: Boolean = true) {
+        ExtensionSettingRegistry.registerRuleKey(key, defaultValue)
+    }
+
+    fun getRegisteredExtensionPermissionKeys(): List<String> =
+        ExtensionSettingRegistry.getRegisteredPermissionKeys()
+
+    fun getRegisteredExtensionRuleKeys(): List<String> =
+        ExtensionSettingRegistry.getRegisteredRuleKeys()
+
     fun getRegion(id: Int): Region? {
         return try {
             RegionDatabase.getRegionByNumberId(id)
@@ -108,8 +124,16 @@ object RegionDataApi {
         return onCertificatePermissionValue(region, scope, playerUUID, permissionKey)
     }
 
+    fun getExtensionPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, key: String): Boolean {
+        return onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
+    }
+
     fun getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean {
         return getEffectiveRuleValue(region, ruleKey, scope)
+    }
+
+    fun getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String): Boolean {
+        return getEffectiveExtensionRuleValue(region, scope, key)
     }
 
     fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? =

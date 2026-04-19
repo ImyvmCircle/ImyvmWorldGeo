@@ -3,8 +3,10 @@ package com.imyvm.iwg.domain
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.Setting
 import com.imyvm.iwg.domain.component.PermissionSetting
+import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
 import com.imyvm.iwg.domain.component.EffectSetting
 import com.imyvm.iwg.domain.component.RuleSetting
+import com.imyvm.iwg.domain.component.ExtensionRuleSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.util.translator.resolvePlayerName
@@ -80,7 +82,7 @@ class Region(
         }
 
         private fun appendTypeGroups(result: MutableList<Component>, settings: List<Setting>, key: String) {
-            val permissions = settings.filterIsInstance<PermissionSetting>()
+            val permissions = settings.filter { it is PermissionSetting || it is ExtensionPermissionSetting }
             if (permissions.isNotEmpty()) {
                 Translator.tr("$key.permission.header")!!?.let { result.add(it) }
                 permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
@@ -92,7 +94,7 @@ class Region(
                 effects.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
             }
 
-            val rules = settings.filterIsInstance<RuleSetting>()
+            val rules = settings.filter { it is RuleSetting || it is ExtensionRuleSetting }
             if (rules.isNotEmpty()) {
                 Translator.tr("$key.rule.header")!!?.let { result.add(it) }
                 rules.forEach { s -> Translator.tr("$key.item", s.key, s.value)!!?.let { result.add(it) } }
