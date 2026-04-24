@@ -44,5 +44,3 @@ replay_*.log
 .kotlin/
 
 # agent
-
-.github/agents/
