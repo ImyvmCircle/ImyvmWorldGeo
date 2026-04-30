@@ -8,7 +8,7 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 
 #### 1.5.1
 
-- chore: start the 1.5.1 release line after republishing the canonical 1.5.0 tag.
+
 
 #### 1.5.0
 
