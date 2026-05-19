@@ -49,7 +49,8 @@ enum class NaturalStatsCategory(
     STRUCTURES("structures", "structures"),
     DIFFICULTY("difficulty", "difficulty"),
     SURFACE("surface", "surface"),
-    BIOMES("biomes", "biomes");
+    BIOMES("biomes", "biomes"),
+    PLAYERS("players", "players");
 
     companion object {
         fun fromName(name: String?): NaturalStatsCategory? {

@@ -9,6 +9,7 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 #### 1.5.1
 
 - feat: add `/imyvmWorldGeo stats` and RegionDataApi natural-stat queries for structure counts, average local difficulty, surface block counts, and biome distribution inside loaded chunks of a region.
+- feat: add persistent region player statistics for entry count, stay duration, death count, block place count, and block break count, queryable through `/imyvmWorldGeo stats <regionIdentifier> players` and RegionDataApi.
 
 
 #### 1.5.0
@@ -365,7 +366,10 @@ Handles player-triggered actions related to regions and their scopes.
   Queries detailed information about a region.
 
 - `queryRegionNaturalStats(player: ServerPlayerEntity, region: Region, categoryName: String? = null)`  
-  Queries natural statistics for a region. `categoryName` accepts `all`, `structures`, `difficulty`, `surface`, or `biomes`.
+  Queries region statistics. `categoryName` accepts `all`, `structures`, `difficulty`, `surface`, `biomes`, or `players`. The `players` category returns the region's persistent aggregated player statistics.
+
+- `queryRegionPlayerStats(player: ServerPlayerEntity, region: Region)`  
+  Queries the same persistent aggregated player statistics as `queryRegionNaturalStats(..., "players")`.
 
 - `toggleActionBar(player: ServerPlayerEntity)`
   Toggles the action bar display for regions for the player. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered using the scope boundary visual effect. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries are still shown.
@@ -497,13 +501,18 @@ Provides access to region data and database operations for extension functions.
 - `getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult`  
   Retrieves the same natural statistics for a single scope.
 
+- `getRegionPlayerStats(region: Region): RegionPlayerStats`  
+  Retrieves the region's persistent aggregated player statistics, including tracked player count, entry count, stay duration, death count, block place count, and block break count.
+
 `RegionNaturalStatsResult` has three variants:
 
 1. `Success(stats: RegionNaturalStats)` for a completed scan.
 2. `ChunkLimitExceeded(dimensionId, candidateChunkCount, limit)` when the region's candidate chunk window exceeds the current hard limit.
 3. `DimensionUnavailable(dimensionId)` when the target dimension cannot be resolved from the running server.
 
-`RegionNaturalStats` reports loaded chunk count, candidate chunk count, sampled surface-column count, aggregate structure counts, aggregate surface block counts, aggregate biome counts, area-weighted average local difficulty, and per-dimension `DimensionNaturalStats` entries. Surface block counting samples the top non-air block of each in-region column. Average local difficulty is weighted by sampled column count, so partial chunk coverage at region edges contributes proportionally.
+`RegionNaturalStats` reports loaded chunk count, candidate chunk count, sampled surface-column count, aggregate structure counts, aggregate surface block counts, aggregate biome counts, area-weighted average local difficulty, and per-dimension `DimensionNaturalStats` entries. Surface block counting samples the top non-air block of each in-region column. Average local difficulty is weighted by sampled column count, and each chunk now samples an actual in-region column so edge-only coverage does not pull difficulty from outside the region.
+
+`RegionPlayerStats` reports persistent cumulative player activity per region. Entry counting is driven by confirmed region transitions, stay duration is accumulated over time and flushed on disconnect/server stop, deaths are counted at the player's death position, and block place/break counts only record successful actions inside the region.
 
 - `getRegionEntryExitToggle(region: Region): Boolean`  
   Returns whether entry-exit notifications are enabled for a region. Defaults to `true` if not set.
@@ -659,7 +668,7 @@ Provides utility functions for region data to improve usability for extension mo
   Show detailed information about a region.
 
 - `/imyvmWorldGeo stats <regionIdentifier> [category]`  
-  Query natural statistics inside a region. `category` accepts `all`, `structures`, `difficulty`, `surface`, or `biomes`. The scan only reads loaded chunks, reports loaded/candidate chunk coverage, counts structures by anchored start chunk, samples the top non-air block for each in-region column, and calculates average local difficulty weighted by sampled column count.
+  Query region statistics. `category` accepts `all`, `structures`, `difficulty`, `surface`, `biomes`, or `players`. Natural-stat scans only read loaded chunks, report loaded/candidate chunk coverage, count structures by anchored start chunk, sample the top non-air block for each in-region column, and calculate average local difficulty from in-region sampled columns. The `players` category returns persistent aggregated entry count, stay duration, death count, block place count, and block break count.
 
 - `/imyvmWorldGeo list`  
   List all regions.

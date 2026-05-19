@@ -9,6 +9,7 @@ import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_ENTER_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_EXIT_I18N_KEY
@@ -37,6 +38,7 @@ object PlayerRegionEntryExitTracker {
     private val confirmedSet: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
     private val pendingWildernessExitMap: ConcurrentHashMap<UUID, PendingWildernessExit> = ConcurrentHashMap()
     private val pendingEntryTitles: ConcurrentLinkedQueue<ScheduledEntryTitle> = ConcurrentLinkedQueue()
+    private val stayStartMillisMap: ConcurrentHashMap<UUID, Long> = ConcurrentHashMap()
 
     fun processTransitions(server: MinecraftServer) {
         val allCurrent = PlayerRegionChecker.getAllRegionScopesWithPlayers()
@@ -51,6 +53,7 @@ object PlayerRegionEntryExitTracker {
                 confirmedSet.add(uuid)
                 if (currentRegion != null) confirmedRegionMap[uuid] = currentRegion
                 if (currentScope != null) confirmedScopeMap[uuid] = currentScope
+                if (currentRegion != null) startStayTracking(uuid, now)
                 continue
             }
 
@@ -63,8 +66,29 @@ object PlayerRegionEntryExitTracker {
         confirmedRegionMap.keys.retainAll(onlineUUIDs)
         confirmedScopeMap.keys.retainAll(onlineUUIDs)
         pendingWildernessExitMap.keys.retainAll(onlineUUIDs)
+        stayStartMillisMap.keys.retainAll(onlineUUIDs)
 
         processPendingEntryTitles(server, now)
+        checkpointActiveStayDurations(now)
+    }
+
+    fun handleDisconnect(player: ServerPlayer) {
+        val uuid = player.uuid
+        val now = System.currentTimeMillis()
+        val region = confirmedRegionMap[uuid]
+        if (region != null && !pendingWildernessExitMap.containsKey(uuid)) {
+            stopStayTracking(region, uuid, now)
+        }
+        clearTracking(uuid)
+    }
+
+    fun flushAllDurations() {
+        val now = System.currentTimeMillis()
+        confirmedRegionMap.forEach { (uuid, region) ->
+            if (!pendingWildernessExitMap.containsKey(uuid)) {
+                stopStayTracking(region, uuid, now)
+            }
+        }
     }
 
     private fun processRegionTransition(
@@ -78,6 +102,9 @@ object PlayerRegionEntryExitTracker {
         val delayMs = ENTRY_EXIT_REGION_DELAY_SECONDS.value * 1000L
 
         if (currentRegion == confirmed) {
+            if (pending != null && currentRegion != null && !stayStartMillisMap.containsKey(uuid)) {
+                startStayTracking(uuid, now)
+            }
             pendingWildernessExitMap.remove(uuid)
             return
         }
@@ -94,20 +121,26 @@ object PlayerRegionEntryExitTracker {
                 schedulePendingEntryTitle(uuid, currentRegion, now)
                 confirmedRegionMap[uuid] = currentRegion
                 pendingWildernessExitMap.remove(uuid)
+                RegionDatabase.incrementRegionEntryStat(currentRegion, uuid)
+                startStayTracking(uuid, now)
             }
         } else {
             if (currentRegion == null) {
                 if (confirmed != null) {
+                    stopStayTracking(confirmed, uuid, now)
                     pendingWildernessExitMap[uuid] = PendingWildernessExit(confirmed, now)
                 }
             } else {
                 if (confirmed != null) {
+                    stopStayTracking(confirmed, uuid, now)
                     sendRegionExitTitle(player, confirmed)
                     schedulePendingEntryTitle(uuid, currentRegion, now)
                 } else {
                     sendRegionEntryTitle(player, currentRegion)
                 }
                 confirmedRegionMap[uuid] = currentRegion
+                RegionDatabase.incrementRegionEntryStat(currentRegion, uuid)
+                startStayTracking(uuid, now)
             }
         }
     }
@@ -144,6 +177,38 @@ object PlayerRegionEntryExitTracker {
 
     private fun schedulePendingEntryTitle(uuid: UUID, region: Region, now: Long) {
         pendingEntryTitles.add(ScheduledEntryTitle(uuid, region, now))
+    }
+
+    private fun checkpointActiveStayDurations(now: Long) {
+        confirmedRegionMap.forEach { (uuid, region) ->
+            if (pendingWildernessExitMap.containsKey(uuid)) return@forEach
+            val start = stayStartMillisMap[uuid] ?: return@forEach
+            val delta = now - start
+            if (delta <= 0L) return@forEach
+            RegionDatabase.addRegionStayDuration(region, uuid, delta)
+            stayStartMillisMap[uuid] = now
+        }
+    }
+
+    private fun startStayTracking(uuid: UUID, now: Long) {
+        stayStartMillisMap[uuid] = now
+    }
+
+    private fun stopStayTracking(region: Region, uuid: UUID, now: Long) {
+        val start = stayStartMillisMap.remove(uuid) ?: return
+        val delta = now - start
+        if (delta > 0L) {
+            RegionDatabase.addRegionStayDuration(region, uuid, delta)
+        }
+    }
+
+    private fun clearTracking(uuid: UUID) {
+        confirmedSet.remove(uuid)
+        confirmedRegionMap.remove(uuid)
+        confirmedScopeMap.remove(uuid)
+        pendingWildernessExitMap.remove(uuid)
+        pendingEntryTitles.removeIf { it.playerUUID == uuid }
+        stayStartMillisMap.remove(uuid)
     }
 
     private fun sendRegionExitTitle(player: ServerPlayer, region: Region) {

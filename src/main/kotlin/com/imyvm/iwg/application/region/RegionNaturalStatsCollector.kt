@@ -86,6 +86,7 @@ object RegionNaturalStatsCollector {
 
             val chunkPos = ChunkPos(chunkX, chunkZ)
             var chunkSampledColumns = 0
+            var difficultySamplePos: BlockPos? = null
 
             for (x in chunkPos.minBlockX..chunkPos.maxBlockX) {
                 for (z in chunkPos.minBlockZ..chunkPos.maxBlockZ) {
@@ -101,6 +102,9 @@ object RegionNaturalStatsCollector {
 
                     sampledColumnCount++
                     chunkSampledColumns++
+                    if (difficultySamplePos == null) {
+                        difficultySamplePos = BlockPos(x, topY, z)
+                    }
                     incrementCount(surfaceBlockCounts, BuiltInRegistries.BLOCK.getKey(surfaceState.block))
                     incrementCount(biomeCounts, resolveBiomeId(level, surfacePos))
                 }
@@ -108,8 +112,7 @@ object RegionNaturalStatsCollector {
 
             if (chunkSampledColumns == 0) return@forEach
 
-            val difficultyY = level.getHeight(Heightmap.Types.WORLD_SURFACE, chunkPos.middleBlockX, chunkPos.middleBlockZ)
-            val difficultyPos = BlockPos(chunkPos.middleBlockX, difficultyY, chunkPos.middleBlockZ)
+            val difficultyPos = requireNotNull(difficultySamplePos)
             val difficulty = level.getCurrentDifficultyAt(difficultyPos).effectiveDifficulty.toDouble()
             difficultyWeightSum += difficulty * chunkSampledColumns
 

@@ -7,6 +7,7 @@ import com.imyvm.iwg.inter.register.event.registerPointSelection
 import com.imyvm.iwg.inter.register.event.registerRegionEffects
 import com.imyvm.iwg.inter.register.event.registerRegionEntryExit
 import com.imyvm.iwg.inter.register.event.registerRegionPermissions
+import com.imyvm.iwg.inter.register.event.registerPlayerStats
 import com.imyvm.iwg.inter.register.event.registerSelectionDisplay
 import com.imyvm.iwg.inter.register.command.register
 import com.imyvm.iwg.entrypoint.register.registerDataLoadSave
@@ -28,6 +29,7 @@ ImyvmWorldGeo : ModInitializer {
 		registerLazyTicker()
 		registerPlayerGeographyPair()
 		registerRegionEntryExit()
+		registerPlayerStats()
 		registerLocationDisplay()
 		registerRegionPermissions()
 		registerRegionEffects()

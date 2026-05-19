@@ -3,8 +3,10 @@ package com.imyvm.iwg.infra
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.google.gson.Gson
+import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.imyvm.iwg.ImyvmWorldGeo
 import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.resources.Identifier
 import net.minecraft.core.BlockPos
@@ -18,12 +20,60 @@ import kotlin.collections.ArrayList
 
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
+private data class RegionPlayerStatsLedger(
+    val entryCounts: MutableMap<UUID, Long> = mutableMapOf(),
+    val stayMillis: MutableMap<UUID, Long> = mutableMapOf(),
+    val deathCounts: MutableMap<UUID, Long> = mutableMapOf(),
+    val blockPlaceCounts: MutableMap<UUID, Long> = mutableMapOf(),
+    val blockBreakCounts: MutableMap<UUID, Long> = mutableMapOf()
+) {
+    fun isEmpty(): Boolean =
+        entryCounts.isEmpty() &&
+                stayMillis.isEmpty() &&
+                deathCounts.isEmpty() &&
+                blockPlaceCounts.isEmpty() &&
+                blockBreakCounts.isEmpty()
+
+    fun aggregate(): RegionPlayerStats {
+        val trackedPlayers = linkedSetOf<UUID>()
+        trackedPlayers.addAll(entryCounts.keys)
+        trackedPlayers.addAll(stayMillis.keys)
+        trackedPlayers.addAll(deathCounts.keys)
+        trackedPlayers.addAll(blockPlaceCounts.keys)
+        trackedPlayers.addAll(blockBreakCounts.keys)
+        return RegionPlayerStats(
+            trackedPlayerCount = trackedPlayers.size,
+            entryCount = entryCounts.values.sum(),
+            stayMillis = stayMillis.values.sum(),
+            deathCount = deathCounts.values.sum(),
+            blockPlaceCount = blockPlaceCounts.values.sum(),
+            blockBreakCount = blockBreakCounts.values.sum()
+        )
+    }
+
+    fun mergeFrom(other: RegionPlayerStatsLedger) {
+        mergeMap(entryCounts, other.entryCounts)
+        mergeMap(stayMillis, other.stayMillis)
+        mergeMap(deathCounts, other.deathCounts)
+        mergeMap(blockPlaceCounts, other.blockPlaceCounts)
+        mergeMap(blockBreakCounts, other.blockBreakCounts)
+    }
+
+    private fun mergeMap(target: MutableMap<UUID, Long>, source: Map<UUID, Long>) {
+        source.forEach { (uuid, value) ->
+            target[uuid] = (target[uuid] ?: 0L) + value
+        }
+    }
+}
+
 object RegionDatabase {
 
     private lateinit var regions: MutableList<Region>
     private const val DATABASE_FILENAME = "iwg_regions.db"
     private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
+    private const val PLAYER_STATS_FILENAME = "iwg_player_stats.json"
     private val gson = Gson()
+    private val regionPlayerStats: MutableMap<Int, RegionPlayerStatsLedger> = mutableMapOf()
     internal var onSave: (() -> Unit)? = null
 
     @Throws(IOException::class)
@@ -39,6 +89,7 @@ object RegionDatabase {
             }
         }
         saveDynmapVisibility()
+        savePlayerStats()
         onSave?.invoke()
     }
 
@@ -47,6 +98,7 @@ object RegionDatabase {
         val file = getDatabasePath()
         if (!file.toFile().exists()) {
             regions = mutableListOf()
+            regionPlayerStats.clear()
             return
         }
 
@@ -66,6 +118,7 @@ object RegionDatabase {
             }
         }
         loadDynmapVisibility()
+        loadPlayerStats()
     }
 
     fun addRegion(region: Region) {
@@ -74,6 +127,7 @@ object RegionDatabase {
 
     fun removeRegion(regionToDelete: Region) {
         regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
+        regionPlayerStats.remove(regionToDelete.numberID)
     }
 
     fun renameRegion(region: Region, newName: String) {
@@ -88,6 +142,43 @@ object RegionDatabase {
 
     fun getRegionList(): List<Region> {
         return regions
+    }
+
+    fun getRegionPlayerStats(region: Region): RegionPlayerStats =
+        regionPlayerStats[region.numberID]?.aggregate()
+            ?: RegionPlayerStats(0, 0, 0, 0, 0, 0)
+
+    fun incrementRegionEntryStat(region: Region, playerUUID: UUID) {
+        incrementPlayerStat(region.numberID, playerUUID) { entryCounts }
+    }
+
+    fun addRegionStayDuration(region: Region, playerUUID: UUID, millis: Long) {
+        if (millis <= 0L) return
+        incrementPlayerStat(region.numberID, playerUUID, millis) { stayMillis }
+    }
+
+    fun incrementRegionDeathStat(region: Region, playerUUID: UUID) {
+        incrementPlayerStat(region.numberID, playerUUID) { deathCounts }
+    }
+
+    fun incrementRegionBlockPlaceStat(region: Region, playerUUID: UUID) {
+        incrementPlayerStat(region.numberID, playerUUID) { blockPlaceCounts }
+    }
+
+    fun incrementRegionBlockBreakStat(region: Region, playerUUID: UUID) {
+        incrementPlayerStat(region.numberID, playerUUID) { blockBreakCounts }
+    }
+
+    fun mergeRegionPlayerStats(sourceRegion: Region, targetRegion: Region) {
+        val source = regionPlayerStats[sourceRegion.numberID] ?: return
+        val target = regionPlayerStats.getOrPut(targetRegion.numberID) { RegionPlayerStatsLedger() }
+        target.mergeFrom(source)
+        regionPlayerStats.remove(sourceRegion.numberID)
+    }
+
+    fun savePlayerStatsSnapshot() {
+        runCatching { savePlayerStats() }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to save player stats: ${it.message}", it) }
     }
 
     fun getRegionByName(name: String): Region {
@@ -338,6 +429,85 @@ object RegionDatabase {
         return EntryExitMessageSetting(key, value)
     }
 
+    private fun incrementPlayerStat(
+        regionId: Int,
+        playerUUID: UUID,
+        delta: Long = 1L,
+        selector: RegionPlayerStatsLedger.() -> MutableMap<UUID, Long>
+    ) {
+        val ledger = regionPlayerStats.getOrPut(regionId) { RegionPlayerStatsLedger() }
+        val target = ledger.selector()
+        target[playerUUID] = (target[playerUUID] ?: 0L) + delta
+    }
+
+    private fun loadPlayerStats() {
+        regionPlayerStats.clear()
+        val file = getPlayerStatsPath()
+        if (!file.toFile().exists()) return
+
+        val root = runCatching { JsonParser.parseReader(file.toFile().reader()).asJsonObject }.getOrElse { return }
+        val regionsJson = root.getAsJsonObject("regions") ?: return
+
+        regions.forEach { region ->
+            val regionJson = regionsJson.getAsJsonObject(region.numberID.toString()) ?: return@forEach
+            val ledger = RegionPlayerStatsLedger()
+            readPlayerStatMap(regionJson.getAsJsonObject("entries"), ledger.entryCounts)
+            readPlayerStatMap(regionJson.getAsJsonObject("stayMillis"), ledger.stayMillis)
+            readPlayerStatMap(regionJson.getAsJsonObject("deaths"), ledger.deathCounts)
+            readPlayerStatMap(regionJson.getAsJsonObject("blockPlaces"), ledger.blockPlaceCounts)
+            readPlayerStatMap(regionJson.getAsJsonObject("blockBreaks"), ledger.blockBreakCounts)
+            if (!ledger.isEmpty()) {
+                regionPlayerStats[region.numberID] = ledger
+            }
+        }
+    }
+
+    private fun savePlayerStats() {
+        val root = JsonObject()
+        root.addProperty("version", 1)
+        val regionsJson = JsonObject()
+
+        regions.forEach { region ->
+            val ledger = regionPlayerStats[region.numberID] ?: return@forEach
+            if (ledger.isEmpty()) return@forEach
+
+            val regionJson = JsonObject()
+            regionJson.add("entries", writePlayerStatMap(ledger.entryCounts))
+            regionJson.add("stayMillis", writePlayerStatMap(ledger.stayMillis))
+            regionJson.add("deaths", writePlayerStatMap(ledger.deathCounts))
+            regionJson.add("blockPlaces", writePlayerStatMap(ledger.blockPlaceCounts))
+            regionJson.add("blockBreaks", writePlayerStatMap(ledger.blockBreakCounts))
+            regionsJson.add(region.numberID.toString(), regionJson)
+        }
+
+        root.add("regions", regionsJson)
+        val file = getPlayerStatsPath()
+        file.toFile().parentFile?.mkdirs()
+        file.toFile().writeText(gson.toJson(root))
+    }
+
+    private fun readPlayerStatMap(source: JsonObject?, target: MutableMap<UUID, Long>) {
+        source?.entrySet()?.forEach { entry ->
+            val uuid = runCatching { UUID.fromString(entry.key) }.getOrNull() ?: return@forEach
+            val value = readLong(entry.value) ?: return@forEach
+            if (value > 0L) {
+                target[uuid] = value
+            }
+        }
+    }
+
+    private fun writePlayerStatMap(source: Map<UUID, Long>): JsonObject {
+        val result = JsonObject()
+        source.entries
+            .filter { it.value > 0L }
+            .sortedBy { it.key.toString() }
+            .forEach { (uuid, value) -> result.addProperty(uuid.toString(), value) }
+        return result
+    }
+
+    private fun readLong(element: JsonElement?): Long? =
+        runCatching { element?.asLong }.getOrNull()
+
     private fun loadDynmapVisibility() {
         val file = getDynmapConfigPath()
         val root = if (file.toFile().exists()) {
@@ -405,6 +575,10 @@ object RegionDatabase {
 
     private fun getDynmapConfigPath(): Path {
         return FabricLoader.getInstance().gameDir.resolve("world").resolve(DYNMAP_CONFIG_FILENAME)
+    }
+
+    private fun getPlayerStatsPath(): Path {
+        return FabricLoader.getInstance().gameDir.resolve("world").resolve(PLAYER_STATS_FILENAME)
     }
 
     private fun getDatabasePath(): Path {

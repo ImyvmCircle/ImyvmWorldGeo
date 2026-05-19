@@ -152,6 +152,9 @@ object RegionDataApi {
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)
 
+    fun getRegionPlayerStats(region: Region): RegionPlayerStats =
+        RegionDatabase.getRegionPlayerStats(region)
+
     fun getRegionEntryExitToggle(region: Region): Boolean =
         region.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
 

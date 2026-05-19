@@ -6,6 +6,8 @@ import com.imyvm.iwg.domain.NaturalStatsCategory
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionNaturalStats
 import com.imyvm.iwg.domain.RegionNaturalStatsResult
+import com.imyvm.iwg.domain.RegionPlayerStats
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.chat.Component
 import net.minecraft.resources.Identifier
@@ -32,6 +34,10 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, categoryName
 }
 
 fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, category: NaturalStatsCategory, isApi: Boolean): Int {
+    if (category == NaturalStatsCategory.PLAYERS) {
+        return onQueryRegionPlayerStats(player, region, isApi)
+    }
+
     val result = RegionNaturalStatsCollector.collectRegionStats(player.level().server, region)
     return when (result) {
         is RegionNaturalStatsResult.ChunkLimitExceeded -> {
@@ -54,6 +60,9 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, category: Na
         is RegionNaturalStatsResult.Success -> sendStatsMessages(player, region, result.stats, category, isApi)
     }
 }
+
+fun onQueryRegionPlayerStats(player: ServerPlayer, region: Region, isApi: Boolean): Int =
+    sendPlayerStatsMessages(player, region, RegionDatabase.getRegionPlayerStats(region), isApi)
 
 private fun sendStatsMessages(
     player: ServerPlayer,
@@ -146,6 +155,8 @@ private fun buildCategoryLines(
                 formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, itemLimit)
             )!!
         )
+
+        NaturalStatsCategory.PLAYERS -> emptyList()
     }
 }
 
@@ -190,7 +201,41 @@ private fun buildCategoryLines(
                 formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, itemLimit)
             )!!
         )
+
+        NaturalStatsCategory.PLAYERS -> emptyList()
     }
+}
+
+private fun sendPlayerStatsMessages(
+    player: ServerPlayer,
+    region: Region,
+    stats: RegionPlayerStats,
+    isApi: Boolean
+): Int {
+    if (stats.isEmpty) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.player_stats.empty", region.name)!!)
+        return 0
+    }
+
+    val headerKey = if (isApi) "interaction.meta.api.player_stats.header" else "interaction.meta.command.player_stats.header"
+    player.sendSystemMessage(
+        Translator.tr(
+            headerKey,
+            region.name,
+            categoryLabel(NaturalStatsCategory.PLAYERS),
+            stats.trackedPlayerCount
+        )!!
+    )
+
+    listOf(
+        Translator.tr("interaction.meta.player_stats.line.entries", stats.entryCount)!!,
+        Translator.tr("interaction.meta.player_stats.line.stay", formatDuration(stats.stayMillis))!!,
+        Translator.tr("interaction.meta.player_stats.line.deaths", stats.deathCount)!!,
+        Translator.tr("interaction.meta.player_stats.line.block_places", stats.blockPlaceCount)!!,
+        Translator.tr("interaction.meta.player_stats.line.block_breaks", stats.blockBreakCount)!!
+    ).forEach(player::sendSystemMessage)
+
+    return 1
 }
 
 private fun categoryLabel(category: NaturalStatsCategory): String =
@@ -231,4 +276,22 @@ private fun formatDistributionMap(values: Map<Identifier, Int>, total: Int, limi
     } else {
         body
     }
+}
+
+private fun formatDuration(millis: Long): String {
+    val totalSeconds = millis / 1000L
+    val days = totalSeconds / 86400L
+    val hours = (totalSeconds % 86400L) / 3600L
+    val minutes = (totalSeconds % 3600L) / 60L
+    val seconds = totalSeconds % 60L
+
+    val parts = buildList {
+        if (days > 0) add(Translator.raw("interaction.meta.player_stats.duration.day", days) ?: "${days}d")
+        if (hours > 0) add(Translator.raw("interaction.meta.player_stats.duration.hour", hours) ?: "${hours}h")
+        if (minutes > 0) add(Translator.raw("interaction.meta.player_stats.duration.minute", minutes) ?: "${minutes}m")
+        if (seconds > 0 || isEmpty()) {
+            add(Translator.raw("interaction.meta.player_stats.duration.second", seconds) ?: "${seconds}s")
+        }
+    }
+    return parts.joinToString(" ")
 }

@@ -24,6 +24,7 @@ fun onRegionMerge(
     }
     val scopeCount = sourceRegion.geometryScope.size
 
+    RegionDatabase.mergeRegionPlayerStats(sourceRegion, targetRegion)
     RegionDatabase.removeRegion(sourceRegion)
 
     player.sendSystemMessage(

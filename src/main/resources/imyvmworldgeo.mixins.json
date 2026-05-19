@@ -14,7 +14,8 @@
 		"rule.NaturalRegenMixin",
 		"rule.FireSpreadMixin",
 		"rule.HungerDrainMixin",
-		"permission.ItemPickupMixin"
+		"permission.ItemPickupMixin",
+		"stats.BlockItemPlaceMixin"
 	],
 	"injectors": {
 		"defaultRequire": 1
