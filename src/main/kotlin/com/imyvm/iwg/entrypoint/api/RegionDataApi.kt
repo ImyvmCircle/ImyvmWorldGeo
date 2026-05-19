@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
 import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateRuleValue
@@ -16,6 +17,7 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
 import net.minecraft.core.BlockPos
+import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
 import java.util.*
 @Suppress("unused")
@@ -143,6 +145,12 @@ object RegionDataApi {
         getActiveEffects(region, playerUUID, scope)
 
     fun getRegionScopeCount(region: Region): Int = region.geometryScope.size
+
+    fun getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
+        RegionNaturalStatsCollector.collectRegionStats(server, region)
+
+    fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
+        RegionNaturalStatsCollector.collectScopeStats(server, scope)
 
     fun getRegionEntryExitToggle(region: Region): Boolean =
         region.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true

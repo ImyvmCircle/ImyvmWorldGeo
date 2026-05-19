@@ -8,6 +8,7 @@ This major version (1.5.x) features on new setting items for rpg map settings.
 
 #### 1.5.1
 
+- feat: add `/imyvmWorldGeo stats` and RegionDataApi natural-stat queries for structure counts, average local difficulty, surface block counts, and biome distribution inside loaded chunks of a region.
 
 
 #### 1.5.0
@@ -363,6 +364,9 @@ Handles player-triggered actions related to regions and their scopes.
 - `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
   Queries detailed information about a region.
 
+- `queryRegionNaturalStats(player: ServerPlayerEntity, region: Region, categoryName: String? = null)`  
+  Queries natural statistics for a region. `categoryName` accepts `all`, `structures`, `difficulty`, `surface`, or `biomes`.
+
 - `toggleActionBar(player: ServerPlayerEntity)`
   Toggles the action bar display for regions for the player. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered using the scope boundary visual effect. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries are still shown.
 
@@ -486,6 +490,20 @@ Provides access to region data and database operations for extension functions.
 
 - `getRegionScopeCount(region: Region): Int`  
   Returns the number of scopes in a region.
+
+- `getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult`  
+  Retrieves natural statistics for a region, including structure counts, area-weighted average local difficulty, surface block counts, biome counts, and per-dimension breakdowns.
+
+- `getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult`  
+  Retrieves the same natural statistics for a single scope.
+
+`RegionNaturalStatsResult` has three variants:
+
+1. `Success(stats: RegionNaturalStats)` for a completed scan.
+2. `ChunkLimitExceeded(dimensionId, candidateChunkCount, limit)` when the region's candidate chunk window exceeds the current hard limit.
+3. `DimensionUnavailable(dimensionId)` when the target dimension cannot be resolved from the running server.
+
+`RegionNaturalStats` reports loaded chunk count, candidate chunk count, sampled surface-column count, aggregate structure counts, aggregate surface block counts, aggregate biome counts, area-weighted average local difficulty, and per-dimension `DimensionNaturalStats` entries. Surface block counting samples the top non-air block of each in-region column. Average local difficulty is weighted by sampled column count, so partial chunk coverage at region edges contributes proportionally.
 
 - `getRegionEntryExitToggle(region: Region): Boolean`  
   Returns whether entry-exit notifications are enabled for a region. Defaults to `true` if not set.
@@ -639,6 +657,9 @@ Provides utility functions for region data to improve usability for extension mo
 
 - `/imyvmWorldGeo query <regionIdentifier>`  
   Show detailed information about a region.
+
+- `/imyvmWorldGeo stats <regionIdentifier> [category]`  
+  Query natural statistics inside a region. `category` accepts `all`, `structures`, `difficulty`, `surface`, or `biomes`. The scan only reads loaded chunks, reports loaded/candidate chunk coverage, counts structures by anchored start chunk, samples the top non-air block for each in-region column, and calculates average local difficulty weighted by sampled column count.
 
 - `/imyvmWorldGeo list`  
   List all regions.

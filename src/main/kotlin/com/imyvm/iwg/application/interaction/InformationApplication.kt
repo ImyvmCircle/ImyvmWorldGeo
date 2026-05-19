@@ -96,6 +96,7 @@ fun onHelp(player: ServerPlayer): Int {
 
         // Info & General
         "info.query",
+        "info.stats",
         "info.list",
         "info.toggle",
         "info.help",

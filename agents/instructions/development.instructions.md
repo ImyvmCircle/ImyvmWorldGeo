@@ -8,7 +8,7 @@ applyTo: "**"
 
 1. `agents/CONTEXT.md`
 2. 本文件
-3. 与任务相关的专项 instruction
+3. 与任务相关的专项 instruction，并先读现有结构与同类特性文件
 4. 产出或改写正式文字时读取 `agents/WRITING_STYLE.md`
 
 ## 专项规则

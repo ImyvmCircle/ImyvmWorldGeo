@@ -43,6 +43,8 @@ object PlayerInteractionApi {
     fun getRuleValueScope(region: Region?, scopeName: String, keyString: String) =
         onCertificateRuleValue(region, scopeName, keyString)
     fun queryRegionInfo(player: ServerPlayer, region: Region) = onQueryRegion(player, region, true)
+    fun queryRegionNaturalStats(player: ServerPlayer, region: Region, categoryName: String? = null) =
+        onQueryRegionNaturalStats(player, region, categoryName, true)
     fun toggleActionBar(player: ServerPlayer) = onToggleActionBar(player)
     fun estimateRegionArea(player: ServerPlayer, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)
     fun estimateScopeAreaChange(player: ServerPlayer, region: Region, scopeName: String, customPositions: List<BlockPos>? = null) = onEstimateScopeAreaChange(player, region, scopeName, customPositions)

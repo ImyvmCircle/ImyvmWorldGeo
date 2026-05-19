@@ -1,6 +1,7 @@
 package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.interaction.*
+import com.imyvm.iwg.domain.NaturalStatsCategory
 import com.imyvm.iwg.entrypoint.register.command.helper.*
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
@@ -391,6 +392,19 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             .executes { runQueryRegion(it) }
                     )
             )
+            .then(
+                literal("stats")
+                    .then(
+                        argument("regionIdentifier", StringArgumentType.string())
+                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                            .executes { runQueryRegionStats(it) }
+                            .then(
+                                argument("category", StringArgumentType.word())
+                                    .suggests(NATURAL_STATS_CATEGORY_SUGGESTION_PROVIDER)
+                                    .executes { runQueryRegionStats(it) }
+                            )
+                    )
+            )
             .then(literal("list").executes { runListRegions(it) })
             .then(literal("toggle").executes { runToggleActionBar(it) })
             .then(literal("help").executes { runHelp(it) })
@@ -602,6 +616,25 @@ private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): I
 private fun runQueryRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToQuery -> onQueryRegion(player, regionToQuery, false) }
+}
+
+private fun runQueryRegionStats(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val categoryName = getOptionalArgument(context, "category")
+    val category = NaturalStatsCategory.fromName(categoryName)
+    if (category == null) {
+        player.sendSystemMessage(
+            Translator.tr(
+                "interaction.meta.stats.error.invalid_category",
+                categoryName,
+                NaturalStatsCategory.entries.joinToString(", ") { it.commandName }
+            )!!
+        )
+        return 0
+    }
+    return identifierHandler(regionIdentifier, player) { regionToQuery ->
+        onQueryRegionNaturalStats(player, regionToQuery, category, false)
+    }
 }
 
 private fun runListRegions(context: CommandContext<CommandSourceStack>): Int {

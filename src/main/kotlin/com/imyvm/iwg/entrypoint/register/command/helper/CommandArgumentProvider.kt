@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.register.command.helper
 
+import com.imyvm.iwg.domain.NaturalStatsCategory
 import com.imyvm.iwg.domain.component.EffectKey
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
@@ -83,6 +84,11 @@ val SETTING_KEY_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { c
         }
     }
 
+    builder.buildFuture()
+}
+
+val NATURAL_STATS_CATEGORY_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { _, builder ->
+    NaturalStatsCategory.entries.forEach { builder.suggest(it.commandName) }
     builder.buildFuture()
 }
 
