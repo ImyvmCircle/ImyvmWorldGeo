@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
@@ -30,9 +31,11 @@ fun onScopeTransfer(
     val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
     val nameChanged = !resolvedName.equals(scope.scopeName, ignoreCase = false)
 
+    val transferTime = System.currentTimeMillis()
     sourceRegion.geometryScope.remove(scope)
     scope.scopeName = resolvedName
     targetRegion.geometryScope.add(scope)
+    RegionDatabase.recordScopeOwnership(scope.scopeId, sourceRegion, targetRegion, transferTime)
 
     if (nameChanged) {
         player.sendSystemMessage(

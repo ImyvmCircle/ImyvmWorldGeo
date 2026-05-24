@@ -166,4 +166,77 @@ object RegionDataApi {
 
     fun getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String? =
         scope.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
+
+    // --- 1.5.1 additions ---
+
+    fun parseScopeId(s: String): ScopeId? = ScopeId.parse(s)
+
+    fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? = RegionDatabase.getScopeById(scopeId)
+
+    fun getScopeId(scope: GeoScope): ScopeId = scope.scopeId
+
+    fun getScopeFoundingTimeOrNull(scope: GeoScope): Long? = scope.scopeId.creationTimeMillisOrNull()
+
+    fun getScopeFoundedInRegionNumberId(scope: GeoScope): Int = scope.scopeId.foundedInRegionNumberId()
+
+    fun getScopeOwnershipHistory(scopeId: ScopeId): List<com.imyvm.iwg.domain.ScopeOwnershipEntry> =
+        RegionDatabase.getScopeOwnershipHistory(scopeId)
+
+    fun resolveScopeAtEntity(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? =
+        RegionDatabase.getRegionAndScopeAt(world, x, z)
+
+    fun resolveScopeAtEntity(world: Level, blockPos: BlockPos): Pair<Region, GeoScope>? =
+        RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
+
+    fun getEffectiveEffectsForScope(region: Region, scope: GeoScope): Map<EffectKey, Int> {
+        val keys = mutableSetOf<EffectKey>()
+        scope.settings.filterIsInstance<EffectSetting>().filter { !it.isPersonal }.forEach { keys.add(it.key) }
+        region.settings.filterIsInstance<EffectSetting>().filter { !it.isPersonal }.forEach { keys.add(it.key) }
+        val overlay = if (scope.scopeId.raw != ScopeId.UNASSIGNED_RAW)
+            com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scope.scopeId)
+        else emptyMap()
+        keys.addAll(overlay.keys)
+
+        val result = mutableMapOf<EffectKey, Int>()
+        for (key in keys) {
+            val overlayValue = overlay[key]
+            if (overlayValue != null) {
+                result[key] = overlayValue
+                continue
+            }
+            val scopeValue = scope.settings.filterIsInstance<EffectSetting>()
+                .firstOrNull { !it.isPersonal && it.key == key }?.value
+            if (scopeValue != null) {
+                result[key] = scopeValue
+                continue
+            }
+            val regionValue = region.settings.filterIsInstance<EffectSetting>()
+                .firstOrNull { !it.isPersonal && it.key == key }?.value
+            if (regionValue != null) result[key] = regionValue
+        }
+        return result
+    }
+
+    fun getEffectiveRulesForScope(region: Region, scope: GeoScope): Map<RuleKey, Boolean> {
+        val keys = mutableSetOf<RuleKey>()
+        scope.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
+        region.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
+        val result = mutableMapOf<RuleKey, Boolean>()
+        for (key in keys) {
+            result[key] = getEffectiveRuleValue(region, key, scope)
+        }
+        return result
+    }
+
+    fun applyTimedEffectOverlay(overlay: com.imyvm.iwg.domain.TimedEffectOverlay): String =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.applyTimedEffectOverlay(overlay)
+
+    fun clearTimedEffectOverlay(scopeId: ScopeId, overlayId: String): Boolean =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
+
+    fun queryOverlay(scopeId: ScopeId): Map<EffectKey, Int> =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
+
+    fun queryActiveOverlays(scopeId: ScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
 }

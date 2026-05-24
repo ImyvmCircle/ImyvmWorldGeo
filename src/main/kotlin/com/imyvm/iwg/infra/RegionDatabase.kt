@@ -72,6 +72,7 @@ object RegionDatabase {
     private const val DATABASE_FILENAME = "iwg_regions.db"
     private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
     private const val PLAYER_STATS_FILENAME = "iwg_player_stats.json"
+    private const val DB_V1_SENTINEL: Int = -1
     private val gson = Gson()
     private val regionPlayerStats: MutableMap<Int, RegionPlayerStatsLedger> = mutableMapOf()
     internal var onSave: (() -> Unit)? = null
@@ -80,12 +81,14 @@ object RegionDatabase {
     fun save() {
         val file = getDatabasePath()
         DataOutputStream(file.toFile().outputStream()).use { stream ->
+            stream.writeInt(DB_V1_SENTINEL)
             stream.writeInt(regions.size)
             for (region in regions) {
                 stream.writeUTF(region.name)
                 stream.writeInt(region.numberID)
                 saveGeoScopes(stream, region.geometryScope)
                 saveSettings(stream, region.settings)
+                saveOwnershipHistory(stream, region.ownershipHistoryByScope)
             }
         }
         saveDynmapVisibility()
@@ -103,17 +106,22 @@ object RegionDatabase {
         }
 
         DataInputStream(file.toFile().inputStream()).use { stream ->
-            val regionCount = stream.readInt()
+            val first = stream.readInt()
+            val isV1 = first == DB_V1_SENTINEL
+            val regionCount = if (isV1) stream.readInt() else first
             regions = ArrayList(regionCount)
 
             repeat(regionCount) {
                 val name = stream.readUTF()
                 val numberID = stream.readInt()
-                val geometryScopes = loadGeoScopes(stream)
+                val geometryScopes = loadGeoScopes(stream, isV1, numberID)
                 val settings = loadSettings(stream)
 
                 val region = Region(name, numberID, geometryScopes)
                 region.settings.addAll(settings)
+                if (isV1) {
+                    region.ownershipHistoryByScope = loadOwnershipHistory(stream)
+                }
                 regions.add(region)
             }
         }
@@ -223,6 +231,39 @@ object RegionDatabase {
         return null
     }
 
+    fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? {
+        for (region in regions) {
+            val match = region.geometryScope.firstOrNull { it.scopeId.raw == scopeId.raw }
+            if (match != null) return region to match
+        }
+        return null
+    }
+
+    fun nextScopeIdForNewScope(region: Region): ScopeId {
+        val regionMark = com.imyvm.iwg.application.region.parseMarkFromRegionId(region.numberID)
+        return ScopeId(generateNewScopeIdRaw(region.numberID, regionMark))
+    }
+
+    fun recordScopeOwnership(
+        scopeId: ScopeId,
+        fromRegion: Region,
+        toRegion: Region,
+        changedAtMillis: Long
+    ) {
+        val entry = ScopeOwnershipEntry(scopeId.raw, fromRegion.numberID, toRegion.numberID, changedAtMillis)
+        val history = toRegion.ownershipHistoryByScope.getOrPut(scopeId.raw) { mutableListOf() }
+        history.add(entry)
+    }
+
+    fun getScopeOwnershipHistory(scopeId: ScopeId): List<ScopeOwnershipEntry> {
+        val result = mutableListOf<ScopeOwnershipEntry>()
+        for (region in regions) {
+            region.ownershipHistoryByScope[scopeId.raw]?.let { result.addAll(it) }
+        }
+        result.sortBy { it.changedAtMillis }
+        return result
+    }
+
     private fun saveGeoScopes(stream: DataOutputStream, scopes: List<GeoScope>) {
         stream.writeInt(scopes.size)
         for (scope in scopes) {
@@ -232,14 +273,15 @@ object RegionDatabase {
             stream.writeBoolean(scope.isTeleportPointPublic)
             saveGeoShape(stream, scope.geoShape)
             saveSettings(stream, scope.settings)
+            stream.writeLong(scope.scopeId.raw)
         }
     }
 
-    private fun loadGeoScopes(stream: DataInputStream): MutableList<GeoScope> {
+    private fun loadGeoScopes(stream: DataInputStream, isV1: Boolean, regionNumberId: Int): MutableList<GeoScope> {
         val count = stream.readInt()
         val list = ArrayList<GeoScope>(count)
 
-        repeat(count) {
+        repeat(count) { indexInRegion ->
             val scopeName = stream.readUTF()
             val worldId = Identifier.parse(stream.readUTF())
             val teleportPoint = loadTeleportPoint(stream)
@@ -247,12 +289,54 @@ object RegionDatabase {
             val geoShape = loadGeoShape(stream)
             val scopeSettings = loadSettings(stream)
 
-            val scope = GeoScope(scopeName, worldId, teleportPoint, isTeleportPointPublic, geoShape)
+            val scopeId = if (isV1) {
+                ScopeId(stream.readLong())
+            } else {
+                ScopeId(generateCompatScopeIdRaw(regionNumberId, indexInRegion))
+            }
+
+            val scope = GeoScope(scopeName, worldId, teleportPoint, isTeleportPointPublic, geoShape, scopeId = scopeId)
             scope.settings.addAll(scopeSettings)
             list.add(scope)
         }
 
         return list
+    }
+
+    private fun saveOwnershipHistory(
+        stream: DataOutputStream,
+        history: Map<Long, MutableList<ScopeOwnershipEntry>>
+    ) {
+        stream.writeInt(history.size)
+        for ((scopeIdRaw, entries) in history) {
+            stream.writeLong(scopeIdRaw)
+            stream.writeInt(entries.size)
+            for (entry in entries) {
+                stream.writeLong(entry.scopeIdRaw)
+                stream.writeInt(entry.fromRegionNumberId)
+                stream.writeInt(entry.toRegionNumberId)
+                stream.writeLong(entry.changedAtMillis)
+            }
+        }
+    }
+
+    private fun loadOwnershipHistory(stream: DataInputStream): MutableMap<Long, MutableList<ScopeOwnershipEntry>> {
+        val mapSize = stream.readInt()
+        val result = mutableMapOf<Long, MutableList<ScopeOwnershipEntry>>()
+        repeat(mapSize) {
+            val key = stream.readLong()
+            val entryCount = stream.readInt()
+            val entries = ArrayList<ScopeOwnershipEntry>(entryCount)
+            repeat(entryCount) {
+                val sid = stream.readLong()
+                val from = stream.readInt()
+                val to = stream.readInt()
+                val ts = stream.readLong()
+                entries.add(ScopeOwnershipEntry(sid, from, to, ts))
+            }
+            result[key] = entries
+        }
+        return result
     }
 
     private fun saveTeleportPoint(stream: DataOutputStream, teleportPoint: BlockPos?) {

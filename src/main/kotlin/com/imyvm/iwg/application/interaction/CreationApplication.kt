@@ -135,13 +135,22 @@ private fun tryRegionCreation(
     val playerUUID = player.uuid
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points
     val newID = generateNewRegionId(idMark)
-    return RegionFactory.createRegion(
+    val regionResult = RegionFactory.createRegion(
         name = regionName,
         numberID = newID,
         playerExecutor = player,
         selectedPositions = selectedPositions ?: mutableListOf(),
         shapeType = shapeType
     )
+    if (regionResult is Result.Ok) {
+        val mainScope = regionResult.value.geometryScope.firstOrNull()
+        if (mainScope != null && mainScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
+            mainScope.scopeId = com.imyvm.iwg.domain.component.ScopeId(
+                com.imyvm.iwg.domain.component.generateNewScopeIdRaw(newID, idMark)
+            )
+        }
+    }
+    return regionResult
 }
 
 private fun tryScopeCreation(
@@ -180,6 +189,9 @@ private fun handleScopeCreateSuccess(
     notify: Boolean
 ) {
     val newScope = creationResult.value
+    if (newScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
+        newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
+    }
     region.geometryScope.add(newScope)
 
     if (notify) {

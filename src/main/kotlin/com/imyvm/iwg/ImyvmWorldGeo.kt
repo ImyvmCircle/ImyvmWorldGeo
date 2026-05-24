@@ -1,6 +1,7 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
+import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.event.registerPointSelection
@@ -27,6 +28,7 @@ ImyvmWorldGeo : ModInitializer {
 		registerDataLoadSave()
 
 		registerLazyTicker()
+		EffectOverlayService.register()
 		registerPlayerGeographyPair()
 		registerRegionEntryExit()
 		registerPlayerStats()

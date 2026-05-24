@@ -57,8 +57,26 @@ object PlayerRegionEntryExitTracker {
                 continue
             }
 
+            val previousRegion = confirmedRegionMap[uuid]
+            val previousScope = confirmedScopeMap[uuid]
+
             processRegionTransition(player, currentRegion, now)
             processScopeTransition(player, currentRegion, currentScope)
+
+            val newRegion = confirmedRegionMap[uuid]
+            val newScope = confirmedScopeMap[uuid]
+
+            if (previousRegion?.numberID != newRegion?.numberID) {
+                RegionTransitionEvent.EVENT.invoker()
+                    .onTransition(player, previousRegion, newRegion, now)
+            }
+            if (previousScope !== newScope) {
+                val from = if (previousRegion != null && previousScope != null) previousRegion to previousScope else null
+                val to = if (newRegion != null && newScope != null) newRegion to newScope else null
+                if (from != to) {
+                    ScopeTransitionEvent.EVENT.invoker().onTransition(player, from, to, now)
+                }
+            }
         }
 
         val onlineUUIDs = allCurrent.keys

@@ -18,7 +18,8 @@ class GeoScope(
     var isTeleportPointPublic: Boolean = false,
     var geoShape: GeoShape?,
     var settings: MutableList<Setting> = mutableListOf(),
-    var showOnDynmap: Boolean = true
+    var showOnDynmap: Boolean = true,
+    var scopeId: ScopeId = ScopeId(ScopeId.UNASSIGNED_RAW)
 ) {
     fun getScopeInfo(index: Int): Component? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""

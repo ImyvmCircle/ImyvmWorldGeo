@@ -35,6 +35,7 @@ fun recreateScope(
 
     when (newScope) {
         is Result.Ok -> {
+            newScope.value.scopeId = existingScope.scopeId
             region.geometryScope.add(newScope.value)
             player.sendSystemMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs)!!)
             clearSelectionDisplay(player)
