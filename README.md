@@ -4,12 +4,18 @@
 
 ### 1.5.x
 
-This major version (1.5.x) features on new setting items for rpg map settings.
+This major version (1.5.x) extends RPG setting items and infrastructure APIs.
 
 #### 1.5.1
 
 - feat: add `/imyvmWorldGeo stats` and RegionDataApi natural-stat queries for structure counts, average local difficulty, surface block counts, and biome distribution inside loaded chunks of a region.
 - feat: add persistent region player statistics for entry count, stay duration, death count, block place count, and block break count, queryable through `/imyvmWorldGeo stats <regionIdentifier> players` and RegionDataApi.
+- feat: add stable `ScopeId` (Long-encoded) carrying scope creation time and the founded-in region numberID; persisted alongside each `GeoScope` so scope identity survives renames and cross-region transfers.
+- feat: add scope ownership history recording each cross-region scope transfer; queryable through `RegionDataApi.getScopeOwnershipHistory(scopeId)`.
+- feat: add `ScopeTransitionEvent` and `RegionTransitionEvent` for downstream listeners to react to player crossings without duplicating the entry/exit tracker.
+- feat: add `EffectOverlayService` and `RegionDataApi.applyTimedEffectOverlay / clearTimedEffectOverlay / queryOverlay` for short-lived scope-scoped effect overlays merged into the effect resolution chain at priority `personal > overlay > scope global > region global`.
+- feat: add `RegionDataApi.resolveScopeAtEntity`, `getEffectiveEffectsForScope`, and `getEffectiveRulesForScope` for scope-level effect/rule queries that do not require a player UUID.
+- feat: reserve `idMark = 1` for ImyvmWorldGeo-Adventure regions and `idMark = 2` for ImyvmCommunity regions, enabling addon-side mutual exclusion through `parseMarkFromRegionId`.
 
 
 #### 1.5.0
