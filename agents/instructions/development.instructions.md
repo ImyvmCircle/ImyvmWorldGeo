@@ -18,4 +18,5 @@ applyTo: "**"
 - `configuration-persistence.instructions.md`：配置类、具体数值和 `RegionDatabase`。
 - `commands-suggestions.instructions.md`：命令注册和非 ASCII 名称建议。
 - `documentation-validation.instructions.md`：README、changelog、git 和验证命令。
+- `analysis-iteration.instructions.md`：分析、批判、方向比较和阶段判断的五轮迭代规则。
 - `player-documentation-perspective.instructions.md`：README 的用户侧机制文档视角。
