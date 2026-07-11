@@ -24,21 +24,10 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import java.util.UUID
-import java.util.concurrent.ConcurrentHashMap
-import java.util.concurrent.ConcurrentLinkedQueue
-
-private data class PendingWildernessExit(val fromRegion: Region, val startedAt: Long)
-
-private data class ScheduledEntryTitle(val playerUUID: UUID, val region: Region, val scheduledAt: Long)
 
 object PlayerRegionEntryExitTracker {
 
-    private val confirmedRegionMap: ConcurrentHashMap<UUID, Region> = ConcurrentHashMap()
-    private val confirmedScopeMap: ConcurrentHashMap<UUID, GeoScope> = ConcurrentHashMap()
-    private val confirmedSet: MutableSet<UUID> = ConcurrentHashMap.newKeySet()
-    private val pendingWildernessExitMap: ConcurrentHashMap<UUID, PendingWildernessExit> = ConcurrentHashMap()
-    private val pendingEntryTitles: ConcurrentLinkedQueue<ScheduledEntryTitle> = ConcurrentLinkedQueue()
-    private val stayStartMillisMap: ConcurrentHashMap<UUID, Long> = ConcurrentHashMap()
+    private val playerStates = mutableMapOf<UUID, PlayerLocationState>()
 
     fun processTransitions(server: MinecraftServer) {
         val allCurrent = PlayerRegionChecker.getAllRegionScopesWithPlayers()
@@ -46,222 +35,125 @@ object PlayerRegionEntryExitTracker {
 
         for ((uuid, currentPair) in allCurrent) {
             val player = server.playerList.getPlayer(uuid) ?: continue
-            val currentRegion = currentPair.first
-            val currentScope = currentPair.second
-
-            if (!confirmedSet.contains(uuid)) {
-                confirmedSet.add(uuid)
-                if (currentRegion != null) confirmedRegionMap[uuid] = currentRegion
-                if (currentScope != null) confirmedScopeMap[uuid] = currentScope
-                if (currentRegion != null) startStayTracking(uuid, now)
+            val current = PlayerLocation(currentPair.first, currentPair.second)
+            val previous = playerStates[uuid]
+            if (previous == null) {
+                playerStates[uuid] = initialPlayerLocationState(current, now)
                 continue
             }
 
-            val previousRegion = confirmedRegionMap[uuid]
-            val previousScope = confirmedScopeMap[uuid]
-
-            processRegionTransition(player, currentRegion, now)
-            processScopeTransition(player, currentRegion, currentScope)
-
-            val newRegion = confirmedRegionMap[uuid]
-            val newScope = confirmedScopeMap[uuid]
-
-            if (previousRegion?.numberID != newRegion?.numberID) {
-                RegionTransitionEvent.EVENT.invoker()
-                    .onTransition(player, previousRegion, newRegion, now)
-            }
-            if (previousScope !== newScope) {
-                val from = if (previousRegion != null && previousScope != null) previousRegion to previousScope else null
-                val to = if (newRegion != null && newScope != null) newRegion to newScope else null
-                if (from != to) {
-                    ScopeTransitionEvent.EVENT.invoker().onTransition(player, from, to, now)
-                }
-            }
+            val transition = calculateLocationTransition(
+                previous,
+                current,
+                now,
+                ENTRY_EXIT_REGION_DELAY_SECONDS.value * 1000L
+            )
+            applyTransition(player, transition, now)
+            playerStates[uuid] = transition.state
         }
 
-        val onlineUUIDs = allCurrent.keys
-        confirmedSet.retainAll(onlineUUIDs)
-        confirmedRegionMap.keys.retainAll(onlineUUIDs)
-        confirmedScopeMap.keys.retainAll(onlineUUIDs)
-        pendingWildernessExitMap.keys.retainAll(onlineUUIDs)
-        stayStartMillisMap.keys.retainAll(onlineUUIDs)
-
+        playerStates.keys.retainAll(allCurrent.keys)
         processPendingEntryTitles(server, now)
-        checkpointActiveStayDurations(now)
     }
 
     fun handleDisconnect(player: ServerPlayer) {
         val uuid = player.uuid
         val now = System.currentTimeMillis()
-        val region = confirmedRegionMap[uuid]
-        if (region != null && !pendingWildernessExitMap.containsKey(uuid)) {
-            stopStayTracking(region, uuid, now)
+        val state = playerStates.remove(uuid) ?: return
+        val region = state.location.region
+        val startedAt = state.stayStartedAt
+        if (region != null && startedAt != null) {
+            addStayDuration(region, uuid, startedAt, now)
         }
-        clearTracking(uuid)
     }
 
     fun flushAllDurations() {
         val now = System.currentTimeMillis()
-        confirmedRegionMap.forEach { (uuid, region) ->
-            if (!pendingWildernessExitMap.containsKey(uuid)) {
-                stopStayTracking(region, uuid, now)
+        playerStates.replaceAll { uuid, state ->
+            val region = state.location.region
+            val startedAt = state.stayStartedAt
+            if (region != null && startedAt != null) {
+                addStayDuration(region, uuid, startedAt, now)
             }
+            state.copy(stayStartedAt = null)
         }
     }
 
-    private fun processRegionTransition(
-        player: ServerPlayer,
-        currentRegion: Region?,
-        now: Long
-    ) {
+    private fun applyTransition(player: ServerPlayer, transition: LocationTransition, now: Long) {
         val uuid = player.uuid
-        val confirmed = confirmedRegionMap[uuid]
-        val pending = pendingWildernessExitMap[uuid]
-        val delayMs = ENTRY_EXIT_REGION_DELAY_SECONDS.value * 1000L
-
-        if (currentRegion == confirmed) {
-            if (pending != null && currentRegion != null && !stayStartMillisMap.containsKey(uuid)) {
-                startStayTracking(uuid, now)
-            }
-            pendingWildernessExitMap.remove(uuid)
-            return
+        transition.regionExit?.let { sendRegionExitTitle(player, it) }
+        transition.regionEntry?.let { sendRegionEntryTitle(player, it) }
+        transition.scopeExit?.let { sendScopeExitMessage(player, it.region, it.scope) }
+        transition.scopeEntry?.let { sendScopeEntryMessage(player, it.region, it.scope) }
+        transition.completedStay?.let { addStayDuration(it.region, uuid, it.startedAt, it.endedAt) }
+        transition.incrementEntry?.let { RegionDatabase.incrementRegionEntryStat(it, uuid) }
+        transition.regionEvent?.let { (from, to) ->
+            RegionTransitionEvent.EVENT.invoker().onTransition(player, from, to, now)
         }
-
-        if (pending != null) {
-            if (currentRegion == null) {
-                if (now - pending.startedAt >= delayMs) {
-                    sendRegionExitTitle(player, pending.fromRegion)
-                    confirmedRegionMap.remove(uuid)
-                    pendingWildernessExitMap.remove(uuid)
-                }
-            } else {
-                sendRegionExitTitle(player, pending.fromRegion)
-                schedulePendingEntryTitle(uuid, currentRegion, now)
-                confirmedRegionMap[uuid] = currentRegion
-                pendingWildernessExitMap.remove(uuid)
-                RegionDatabase.incrementRegionEntryStat(currentRegion, uuid)
-                startStayTracking(uuid, now)
-            }
-        } else {
-            if (currentRegion == null) {
-                if (confirmed != null) {
-                    stopStayTracking(confirmed, uuid, now)
-                    pendingWildernessExitMap[uuid] = PendingWildernessExit(confirmed, now)
-                }
-            } else {
-                if (confirmed != null) {
-                    stopStayTracking(confirmed, uuid, now)
-                    sendRegionExitTitle(player, confirmed)
-                    schedulePendingEntryTitle(uuid, currentRegion, now)
-                } else {
-                    sendRegionEntryTitle(player, currentRegion)
-                }
-                confirmedRegionMap[uuid] = currentRegion
-                RegionDatabase.incrementRegionEntryStat(currentRegion, uuid)
-                startStayTracking(uuid, now)
-            }
+        transition.scopeEvent?.let { (from, to) ->
+            ScopeTransitionEvent.EVENT.invoker().onTransition(
+                player,
+                from?.let { it.region to it.scope },
+                to?.let { it.region to it.scope },
+                now
+            )
         }
-    }
-
-    private fun processScopeTransition(
-        player: ServerPlayer,
-        currentRegion: Region?,
-        currentScope: GeoScope?
-    ) {
-        val uuid = player.uuid
-        val confirmedScope = confirmedScopeMap[uuid]
-        if (currentScope == confirmedScope) return
-
-        if (confirmedScope != null) {
-            sendScopeExitMessage(player, confirmedRegionMap[uuid], confirmedScope)
-        }
-        if (currentScope != null) {
-            sendScopeEntryMessage(player, currentRegion, currentScope)
-        }
-        if (currentScope != null) confirmedScopeMap[uuid] = currentScope else confirmedScopeMap.remove(uuid)
     }
 
     private fun processPendingEntryTitles(server: MinecraftServer, now: Long) {
-        val iterator = pendingEntryTitles.iterator()
-        while (iterator.hasNext()) {
-            val pending = iterator.next()
-            if (now - pending.scheduledAt >= 1000L) {
-                iterator.remove()
-                val player = server.playerList.getPlayer(pending.playerUUID) ?: continue
-                sendRegionEntryTitle(player, pending.region)
+        playerStates.replaceAll { uuid, state ->
+            val pending = state.scheduledEntryTitle
+            if (pending != null && now - pending.scheduledAt >= 1000L) {
+                server.playerList.getPlayer(uuid)?.let { sendRegionEntryTitle(it, pending.region) }
+                state.copy(scheduledEntryTitle = null)
+            } else {
+                state
             }
         }
     }
 
-    private fun schedulePendingEntryTitle(uuid: UUID, region: Region, now: Long) {
-        pendingEntryTitles.add(ScheduledEntryTitle(uuid, region, now))
-    }
-
-    private fun checkpointActiveStayDurations(now: Long) {
-        confirmedRegionMap.forEach { (uuid, region) ->
-            if (pendingWildernessExitMap.containsKey(uuid)) return@forEach
-            val start = stayStartMillisMap[uuid] ?: return@forEach
-            val delta = now - start
-            if (delta <= 0L) return@forEach
-            RegionDatabase.addRegionStayDuration(region, uuid, delta)
-            stayStartMillisMap[uuid] = now
-        }
-    }
-
-    private fun startStayTracking(uuid: UUID, now: Long) {
-        stayStartMillisMap[uuid] = now
-    }
-
-    private fun stopStayTracking(region: Region, uuid: UUID, now: Long) {
-        val start = stayStartMillisMap.remove(uuid) ?: return
-        val delta = now - start
+    private fun addStayDuration(region: Region, uuid: UUID, startedAt: Long, endedAt: Long) {
+        val delta = endedAt - startedAt
         if (delta > 0L) {
             RegionDatabase.addRegionStayDuration(region, uuid, delta)
         }
     }
 
-    private fun clearTracking(uuid: UUID) {
-        confirmedSet.remove(uuid)
-        confirmedRegionMap.remove(uuid)
-        confirmedScopeMap.remove(uuid)
-        pendingWildernessExitMap.remove(uuid)
-        pendingEntryTitles.removeIf { it.playerUUID == uuid }
-        stayStartMillisMap.remove(uuid)
-    }
-
     private fun sendRegionExitTitle(player: ServerPlayer, region: Region) {
         if (!isRegionNotificationEnabled(region)) return
         val text = getRegionMessage(region, EntryExitMessageKey.EXIT_MESSAGE)
-            ?: Translator.tr(REGION_EXIT_I18N_KEY.value, region.name)!!
+            ?: Translator.tr(REGION_EXIT_I18N_KEY.value, region.name)
             ?: return
         player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
         player.connection.send(ClientboundSetTitleTextPacket(text))
     }
 
     private fun sendRegionEntryTitle(player: ServerPlayer, region: Region) {
-        if (!isRegionNotificationEnabled(region)) return
-        val text = getRegionMessage(region, EntryExitMessageKey.ENTER_MESSAGE)
-            ?: Translator.tr(REGION_ENTER_I18N_KEY.value, region.name)!!
-            ?: return
-        player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
-        player.connection.send(ClientboundSetTitleTextPacket(text))
+        if (isRegionNotificationEnabled(region)) {
+            val text = getRegionMessage(region, EntryExitMessageKey.ENTER_MESSAGE)
+                ?: Translator.tr(REGION_ENTER_I18N_KEY.value, region.name)
+            if (text != null) {
+                player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
+                player.connection.send(ClientboundSetTitleTextPacket(text))
+            }
+        }
         sendRpgEntryNotifications(player, region, null, region.name)
     }
 
     private fun sendScopeExitMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
         val text = getScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, region?.name ?: "", scope.scopeName)
-            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region?.name ?: "", scope.scopeName)!!
+            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region?.name ?: "", scope.scopeName)
             ?: return
         player.sendSystemMessage(text)
     }
 
     private fun sendScopeEntryMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
-        if (!isScopeNotificationEnabled(scope)) return
-        val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region?.name ?: "", scope.scopeName)
-            ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)!!
-            ?: return
-        player.sendSystemMessage(text)
+        if (isScopeNotificationEnabled(scope)) {
+            val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region?.name ?: "", scope.scopeName)
+                ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+            if (text != null) player.sendSystemMessage(text)
+        }
         if (region != null) sendRpgEntryNotifications(player, region, scope, scope.scopeName)
     }
 
@@ -304,8 +196,7 @@ object PlayerRegionEntryExitTracker {
             PermissionKey.RPG_FISHING to PermissionConfig.PERMISSION_DEFAULT_RPG_FISHING
         )
         for ((key, configDefault) in rpgKeys) {
-            val default = configDefault.getValue() as? Boolean ?: true
-            if (!default) continue
+            val default = configDefault.getValue()
             val effective = hasPermission(region, player.uuid, key, scope, default)
             if (!effective) {
                 val i18nKey = "notification.rpg.${key.name.lowercase().removePrefix("rpg_")}_restricted"
