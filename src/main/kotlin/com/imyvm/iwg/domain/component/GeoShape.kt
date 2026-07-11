@@ -14,7 +14,12 @@ class GeoShape(
     var shapeParameter: MutableList<Int>
 ) {
 
+    init {
+        validateParameters()
+    }
+
     fun getShapeInfo(): Component? {
+        validateParameters()
         val area = "%.2f".format(calculateArea())
 
         return when (geoShapeType) {
@@ -26,6 +31,7 @@ class GeoShape(
     }
 
     fun containsPoint(x: Int, y: Int): Boolean {
+        validateParameters()
         return when (geoShapeType) {
             GeoShapeType.CIRCLE -> circleContainsPoint(x, y, shapeParameter)
             GeoShapeType.RECTANGLE -> rectangleContainsPoint(x, y, shapeParameter)
@@ -35,6 +41,7 @@ class GeoShape(
     }
 
     fun calculateArea(): Double {
+        validateParameters()
         return when (geoShapeType) {
             GeoShapeType.CIRCLE -> calculateCircleArea(this.shapeParameter)
             GeoShapeType.RECTANGLE -> calculateRectangleArea(this.shapeParameter)
@@ -44,6 +51,7 @@ class GeoShape(
     }
 
     fun generateTeleportPoint(world: Level): BlockPos? {
+        validateParameters()
         val par = this.shapeParameter
 
         return when (this.geoShapeType) {
@@ -64,20 +72,49 @@ class GeoShape(
     }
 
     fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
-        val candidates = mutableListOf<BlockPos>()
-        for (dy in -searchRadius..searchRadius) {
-            for (dx in -searchRadius..searchRadius) {
-                for (dz in -searchRadius..searchRadius) {
-                    if (dx == 0 && dy == 0 && dz == 0) continue
-                    candidates.add(BlockPos(center.x + dx, center.y + dy, center.z + dz))
+        require(searchRadius >= 0) { "search radius must not be negative" }
+        val minX = (center.x.toLong() - searchRadius).coerceAtLeast(Int.MIN_VALUE.toLong()).toInt()
+        val maxX = (center.x.toLong() + searchRadius).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val minZ = (center.z.toLong() - searchRadius).coerceAtLeast(Int.MIN_VALUE.toLong()).toInt()
+        val maxZ = (center.z.toLong() + searchRadius).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
+        val horizontal = distanceOrderedGrid(center.x, center.z, minX, maxX, minZ, maxZ)
+        for (verticalDistance in 0..searchRadius) {
+            val offsets = if (verticalDistance == 0) intArrayOf(0) else intArrayOf(-verticalDistance, verticalDistance)
+            for (dy in offsets) {
+                val y = center.y.toLong() + dy
+                if (y !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) continue
+                for ((x, z) in horizontal) {
+                    if (x == center.x && y.toInt() == center.y && z == center.z) continue
+                    val candidate = BlockPos(x, y.toInt(), z)
+                    if (isValidTeleportPoint(world, candidate)) return candidate
                 }
             }
         }
-        candidates.sortWith(
-            compareBy<BlockPos> { Math.abs(it.y - center.y) }
-                .thenBy { (it.x - center.x) * (it.x - center.x) + (it.z - center.z) * (it.z - center.z) }
-        )
-        return candidates.firstOrNull { isValidTeleportPoint(world, it) }
+        return null
+    }
+
+    fun validateParameters() {
+        when (geoShapeType) {
+            GeoShapeType.CIRCLE -> {
+                require(shapeParameter.size == 3) { "circle requires center x/z and radius" }
+                val radius = shapeParameter[2]
+                require(radius >= 0) { "circle radius must not be negative" }
+                Math.subtractExact(shapeParameter[0], radius)
+                Math.addExact(shapeParameter[0], radius)
+                Math.subtractExact(shapeParameter[1], radius)
+                Math.addExact(shapeParameter[1], radius)
+            }
+            GeoShapeType.RECTANGLE -> {
+                require(shapeParameter.size == 4) { "rectangle requires west/north/east/south" }
+                require(shapeParameter[0] <= shapeParameter[2] && shapeParameter[1] <= shapeParameter[3]) {
+                    "rectangle bounds are inverted"
+                }
+            }
+            GeoShapeType.POLYGON -> require(shapeParameter.size >= 6 && shapeParameter.size % 2 == 0) {
+                "polygon requires at least three coordinate pairs"
+            }
+            GeoShapeType.UNKNOWN -> require(shapeParameter.isEmpty()) { "unknown shape must not have parameters" }
+        }
     }
 
     private fun getCircleInfo(area: String): Component? {

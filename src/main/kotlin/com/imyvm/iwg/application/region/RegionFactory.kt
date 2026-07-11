@@ -11,7 +11,6 @@ import net.minecraft.server.level.ServerPlayer
 import net.minecraft.resources.Identifier
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 object RegionFactory {
 
@@ -121,8 +120,8 @@ object RegionFactory {
         if (pos1 == pos2) return Result.Err(CreationError.DuplicatedPoints)
         if (pos1.x == pos2.x || pos1.z == pos2.z) return Result.Err(CreationError.CoincidentPoints)
 
-        val width = abs(pos1.x - pos2.x)
-        val length = abs(pos1.z - pos2.z)
+        val width = abs(pos1.x.toLong() - pos2.x)
+        val length = abs(pos1.z.toLong() - pos2.z)
         val error = checkRectangleSize(width, length)
         if (error != null) return Result.Err(error)
 
@@ -142,10 +141,11 @@ object RegionFactory {
 
         if (center == circumference) return Result.Err(CreationError.DuplicatedPoints)
 
-        val dx = circumference.x - center.x
-        val dz = circumference.z - center.z
-        val radius = sqrt((dx * dx + dz * dz).toDouble())
+        val dx = circumference.x.toDouble() - center.x
+        val dz = circumference.z.toDouble() - center.z
+        val radius = kotlin.math.hypot(dx, dz)
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
+        require(radius <= Int.MAX_VALUE) { "circle radius exceeds supported coordinate range" }
 
         return Result.Ok(
             GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))

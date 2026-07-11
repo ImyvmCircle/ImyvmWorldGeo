@@ -95,16 +95,16 @@ private fun rectOverlapCircle(rect: GeoShape, circle: GeoShape): Boolean {
     val closestX = cx.coerceIn(rx1, rx2)
     val closestZ = cz.coerceIn(rz1, rz2)
 
-    val dx = cx - closestX
-    val dz = cz - closestZ
-    return dx * dx + dz * dz <= r * r
+    val dx = cx.toDouble() - closestX
+    val dz = cz.toDouble() - closestZ
+    return kotlin.math.hypot(dx, dz) <= r
 }
 
 private fun circleOverlapCircle(a: GeoShape, b: GeoShape): Boolean {
-    val dx = a.shapeParameter[0] - b.shapeParameter[0]
-    val dz = a.shapeParameter[1] - b.shapeParameter[1]
-    val rSum = a.shapeParameter[2] + b.shapeParameter[2]
-    return dx * dx + dz * dz <= rSum * rSum
+    val dx = a.shapeParameter[0].toDouble() - b.shapeParameter[0]
+    val dz = a.shapeParameter[1].toDouble() - b.shapeParameter[1]
+    val rSum = a.shapeParameter[2].toLong() + b.shapeParameter[2]
+    return kotlin.math.hypot(dx, dz) <= rSum
 }
 
 private fun rectOverlapPolygon(rect: GeoShape, poly: GeoShape): Boolean {
@@ -131,7 +131,7 @@ private fun polygonOverlapCircle(poly: GeoShape, circle: GeoShape): Boolean {
 
     val polyPoints = poly.shapeParameter.chunked(2).map { BlockPos(it[0], 0, it[1]) }
 
-    if (polyPoints.any { (it.x - cx) * (it.x - cx) + (it.z - cz) * (it.z - cz) <= r * r }) {
+    if (polyPoints.any { kotlin.math.hypot(it.x.toDouble() - cx, it.z.toDouble() - cz) <= r }) {
         return true
     }
 
@@ -151,15 +151,16 @@ private fun polygonOverlapCircle(poly: GeoShape, circle: GeoShape): Boolean {
 }
 
 private fun segmentCircleIntersect(p1: BlockPos, p2: BlockPos, cx: Int, cz: Int, r: Int): Boolean {
-    val dx = (p2.x - p1.x).toDouble()
-    val dz = (p2.z - p1.z).toDouble()
+    val dx = p2.x.toDouble() - p1.x
+    val dz = p2.z.toDouble() - p1.z
 
-    val fx = (p1.x - cx).toDouble()
-    val fz = (p1.z - cz).toDouble()
+    val fx = p1.x.toDouble() - cx
+    val fz = p1.z.toDouble() - cz
 
     val a = dx * dx + dz * dz
+    if (a == 0.0) return kotlin.math.hypot(fx, fz) <= r
     val b = 2 * (fx * dx + fz * dz)
-    val c = fx * fx + fz * fz - r * r
+    val c = fx * fx + fz * fz - r.toDouble() * r
 
     val discriminant = b * b - 4 * a * c
     if (discriminant < 0) return false
@@ -191,9 +192,10 @@ private fun polygonsIntersect(a: List<BlockPos>, b: List<BlockPos>): Boolean {
 
 private fun segmentsIntersect(p1: BlockPos, p2: BlockPos, q1: BlockPos, q2: BlockPos): Boolean {
     fun orientation(a: BlockPos, b: BlockPos, c: BlockPos): Int {
-        val value = (b.z - a.z) * (c.x - b.x) - (b.x - a.x) * (c.z - b.z)
+        val value = (b.z.toDouble() - a.z) * (c.x.toDouble() - b.x) -
+            (b.x.toDouble() - a.x) * (c.z.toDouble() - b.z)
         return when {
-            value == 0 -> 0
+            value == 0.0 -> 0
             value > 0 -> 1
             else -> 2
         }
@@ -227,7 +229,7 @@ private fun pointInPolygon(p: BlockPos, polygon: List<BlockPos>): Boolean {
         val pi = polygon[i]
         val pj = polygon[j]
         if ((pi.z > p.z) != (pj.z > p.z) &&
-            p.x < (pj.x - pi.x) * (p.z - pi.z).toDouble() / (pj.z - pi.z).toDouble() + pi.x
+            p.x < (pj.x.toDouble() - pi.x) * (p.z.toDouble() - pi.z) / (pj.z.toDouble() - pi.z) + pi.x
         ) {
             count++
         }

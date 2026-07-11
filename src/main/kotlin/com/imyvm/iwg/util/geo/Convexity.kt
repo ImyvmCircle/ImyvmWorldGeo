@@ -10,8 +10,9 @@ fun isConvex(positions: List<BlockPos>): Boolean {
         val p1 = positions[i]
         val p2 = positions[(i + 1) % n]
         val p3 = positions[(i + 2) % n]
-        val cross = (p2.x - p1.x) * (p3.z - p2.z) - (p2.z - p1.z) * (p3.x - p2.x)
-        if (cross != 0) {
+        val cross = (p2.x.toDouble() - p1.x) * (p3.z.toDouble() - p2.z) -
+            (p2.z.toDouble() - p1.z) * (p3.x.toDouble() - p2.x)
+        if (cross != 0.0) {
             val currentSign = if (cross > 0) 1 else -1
             if (sign == 0) sign = currentSign
             else if (sign != currentSign) return false

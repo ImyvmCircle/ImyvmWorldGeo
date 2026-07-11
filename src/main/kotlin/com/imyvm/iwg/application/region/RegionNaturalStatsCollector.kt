@@ -62,10 +62,10 @@ object RegionNaturalStatsCollector {
 
     private fun collectDimensionStats(level: ServerLevel, scopes: List<GeoScope>): RegionNaturalStatsResult {
         val candidateChunks = collectCandidateChunks(scopes)
-        if (candidateChunks.size > MAX_CANDIDATE_CHUNKS) {
+        if (candidateChunks == null) {
             return RegionNaturalStatsResult.ChunkLimitExceeded(
                 level.dimension().identifier(),
-                candidateChunks.size,
+                MAX_CANDIDATE_CHUNKS + 1,
                 MAX_CANDIDATE_CHUNKS
             )
         }
@@ -157,7 +157,7 @@ object RegionNaturalStatsCollector {
         )
     }
 
-    private fun collectCandidateChunks(scopes: List<GeoScope>): Set<Long> {
+    private fun collectCandidateChunks(scopes: List<GeoScope>): Set<Long>? {
         val candidateChunks = linkedSetOf<Long>()
         scopes.mapNotNull { it.geoShape }
             .forEach { shape ->
@@ -166,37 +166,64 @@ object RegionNaturalStatsCollector {
                 val maxChunkX = Math.floorDiv(maxX, 16)
                 val minChunkZ = Math.floorDiv(minZ, 16)
                 val maxChunkZ = Math.floorDiv(maxZ, 16)
-                for (chunkX in minChunkX..maxChunkX) {
-                    for (chunkZ in minChunkZ..maxChunkZ) {
-                        candidateChunks.add(ChunkPos.pack(chunkX, chunkZ))
-                    }
-                }
+                if (!addChunkRangeWithinLimit(
+                        candidateChunks,
+                        minChunkX,
+                        maxChunkX,
+                        minChunkZ,
+                        maxChunkZ,
+                        MAX_CANDIDATE_CHUNKS
+                    )) return null
             }
         return candidateChunks
     }
 
     private fun getShapeBoundingBox(shape: GeoShape): IntArray {
+        shape.validateParameters()
         val params = shape.shapeParameter
         return when (shape.geoShapeType) {
             GeoShapeType.CIRCLE -> {
-                val centerX = params.getOrNull(0) ?: 0
-                val centerZ = params.getOrNull(1) ?: 0
-                val radius = params.getOrNull(2) ?: 0
-                intArrayOf(centerX - radius, centerZ - radius, centerX + radius, centerZ + radius)
+                val centerX = params[0]
+                val centerZ = params[1]
+                val radius = params[2]
+                intArrayOf(
+                    Math.subtractExact(centerX, radius),
+                    Math.subtractExact(centerZ, radius),
+                    Math.addExact(centerX, radius),
+                    Math.addExact(centerZ, radius)
+                )
             }
 
             GeoShapeType.RECTANGLE -> {
-                val west = minOf(params.getOrNull(0) ?: 0, params.getOrNull(2) ?: 0)
-                val north = minOf(params.getOrNull(1) ?: 0, params.getOrNull(3) ?: 0)
-                val east = maxOf(params.getOrNull(0) ?: 0, params.getOrNull(2) ?: 0)
-                val south = maxOf(params.getOrNull(1) ?: 0, params.getOrNull(3) ?: 0)
-                intArrayOf(west, north, east, south)
+                intArrayOf(params[0], params[1], params[2], params[3])
             }
 
             GeoShapeType.POLYGON -> getBoundingBox(params)
-            GeoShapeType.UNKNOWN -> intArrayOf(0, 0, -1, -1)
+            GeoShapeType.UNKNOWN -> error("unknown shape has no bounding box")
         }
     }
+
+    internal fun addChunkRangeWithinLimit(
+        target: MutableSet<Long>,
+        minChunkX: Int,
+        maxChunkX: Int,
+        minChunkZ: Int,
+        maxChunkZ: Int,
+        limit: Int
+    ): Boolean {
+        require(limit >= 0) { "chunk limit must not be negative" }
+        for (chunkX in minChunkX..maxChunkX) {
+            for (chunkZ in minChunkZ..maxChunkZ) {
+                val packed = packChunkPos(chunkX, chunkZ)
+                if (packed !in target && target.size >= limit) return false
+                target.add(packed)
+            }
+        }
+        return true
+    }
+
+    private fun packChunkPos(x: Int, z: Int): Long =
+        (x.toLong() and 0xffffffffL) or ((z.toLong() and 0xffffffffL) shl 32)
 
     private fun containsAnyScope(scopes: List<GeoScope>, x: Int, z: Int): Boolean =
         scopes.any { scope -> scope.geoShape?.containsPoint(x, z) == true }

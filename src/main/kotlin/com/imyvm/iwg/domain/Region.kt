@@ -13,6 +13,7 @@ import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.network.chat.Component
+import kotlin.math.round
 
 class Region(
     var name: String,
@@ -47,7 +48,7 @@ class Region(
                 totalArea += it.calculateArea()
             }
         }
-        return "%.2f".format(totalArea).toDouble()
+        return round(totalArea * 100.0) / 100.0
     }
 
     companion object {

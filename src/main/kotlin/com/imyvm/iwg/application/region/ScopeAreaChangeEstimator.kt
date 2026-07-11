@@ -7,7 +7,6 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 object ScopeAreaChangeEstimator {
 
@@ -46,8 +45,8 @@ object ScopeAreaChangeEstimator {
         var east = shapeParams[2]
         var south = shapeParams[3]
 
-        if (abs(point.x - west) < abs(point.x - east)) west = point.x else east = point.x
-        if (abs(point.z - north) < abs(point.z - south)) north = point.z else south = point.z
+        if (abs(point.x.toLong() - west) < abs(point.x.toLong() - east)) west = point.x else east = point.x
+        if (abs(point.z.toLong() - north) < abs(point.z.toLong() - south)) north = point.z else south = point.z
 
         return listOf(BlockPos(west, 0, north), BlockPos(east, 0, south))
     }
@@ -64,14 +63,20 @@ object ScopeAreaChangeEstimator {
 
         return if (selectedPositions.size == 1) {
             val pos = selectedPositions[0]
-            val dx = pos.x - centerX
-            val dz = pos.z - centerZ
-            val newRadius = sqrt((dx * dx + dz * dz).toDouble()).toInt()
+            val dx = pos.x.toDouble() - centerX
+            val dz = pos.z.toDouble() - centerZ
+            val radius = kotlin.math.hypot(dx, dz)
+            if (radius > Int.MAX_VALUE) return null
+            val newRadius = radius.toInt()
             if (newRadius <= 0) return null
-            listOf(BlockPos(centerX, 0, centerZ), BlockPos(centerX + newRadius, 0, centerZ))
+            val edgeX = centerX.toLong() + newRadius
+            if (edgeX !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) return null
+            listOf(BlockPos(centerX, 0, centerZ), BlockPos(edgeX.toInt(), 0, centerZ))
         } else {
             val newCenter = selectedPositions[1]
-            listOf(BlockPos(newCenter.x, 0, newCenter.z), BlockPos(newCenter.x + radius, 0, newCenter.z))
+            val edgeX = newCenter.x.toLong() + radius
+            if (edgeX !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) return null
+            listOf(BlockPos(newCenter.x, 0, newCenter.z), BlockPos(edgeX.toInt(), 0, newCenter.z))
         }
     }
 

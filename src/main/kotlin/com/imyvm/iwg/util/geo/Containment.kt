@@ -5,8 +5,8 @@ fun circleContainsPoint(x: Int, y: Int, shapeParameter: List<Int>): Boolean {
     val centerX = shapeParameter[0]
     val centerY = shapeParameter[1]
     val radius = shapeParameter[2]
-    val dx = x - centerX
-    val dy = y - centerY
+    val dx = x.toLong() - centerX
+    val dy = y.toLong() - centerY
     return circleContainsPoint(dx, dy, radius)
 }
 
@@ -29,7 +29,18 @@ fun polygonContainsPoint(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
 
 @JvmName("circlePointContainment")
 fun circleContainsPoint(dx: Int, dy: Int, radius: Int): Boolean {
-    return dx * dx + dy * dy <= radius * radius
+    require(radius >= 0) { "circle radius must not be negative" }
+    val longDx = dx.toLong()
+    val longDy = dy.toLong()
+    val longRadius = radius.toLong()
+    return longDx * longDx + longDy * longDy <= longRadius * longRadius
+}
+
+internal fun circleContainsPoint(dx: Long, dy: Long, radius: Int): Boolean {
+    require(radius >= 0) { "circle radius must not be negative" }
+    val longRadius = radius.toLong()
+    if (kotlin.math.abs(dx) > longRadius || kotlin.math.abs(dy) > longRadius) return false
+    return dx * dx + dy * dy <= longRadius * longRadius
 }
 
 @JvmName("rectanglePointContainment")
@@ -48,8 +59,9 @@ fun polygonContainsPoint(x: Int, z: Int, vertices: List<Pair<Int, Int>>): Boolea
         val xj = vertices[j].first
         val zj = vertices[j].second
 
-        val cross = (x - xi) * (zj - zi) - (z - zi) * (xj - xi)
-        if (cross == 0) {
+        val cross = (x.toDouble() - xi) * (zj.toDouble() - zi) -
+            (z.toDouble() - zi) * (xj.toDouble() - xi)
+        if (cross == 0.0) {
             if (x in minOf(xi, xj)..maxOf(xi, xj) &&
                 z in minOf(zi, zj)..maxOf(zi, zj)
             ) {

@@ -6,7 +6,6 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 object AreaEstimator {
 
@@ -28,7 +27,6 @@ object AreaEstimator {
             GeoShapeType.RECTANGLE -> estimateRectangleArea(positions)
             GeoShapeType.CIRCLE -> estimateCircleArea(positions)
             GeoShapeType.POLYGON -> estimatePolygonArea(positions)
-            else -> AreaEstimationResult.Error(CreationError.InsufficientPoints)
         }
     }
 
@@ -39,13 +37,13 @@ object AreaEstimator {
         if (pos1 == pos2) return AreaEstimationResult.Error(CreationError.DuplicatedPoints)
         if (pos1.x == pos2.x || pos1.z == pos2.z) return AreaEstimationResult.Error(CreationError.CoincidentPoints)
 
-        val width = abs(pos1.x - pos2.x)
-        val length = abs(pos1.z - pos2.z)
+        val width = abs(pos1.x.toLong() - pos2.x)
+        val length = abs(pos1.z.toLong() - pos2.z)
         
         val error = checkRectangleSize(width, length)
         if (error != null) return AreaEstimationResult.Error(error)
 
-        val area = (width * length).toDouble()
+        val area = width.toDouble() * length
         return AreaEstimationResult.Success(area)
     }
 
@@ -55,9 +53,9 @@ object AreaEstimator {
 
         if (center == circumference) return AreaEstimationResult.Error(CreationError.DuplicatedPoints)
 
-        val dx = circumference.x - center.x
-        val dz = circumference.z - center.z
-        val radius = sqrt((dx * dx + dz * dz).toDouble())
+        val dx = circumference.x.toDouble() - center.x
+        val dz = circumference.z.toDouble() - center.z
+        val radius = kotlin.math.hypot(dx, dz)
         
         if (!checkCircleSize(radius)) return AreaEstimationResult.Error(CreationError.UnderSizeLimit)
 
