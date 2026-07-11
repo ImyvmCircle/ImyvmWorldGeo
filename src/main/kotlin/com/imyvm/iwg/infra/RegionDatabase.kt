@@ -14,7 +14,11 @@ import net.minecraft.world.level.Level
 import java.io.DataInputStream
 import java.io.DataOutputStream
 import java.io.IOException
+import java.io.OutputStream
+import java.nio.file.AtomicMoveNotSupportedException
+import java.nio.file.Files
 import java.nio.file.Path
+import java.nio.file.StandardCopyOption
 import java.util.*
 import kotlin.collections.ArrayList
 
@@ -73,16 +77,24 @@ object RegionDatabase {
     private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
     private const val PLAYER_STATS_FILENAME = "iwg_player_stats.json"
     private const val DB_V1_SENTINEL: Int = -1
+    private const val MAX_COLLECTION_SIZE = 100_000
     private val gson = Gson()
     private val regionPlayerStats: MutableMap<Int, RegionPlayerStatsLedger> = mutableMapOf()
     internal var onSave: (() -> Unit)? = null
 
     @Throws(IOException::class)
     fun save() {
-        val file = getDatabasePath()
-        DataOutputStream(file.toFile().outputStream()).use { stream ->
+        writeRegions(getDatabasePath(), regions)
+        saveDynmapVisibility()
+        savePlayerStats()
+        onSave?.invoke()
+    }
+
+    internal fun writeRegions(path: Path, regions: List<Region>) {
+        atomicWrite(path) { output ->
+            val stream = DataOutputStream(output)
             stream.writeInt(DB_V1_SENTINEL)
-            stream.writeInt(regions.size)
+            stream.writeInt(checkedCount(regions.size, "regions"))
             for (region in regions) {
                 stream.writeUTF(region.name)
                 stream.writeInt(region.numberID)
@@ -91,9 +103,6 @@ object RegionDatabase {
                 saveOwnershipHistory(stream, region.ownershipHistoryByScope)
             }
         }
-        saveDynmapVisibility()
-        savePlayerStats()
-        onSave?.invoke()
     }
 
     @Throws(IOException::class)
@@ -105,28 +114,37 @@ object RegionDatabase {
             return
         }
 
-        DataInputStream(file.toFile().inputStream()).use { stream ->
-            val first = stream.readInt()
-            val isV1 = first == DB_V1_SENTINEL
-            val regionCount = if (isV1) stream.readInt() else first
-            regions = ArrayList(regionCount)
-
-            repeat(regionCount) {
-                val name = stream.readUTF()
-                val numberID = stream.readInt()
-                val geometryScopes = loadGeoScopes(stream, isV1, numberID)
-                val settings = loadSettings(stream)
-
-                val region = Region(name, numberID, geometryScopes)
-                region.settings.addAll(settings)
-                if (isV1) {
-                    region.ownershipHistoryByScope = loadOwnershipHistory(stream)
-                }
-                regions.add(region)
-            }
-        }
+        regions = readRegions(file)
         loadDynmapVisibility()
         loadPlayerStats()
+    }
+
+    internal fun readRegions(path: Path): MutableList<Region> {
+        try {
+            return DataInputStream(Files.newInputStream(path)).use { stream ->
+                val first = stream.readInt()
+                val isV1 = first == DB_V1_SENTINEL
+                val regionCount = checkedCount(if (isV1) stream.readInt() else first, "regions")
+                val loadedRegions = ArrayList<Region>(regionCount)
+
+                repeat(regionCount) {
+                    val name = stream.readUTF()
+                    val numberID = stream.readInt()
+                    val geometryScopes = loadGeoScopes(stream, isV1, numberID)
+                    val settings = loadSettings(stream)
+
+                    val region = Region(name, numberID, geometryScopes)
+                    region.settings.addAll(settings)
+                    if (isV1) {
+                        region.ownershipHistoryByScope = loadOwnershipHistory(stream)
+                    }
+                    loadedRegions.add(region)
+                }
+                loadedRegions
+            }
+        } catch (e: IllegalArgumentException) {
+            throw IOException("Invalid region database", e)
+        }
     }
 
     fun addRegion(region: Region) {
@@ -265,7 +283,7 @@ object RegionDatabase {
     }
 
     private fun saveGeoScopes(stream: DataOutputStream, scopes: List<GeoScope>) {
-        stream.writeInt(scopes.size)
+        stream.writeInt(checkedCount(scopes.size, "scopes"))
         for (scope in scopes) {
             stream.writeUTF(scope.scopeName)
             stream.writeUTF(scope.worldId.toString())
@@ -278,7 +296,7 @@ object RegionDatabase {
     }
 
     private fun loadGeoScopes(stream: DataInputStream, isV1: Boolean, regionNumberId: Int): MutableList<GeoScope> {
-        val count = stream.readInt()
+        val count = checkedCount(stream.readInt(), "scopes")
         val list = ArrayList<GeoScope>(count)
 
         repeat(count) { indexInRegion ->
@@ -307,10 +325,10 @@ object RegionDatabase {
         stream: DataOutputStream,
         history: Map<Long, MutableList<ScopeOwnershipEntry>>
     ) {
-        stream.writeInt(history.size)
+        stream.writeInt(checkedCount(history.size, "ownership history"))
         for ((scopeIdRaw, entries) in history) {
             stream.writeLong(scopeIdRaw)
-            stream.writeInt(entries.size)
+            stream.writeInt(checkedCount(entries.size, "ownership entries"))
             for (entry in entries) {
                 stream.writeLong(entry.scopeIdRaw)
                 stream.writeInt(entry.fromRegionNumberId)
@@ -321,11 +339,11 @@ object RegionDatabase {
     }
 
     private fun loadOwnershipHistory(stream: DataInputStream): MutableMap<Long, MutableList<ScopeOwnershipEntry>> {
-        val mapSize = stream.readInt()
+        val mapSize = checkedCount(stream.readInt(), "ownership history")
         val result = mutableMapOf<Long, MutableList<ScopeOwnershipEntry>>()
         repeat(mapSize) {
             val key = stream.readLong()
-            val entryCount = stream.readInt()
+            val entryCount = checkedCount(stream.readInt(), "ownership entries")
             val entries = ArrayList<ScopeOwnershipEntry>(entryCount)
             repeat(entryCount) {
                 val sid = stream.readLong()
@@ -365,9 +383,10 @@ object RegionDatabase {
         if (shape == null) {
             stream.writeBoolean(false)
         } else {
+            validateShapeParameterCount(shape.geoShapeType, shape.shapeParameter.size)
             stream.writeBoolean(true)
             stream.writeInt(shape.geoShapeType.ordinal)
-            stream.writeInt(shape.shapeParameter.size)
+            stream.writeInt(checkedCount(shape.shapeParameter.size, "shape parameters"))
             shape.shapeParameter.forEach { stream.writeInt(it) }
         }
     }
@@ -376,16 +395,16 @@ object RegionDatabase {
         val hasShape = stream.readBoolean()
         return if (!hasShape) null
         else {
-            val typeOrdinal = stream.readInt()
-            val geoShapeType = GeoShapeType.entries[typeOrdinal]
-            val paramCount = stream.readInt()
+            val geoShapeType = readEnum(stream, GeoShapeType.entries, "shape type")
+            val paramCount = checkedCount(stream.readInt(), "shape parameters")
             val params = MutableList(paramCount) { stream.readInt() }
+            validateShapeParameterCount(geoShapeType, paramCount)
             GeoShape(geoShapeType, params)
         }
     }
 
     private fun saveSettings(stream: DataOutputStream, settings: List<Setting>) {
-        stream.writeInt(settings.size)
+        stream.writeInt(checkedCount(settings.size, "settings"))
         settings.forEach { setting ->
             when (setting) {
                 is PermissionSetting -> savePermissionSetting(stream, setting)
@@ -400,7 +419,7 @@ object RegionDatabase {
     }
 
     private fun loadSettings(stream: DataInputStream): MutableList<Setting> {
-        val count = stream.readInt()
+        val count = checkedCount(stream.readInt(), "settings")
         val list = mutableListOf<Setting>()
         repeat(count) {
             val type = stream.readInt()
@@ -427,7 +446,7 @@ object RegionDatabase {
     }
 
     private fun loadPermissionSetting(stream: DataInputStream): PermissionSetting {
-        val key = PermissionKey.entries[stream.readInt()]
+        val key = readEnum(stream, PermissionKey.entries, "permission key")
         val value = stream.readBoolean()
         val uuidStr = stream.readUTF()
         val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
@@ -457,7 +476,7 @@ object RegionDatabase {
     }
 
     private fun loadEffectSetting(stream: DataInputStream): EffectSetting {
-        val key = EffectKey.entries[stream.readInt()]
+        val key = readEnum(stream, EffectKey.entries, "effect key")
         val value = stream.readInt()
         val uuidStr = stream.readUTF()
         val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
@@ -472,7 +491,7 @@ object RegionDatabase {
     }
 
     private fun loadRuleSetting(stream: DataInputStream): RuleSetting {
-        val key = RuleKey.entries[stream.readInt()]
+        val key = readEnum(stream, RuleKey.entries, "rule key")
         val value = stream.readBoolean()
         return RuleSetting(key, value)
     }
@@ -496,7 +515,7 @@ object RegionDatabase {
     }
 
     private fun loadEntryExitToggleSetting(stream: DataInputStream): EntryExitToggleSetting {
-        val key = EntryExitToggleKey.entries[stream.readInt()]
+        val key = readEnum(stream, EntryExitToggleKey.entries, "entry/exit toggle key")
         val value = stream.readBoolean()
         return EntryExitToggleSetting(key, value)
     }
@@ -508,7 +527,7 @@ object RegionDatabase {
     }
 
     private fun loadEntryExitMessageSetting(stream: DataInputStream): EntryExitMessageSetting {
-        val key = EntryExitMessageKey.entries[stream.readInt()]
+        val key = readEnum(stream, EntryExitMessageKey.entries, "entry/exit message key")
         val value = stream.readUTF()
         return EntryExitMessageSetting(key, value)
     }
@@ -566,8 +585,7 @@ object RegionDatabase {
 
         root.add("regions", regionsJson)
         val file = getPlayerStatsPath()
-        file.toFile().parentFile?.mkdirs()
-        file.toFile().writeText(gson.toJson(root))
+        atomicWriteText(file, gson.toJson(root))
     }
 
     private fun readPlayerStatMap(source: JsonObject?, target: MutableMap<UUID, Long>) {
@@ -652,9 +670,49 @@ object RegionDatabase {
     }
 
     private fun writeDynmapConfig(root: JsonObject) {
-        val file = getDynmapConfigPath()
-        file.toFile().parentFile?.mkdirs()
-        file.toFile().writeText(gson.toJson(root))
+        atomicWriteText(getDynmapConfigPath(), gson.toJson(root))
+    }
+
+    private fun checkedCount(value: Int, label: String): Int {
+        if (value !in 0..MAX_COLLECTION_SIZE) {
+            throw IOException("Invalid $label count: $value")
+        }
+        return value
+    }
+
+    private fun validateShapeParameterCount(type: GeoShapeType, count: Int) {
+        val valid = when (type) {
+            GeoShapeType.UNKNOWN -> count == 0
+            GeoShapeType.CIRCLE -> count == 3
+            GeoShapeType.RECTANGLE -> count == 4
+            GeoShapeType.POLYGON -> count >= 6 && count % 2 == 0
+        }
+        if (!valid) throw IOException("Invalid parameter count $count for $type")
+    }
+
+    private fun <T> readEnum(stream: DataInputStream, entries: List<T>, label: String): T {
+        val ordinal = stream.readInt()
+        return entries.getOrNull(ordinal) ?: throw IOException("Invalid $label ordinal: $ordinal")
+    }
+
+    private fun atomicWriteText(path: Path, value: String) {
+        atomicWrite(path) { it.write(value.toByteArray(Charsets.UTF_8)) }
+    }
+
+    internal fun atomicWrite(path: Path, writer: (OutputStream) -> Unit) {
+        val parent = path.toAbsolutePath().parent
+        Files.createDirectories(parent)
+        val temporary = Files.createTempFile(parent, ".${path.fileName}.", ".tmp")
+        try {
+            Files.newOutputStream(temporary).use(writer)
+            try {
+                Files.move(temporary, path, StandardCopyOption.ATOMIC_MOVE, StandardCopyOption.REPLACE_EXISTING)
+            } catch (_: AtomicMoveNotSupportedException) {
+                Files.move(temporary, path, StandardCopyOption.REPLACE_EXISTING)
+            }
+        } finally {
+            Files.deleteIfExists(temporary)
+        }
     }
 
     private fun getDynmapConfigPath(): Path {
