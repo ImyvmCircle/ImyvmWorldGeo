@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.application.region.rule.helper.getRuleValue
+import com.imyvm.iwg.application.region.permission.helper.resolvePermissionSettingValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUILD_BREAK
@@ -122,30 +123,6 @@ fun onCertificateExtensionPermissionValue(
         throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
     return onCertificatePermissionValue(region, scope, playerUuid, key)
-}
-
-private fun resolvePermissionSettingValue(
-    region: Region,
-    scope: GeoScope?,
-    playerUuid: UUID?,
-    key: BaseKey
-): Boolean? {
-    findPermissionSettingValue(scope?.settings, playerUuid, key)?.let { return it }
-    return findPermissionSettingValue(region.settings, playerUuid, key)
-}
-
-private fun findPermissionSettingValue(
-    settings: List<Setting>?,
-    playerUuid: UUID?,
-    key: BaseKey
-): Boolean? {
-    if (settings == null) return null
-    val setting = settings.firstOrNull { setting ->
-        if (setting.key != key) return@firstOrNull false
-        if (setting !is PermissionSetting && setting !is ExtensionPermissionSetting) return@firstOrNull false
-        if (playerUuid == null) !setting.isPersonal else setting.playerUUID == playerUuid
-    } ?: return null
-    return setting.value as Boolean
 }
 
 private fun parseKey(keyString: String): Any = when {

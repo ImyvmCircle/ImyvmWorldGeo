@@ -1,9 +1,7 @@
 package com.imyvm.iwg.application.region.permission.helper
 
-import com.imyvm.iwg.domain.component.GeoScope
-import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.domain.component.PermissionSetting
+import com.imyvm.iwg.domain.component.*
 import java.util.*
 
 sealed class PermissionDenialSource {
@@ -19,7 +17,7 @@ fun hasPermission(
     scope: GeoScope? = null,
     defaultValue: Boolean = true
 ): Boolean {
-    return checkPermission(region, playerUUID, key, scope) ?: defaultValue
+    return resolvePermissionSettingValue(region, scope, playerUUID, key) ?: defaultValue
 }
 
 fun getPermissionDenialSource(
@@ -29,7 +27,7 @@ fun getPermissionDenialSource(
     scope: GeoScope? = null,
     defaultValue: Boolean = true
 ): PermissionDenialSource? {
-    val result = checkPermissionWithSource(region, playerUUID, key, scope)
+    val result = resolvePermissionWithSource(region, scope, playerUUID, key)
     return when {
         result == null -> if (defaultValue) null else PermissionDenialSource.ByDefault
         result.first -> null
@@ -45,56 +43,57 @@ fun buildPermissionDenialContext(region: Region, scope: GeoScope?, source: Permi
     }
 }
 
-private fun checkPermission(
+fun resolvePermissionSettingValue(
     region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope?
-): Boolean? = checkPermissionWithSource(region, playerUUID, key, scope)?.first
+    scope: GeoScope?,
+    playerUUID: UUID?,
+    key: BaseKey
+): Boolean? = resolvePermissionWithSource(region, scope, playerUUID, key)?.first
 
-private fun checkPermissionWithSource(
+private fun resolvePermissionWithSource(
     region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope?
+    scope: GeoScope?,
+    playerUUID: UUID?,
+    key: BaseKey
 ): Pair<Boolean, PermissionDenialSource>? {
-    val explicit = checkExplicitPermissionWithSource(region, playerUUID, key, scope)
+    val explicit = resolveExplicitPermission(region, scope, playerUUID, key)
     if (explicit != null) return explicit
-    val ancestors = buildList {
-        var current = key.parent
-        while (current != null) {
-            add(current)
-            current = current.parent
+    if (key is PermissionKey) {
+        var ancestor = key.parent
+        while (ancestor != null) {
+            resolveExplicitPermission(region, scope, playerUUID, ancestor)?.let { return it }
+            ancestor = ancestor.parent
         }
-    }
-    for (ancestor in ancestors) {
-        val result = checkExplicitPermissionWithSource(region, playerUUID, ancestor, scope)
-        if (result != null) return result
     }
     return null
 }
 
-private fun checkExplicitPermissionWithSource(
+private fun resolveExplicitPermission(
     region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope?
+    scope: GeoScope?,
+    playerUUID: UUID?,
+    key: BaseKey
 ): Pair<Boolean, PermissionDenialSource>? {
-    scope?.settings?.filterIsInstance<PermissionSetting>()?.let { settings ->
-        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
-            return it.value to PermissionDenialSource.AtScope
-        }
-        settings.firstOrNull { !it.isPersonal && it.key == key }?.let {
-            return it.value to PermissionDenialSource.AtScope
-        }
+    findPermission(scope?.settings, playerUUID, key)?.let {
+        return it to PermissionDenialSource.AtScope
     }
-    region.settings.filterIsInstance<PermissionSetting>().let { settings ->
-        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
-            return it.value to PermissionDenialSource.AtRegion
-        }
-        settings.firstOrNull { !it.isPersonal && it.key == key }?.let {
-            return it.value to PermissionDenialSource.AtRegion
-        }
+    findPermission(region.settings, playerUUID, key)?.let {
+        return it to PermissionDenialSource.AtRegion
     }
     return null
+}
+
+private fun findPermission(settings: List<Setting>?, playerUUID: UUID?, key: BaseKey): Boolean? {
+    val permissions = settings.orEmpty()
+    if (playerUUID != null) {
+        permissions.firstOrNull {
+            (it is PermissionSetting || it is ExtensionPermissionSetting) &&
+                    it.key == key && it.playerUUID == playerUUID
+        }?.let {
+            return it.value as Boolean
+        }
+    }
+    return permissions.firstOrNull {
+        (it is PermissionSetting || it is ExtensionPermissionSetting) && it.key == key && !it.isPersonal
+    }?.value as Boolean?
 }

@@ -6,7 +6,6 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
 import net.minecraft.resources.Identifier
-import org.junit.Ignore
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertFalse
@@ -65,11 +64,17 @@ class PermissionHelperTest {
         assertTrue(hasPermission(region, player, PermissionKey.EGG_USE))
     }
 
-    @Ignore("R2: API resolver must fall back from a missing personal setting to the global setting")
     @Test
     fun `API resolver falls back to global setting for a player`() {
         region.settings += PermissionSetting(PermissionKey.PVP, false)
 
         assertFalse(onCertificatePermissionValue(region, null, player, PermissionKey.PVP))
+    }
+
+    @Test
+    fun `API resolver uses the same parent inheritance as runtime checks`() {
+        region.settings += PermissionSetting(PermissionKey.BUILD, false)
+
+        assertFalse(onCertificatePermissionValue(region, null, player, PermissionKey.BUCKET_BUILD))
     }
 }
