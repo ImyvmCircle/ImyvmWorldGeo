@@ -1,6 +1,7 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
+import com.imyvm.iwg.infra.config.initializeConfigValidation
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
@@ -25,6 +26,7 @@ class
 ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
+		initializeConfigValidation()
 		registerDataLoadSave()
 
 		registerLazyTicker()

@@ -13,19 +13,23 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
-private val pendingLanding: MutableMap<UUID, Int> = mutableMapOf()
+private val pendingLanding: MutableMap<UUID, Long> = mutableMapOf()
 private val systemGrantedFly: MutableSet<UUID> = mutableSetOf()
-private val fallImmunity: MutableMap<UUID, Int> = mutableMapOf()
+private val fallImmunity: MutableMap<UUID, Long> = mutableMapOf()
 
 fun managePlayersFly(server: MinecraftServer) {
-    val currentTick = server.overworld().gameTime.toInt()
+    val currentTick = server.overworld().gameTime
     for (player in getOnlinePlayers(server)) {
-        processPlayerFly(player)
+        processPlayerFly(player, currentTick)
     }
     processLandingCountdown(server, currentTick)
 }
 
 fun processPlayerFly(player: ServerPlayer) {
+    processPlayerFly(player, player.level().server.overworld().gameTime)
+}
+
+private fun processPlayerFly(player: ServerPlayer, currentTick: Long) {
     val uuid = player.uuid
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level(), player.blockPosition().x, player.blockPosition().z)
     val canFlyNow = regionAndScope?.let { (region, scope) ->
@@ -41,7 +45,10 @@ fun processPlayerFly(player: ServerPlayer) {
         }
     } else {
         if (uuid in systemGrantedFly && uuid !in pendingLanding) {
-            pendingLanding[uuid] = PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value * 20
+            pendingLanding[uuid] = tickDeadline(
+                currentTick,
+                PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value
+            )
             player.sendSystemMessage(
                 Translator.tr("setting.permission.fly.disabled.soon",
                 PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS.value)!!)
@@ -59,35 +66,33 @@ private fun enableFlying(player: ServerPlayer) {
     pendingLanding.remove(player.uuid)
 }
 
-private fun processLandingCountdown(server: MinecraftServer, currentTick: Int) {
+private fun processLandingCountdown(server: MinecraftServer, currentTick: Long) {
     val iterator = pendingLanding.iterator()
     while (iterator.hasNext()) {
         val entry = iterator.next()
         val uuid = entry.key
-        val ticksLeft = entry.value - 20
+        val expiresAt = entry.value
         val player = getPlayerByUuid(server, uuid)
         if (player == null) { cleanupAbsentPlayer(uuid, iterator); continue }
         if (!isStillNoFly(player)) { iterator.remove(); continue }
-        handleLandingEnd(player, uuid, ticksLeft, currentTick, iterator)
+        handleLandingEnd(player, uuid, expiresAt, currentTick, iterator)
     }
 }
 
 private fun handleLandingEnd(
     player: ServerPlayer,
     uuid: UUID,
-    ticksLeft: Int,
-    currentTick: Int,
-    iterator: MutableIterator<MutableMap.MutableEntry<UUID, Int>>
+    expiresAt: Long,
+    currentTick: Long,
+    iterator: MutableIterator<MutableMap.MutableEntry<UUID, Long>>
 ) {
-    if (ticksLeft <= 0) {
+    if (currentTick >= expiresAt) {
         if (uuid in systemGrantedFly) disableFlying(player, uuid, currentTick)
         iterator.remove()
-    } else {
-        pendingLanding[uuid] = ticksLeft
     }
 }
 
-private fun disableFlying(player: ServerPlayer, uuid: UUID, currentTick: Int) {
+private fun disableFlying(player: ServerPlayer, uuid: UUID, currentTick: Long) {
     player.abilities.mayfly = false
     player.abilities.flying = false
     grantFallImmunity(uuid, currentTick)
@@ -96,21 +101,20 @@ private fun disableFlying(player: ServerPlayer, uuid: UUID, currentTick: Int) {
     systemGrantedFly.remove(uuid)
 }
 
-fun processFallImmunity(player: ServerPlayer, currentTick: Int) {
+fun processFallImmunity(player: ServerPlayer, currentTick: Long) {
     fallImmunity[player.uuid]?.let { expireTick ->
         if (currentTick <= expireTick) player.fallDistance = 0.0
         else fallImmunity.remove(player.uuid)
     }
 }
 
-private fun grantFallImmunity(uuid: UUID, currentTick: Int) {
-    val durationTicks = PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS.value * 20
-    fallImmunity[uuid] = currentTick + durationTicks
+private fun grantFallImmunity(uuid: UUID, currentTick: Long) {
+    fallImmunity[uuid] = tickDeadline(currentTick, PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS.value)
 }
 
 private fun cleanupAbsentPlayer(
     uuid: UUID,
-    iterator: MutableIterator<MutableMap.MutableEntry<UUID, Int>>
+    iterator: MutableIterator<MutableMap.MutableEntry<UUID, Long>>
 ) {
     iterator.remove()
     systemGrantedFly.remove(uuid)
@@ -122,4 +126,9 @@ private fun isStillNoFly(player: ServerPlayer): Boolean {
     return regionAndScope?.let { (region, scope) ->
         !hasPermission(region, player.uuid, PermissionKey.FLY, scope, PERMISSION_DEFAULT_FLY.value)
     } ?: true
+}
+
+internal fun tickDeadline(currentTick: Long, seconds: Int): Long {
+    require(seconds >= 0) { "duration must not be negative" }
+    return Math.addExact(currentTick, seconds.toLong() * 20L)
 }

@@ -20,7 +20,7 @@ fun registerRegionPermissions() {
 
     ServerTickEvents.END_SERVER_TICK.register{ server ->
         for (player in getOnlinePlayers(server)) {
-            val currentTick = server.overworld().gameTime.toInt()
+            val currentTick = server.overworld().gameTime
             processFallImmunity(player, currentTick)
         }
     }

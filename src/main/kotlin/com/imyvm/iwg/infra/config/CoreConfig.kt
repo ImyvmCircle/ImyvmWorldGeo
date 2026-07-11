@@ -19,6 +19,6 @@ object CoreConfig {
         1,
         "the interval in seconds for lazy ticker tasks to run."
     ) { obj: Config, path: String? ->
-        obj.getInt(path)
+        positiveInt(path, obj.getInt(path))
     }
 }
