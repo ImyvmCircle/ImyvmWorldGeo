@@ -1,14 +1,11 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
-import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.application.region.permission.helper.denyPermissionAt
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BREAK
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUCKET_BUILD
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUCKET_SCOOP
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUILD
-import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
@@ -56,16 +53,8 @@ fun playerBuildPermission() {
         val cropBlock = (stack.item as BlockItem).block
         if ((cropBlock is CropBlock || cropBlock is SweetBerryBushBlock) && block == Blocks.FARMLAND) return@register InteractionResult.PASS
         val placePos = pos.relative(hitResult.direction)
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUILD, scope, PERMISSION_DEFAULT_BUILD.value)
-            if (denial != null) {
-                if (hand == InteractionHand.MAIN_HAND) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.build", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, placePos, PermissionKey.BUILD, PERMISSION_DEFAULT_BUILD.value,
+                "setting.permission.build", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }
@@ -75,28 +64,12 @@ fun playerBucketUsePermission() {
         val stack = player.getItemInHand(hand)
         if (stack.`is`(Items.BUCKET)) {
             val pos = hitResult.blockPos
-            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
-            regionAndScope?.let { (region, scope) ->
-                val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_SCOOP, scope, PERMISSION_DEFAULT_BUCKET_SCOOP.value)
-                if (denial != null) {
-                    if (hand == InteractionHand.MAIN_HAND) {
-                        player.sendSystemMessage(Translator.tr("setting.permission.bucket_scoop", buildPermissionDenialContext(region, scope, denial))!!)
-                    }
-                    return@register InteractionResult.CONSUME
-                }
-            }
+            if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
+                    "setting.permission.bucket_scoop", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
         } else if (stack.item is SolidBucketItem) {
             val placePos = hitResult.blockPos.relative(hitResult.direction)
-            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
-            regionAndScope?.let { (region, scope) ->
-                val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_BUILD, scope, PERMISSION_DEFAULT_BUCKET_BUILD.value)
-                if (denial != null) {
-                    if (hand == InteractionHand.MAIN_HAND) {
-                        player.sendSystemMessage(Translator.tr("setting.permission.bucket_build", buildPermissionDenialContext(region, scope, denial))!!)
-                    }
-                    return@register InteractionResult.CONSUME
-                }
-            }
+            if (denyPermissionAt(player, world, placePos, PermissionKey.BUCKET_BUILD, PERMISSION_DEFAULT_BUCKET_BUILD.value,
+                    "setting.permission.bucket_build", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
         }
         InteractionResult.PASS
     }
@@ -115,28 +88,12 @@ fun playerBucketUsePermission() {
         val blockHit = hit as BlockHitResult
         val pos = blockHit.blockPos
         if (stack.`is`(Items.BUCKET)) {
-            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
-            regionAndScope?.let { (region, scope) ->
-                val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_SCOOP, scope, PERMISSION_DEFAULT_BUCKET_SCOOP.value)
-                if (denial != null) {
-                    if (hand == InteractionHand.MAIN_HAND) {
-                        player.sendSystemMessage(Translator.tr("setting.permission.bucket_scoop", buildPermissionDenialContext(region, scope, denial))!!)
-                    }
-                    return@register InteractionResult.CONSUME
-                }
-            }
+            if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
+                    "setting.permission.bucket_scoop", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
         } else {
             val placePos = pos.relative(blockHit.direction)
-            val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
-            regionAndScope?.let { (region, scope) ->
-                val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_BUILD, scope, PERMISSION_DEFAULT_BUCKET_BUILD.value)
-                if (denial != null) {
-                    if (hand == InteractionHand.MAIN_HAND) {
-                        player.sendSystemMessage(Translator.tr("setting.permission.bucket_build", buildPermissionDenialContext(region, scope, denial))!!)
-                    }
-                    return@register InteractionResult.CONSUME
-                }
-            }
+            if (denyPermissionAt(player, world, placePos, PermissionKey.BUCKET_BUILD, PERMISSION_DEFAULT_BUCKET_BUILD.value,
+                    "setting.permission.bucket_build", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
         }
         InteractionResult.PASS
     }
@@ -147,16 +104,8 @@ fun playerBucketScoopEntityPermission() {
         if (entity !is Bucketable) return@register InteractionResult.PASS
         val stack = player.getItemInHand(hand)
         if (!stack.`is`(Items.BUCKET)) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BUCKET_SCOOP, scope, PERMISSION_DEFAULT_BUCKET_SCOOP.value)
-            if (denial != null) {
-                if (hitResult == null) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.bucket_scoop", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
+                "setting.permission.bucket_scoop", hitResult == null)) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }
@@ -164,14 +113,8 @@ fun playerBucketScoopEntityPermission() {
 fun playerBreakPermission() {
     PlayerBlockBreakEvents.BEFORE.register { world, player, pos, blockState, _ ->
         if (isCropOnFarmland(world, pos, blockState.block)) return@register true
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level(), pos.x, pos.z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.BREAK, scope, PERMISSION_DEFAULT_BREAK.value)
-            if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.break", buildPermissionDenialContext(region, scope, denial))!!)
-                return@register false
-            }
-        }
+        if (denyPermissionAt(player, world, pos, PermissionKey.BREAK, PERMISSION_DEFAULT_BREAK.value,
+                "setting.permission.break")) return@register false
         true
     }
 }

@@ -8,6 +8,7 @@ import com.imyvm.iwg.domain.component.PermissionSetting
 import net.minecraft.resources.Identifier
 import java.util.UUID
 import kotlin.test.Test
+import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
 
@@ -76,5 +77,21 @@ class PermissionHelperTest {
         region.settings += PermissionSetting(PermissionKey.BUILD, false)
 
         assertFalse(onCertificatePermissionValue(region, null, player, PermissionKey.BUCKET_BUILD))
+    }
+
+    @Test
+    fun `denial source identifies scope region and default`() {
+        scope.settings += PermissionSetting(PermissionKey.PVP, false)
+        region.settings += PermissionSetting(PermissionKey.BUILD, false)
+
+        assertEquals(PermissionDenialSource.AtScope, getPermissionDenialSource(region, player, PermissionKey.PVP, scope))
+        assertEquals(PermissionDenialSource.AtRegion, getPermissionDenialSource(region, player, PermissionKey.BUILD, scope))
+        assertEquals(PermissionDenialSource.ByDefault, getPermissionDenialSource(region, player, PermissionKey.FLY, scope, false))
+    }
+
+    @Test
+    fun `denial context names the container that rejected the action`() {
+        assertEquals("Scope &bscope&7 of Region &bregion&7", buildPermissionDenialContext(region, scope, PermissionDenialSource.AtScope))
+        assertEquals("Region &bregion&7", buildPermissionDenialContext(region, scope, PermissionDenialSource.AtRegion))
     }
 }
