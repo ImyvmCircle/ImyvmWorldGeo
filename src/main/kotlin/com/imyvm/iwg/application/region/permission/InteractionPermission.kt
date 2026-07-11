@@ -1,6 +1,5 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.denyPermissionAt
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_INTERACTION
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
@@ -42,7 +41,7 @@ fun playerInteractionPermission() {
         val stack = player.getItemInHand(hand)
         if (!isInteractiveBlock(block) && !isToolStateChangeInteraction(stack, block, blockState)) return@register InteractionResult.PASS
         if (denyPermissionAt(player, world, pos, PermissionKey.INTERACTION, PERMISSION_DEFAULT_INTERACTION.value,
-                "setting.permission.interaction", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                "setting.permission.interaction")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

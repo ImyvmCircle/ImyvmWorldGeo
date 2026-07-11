@@ -1,6 +1,5 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.denyPermissionAt
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_REDSTONE
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
@@ -20,7 +19,7 @@ fun playerRedstonePermission() {
         val block = world.getBlockState(pos).block
         if (!isRedstoneDevice(block)) return@register InteractionResult.PASS
         if (denyPermissionAt(player, world, pos, PermissionKey.REDSTONE, PERMISSION_DEFAULT_REDSTONE.value,
-                "setting.permission.redstone", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                "setting.permission.redstone")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

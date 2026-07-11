@@ -2,11 +2,6 @@ package com.imyvm.iwg.application.region.permission.helper
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.*
-import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.util.text.Translator
-import net.minecraft.core.BlockPos
-import net.minecraft.world.entity.player.Player
-import net.minecraft.world.level.Level
 import java.util.*
 
 sealed class PermissionDenialSource {
@@ -48,7 +43,7 @@ fun buildPermissionDenialContext(region: Region, scope: GeoScope?, source: Permi
     }
 }
 
-fun resolvePermissionSettingValue(
+internal fun resolvePermissionSettingValue(
     region: Region,
     scope: GeoScope?,
     playerUUID: UUID?,
@@ -71,23 +66,6 @@ private fun resolvePermissionWithSource(
         }
     }
     return null
-}
-
-fun denyPermissionAt(
-    player: Player,
-    world: Level,
-    pos: BlockPos,
-    key: PermissionKey,
-    defaultValue: Boolean,
-    messageKey: String,
-    notify: Boolean = true
-): Boolean {
-    val (region, scope) = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return false
-    val denial = getPermissionDenialSource(region, player.uuid, key, scope, defaultValue) ?: return false
-    if (notify) {
-        player.sendSystemMessage(Translator.tr(messageKey, buildPermissionDenialContext(region, scope, denial))!!)
-    }
-    return true
 }
 
 private fun resolveExplicitPermission(

@@ -1,6 +1,5 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.denyPermissionAt
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FARMING
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
@@ -33,7 +32,7 @@ fun playerFarmingPermission() {
         if (world.getBlockState(pos).block != Blocks.FARMLAND) return@register InteractionResult.PASS
         val placePos = pos.relative(hitResult.direction)
         if (denyPermissionAt(player, world, placePos, PermissionKey.FARMING, PERMISSION_DEFAULT_FARMING.value,
-                "setting.permission.farming", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                "setting.permission.farming")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 
@@ -52,7 +51,7 @@ private fun registerBoneMealFarmingPermission() {
         val pos = hitResult.blockPos
         if (!isCropOnFarmland(world, pos, world.getBlockState(pos).block)) return@register InteractionResult.PASS
         if (denyPermissionAt(player, world, pos, PermissionKey.FARMING, PERMISSION_DEFAULT_FARMING.value,
-                "setting.permission.farming", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                "setting.permission.farming")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

@@ -1,6 +1,5 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.denyPermissionAt
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BREAK
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUCKET_BUILD
@@ -54,7 +53,7 @@ fun playerBuildPermission() {
         if ((cropBlock is CropBlock || cropBlock is SweetBerryBushBlock) && block == Blocks.FARMLAND) return@register InteractionResult.PASS
         val placePos = pos.relative(hitResult.direction)
         if (denyPermissionAt(player, world, placePos, PermissionKey.BUILD, PERMISSION_DEFAULT_BUILD.value,
-                "setting.permission.build", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                "setting.permission.build")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }
@@ -65,11 +64,11 @@ fun playerBucketUsePermission() {
         if (stack.`is`(Items.BUCKET)) {
             val pos = hitResult.blockPos
             if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
-                    "setting.permission.bucket_scoop", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                    "setting.permission.bucket_scoop")) return@register InteractionResult.CONSUME
         } else if (stack.item is SolidBucketItem) {
             val placePos = hitResult.blockPos.relative(hitResult.direction)
             if (denyPermissionAt(player, world, placePos, PermissionKey.BUCKET_BUILD, PERMISSION_DEFAULT_BUCKET_BUILD.value,
-                    "setting.permission.bucket_build", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                    "setting.permission.bucket_build")) return@register InteractionResult.CONSUME
         }
         InteractionResult.PASS
     }
@@ -89,11 +88,11 @@ fun playerBucketUsePermission() {
         val pos = blockHit.blockPos
         if (stack.`is`(Items.BUCKET)) {
             if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
-                    "setting.permission.bucket_scoop", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                    "setting.permission.bucket_scoop")) return@register InteractionResult.CONSUME
         } else {
             val placePos = pos.relative(blockHit.direction)
             if (denyPermissionAt(player, world, placePos, PermissionKey.BUCKET_BUILD, PERMISSION_DEFAULT_BUCKET_BUILD.value,
-                    "setting.permission.bucket_build", hand == InteractionHand.MAIN_HAND)) return@register InteractionResult.CONSUME
+                    "setting.permission.bucket_build")) return@register InteractionResult.CONSUME
         }
         InteractionResult.PASS
     }
@@ -105,7 +104,7 @@ fun playerBucketScoopEntityPermission() {
         val stack = player.getItemInHand(hand)
         if (!stack.`is`(Items.BUCKET)) return@register InteractionResult.PASS
         if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
-                "setting.permission.bucket_scoop", hitResult == null)) return@register InteractionResult.CONSUME
+                "setting.permission.bucket_scoop")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

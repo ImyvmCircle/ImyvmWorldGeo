@@ -17,16 +17,8 @@ import net.minecraft.world.InteractionHand
 fun playerVillagerKillingPermission() {
     AttackEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (entity !is Villager) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.VILLAGER_KILLING, scope, PERMISSION_DEFAULT_VILLAGER_KILLING.value)
-            if (denial != null) {
-                if (hitResult == null) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.villager_killing", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.VILLAGER_KILLING,
+                PERMISSION_DEFAULT_VILLAGER_KILLING.value, "setting.permission.villager_killing")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 

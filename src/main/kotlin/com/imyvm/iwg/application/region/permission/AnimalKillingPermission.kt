@@ -38,16 +38,8 @@ private fun isProtectedAnimal(entity: Entity): Boolean {
 fun playerAnimalKillingPermission() {
     AttackEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (!isProtectedAnimal(entity)) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ANIMAL_KILLING, scope, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
-            if (denial != null) {
-                if (hitResult == null) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.ANIMAL_KILLING,
+                PERMISSION_DEFAULT_ANIMAL_KILLING.value, "setting.permission.animal_killing")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 

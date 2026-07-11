@@ -3,6 +3,8 @@ package com.imyvm.iwg.application.region.permission.helper
 import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.ExtensionPermissionKey
+import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
 import net.minecraft.resources.Identifier
@@ -93,5 +95,15 @@ class PermissionHelperTest {
     fun `denial context names the container that rejected the action`() {
         assertEquals("Scope &bscope&7 of Region &bregion&7", buildPermissionDenialContext(region, scope, PermissionDenialSource.AtScope))
         assertEquals("Region &bregion&7", buildPermissionDenialContext(region, scope, PermissionDenialSource.AtRegion))
+    }
+
+    @Test
+    fun `extension permissions use the same container and personal precedence`() {
+        val key = ExtensionPermissionKey("test:permission")
+        region.settings += ExtensionPermissionSetting(key, false)
+        scope.settings += ExtensionPermissionSetting(key, true, player)
+
+        assertTrue(resolvePermissionSettingValue(region, scope, player, key)!!)
+        assertFalse(resolvePermissionSettingValue(region, scope, otherPlayer, key)!!)
     }
 }

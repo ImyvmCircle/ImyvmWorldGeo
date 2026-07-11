@@ -1,6 +1,5 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.denyPermissionAt
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_CONTAINER
 import net.minecraft.world.InteractionHand
@@ -23,6 +22,6 @@ fun playerContainerInteraction(
     if (blockEntity !is MenuProvider) return InteractionResult.PASS
 
     if (denyPermissionAt(player, world, pos, PermissionKey.CONTAINER, PERMISSION_DEFAULT_CONTAINER.value,
-            "setting.permission.container", hand == InteractionHand.MAIN_HAND)) return InteractionResult.CONSUME
+            "setting.permission.container")) return InteractionResult.CONSUME
     return InteractionResult.PASS
 }
