@@ -20,7 +20,7 @@ fun playerItemFramePermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
         val stack = player.getItemInHand(hand)
         if (!stack.`is`(Items.ITEM_FRAME) && !stack.`is`(Items.GLOW_ITEM_FRAME)) return@register InteractionResult.PASS
-        val pos = hitResult.blockPos
+        val pos = adjacentTarget(hitResult.blockPos, hitResult.direction)
         if (denyPermissionAt(player, world, pos, PermissionKey.ITEM_FRAME,
                 PERMISSION_DEFAULT_ITEM_FRAME.value, "setting.permission.item_frame")) return@register InteractionResult.CONSUME
         InteractionResult.PASS

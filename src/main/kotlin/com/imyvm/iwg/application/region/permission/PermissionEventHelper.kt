@@ -6,6 +6,7 @@ import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.level.Level
 
@@ -23,3 +24,8 @@ internal fun denyPermissionAt(
     player.sendSystemMessage(Translator.tr(messageKey, buildPermissionDenialContext(region, scope, denial))!!)
     return true
 }
+
+internal fun adjacentTarget(pos: BlockPos, direction: Direction): BlockPos = pos.relative(direction)
+
+internal fun igniteTarget(pos: BlockPos, direction: Direction, lightsClickedBlock: Boolean): BlockPos =
+    if (lightsClickedBlock) pos else adjacentTarget(pos, direction)

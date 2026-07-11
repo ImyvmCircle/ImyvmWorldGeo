@@ -85,16 +85,14 @@ fun onCertificatePermissionValue(
         throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
 
-    val scope = if (scopeName != null) {
-        try {
-            region?.getScopeByName(scopeName)
-        } catch (e: IllegalArgumentException) {
-            return getDefaultValueForPermissionKey(key)
-        }
+    val scope = if (region != null && scopeName != null) {
+        region.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
+            ?: throw IllegalArgumentException("region.error.no_scope")
     } else null
 
     val uuid = if (targetPlayerNameStr != null) {
-         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr) ?: return getDefaultValueForPermissionKey(key)
+         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr)
+             ?: throw IllegalArgumentException("interaction.meta.setting.error.invalid_target_player")
     } else null
     return onCertificatePermissionValue(region, scope, uuid, key)
 }
@@ -467,6 +465,11 @@ fun onQuerySettingValue(
             }
         }
     } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
+        val message = when (e.message) {
+            "interaction.meta.setting.error.invalid_target_player" -> Translator.tr(e.message, targetPlayerStr)
+            "region.error.no_scope" -> Translator.tr(e.message, scopeName, region.name)
+            else -> Translator.tr(e.message)
+        }
+        player.sendSystemMessage(message!!)
     }
 }
