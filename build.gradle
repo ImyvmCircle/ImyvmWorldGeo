@@ -67,6 +67,8 @@ dependencies {
 	// ImyvmCircle Projects.
 	implementation("com.imyvm:imyvm-hoki:${project.imyvm_hoki_version}")
 
+	testImplementation "org.jetbrains.kotlin:kotlin-test-junit:2.3.20"
+
 	// Optional integrations.
 	compileOnly("us.dynmap:DynmapCoreAPI:${project.dynmap_version}")
 }
