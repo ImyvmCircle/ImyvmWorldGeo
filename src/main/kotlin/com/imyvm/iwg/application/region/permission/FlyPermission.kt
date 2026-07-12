@@ -128,6 +128,10 @@ private fun isStillNoFly(player: ServerPlayer): Boolean {
     } ?: true
 }
 
+@Deprecated("Use the Long tick overload", ReplaceWith("processFallImmunity(player, currentTick.toLong())"))
+fun processFallImmunity(player: ServerPlayer, currentTick: Int) =
+    processFallImmunity(player, currentTick.toLong())
+
 internal fun tickDeadline(currentTick: Long, seconds: Int): Long {
     require(seconds >= 0) { "duration must not be negative" }
     return Math.addExact(currentTick, seconds.toLong() * 20L)

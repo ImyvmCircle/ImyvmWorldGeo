@@ -159,9 +159,9 @@ class GeoShape(
         geoShapeType: GeoShapeType
     ): BlockPos? {
         val points = when (geoShapeType) {
-            GeoShapeType.CIRCLE -> iterateCirclePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2])
-            GeoShapeType.RECTANGLE -> iterateRectanglePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
-            GeoShapeType.POLYGON -> iteratePolygonPoint(shapeParameters)
+            GeoShapeType.CIRCLE -> iterateCirclePointSequence(shapeParameters[0], shapeParameters[1], shapeParameters[2])
+            GeoShapeType.RECTANGLE -> iterateRectanglePointSequence(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
+            GeoShapeType.POLYGON -> iteratePolygonPointSequence(shapeParameters)
             GeoShapeType.UNKNOWN -> return null
         }
 

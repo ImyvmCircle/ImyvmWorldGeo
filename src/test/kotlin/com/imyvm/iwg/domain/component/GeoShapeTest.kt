@@ -20,5 +20,6 @@ class GeoShapeTest {
 
         assertTrue(circle.containsPoint(Int.MAX_VALUE, 0))
         assertFalse(circle.containsPoint(Int.MIN_VALUE, 0))
+        assertFalse(com.imyvm.iwg.util.geo.circleContainsPoint(Int.MIN_VALUE, Int.MIN_VALUE, Int.MAX_VALUE))
     }
 }

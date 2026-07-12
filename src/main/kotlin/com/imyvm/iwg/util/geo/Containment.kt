@@ -33,6 +33,7 @@ fun circleContainsPoint(dx: Int, dy: Int, radius: Int): Boolean {
     val longDx = dx.toLong()
     val longDy = dy.toLong()
     val longRadius = radius.toLong()
+    if (kotlin.math.abs(longDx) > longRadius || kotlin.math.abs(longDy) > longRadius) return false
     return longDx * longDx + longDy * longDy <= longRadius * longRadius
 }
 
