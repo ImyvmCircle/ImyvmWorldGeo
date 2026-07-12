@@ -52,7 +52,7 @@ object RegionDataApi {
         }
     }
 
-    fun getRegionList(): List<Region> = RegionDatabase.getRegionList()
+    fun getRegionList(): List<Region> = RegionDatabase.getRegionList().toList()
 
     fun getRegionListFiltered(idMark: Int): List<Region> = filterRegionsByMark(idMark)
 
@@ -63,7 +63,7 @@ object RegionDataApi {
         System.currentTimeMillis() - parseFoundingTimeFromRegionId(region.numberID)
 
     fun getRegionScopes(region: Region): List<GeoScope> =
-        region.geometryScope
+        region.geometryScope.toList()
 
     fun getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?> =
         RegionDatabase.getRegionAndScope(region, scopeName)

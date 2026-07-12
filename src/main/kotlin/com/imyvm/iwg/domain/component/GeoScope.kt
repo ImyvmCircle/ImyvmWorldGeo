@@ -47,7 +47,7 @@ class GeoScope(
 
     private fun getDimensionDisplayName(): String {
         val key = "geo.dimension.${worldId.namespace}.${worldId.path}"
-        return Translator.tr(key)!!?.string ?: worldId.toString()
+        return Translator.tr(key)?.string ?: worldId.toString()
     }
 
     fun getWorld(server: MinecraftServer): ServerLevel? {
@@ -61,18 +61,17 @@ class GeoScope(
 
     fun certificateTeleportPoint(world: Level, pointToTest: BlockPos?): Boolean {
         if (pointToTest == null) return false
-        if (this.geoShape == null) return false
-        return this.geoShape!!.certificateTeleportPoint(world, pointToTest)
+        val shape = geoShape ?: return false
+        return shape.certificateTeleportPoint(world, pointToTest)
     }
 
     fun getTeleportPointInvalidReasonKey(world: Level, pointToTest: BlockPos?): String? {
         if (pointToTest == null) return "teleport_point.invalid.null_point"
-        if (this.geoShape == null) return "teleport_point.invalid.no_shape"
-        return this.geoShape!!.getTeleportPointInvalidReasonKey(world, pointToTest)
+        val shape = geoShape ?: return "teleport_point.invalid.no_shape"
+        return shape.getTeleportPointInvalidReasonKey(world, pointToTest)
     }
 
     fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
-        if (this.geoShape == null) return null
-        return this.geoShape!!.findNearestValidTeleportPoint(world, center, searchRadius)
+        return geoShape?.findNearestValidTeleportPoint(world, center, searchRadius)
     }
 }

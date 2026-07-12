@@ -36,9 +36,6 @@ import net.minecraft.world.item.BucketItem
 import net.minecraft.world.item.Items
 import net.minecraft.world.item.SolidBucketItem
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.InteractionHand
-
-import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.level.ClipContext
 
@@ -84,7 +81,7 @@ fun playerBucketUsePermission() {
             ClipContext(eyePos, targetVec, ClipContext.Block.OUTLINE, ClipContext.Fluid.ANY, player)
         )
         if (hit.type != HitResult.Type.BLOCK) return@register InteractionResult.PASS
-        val blockHit = hit as BlockHitResult
+        val blockHit = hit
         val pos = blockHit.blockPos
         if (stack.`is`(Items.BUCKET)) {
             if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,

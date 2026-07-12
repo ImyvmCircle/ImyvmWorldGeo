@@ -29,13 +29,13 @@ fun errorMessage(
 
 private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, shapeType: GeoShapeType): List<Component> {
     val lines = mutableListOf<Component>()
-    Translator.tr("error.intersection_between_scopes.header")!!?.let { lines.add(it) }
+    Translator.tr("error.intersection_between_scopes.header")?.let { lines.add(it) }
     for (detail in details) {
         val shapeDesc = getShapeParamDescription(detail.shape)
-        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)!!?.let { lines.add(it) }
+        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)?.let { lines.add(it) }
         if (detail.verticesInside.isNotEmpty() && shapeType in listOf(GeoShapeType.POLYGON, GeoShapeType.RECTANGLE)) {
             val vertexStr = formatVertexList(detail.verticesInside, shapeType)
-            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)!!?.let { lines.add(it) }
+            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)?.let { lines.add(it) }
         }
     }
     return lines

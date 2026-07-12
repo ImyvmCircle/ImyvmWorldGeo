@@ -26,6 +26,7 @@ fun onRegionMerge(
 
     RegionDatabase.mergeRegionPlayerStats(sourceRegion, targetRegion)
     RegionDatabase.removeRegion(sourceRegion)
+    RegionDatabase.save()
 
     player.sendSystemMessage(
         Translator.tr(

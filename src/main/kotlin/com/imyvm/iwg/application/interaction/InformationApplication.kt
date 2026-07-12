@@ -48,7 +48,7 @@ fun onToggleActionBar(player: ServerPlayer): Int {
     } else {
         ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
         player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.enabled")!!)
-        val server = player.level().server ?: return 1
+        val server = player.level().server
         val playerWorld = player.level()
         val scopes = RegionDatabase.getRegionList()
             .flatMap { it.geometryScope }

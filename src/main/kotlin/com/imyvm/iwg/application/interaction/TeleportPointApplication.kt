@@ -24,6 +24,7 @@ fun onAddingTeleportPoint(
 
     return if (reasonKey == null) {
         geoScope.teleportPoint = teleportPoint
+        RegionDatabase.save()
         playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name)!!)
         1
     } else {
@@ -38,8 +39,9 @@ fun onResettingTeleportPoint(
     region: Region,
     scope: GeoScope
 ): Int {
-    playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
     scope.teleportPoint = null
+    RegionDatabase.save()
+    playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
     return 1
 }
 
@@ -119,6 +121,7 @@ fun onTogglingTeleportPointAccessibility(
     scope: GeoScope
 ): Int {
     scope.isTeleportPointPublic = !scope.isTeleportPointPublic
+    RegionDatabase.save()
     return 1
 }
 

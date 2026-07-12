@@ -174,6 +174,7 @@ private fun handleRegionCreateSuccess(
 ) {
     val newRegion = creationResult.value
     RegionDatabase.addRegion(newRegion)
+    RegionDatabase.save()
 
     if (notify) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.success", newRegion.name)!!)
@@ -193,6 +194,7 @@ private fun handleScopeCreateSuccess(
         newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
     }
     region.geometryScope.add(newScope)
+    RegionDatabase.save()
 
     if (notify) {
         player.sendSystemMessage(

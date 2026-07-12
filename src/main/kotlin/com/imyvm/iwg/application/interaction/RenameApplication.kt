@@ -16,6 +16,7 @@ fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
 
     return try {
         RegionDatabase.renameRegion(region, newName)
+        RegionDatabase.save()
         player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, newName)!!)
         1
     } catch (e: IllegalArgumentException) {
@@ -49,6 +50,7 @@ fun onScopeRename(
         }
 
         existingScope.scopeName = newName
+        RegionDatabase.save()
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, newName, targetRegion.name)!!)
         return 1
 

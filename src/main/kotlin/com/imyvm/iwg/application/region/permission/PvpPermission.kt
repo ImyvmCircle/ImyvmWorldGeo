@@ -11,13 +11,11 @@ import net.fabricmc.fabric.api.event.player.AttackEntityCallback
 import net.minecraft.world.entity.player.Player
 import net.minecraft.world.InteractionResult
 
-import net.minecraft.world.InteractionHand
-
 fun playerPvpPermission() {
     AttackEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (entity !is Player) return@register InteractionResult.PASS
         if (world.isClientSide) return@register InteractionResult.PASS
-        val target = entity as Player
+        val target = entity
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, target.blockPosition().x, target.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
             val attackerDenial = getPermissionDenialSource(region, player.uuid, PermissionKey.PVP, scope, PERMISSION_DEFAULT_PVP.value)
@@ -39,7 +37,7 @@ fun playerPvpPermission() {
     ServerLivingEntityEvents.ALLOW_DAMAGE.register { entity, source, _ ->
         if (entity !is Player) return@register true
         val attacker = source.entity as? Player ?: return@register true
-        val target = entity as Player
+        val target = entity
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(entity.level(), target.blockPosition().x, target.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
             val attackerDenial = getPermissionDenialSource(region, attacker.uuid, PermissionKey.PVP, scope, PERMISSION_DEFAULT_PVP.value)

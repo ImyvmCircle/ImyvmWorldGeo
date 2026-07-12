@@ -9,6 +9,7 @@ fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false)
     val regionName = region.name
     val regionId = region.numberID
     RegionDatabase.removeRegion(region)
+    RegionDatabase.save()
     if (isApi.not()) {
         player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
     }
@@ -20,6 +21,7 @@ fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
     try {
         val existingScope = region.getScopeByName(scopeName)
         region.geometryScope.remove(existingScope)
+        RegionDatabase.save()
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
     } catch (e: IllegalArgumentException) {
         player.sendSystemMessage(Translator.tr(e.message)!!)

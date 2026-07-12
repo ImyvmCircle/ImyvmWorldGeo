@@ -8,6 +8,7 @@ import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
@@ -37,6 +38,7 @@ fun recreateScope(
         is Result.Ok -> {
             newScope.value.scopeId = existingScope.scopeId
             region.geometryScope.add(newScope.value)
+            RegionDatabase.save()
             player.sendSystemMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs)!!)
             clearSelectionDisplay(player)
             ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)

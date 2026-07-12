@@ -27,16 +27,18 @@ private fun getPlayerRegionScope(player: ServerPlayer): Pair<Region?, GeoScope?>
 }
 
 private fun buildRegionScopeText(region: Region?, scope: GeoScope?): Pair<String, String> {
-    val regionPrefix = Translator.tr("scoreboard.region.prefix")!!?.string ?: "Region:"
-    val scopePrefix = Translator.tr("scoreboard.scope.prefix")!!?.string ?: "Scope:"
+    val regionPrefix = Translator.tr("scoreboard.region.prefix")?.string ?: "Region:"
+    val scopePrefix = Translator.tr("scoreboard.scope.prefix")?.string ?: "Scope:"
 
+    val emptyRegionName = Translator.tr("scoreboard.region.none.name")?.string ?: "-wilderness-"
+    val emptyScopeName = Translator.tr("scoreboard.scope.none.name")?.string ?: "-Free to use-"
     val regionName = region?.name?.takeIf { it.isNotBlank() }
-        ?: Translator.tr("scoreboard.region.none.name")!!?.string ?: "-wilderness-"
+        ?: emptyRegionName
     val scopeName = scope?.scopeName?.takeIf { it.isNotBlank() }
-        ?: Translator.tr("scoreboard.scope.none.name")!!?.string ?: "-Free to use-"
+        ?: emptyScopeName
 
-    val regionText = if (regionName == Translator.tr("scoreboard.region.none.name")!!?.string) regionName else "$regionPrefix $regionName"
-    val scopeText = if (scopeName == Translator.tr("scoreboard.scope.none.name")!!?.string) scopeName else "$scopePrefix $scopeName"
+    val regionText = if (regionName == emptyRegionName) regionName else "$regionPrefix $regionName"
+    val scopeText = if (scopeName == emptyScopeName) scopeName else "$scopePrefix $scopeName"
     return regionText to scopeText
 }
 

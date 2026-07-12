@@ -36,6 +36,7 @@ fun onScopeTransfer(
     scope.scopeName = resolvedName
     targetRegion.geometryScope.add(scope)
     RegionDatabase.recordScopeOwnership(scope.scopeId, sourceRegion, targetRegion, transferTime)
+    RegionDatabase.save()
 
     if (nameChanged) {
         player.sendSystemMessage(

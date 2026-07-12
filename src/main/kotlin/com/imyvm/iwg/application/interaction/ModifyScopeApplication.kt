@@ -27,7 +27,7 @@ fun onModifyScope(
             GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
             GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
             GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
-            else -> 0
+            GeoShapeType.UNKNOWN -> 0
         }
     } catch (e: IllegalArgumentException) {
         player.sendSystemMessage(Translator.tr(e.message)!!)

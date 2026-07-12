@@ -42,11 +42,16 @@ This mod is **server-side only** and requires the following environment:
 
 **Optional:**
 
-- **Dynmap Version:** 3.7-beta (Fabric 26.1) - enables region map rendering when present
+- **Dynmap Version:** a Fabric build compatible with the installed Minecraft version
 
-> Note: Dynmap integration is temporarily disabled pending a Dynmap release compatible with MC 26.1. Do not install Dynmap until a compatible version is available; Fabric Loader will reject server startup if an incompatible Dynmap version is present.
+> Note: Dynmap is optional. Install it only when a build compatible with the current Minecraft version is available; otherwise leave it absent.
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
+
+Integer configuration values are validated when loaded and updated. Lazy ticker, effect duration,
+selection point limits, and selection display steps must be positive. Teleport search radius,
+entry/exit delay, fly countdown, and fall-immunity duration may be zero but not negative.
+`selection.min_points` cannot exceed `selection.max_points`, and effect duration must exceed the lazy ticker interval.
 
 ---
 
@@ -73,8 +78,8 @@ A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters`
 
 Settings are key-value pairs associated with regions or scopes,
 which can be either global (applicable to all players) or personal (specific to individual players).
-When there is a conflict between regional and scope settings, scope settings take precedence,
-and personal settings are of higher priority when the corresponding global settings are added.
+For the same permission key, resolution order is scope personal, scope global, region personal,
+region global, then the configured default.
 For permission settings, a parent-child hierarchy applies: if the specific (child) key has an explicit
 setting that covers the current scope and subject, it takes full precedence over any ancestor keys.
 Only when no explicit setting exists for the child key will the system fall back to the immediate parent,
@@ -238,15 +243,16 @@ If no safe alternative is found within the search area, teleportation is cancell
 
 ### Dynmap Integration
 
-> Dynmap integration is temporarily disabled pending a Dynmap release compatible with MC 26.1. All integration code is retained and will be re-enabled once a compatible version is released.
-
-When Dynmap (3.7-beta or later, Fabric edition) is present on the server, all regions and their scopes are automatically rendered on the dynamic world map. If Dynmap is absent, this feature is silently skipped.
+When a Dynmap Fabric build compatible with the installed Minecraft version is present, all regions and their scopes are automatically rendered on the dynamic world map. If Dynmap is absent, this feature is silently skipped.
 
 Each scope is displayed as a labeled overlay in the format `RegionName:ScopeName`. The shape type determines the marker type: rectangle and polygon scopes use area overlays; circle scopes use circle overlays. Teleport points are shown as house-icon markers at their exact coordinates.
 
 All scopes belonging to the same region share one color. The color is derived from the first color keyword found in the region name, supporting both Chinese (e.g. 红, 蓝, 绿) and English (e.g. red, blue, green) color words. When no color keyword is present, a distinct color is selected from a fixed palette using the region's numeric ID.
 
 Markers are updated automatically whenever region data is saved.
+
+Region and Scope management operations save data before reporting success, and normal server shutdown
+performs a final save. Dynmap markers are synchronized after each successful save.
 
 Each region and each scope has a `showOnDynmap` flag (default: `true`). The region-level flag takes precedence: if a region's `showOnDynmap` is `false`, none of its scopes will appear on the map regardless of their individual flags. If the region flag is `true`, each scope is rendered only if its own `showOnDynmap` is also `true`.
 
