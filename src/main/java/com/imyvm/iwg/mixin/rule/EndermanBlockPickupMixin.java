@@ -25,7 +25,7 @@ public class EndermanBlockPickupMixin {
         BlockPos pos = enderman.blockPosition();
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(enderman.level(), pos.getX(), pos.getZ());
         if (regionAndScope == null) return;
-        Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.ENDERMAN_BLOCK_PICKUP, regionAndScope.getSecond());
+        Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.ENDERMAN_BLOCK_PICKUP, regionAndScope.getSecond());
         if (value != null && !value) {
             cir.setReturnValue(false);
         }

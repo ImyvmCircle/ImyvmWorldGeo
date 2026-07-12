@@ -27,7 +27,7 @@ public class PistonMixin {
         for (BlockPos pos : self.getToPush()) {
             Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(level, pos.getX(), pos.getZ());
             if (regionAndScope != null) {
-                Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.PISTON, regionAndScope.getSecond());
+                Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.PISTON, regionAndScope.getSecond());
                 if (value != null && !value) {
                     cir.setReturnValue(false);
                     return;
@@ -37,7 +37,7 @@ public class PistonMixin {
         for (BlockPos pos : self.getToDestroy()) {
             Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(level, pos.getX(), pos.getZ());
             if (regionAndScope != null) {
-                Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.PISTON, regionAndScope.getSecond());
+                Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.PISTON, regionAndScope.getSecond());
                 if (value != null && !value) {
                     cir.setReturnValue(false);
                     return;

@@ -50,7 +50,7 @@ public class ExplosionBlockProtectionMixin {
         blocks.removeIf(pos -> {
             Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(level, pos.getX(), pos.getZ());
             if (regionAndScope == null) return false;
-            Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.TNT_BLOCK_PROTECTION, regionAndScope.getSecond());
+            Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.TNT_BLOCK_PROTECTION, regionAndScope.getSecond());
             return value != null && value;
         });
     }

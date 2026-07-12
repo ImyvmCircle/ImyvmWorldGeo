@@ -1,16 +1,21 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
-import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
+import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
+import com.imyvm.iwg.application.interaction.getDefaultValueForRule
+import com.imyvm.iwg.application.interaction.getRegionPermissionValue
+import com.imyvm.iwg.application.interaction.getScopePermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
-import com.imyvm.iwg.application.interaction.onCertificateRuleValue
 import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
-import com.imyvm.iwg.application.region.rule.helper.getEffectiveRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getEffectiveRegionRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getEffectiveScopeRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
-import com.imyvm.iwg.application.region.effect.helper.getActiveEffects
-import com.imyvm.iwg.application.region.effect.helper.getEffectValue
+import com.imyvm.iwg.application.region.effect.helper.getRegionActiveEffects as resolveRegionActiveEffects
+import com.imyvm.iwg.application.region.effect.helper.getRegionEffectValue as resolveRegionEffectValue
+import com.imyvm.iwg.application.region.effect.helper.getScopeActiveEffects as resolveScopeActiveEffects
+import com.imyvm.iwg.application.region.effect.helper.getScopeEffectValue as resolveScopeEffectValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
@@ -122,27 +127,119 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
+    fun getDefaultPermissionValue(permissionKey: PermissionKey): Boolean =
+        getDefaultValueForPermission(permissionKey)
+
+    fun getRegionGlobalPermissionValue(region: Region, permissionKey: PermissionKey): Boolean =
+        getRegionPermissionValue(region, permissionKey)
+
+    fun getRegionPlayerPermissionValue(region: Region, playerUUID: UUID, permissionKey: PermissionKey): Boolean =
+        getRegionPermissionValue(region, playerUUID, permissionKey)
+
+    fun getScopeGlobalPermissionValue(region: Region, scope: GeoScope, permissionKey: PermissionKey): Boolean =
+        getScopePermissionValue(region, scope, permissionKey)
+
+    fun getScopePlayerPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        playerUUID: UUID,
+        permissionKey: PermissionKey
+    ): Boolean = getScopePermissionValue(region, scope, playerUUID, permissionKey)
+
+    @Deprecated("Use an explicit default, region, or scope permission query")
     fun getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean {
-        return onCertificatePermissionValue(region, scope, playerUUID, permissionKey)
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return getDefaultPermissionValue(permissionKey)
+        }
+        return when {
+            scope != null && playerUUID != null -> getScopePlayerPermissionValue(region, scope, playerUUID, permissionKey)
+            scope != null -> getScopeGlobalPermissionValue(region, scope, permissionKey)
+            playerUUID != null -> getRegionPlayerPermissionValue(region, playerUUID, permissionKey)
+            else -> getRegionGlobalPermissionValue(region, permissionKey)
+        }
     }
 
+    fun getDefaultExtensionPermissionValue(key: String): Boolean =
+        onCertificateExtensionPermissionValue(null, null, null, key)
+
+    fun getRegionGlobalExtensionPermissionValue(region: Region, key: String): Boolean =
+        onCertificateExtensionPermissionValue(region, null, null, key)
+
+    fun getRegionPlayerExtensionPermissionValue(region: Region, playerUUID: UUID, key: String): Boolean =
+        onCertificateExtensionPermissionValue(region, null, playerUUID, key)
+
+    fun getScopeGlobalExtensionPermissionValue(region: Region, scope: GeoScope, key: String): Boolean =
+        onCertificateExtensionPermissionValue(region, scope, null, key)
+
+    fun getScopePlayerExtensionPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        playerUUID: UUID,
+        key: String
+    ): Boolean = onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
+
+    @Deprecated("Use an explicit default, region, or scope extension permission query")
     fun getExtensionPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, key: String): Boolean {
-        return onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return getDefaultExtensionPermissionValue(key)
+        }
+        return when {
+            scope != null && playerUUID != null -> getScopePlayerExtensionPermissionValue(region, scope, playerUUID, key)
+            scope != null -> getScopeGlobalExtensionPermissionValue(region, scope, key)
+            playerUUID != null -> getRegionPlayerExtensionPermissionValue(region, playerUUID, key)
+            else -> getRegionGlobalExtensionPermissionValue(region, key)
+        }
     }
 
+    fun getDefaultRuleValue(ruleKey: RuleKey): Boolean = getDefaultValueForRule(ruleKey)
+
+    fun getRegionRuleValue(region: Region, ruleKey: RuleKey): Boolean =
+        getEffectiveRegionRuleValue(region, ruleKey)
+
+    fun getScopeRuleValue(region: Region, scope: GeoScope, ruleKey: RuleKey): Boolean =
+        getEffectiveScopeRuleValue(region, scope, ruleKey)
+
+    @Deprecated("Use an explicit default, region, or scope rule query")
     fun getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean {
-        return getEffectiveRuleValue(region, ruleKey, scope)
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return getDefaultRuleValue(ruleKey)
+        }
+        return if (scope == null) getRegionRuleValue(region, ruleKey) else getScopeRuleValue(region, scope, ruleKey)
     }
 
     fun getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String): Boolean {
         return getEffectiveExtensionRuleValue(region, scope, key)
     }
 
-    fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? =
-        getEffectValue(region, playerUUID, effectKey, scope)
+    fun getRegionEffectValue(region: Region, playerUUID: UUID, effectKey: EffectKey): Int? =
+        resolveRegionEffectValue(region, playerUUID, effectKey)
 
+    fun getScopeEffectValue(region: Region, scope: GeoScope, playerUUID: UUID, effectKey: EffectKey): Int? =
+        resolveScopeEffectValue(region, scope, playerUUID, effectKey)
+
+    fun getRegionActiveEffects(region: Region, playerUUID: UUID): Map<EffectKey, Int> =
+        resolveRegionActiveEffects(region, playerUUID)
+
+    fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Map<EffectKey, Int> =
+        resolveScopeActiveEffects(region, scope, playerUUID)
+
+    @Deprecated("Use an explicit region or scope effect query")
+    fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? {
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return null
+        }
+        return if (scope == null) getRegionEffectValue(region, playerUUID, effectKey)
+        else getScopeEffectValue(region, scope, playerUUID, effectKey)
+    }
+
+    @Deprecated("Use an explicit region or scope effect query")
     fun getActiveEffectsForRegion(region: Region, scope: GeoScope?, playerUUID: UUID): Map<EffectKey, Int> =
-        getActiveEffects(region, playerUUID, scope)
+        if (scope == null) getRegionActiveEffects(region, playerUUID)
+        else getScopeActiveEffects(region, scope, playerUUID)
 
     fun getRegionScopeCount(region: Region): Int = region.geometryScope.size
 
@@ -223,7 +320,7 @@ object RegionDataApi {
         region.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
         val result = mutableMapOf<RuleKey, Boolean>()
         for (key in keys) {
-            result[key] = getEffectiveRuleValue(region, key, scope)
+            result[key] = getEffectiveScopeRuleValue(region, scope, key)
         }
         return result
     }

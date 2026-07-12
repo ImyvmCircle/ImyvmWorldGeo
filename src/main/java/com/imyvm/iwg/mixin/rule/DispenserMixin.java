@@ -25,7 +25,7 @@ public class DispenserMixin {
         BlockPos outputPos = pos.relative(facing);
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, outputPos.getX(), outputPos.getZ());
         if (regionAndScope == null) return;
-        Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.DISPENSER, regionAndScope.getSecond());
+        Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.DISPENSER, regionAndScope.getSecond());
         if (value != null && !value) {
             ci.cancel();
         }

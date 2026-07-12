@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.region.permission.helper
 
-import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
+import com.imyvm.iwg.application.interaction.getRegionPermissionValue
+import com.imyvm.iwg.application.interaction.getScopePermissionValue
+import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.ExtensionPermissionKey
@@ -12,18 +14,19 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class PermissionHelperTest {
     private val player = UUID.randomUUID()
     private val otherPlayer = UUID.randomUUID()
-    private val region = Region("region", 1, mutableListOf())
     private val scope = GeoScope("scope", Identifier.parse("minecraft:overworld"), null, geoShape = null)
+    private val region = Region("region", 1, mutableListOf(scope))
 
     @Test
     fun `uses supplied default when no setting exists`() {
-        assertTrue(hasPermission(region, player, PermissionKey.PVP, defaultValue = true))
-        assertFalse(hasPermission(region, player, PermissionKey.PVP, defaultValue = false))
+        assertTrue(hasRegionPermission(region, player, PermissionKey.PVP, defaultValue = true))
+        assertFalse(hasRegionPermission(region, player, PermissionKey.PVP, defaultValue = false))
     }
 
     @Test
@@ -31,8 +34,8 @@ class PermissionHelperTest {
         region.settings += PermissionSetting(PermissionKey.PVP, false)
         region.settings += PermissionSetting(PermissionKey.PVP, true, player)
 
-        assertTrue(hasPermission(region, player, PermissionKey.PVP))
-        assertFalse(hasPermission(region, otherPlayer, PermissionKey.PVP))
+        assertTrue(hasRegionPermission(region, player, PermissionKey.PVP))
+        assertFalse(hasRegionPermission(region, otherPlayer, PermissionKey.PVP))
     }
 
     @Test
@@ -40,14 +43,14 @@ class PermissionHelperTest {
         region.settings += PermissionSetting(PermissionKey.PVP, false, player)
         scope.settings += PermissionSetting(PermissionKey.PVP, true)
 
-        assertTrue(hasPermission(region, player, PermissionKey.PVP, scope))
+        assertTrue(hasScopePermission(region, scope, player, PermissionKey.PVP))
     }
 
     @Test
     fun `region setting is fallback when scope has no matching setting`() {
         region.settings += PermissionSetting(PermissionKey.PVP, false)
 
-        assertFalse(hasPermission(region, player, PermissionKey.PVP, scope))
+        assertFalse(hasScopePermission(region, scope, player, PermissionKey.PVP))
     }
 
     @Test
@@ -55,8 +58,8 @@ class PermissionHelperTest {
         region.settings += PermissionSetting(PermissionKey.BUILD_BREAK, false)
         region.settings += PermissionSetting(PermissionKey.BUILD, true)
 
-        assertTrue(hasPermission(region, player, PermissionKey.BUCKET_BUILD))
-        assertFalse(hasPermission(region, player, PermissionKey.BREAK))
+        assertTrue(hasRegionPermission(region, player, PermissionKey.BUCKET_BUILD))
+        assertFalse(hasRegionPermission(region, player, PermissionKey.BREAK))
     }
 
     @Test
@@ -64,21 +67,21 @@ class PermissionHelperTest {
         region.settings += PermissionSetting(PermissionKey.THROWABLE, false)
         region.settings += PermissionSetting(PermissionKey.EGG_USE, true)
 
-        assertTrue(hasPermission(region, player, PermissionKey.EGG_USE))
+        assertTrue(hasRegionPermission(region, player, PermissionKey.EGG_USE))
     }
 
     @Test
     fun `API resolver falls back to global setting for a player`() {
         region.settings += PermissionSetting(PermissionKey.PVP, false)
 
-        assertFalse(onCertificatePermissionValue(region, null, player, PermissionKey.PVP))
+        assertFalse(getRegionPermissionValue(region, player, PermissionKey.PVP))
     }
 
     @Test
     fun `API resolver uses the same parent inheritance as runtime checks`() {
         region.settings += PermissionSetting(PermissionKey.BUILD, false)
 
-        assertFalse(onCertificatePermissionValue(region, null, player, PermissionKey.BUCKET_BUILD))
+        assertFalse(getRegionPermissionValue(region, player, PermissionKey.BUCKET_BUILD))
     }
 
     @Test
@@ -86,15 +89,15 @@ class PermissionHelperTest {
         scope.settings += PermissionSetting(PermissionKey.PVP, false)
         region.settings += PermissionSetting(PermissionKey.BUILD, false)
 
-        assertEquals(PermissionDenialSource.AtScope, getPermissionDenialSource(region, player, PermissionKey.PVP, scope))
-        assertEquals(PermissionDenialSource.AtRegion, getPermissionDenialSource(region, player, PermissionKey.BUILD, scope))
-        assertEquals(PermissionDenialSource.ByDefault, getPermissionDenialSource(region, player, PermissionKey.FLY, scope, false))
+        assertEquals(PermissionDenialSource.AtScope, getScopePermissionDenialSource(region, scope, player, PermissionKey.PVP))
+        assertEquals(PermissionDenialSource.AtRegion, getScopePermissionDenialSource(region, scope, player, PermissionKey.BUILD))
+        assertEquals(PermissionDenialSource.ByDefault, getScopePermissionDenialSource(region, scope, player, PermissionKey.FLY, false))
     }
 
     @Test
     fun `denial context names the container that rejected the action`() {
-        assertEquals("Scope &bscope&7 of Region &bregion&7", buildPermissionDenialContext(region, scope, PermissionDenialSource.AtScope))
-        assertEquals("Region &bregion&7", buildPermissionDenialContext(region, scope, PermissionDenialSource.AtRegion))
+        assertEquals("Scope &bscope&7 of Region &bregion&7", buildScopePermissionDenialContext(region, scope, PermissionDenialSource.AtScope))
+        assertEquals("Region &bregion&7", buildScopePermissionDenialContext(region, scope, PermissionDenialSource.AtRegion))
     }
 
     @Test
@@ -103,7 +106,37 @@ class PermissionHelperTest {
         region.settings += ExtensionPermissionSetting(key, false)
         scope.settings += ExtensionPermissionSetting(key, true, player)
 
-        assertTrue(resolvePermissionSettingValue(region, scope, player, key)!!)
-        assertFalse(resolvePermissionSettingValue(region, scope, otherPlayer, key)!!)
+        assertTrue(resolveScopePlayerPermission(region, scope, player, key)!!.value)
+        assertFalse(resolveScopePlayerPermission(region, scope, otherPlayer, key)!!.value)
+    }
+
+    @Test
+    fun `explicit queries distinguish global player region and scope`() {
+        region.settings += PermissionSetting(PermissionKey.PVP, false)
+        region.settings += PermissionSetting(PermissionKey.PVP, true, player)
+        scope.settings += PermissionSetting(PermissionKey.PVP, true)
+        scope.settings += PermissionSetting(PermissionKey.PVP, false, player)
+
+        assertFalse(getRegionPermissionValue(region, PermissionKey.PVP))
+        assertTrue(getRegionPermissionValue(region, player, PermissionKey.PVP))
+        assertTrue(getScopePermissionValue(region, scope, PermissionKey.PVP))
+        assertFalse(getScopePermissionValue(region, scope, player, PermissionKey.PVP))
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `legacy API rejects scope without region`() {
+        assertFailsWith<IllegalArgumentException> {
+            RegionDataApi.getPermissionValueRegion(null, scope, player, PermissionKey.PVP)
+        }
+    }
+
+    @Test
+    fun `scope query rejects a scope owned by another region`() {
+        val otherRegion = Region("other", 2, mutableListOf())
+
+        assertFailsWith<IllegalArgumentException> {
+            getScopePermissionDenialSource(otherRegion, scope, player, PermissionKey.PVP)
+        }
     }
 }

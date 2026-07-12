@@ -1,7 +1,8 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.application.region.PlayerRegionChecker
-import com.imyvm.iwg.application.region.permission.helper.hasPermission
+import com.imyvm.iwg.application.region.permission.helper.hasRegionPermission
+import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
@@ -140,21 +141,21 @@ object PlayerRegionEntryExitTracker {
         sendRpgEntryNotifications(player, region, null, region.name)
     }
 
-    private fun sendScopeExitMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
+    private fun sendScopeExitMessage(player: ServerPlayer, region: Region, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
-        val text = getScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, region?.name ?: "", scope.scopeName)
-            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+        val text = getScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, region.name, scope.scopeName)
+            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region.name, scope.scopeName)
             ?: return
         player.sendSystemMessage(text)
     }
 
-    private fun sendScopeEntryMessage(player: ServerPlayer, region: Region?, scope: GeoScope) {
+    private fun sendScopeEntryMessage(player: ServerPlayer, region: Region, scope: GeoScope) {
         if (isScopeNotificationEnabled(scope)) {
-            val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region?.name ?: "", scope.scopeName)
-                ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region?.name ?: "", scope.scopeName)
+            val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region.name, scope.scopeName)
+                ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region.name, scope.scopeName)
             if (text != null) player.sendSystemMessage(text)
         }
-        if (region != null) sendRpgEntryNotifications(player, region, scope, scope.scopeName)
+        sendRpgEntryNotifications(player, region, scope, scope.scopeName)
     }
 
     private fun isRegionNotificationEnabled(region: Region): Boolean {
@@ -197,7 +198,11 @@ object PlayerRegionEntryExitTracker {
         )
         for ((key, configDefault) in rpgKeys) {
             val default = configDefault.getValue()
-            val effective = hasPermission(region, player.uuid, key, scope, default)
+            val effective = if (scope == null) {
+                hasRegionPermission(region, player.uuid, key, default)
+            } else {
+                hasScopePermission(region, scope, player.uuid, key, default)
+            }
             if (!effective) {
                 val i18nKey = "notification.rpg.${key.name.lowercase().removePrefix("rpg_")}_restricted"
                 val msg = Translator.tr(i18nKey, locationName) ?: continue

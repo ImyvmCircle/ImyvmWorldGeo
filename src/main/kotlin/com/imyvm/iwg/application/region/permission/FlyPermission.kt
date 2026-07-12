@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.hasPermission
+import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
@@ -33,7 +33,7 @@ private fun processPlayerFly(player: ServerPlayer, currentTick: Long) {
     val uuid = player.uuid
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level(), player.blockPosition().x, player.blockPosition().z)
     val canFlyNow = regionAndScope?.let { (region, scope) ->
-        hasPermission(region, uuid, PermissionKey.FLY, scope, PERMISSION_DEFAULT_FLY.value)
+        hasScopePermission(region, scope, uuid, PermissionKey.FLY, PERMISSION_DEFAULT_FLY.value)
     } ?: false
 
     if (canFlyNow) {
@@ -124,7 +124,7 @@ private fun cleanupAbsentPlayer(
 private fun isStillNoFly(player: ServerPlayer): Boolean {
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level() ,player.blockPosition().x, player.blockPosition().z)
     return regionAndScope?.let { (region, scope) ->
-        !hasPermission(region, player.uuid, PermissionKey.FLY, scope, PERMISSION_DEFAULT_FLY.value)
+        !hasScopePermission(region, scope, player.uuid, PermissionKey.FLY, PERMISSION_DEFAULT_FLY.value)
     } ?: true
 }
 

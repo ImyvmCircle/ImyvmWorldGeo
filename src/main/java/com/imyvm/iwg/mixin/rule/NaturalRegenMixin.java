@@ -26,7 +26,7 @@ public class NaturalRegenMixin {
             BlockPos pos = player.blockPosition();
             Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(serverLevel, pos.getX(), pos.getZ());
             if (regionAndScope != null) {
-                Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.RPG_NATURAL_REGEN, regionAndScope.getSecond());
+                Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.RPG_NATURAL_REGEN, regionAndScope.getSecond());
                 if (value != null && !value) return;
             }
         }

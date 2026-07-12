@@ -603,8 +603,18 @@ private fun runAddDeleteSetting(context: CommandContext<CommandSourceStack>): In
     val keyString = context.getArgument("key", String::class.java)
     val valueString = getOptionalArgument(context, "value")
     val targetPlayer = getOptionalArgument(context, "playerName")
-    return identifierHandler(regionIdentifier, player) { regionToAddSetting ->
-        onHandleSetting(player, regionToAddSetting, scopeName, keyString, valueString, targetPlayer) }
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = scopeName?.let { region.getScopeByName(it) }
+        if (scope != null && valueString != null) {
+            addScopeSetting(player, region, scope, keyString, valueString, targetPlayer)
+        } else if (scope != null) {
+            removeScopeSetting(player, region, scope, keyString, targetPlayer)
+        } else if (valueString != null) {
+            addRegionSetting(player, region, keyString, valueString, targetPlayer)
+        } else {
+            removeRegionSetting(player, region, keyString, targetPlayer)
+        }
+    }
 }
 
 private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): Int {
@@ -612,8 +622,10 @@ private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): I
     val scopeName = getOptionalArgument(context, "scopeName")
     val keyString = context.getArgument("key", String::class.java)
     val targetPlayer = getOptionalArgument(context, "playerName")
-    return identifierHandler(regionIdentifier, player) { regionToQuery ->
-        onQuerySettingValue(player, regionToQuery, scopeName, keyString, targetPlayer) }
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = scopeName?.let { region.getScopeByName(it) }
+        onQuerySettingValue(player, region, scope, keyString, targetPlayer)
+    }
 }
 
 private fun runQueryRegion(context: CommandContext<CommandSourceStack>): Int {

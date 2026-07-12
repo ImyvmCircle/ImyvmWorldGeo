@@ -157,7 +157,7 @@ private fun tryScopeCreation(
     shapeType: GeoShapeType
 ): Result<GeoScope, CreationError> {
     val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: mutableListOf()
-    return RegionFactory.createScope(
+    return RegionFactory.createScopeForPlayer(
         scopeName = scopeName,
         playerExecutor = player,
         selectedPositions = selectedPositions,

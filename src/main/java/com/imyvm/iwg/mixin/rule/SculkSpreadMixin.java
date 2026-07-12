@@ -34,7 +34,7 @@ public class SculkSpreadMixin {
         BlockPos pos = BlockPos.containing(posOpt.get());
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
         if (regionAndScope == null) return;
-        Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.SCULK_SPREAD, regionAndScope.getSecond());
+        Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.SCULK_SPREAD, regionAndScope.getSecond());
         if (value != null && !value) {
             cir.setReturnValue(false);
         }

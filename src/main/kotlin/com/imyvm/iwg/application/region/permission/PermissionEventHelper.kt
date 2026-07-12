@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
+import com.imyvm.iwg.application.region.permission.helper.buildScopePermissionDenialContext
+import com.imyvm.iwg.application.region.permission.helper.getScopePermissionDenialSource
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
@@ -20,8 +20,8 @@ internal fun denyPermissionAt(
 ): Boolean {
     if (world.isClientSide) return false
     val (region, scope) = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return false
-    val denial = getPermissionDenialSource(region, player.uuid, key, scope, defaultValue) ?: return false
-    player.sendSystemMessage(Translator.tr(messageKey, buildPermissionDenialContext(region, scope, denial))!!)
+    val denial = getScopePermissionDenialSource(region, scope, player.uuid, key, defaultValue) ?: return false
+    player.sendSystemMessage(Translator.tr(messageKey, buildScopePermissionDenialContext(region, scope, denial))!!)
     return true
 }
 

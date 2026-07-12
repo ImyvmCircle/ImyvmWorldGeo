@@ -26,7 +26,7 @@ public class HungerDrainMixin {
         BlockPos pos = self.blockPosition();
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(serverLevel, pos.getX(), pos.getZ());
         if (regionAndScope == null) return;
-        Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.RPG_HUNGER, regionAndScope.getSecond());
+        Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.RPG_HUNGER, regionAndScope.getSecond());
         if (value != null && !value) {
             ci.cancel();
         }

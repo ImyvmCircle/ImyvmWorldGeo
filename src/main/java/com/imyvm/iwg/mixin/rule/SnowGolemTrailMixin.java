@@ -22,7 +22,7 @@ public class SnowGolemTrailMixin {
     private boolean onSetSnowBlock(Level world, BlockPos pos, BlockState state) {
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
         if (regionAndScope != null) {
-            Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.SNOW_GOLEM_TRAIL, regionAndScope.getSecond());
+            Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.SNOW_GOLEM_TRAIL, regionAndScope.getSecond());
             if (value != null && !value) return false;
         }
         return world.setBlockAndUpdate(pos, state);

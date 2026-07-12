@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
+import com.imyvm.iwg.application.region.permission.helper.buildScopePermissionDenialContext
+import com.imyvm.iwg.application.region.permission.helper.getScopePermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ARMOR_STAND
@@ -29,9 +29,9 @@ fun playerArmorStandPermission() {
         val player = source.entity as? Player ?: return@register true
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(entity.level(), entity.blockPosition().x, entity.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ARMOR_STAND, scope, PERMISSION_DEFAULT_ARMOR_STAND.value)
+            val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.ARMOR_STAND, PERMISSION_DEFAULT_ARMOR_STAND.value)
             if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildPermissionDenialContext(region, scope, denial))!!)
+                player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildScopePermissionDenialContext(region, scope, denial))!!)
                 return@register false
             }
         }

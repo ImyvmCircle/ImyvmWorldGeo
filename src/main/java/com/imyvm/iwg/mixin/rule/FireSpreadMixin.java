@@ -23,7 +23,7 @@ public class FireSpreadMixin {
     private void onTick(BlockState state, ServerLevel world, BlockPos pos, RandomSource random, CallbackInfo ci) {
         Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
         if (regionAndScope == null) return;
-        Boolean value = RuleHelper.getRuleValue(regionAndScope.getFirst(), RuleKey.RPG_FIRE_SPREAD, regionAndScope.getSecond());
+        Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.RPG_FIRE_SPREAD, regionAndScope.getSecond());
         if (value != null && !value) {
             ci.cancel();
         }

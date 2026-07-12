@@ -22,9 +22,9 @@ object RegionFactory {
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
 
-        val mainScopeResult = createScope(
+        val mainScopeResult = createScopeForPlayer(
             scopeName = "main_scope",
-            playerExecutor = playerExecutor,
+            playerExecutor = requireNotNull(playerExecutor) { "playerExecutor is required to create a region" },
             selectedPositions = selectedPositions,
             shapeType = shapeType
         )
@@ -40,6 +40,34 @@ object RegionFactory {
         return Result.Ok(newRegion)
     }
 
+    fun createScopeForPlayer(
+        scopeName: String,
+        playerExecutor: ServerPlayer,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> {
+        val worldId = playerExecutor.level().dimension().identifier()
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
+        if (geoShapeResult is Result.Err) return geoShapeResult
+        val geoShape = (geoShapeResult as Result.Ok).value
+        return Result.Ok(GeoScope(scopeName, worldId, getTeleportPoint(playerExecutor, geoShape), false, geoShape))
+    }
+
+    fun recreateScope(
+        scopeName: String,
+        worldId: Identifier,
+        teleportPoint: BlockPos?,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> = createScopeFromData(
+        scopeName,
+        worldId,
+        teleportPoint,
+        selectedPositions,
+        shapeType
+    )
+
+    @Deprecated("Use createScopeForPlayer or recreateScope")
     fun createScope(
         scopeName: String,
         playerExecutor: ServerPlayer? = null,
@@ -48,18 +76,23 @@ object RegionFactory {
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
-        val worldId = existingWorld ?: playerExecutor!!.level().dimension().identifier()
-        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
-        if (geoShapeResult is Result.Err) {
-            return Result.Err(geoShapeResult.error)
+        return if (existingWorld == null) {
+            createScopeForPlayer(scopeName, requireNotNull(playerExecutor) { "playerExecutor or existingWorld is required" }, selectedPositions, shapeType)
+        } else {
+            createScopeFromData(scopeName, existingWorld, existingTeleportPoint, selectedPositions, shapeType)
         }
+    }
 
-        val geoShape = (geoShapeResult as Result.Ok).value
-        val teleportPoint = existingTeleportPoint ?: getTeleportPoint(playerExecutor, geoShape)
-
-        val geoScope = GeoScope(scopeName, worldId, teleportPoint, false, geoShape)
-
-        return Result.Ok(geoScope)
+    private fun createScopeFromData(
+        scopeName: String,
+        worldId: Identifier,
+        teleportPoint: BlockPos?,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> {
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
+        if (geoShapeResult is Result.Err) return geoShapeResult
+        return Result.Ok(GeoScope(scopeName, worldId, teleportPoint, false, (geoShapeResult as Result.Ok).value))
     }
 
     private fun getTeleportPoint(

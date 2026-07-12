@@ -41,7 +41,7 @@ public class ServerWorldSpawnMixin {
             key = RuleKey.SPAWN_MONSTERS;
         }
 
-        Boolean value = RuleHelper.getRuleValue(region, key, scope);
+        Boolean value = RuleHelper.getScopeRuleValue(region, key, scope);
         if (value != null && !value) {
             cir.setReturnValue(false);
         }

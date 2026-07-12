@@ -28,11 +28,11 @@ public class ItemPickupMixin {
         if (regionAndScope == null) return;
         Region region = regionAndScope.getFirst();
         GeoScope scope = regionAndScope.getSecond();
-        PermissionDenialSource denial = PermissionHelperKt.getPermissionDenialSource(
-                region, player.getUUID(), PermissionKey.RPG_ITEM_PICKUP, scope,
+        PermissionDenialSource denial = PermissionHelperKt.getScopePermissionDenialSource(
+                region, scope, player.getUUID(), PermissionKey.RPG_ITEM_PICKUP,
                 PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP.getValue());
         if (denial == null) return;
-        String ctx = PermissionHelperKt.buildPermissionDenialContext(region, scope, denial);
+        String ctx = PermissionHelperKt.buildScopePermissionDenialContext(region, scope, denial);
         player.sendSystemMessage(Translator.INSTANCE.tr("setting.permission.item_pickup", ctx));
         ci.cancel();
     }
