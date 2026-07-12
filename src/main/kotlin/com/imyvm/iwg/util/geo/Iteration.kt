@@ -2,7 +2,21 @@ package com.imyvm.iwg.util.geo
 
 import java.util.PriorityQueue
 
-private data class GridPoint(val x: Int, val z: Int, val distanceSquared: Double)
+private data class GridPoint(val x: Int, val z: Int, val distanceSquared: ExactSquaredDistance)
+
+internal data class ExactSquaredDistance(val carry: Boolean, val low: ULong) : Comparable<ExactSquaredDistance> {
+    override fun compareTo(other: ExactSquaredDistance): Int =
+        compareValuesBy(this, other, ExactSquaredDistance::carry, ExactSquaredDistance::low)
+}
+
+internal fun exactSquaredDistance(x: Long, z: Long, centerX: Int, centerZ: Int): ExactSquaredDistance {
+    val dx = kotlin.math.abs(x - centerX.toLong()).toULong()
+    val dz = kotlin.math.abs(z - centerZ.toLong()).toULong()
+    val xSquared = dx * dx
+    val zSquared = dz * dz
+    val low = xSquared + zSquared
+    return ExactSquaredDistance(low < xSquared, low)
+}
 
 fun iterateCirclePointSequence(centerX: Int, centerZ: Int, radius: Int): Sequence<Pair<Int, Int>> {
     require(radius >= 0) { "circle radius must not be negative" }
@@ -81,9 +95,7 @@ internal fun distanceOrderedGrid(
         val intZ = z.toInt()
         val packed = (intX.toLong() shl 32) xor (intZ.toLong() and 0xffffffffL)
         if (!visited.add(packed)) return
-        val dx = x.toDouble() - centerX
-        val dz = z.toDouble() - centerZ
-        queue += GridPoint(intX, intZ, dx * dx + dz * dz)
+        queue += GridPoint(intX, intZ, exactSquaredDistance(x, z, centerX, centerZ))
     }
 
     enqueue(centerX.toLong(), centerZ.toLong())

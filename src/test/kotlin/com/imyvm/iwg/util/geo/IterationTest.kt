@@ -15,4 +15,13 @@ class IterationTest {
         assertEquals(9, points.size)
         assertTrue(distances.zipWithNext().all { (left, right) -> left <= right })
     }
+
+    @Test
+    fun `distance ordering remains exact beyond double and ulong range`() {
+        val near = exactSquaredDistance(Int.MAX_VALUE.toLong(), Int.MAX_VALUE - 1L, Int.MIN_VALUE, Int.MIN_VALUE)
+        val far = exactSquaredDistance(Int.MAX_VALUE.toLong(), Int.MAX_VALUE.toLong(), Int.MIN_VALUE, Int.MIN_VALUE)
+
+        assertTrue(near < far)
+        assertTrue(far.carry)
+    }
 }

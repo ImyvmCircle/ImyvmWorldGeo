@@ -58,6 +58,7 @@ object AreaEstimator {
         val radius = kotlin.math.hypot(dx, dz)
         
         if (!checkCircleSize(radius)) return AreaEstimationResult.Error(CreationError.UnderSizeLimit)
+        if (radius > Int.MAX_VALUE) return AreaEstimationResult.Error(CreationError.CoordinateRangeExceeded)
 
         val area = Math.PI * radius * radius
         return AreaEstimationResult.Success(area)

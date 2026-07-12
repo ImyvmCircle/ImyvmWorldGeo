@@ -173,6 +173,8 @@
   "error.circle_too_small": "&cThe circle is too small. &7The radius must be at least the minimum size.",
   "error.polygon_too_small": "&cThe polygon is too small. &7The area must be at least the minimum size.",
   "error.generic_too_small": "&cThe region is too small.",
+  "error.coordinate_range_exceeded": "&cThe selected shape exceeds the supported coordinate range.",
+  "interaction.meta.persistence.save_failed": "&cThe change was applied in memory but could not be saved. Check the server log and retry.",
   "error.under_bounding_box_limit": "&cThe region is under the bounding box limit. &7Its x span or z span is too small.",
   "error.aspect_ratio_invalid": "&cThe region aspect ratio exceeds the maximum allowed limit. &7Very elongated regions are not allowed.",
   "error.edge_too_short": "&cOne or more edges of the polygon are too short. &7Each edge must be at least the minimum length.",

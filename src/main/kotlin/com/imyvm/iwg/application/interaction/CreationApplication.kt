@@ -46,9 +46,8 @@ fun onTryingRegionCreationWithReturn(
 
     return when (val creationResult = tryRegionCreation(player, regionName, shapeType, idMark)) {
         is Result.Ok -> {
-            if (isApi) handleRegionCreateSuccess(player, creationResult, notify = false)
-            else handleRegionCreateSuccess(player, creationResult, notify = true)
-            creationResult.value
+            val saved = handleRegionCreateSuccess(player, creationResult, notify = !isApi)
+            creationResult.value.takeIf { saved }
         }
         is Result.Err -> {
             errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
@@ -88,9 +87,8 @@ fun onTryingScopeCreationWithReturn (
 
     return when (val creationResult = tryScopeCreation(player, scopeName, shapeType)) {
         is Result.Ok -> {
-            if (isApi) handleScopeCreateSuccess(player, creationResult, region, notify = false)
-            else handleScopeCreateSuccess(player, creationResult, region, notify = true)
-            Pair(region, creationResult.value)
+            val saved = handleScopeCreateSuccess(player, creationResult, region, notify = !isApi)
+            Pair(region, creationResult.value).takeIf { saved }
         }
         is Result.Err -> {
             errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
@@ -171,16 +169,17 @@ private fun handleRegionCreateSuccess(
     player: ServerPlayer,
     creationResult: Result.Ok<Region>,
     notify: Boolean
-) {
+): Boolean {
     val newRegion = creationResult.value
     RegionDatabase.addRegion(newRegion)
-    RegionDatabase.save()
+    if (!saveRegionData(player)) return false
 
     if (notify) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.success", newRegion.name)!!)
     }
     clearSelectionDisplay(player)
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
+    return true
 }
 
 private fun handleScopeCreateSuccess(
@@ -188,13 +187,13 @@ private fun handleScopeCreateSuccess(
     creationResult: Result.Ok<GeoScope>,
     region: Region,
     notify: Boolean
-) {
+): Boolean {
     val newScope = creationResult.value
     if (newScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
         newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
     }
     region.geometryScope.add(newScope)
-    RegionDatabase.save()
+    if (!saveRegionData(player)) return false
 
     if (notify) {
         player.sendSystemMessage(
@@ -203,6 +202,7 @@ private fun handleScopeCreateSuccess(
     }
     clearSelectionDisplay(player)
     ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
+    return true
 }
 
 private fun validateNameCommon(

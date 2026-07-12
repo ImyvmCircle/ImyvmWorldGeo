@@ -20,6 +20,7 @@ fun errorMessage(
         GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")!!
         else -> Translator.tr("error.generic_too_small")!!
     })
+    CreationError.CoordinateRangeExceeded -> listOfNotNull(Translator.tr("error.coordinate_range_exceeded"))
     CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit")!!)
     CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid")!!)
     CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short")!!)

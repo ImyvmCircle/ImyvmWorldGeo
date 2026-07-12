@@ -43,7 +43,6 @@ import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_PISTON
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_NATURAL_REGEN
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_FIRE_SPREAD
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_HUNGER
-import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
@@ -173,7 +172,7 @@ private fun handleAddSetting(
 
     val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
     settingsContainer.add(setting)
-    RegionDatabase.save()
+    if (!saveRegionData(player)) return
 
     player.sendSystemMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), value.toString())!!)
 }
@@ -192,7 +191,7 @@ private fun handleRemoveSetting(
         player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString())!!)
         return
     }
-    RegionDatabase.save()
+    if (!saveRegionData(player)) return
     player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString())!!)
 }
 

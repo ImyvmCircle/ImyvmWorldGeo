@@ -3,7 +3,6 @@ package com.imyvm.iwg.application.interaction
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
-import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -24,7 +23,7 @@ fun onAddingTeleportPoint(
 
     return if (reasonKey == null) {
         geoScope.teleportPoint = teleportPoint
-        RegionDatabase.save()
+        if (!saveRegionData(playerExecutor)) return 0
         playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name)!!)
         1
     } else {
@@ -40,7 +39,7 @@ fun onResettingTeleportPoint(
     scope: GeoScope
 ): Int {
     scope.teleportPoint = null
-    RegionDatabase.save()
+    if (!saveRegionData(playerExecutor)) return 0
     playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
     return 1
 }
@@ -86,7 +85,7 @@ fun onTeleportingPlayer(
 
     return if (fallback != null) {
         geoScope.teleportPoint = fallback
-        RegionDatabase.save()
+        if (!saveRegionData(playerExecutor)) return 0
         playerExecutor.teleport(TeleportTransition(
             targetWorld,
             Vec3(fallback.x.toDouble() + 0.5, fallback.y.toDouble(), fallback.z.toDouble() + 0.5),
@@ -117,11 +116,13 @@ fun onTeleportingPlayer(
     }
 }
 
+@JvmOverloads
 fun onTogglingTeleportPointAccessibility(
-    scope: GeoScope
+    scope: GeoScope,
+    player: ServerPlayer? = null
 ): Int {
     scope.isTeleportPointPublic = !scope.isTeleportPointPublic
-    RegionDatabase.save()
+    if (!saveRegionData(player)) return 0
     return 1
 }
 

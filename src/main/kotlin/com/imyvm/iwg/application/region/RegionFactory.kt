@@ -135,22 +135,26 @@ object RegionFactory {
         )
     }
 
-    private fun createCircle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
+    internal fun createCircle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val center = positions[0]
         val circumference = positions[1]
 
         if (center == circumference) return Result.Err(CreationError.DuplicatedPoints)
 
-        val dx = circumference.x.toDouble() - center.x
-        val dz = circumference.z.toDouble() - center.z
-        val radius = kotlin.math.hypot(dx, dz)
+        val radius = circleRadius(center, circumference)
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
-        require(radius <= Int.MAX_VALUE) { "circle radius exceeds supported coordinate range" }
+        if (radius > Int.MAX_VALUE) return Result.Err(CreationError.CoordinateRangeExceeded)
 
         return Result.Ok(
             GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))
         )
     }
+
+    private fun circleRadius(center: BlockPos, circumference: BlockPos): Double =
+        kotlin.math.hypot(
+            circumference.x.toDouble() - center.x,
+            circumference.z.toDouble() - center.z
+        )
 
     private fun createPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val distinct = positions.distinct()
