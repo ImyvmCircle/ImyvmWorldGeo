@@ -8,8 +8,11 @@ import net.minecraft.server.level.ServerPlayer
 fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false){
     val regionName = region.name
     val regionId = region.numberID
-    RegionDatabase.removeRegion(region)
-    if (!saveRegionData(player)) return
+    val rollback = RegionDatabase.removeRegionReversibly(region)
+    if (!saveRegionData(player)) {
+        rollback()
+        return
+    }
     if (isApi.not()) {
         player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
     }
@@ -20,8 +23,11 @@ fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
 
     try {
         val existingScope = region.getScopeByName(scopeName)
-        region.geometryScope.remove(existingScope)
-        if (!saveRegionData(player)) return
+        val index = region.removeScope(existingScope)
+        if (!saveRegionData(player)) {
+            region.restoreScope(index, existingScope)
+            return
+        }
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
     } catch (e: IllegalArgumentException) {
         player.sendSystemMessage(Translator.tr(e.message)!!)
@@ -30,7 +36,7 @@ fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
 }
 
 private fun checkScopeSize(player: ServerPlayer, region: Region): Boolean{
-    if (region.geometryScope.size < 2) {
+    if (region.scopes.size < 2) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.error.last_scope")!!)
         return false
     }

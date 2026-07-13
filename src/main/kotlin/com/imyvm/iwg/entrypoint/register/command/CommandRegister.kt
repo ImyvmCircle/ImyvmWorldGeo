@@ -572,7 +572,7 @@ private fun runTeleportPlayer(context: CommandContext<CommandSourceStack>): Int 
 private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
-        val (region, scope) = RegionDatabase.getRegionAndScope(regionToTeleport, regionToTeleport.geometryScope.firstOrNull()?.scopeName ?: "")
+        val (region, scope) = RegionDatabase.getRegionAndScope(regionToTeleport, regionToTeleport.scopes.firstOrNull()?.scopeName ?: "")
         if (scope != null) {
             onTeleportingPlayer(player, region, scope)
         } else {

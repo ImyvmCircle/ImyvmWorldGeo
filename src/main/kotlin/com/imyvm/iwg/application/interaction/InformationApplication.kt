@@ -51,7 +51,7 @@ fun onToggleActionBar(player: ServerPlayer): Int {
         val server = player.level().server
         val playerWorld = player.level()
         val scopes = RegionDatabase.getRegionList()
-            .flatMap { it.geometryScope }
+            .flatMap { it.scopes }
             .filter { it.geoShape != null && it.getWorld(server) == playerWorld }
         displayScopeBoundariesForPlayer(player, scopes)
     }

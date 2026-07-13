@@ -31,6 +31,14 @@ private data class RegionPlayerStatsLedger(
     val blockPlaceCounts: MutableMap<UUID, Long> = mutableMapOf(),
     val blockBreakCounts: MutableMap<UUID, Long> = mutableMapOf()
 ) {
+    fun detachedCopy(): RegionPlayerStatsLedger = RegionPlayerStatsLedger(
+        entryCounts.toMutableMap(),
+        stayMillis.toMutableMap(),
+        deathCounts.toMutableMap(),
+        blockPlaceCounts.toMutableMap(),
+        blockBreakCounts.toMutableMap()
+    )
+
     fun isEmpty(): Boolean =
         entryCounts.isEmpty() &&
                 stayMillis.isEmpty() &&
@@ -84,10 +92,31 @@ object RegionDatabase {
 
     @Throws(IOException::class)
     fun save() {
-        writeRegions(getDatabasePath(), regions)
-        saveDynmapVisibility()
-        savePlayerStats()
-        onSave?.invoke()
+        withFileRollback(listOf(getDatabasePath(), getDynmapConfigPath(), getPlayerStatsPath())) {
+            writeRegions(getDatabasePath(), regions)
+            saveDynmapVisibility()
+            savePlayerStats()
+            onSave?.invoke()
+        }
+    }
+
+    internal fun withFileRollback(paths: List<Path>, save: () -> Unit) {
+        val previousContents = paths.associateWith { path ->
+            if (Files.exists(path)) Files.readAllBytes(path) else null
+        }
+        try {
+            save()
+        } catch (error: Exception) {
+            previousContents.forEach { (path, contents) ->
+                try {
+                    if (contents == null) Files.deleteIfExists(path)
+                    else atomicWrite(path) { it.write(contents) }
+                } catch (restoreError: Exception) {
+                    error.addSuppressed(restoreError)
+                }
+            }
+            throw error
+        }
     }
 
     internal fun writeRegions(path: Path, regions: List<Region>) {
@@ -98,7 +127,7 @@ object RegionDatabase {
             for (region in regions) {
                 stream.writeUTF(region.name)
                 stream.writeInt(region.numberID)
-                saveGeoScopes(stream, region.geometryScope)
+                saveGeoScopes(stream, region.scopes)
                 saveSettings(stream, region.settings)
                 saveOwnershipHistory(stream, region.ownershipHistoryByScope)
             }
@@ -153,6 +182,34 @@ object RegionDatabase {
     fun removeRegion(regionToDelete: Region) {
         regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
         regionPlayerStats.remove(regionToDelete.numberID)
+    }
+
+    internal fun removeRegionReversibly(region: Region): () -> Unit {
+        val index = regions.indexOf(region)
+        require(index >= 0) { "region does not belong to database" }
+        val stats = regionPlayerStats[region.numberID]?.detachedCopy()
+        regions.removeAt(index)
+        regionPlayerStats.remove(region.numberID)
+        return {
+            regions.add(index.coerceIn(0, regions.size), region)
+            if (stats != null) regionPlayerStats[region.numberID] = stats
+        }
+    }
+
+    internal fun mergeAndRemoveRegionReversibly(sourceRegion: Region, targetRegion: Region): () -> Unit {
+        val sourceStats = regionPlayerStats[sourceRegion.numberID]?.detachedCopy()
+        val targetStats = regionPlayerStats[targetRegion.numberID]?.detachedCopy()
+        val restoreRegion = removeRegionReversibly(sourceRegion)
+        sourceStats?.let {
+            regionPlayerStats.getOrPut(targetRegion.numberID) { RegionPlayerStatsLedger() }.mergeFrom(it)
+        }
+        return {
+            restoreRegion()
+            if (sourceStats != null) regionPlayerStats[sourceRegion.numberID] = sourceStats
+            else regionPlayerStats.remove(sourceRegion.numberID)
+            if (targetStats != null) regionPlayerStats[targetRegion.numberID] = targetStats
+            else regionPlayerStats.remove(targetRegion.numberID)
+        }
     }
 
     fun renameRegion(region: Region, newName: String) {
@@ -222,19 +279,19 @@ object RegionDatabase {
         } catch (e: RegionNotFoundException) {
             return Pair(null, null)
         }
-        val scope = region.geometryScope.find { it.scopeName == scopeName }
+        val scope = region.scopes.find { it.scopeName == scopeName }
         return Pair(region, scope)
     }
 
     fun getRegionAndScope(region: Region, scopeName: String): Pair<Region, GeoScope?> {
-        val scope = region.geometryScope.find { it.scopeName == scopeName }
+        val scope = region.scopes.find { it.scopeName == scopeName }
         return Pair(region, scope)
     }
 
     fun getRegionAndScopeAt(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? {
         val server = world.server
         for (region in regions) {
-            for (scope in region.geometryScope) {
+            for (scope in region.scopes) {
                 if (server?.let { scope.getWorld(it) } == world) {
                     val geoShape = scope.geoShape
                     if (geoShape != null) {
@@ -250,7 +307,7 @@ object RegionDatabase {
 
     fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? {
         for (region in regions) {
-            val match = region.geometryScope.firstOrNull { it.scopeId.raw == scopeId.raw }
+            val match = region.scopes.firstOrNull { it.scopeId.raw == scopeId.raw }
             if (match != null) return region to match
         }
         return null
@@ -258,7 +315,16 @@ object RegionDatabase {
 
     fun nextScopeIdForNewScope(region: Region): ScopeId {
         val regionMark = com.imyvm.iwg.application.region.parseMarkFromRegionId(region.numberID)
-        return ScopeId(generateNewScopeIdRaw(region.numberID, regionMark))
+        val existingIds = region.scopes.mapTo(hashSetOf()) { it.scopeId.raw }
+        val firstDiscriminator = kotlin.random.Random.nextInt(64)
+        val creationHours = currentScopeCreationHours()
+        repeat(64) { offset ->
+            val candidate = ScopeId(
+                generateNewScopeIdRaw(region.numberID, regionMark, (firstDiscriminator + offset) % 64, creationHours)
+            )
+            if (candidate.raw !in existingIds) return candidate
+        }
+        throw ScopeIdCapacityExceededException()
     }
 
     fun recordScopeOwnership(
@@ -268,14 +334,13 @@ object RegionDatabase {
         changedAtMillis: Long
     ) {
         val entry = ScopeOwnershipEntry(scopeId.raw, fromRegion.numberID, toRegion.numberID, changedAtMillis)
-        val history = toRegion.ownershipHistoryByScope.getOrPut(scopeId.raw) { mutableListOf() }
-        history.add(entry)
+        toRegion.recordScopeOwnership(entry)
     }
 
     fun getScopeOwnershipHistory(scopeId: ScopeId): List<ScopeOwnershipEntry> {
         val result = mutableListOf<ScopeOwnershipEntry>()
         for (region in regions) {
-            region.ownershipHistoryByScope[scopeId.raw]?.let { result.addAll(it) }
+            result.addAll(region.ownershipHistory(scopeId.raw))
         }
         result.sortBy { it.changedAtMillis }
         return result
@@ -634,7 +699,7 @@ object RegionDatabase {
                 regionEntry.add("scopes", it)
                 modified = true
             }
-            for (scope in region.geometryScope) {
+            for (scope in region.scopes) {
                 if (scopesEntry.has(scope.scopeName)) {
                     scope.showOnDynmap = scopesEntry.get(scope.scopeName).asBoolean
                 } else {
@@ -657,7 +722,7 @@ object RegionDatabase {
             val regionEntry = JsonObject()
             regionEntry.addProperty("showOnDynmap", region.showOnDynmap)
             val scopesEntry = JsonObject()
-            for (scope in region.geometryScope) {
+            for (scope in region.scopes) {
                 scopesEntry.addProperty(scope.scopeName, scope.showOnDynmap)
             }
             regionEntry.add("scopes", scopesEntry)

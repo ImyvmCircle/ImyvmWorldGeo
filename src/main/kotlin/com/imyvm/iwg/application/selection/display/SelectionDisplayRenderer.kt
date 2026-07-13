@@ -27,7 +27,7 @@ fun displayScopeBoundariesForActionBarPlayers(server: MinecraftServer) {
             val playerWorld = player.level()
             val modifyingScope = (ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope
             val scopes = RegionDatabase.getRegionList()
-                .flatMap { it.geometryScope }
+                .flatMap { it.scopes }
                 .filter { it.geoShape != null && it.getWorld(server) == playerWorld && it !== modifyingScope }
             displayScopeBoundariesForPlayer(player, scopes)
         }

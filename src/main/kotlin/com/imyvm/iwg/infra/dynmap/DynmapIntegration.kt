@@ -43,7 +43,7 @@ object DynmapIntegration : DynmapCommonAPIListener() {
             for (region in RegionDatabase.getRegionList()) {
                 if (!region.showOnDynmap) continue
                 val color = DynmapColorResolver.resolveColor(region)
-                for (scope in region.geometryScope) {
+                for (scope in region.scopes) {
                     if (!scope.showOnDynmap) continue
                     DynmapRegionRenderer.renderScope(set, api, region, scope, color)
                 }

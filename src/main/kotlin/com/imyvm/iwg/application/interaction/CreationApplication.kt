@@ -13,6 +13,7 @@ import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.ScopeIdCapacityExceededException
 import net.minecraft.server.level.ServerPlayer
 
 fun onRegionCreation(
@@ -141,7 +142,7 @@ private fun tryRegionCreation(
         shapeType = shapeType
     )
     if (regionResult is Result.Ok) {
-        val mainScope = regionResult.value.geometryScope.firstOrNull()
+        val mainScope = regionResult.value.scopes.firstOrNull()
         if (mainScope != null && mainScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
             mainScope.scopeId = com.imyvm.iwg.domain.component.ScopeId(
                 com.imyvm.iwg.domain.component.generateNewScopeIdRaw(newID, idMark)
@@ -172,7 +173,10 @@ private fun handleRegionCreateSuccess(
 ): Boolean {
     val newRegion = creationResult.value
     RegionDatabase.addRegion(newRegion)
-    if (!saveRegionData(player)) return false
+    if (!saveRegionData(player)) {
+        RegionDatabase.removeRegion(newRegion)
+        return false
+    }
 
     if (notify) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.success", newRegion.name)!!)
@@ -190,10 +194,18 @@ private fun handleScopeCreateSuccess(
 ): Boolean {
     val newScope = creationResult.value
     if (newScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
-        newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
+        try {
+            newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
+        } catch (_: ScopeIdCapacityExceededException) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.create.error.id_capacity")!!)
+            return false
+        }
     }
-    region.geometryScope.add(newScope)
-    if (!saveRegionData(player)) return false
+    region.addScope(newScope)
+    if (!saveRegionData(player)) {
+        region.removeScope(newScope)
+        return false
+    }
 
     if (notify) {
         player.sendSystemMessage(
@@ -248,7 +260,7 @@ private fun generateAndNotifyAutoName(
 }
 
 fun checkScopeUnique(scopeName: String, region: Region, player: ServerPlayer): Boolean {
-    if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
+    if (region.scopes.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
         NameValidationMessages.sendDuplicateScope(player)
         return false
     }

@@ -10,7 +10,7 @@ fun getRegionRuleValue(region: Region, key: RuleKey): Boolean? =
     region.settingStore.rule(key)
 
 fun getScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): Boolean? {
-    require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
+    require(region.containsScope(scope)) { "scope does not belong to region" }
     return scope.settingStore.rule(key)
         ?: getRegionRuleValue(region, key)
 }
@@ -31,7 +31,7 @@ fun getRegionRuleValue(region: Region, key: ExtensionRuleKey): Boolean? {
 
 fun getScopeRuleValue(region: Region, scope: GeoScope, key: ExtensionRuleKey): Boolean? {
     require(ExtensionSettingRegistry.isRegisteredRuleKey(key.id)) { "Extension rule key '${key.id}' is not registered." }
-    require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
+    require(region.containsScope(scope)) { "scope does not belong to region" }
     return scope.settingStore.rule(key)
         ?: getRegionRuleValue(region, key)
 }

@@ -32,7 +32,7 @@ class RegionDatabaseTest {
         )
         val region = Region("region", 7, mutableListOf(scope))
         region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
-        region.ownershipHistoryByScope[42] = mutableListOf(ScopeOwnershipEntry(42, 6, 7, 1234))
+        region.recordScopeOwnership(ScopeOwnershipEntry(42, 6, 7, 1234))
 
         RegionDatabase.writeRegions(path, listOf(region))
         val loaded = RegionDatabase.readRegions(path).single()

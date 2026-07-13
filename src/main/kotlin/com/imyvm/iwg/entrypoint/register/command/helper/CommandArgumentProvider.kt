@@ -96,5 +96,5 @@ fun getScopesForRegion(identifier: String): List<String> {
     val region = RegionDatabase.getRegionList().find {
         it.name.equals(identifier, ignoreCase = true) || it.numberID.toString() == identifier
     }
-    return region?.geometryScope?.map { it.scopeName } ?: emptyList()
+    return region?.scopes?.map { it.scopeName } ?: emptyList()
 }

@@ -16,7 +16,10 @@ fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
 
     return try {
         RegionDatabase.renameRegion(region, newName)
-        if (!saveRegionData(player)) return 0
+        if (!saveRegionData(player)) {
+            region.name = oldName
+            return 0
+        }
         player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, newName)!!)
         1
     } catch (e: IllegalArgumentException) {
@@ -33,6 +36,7 @@ fun onScopeRename(
 ): Int {
     try {
         val existingScope = targetRegion.getScopeByName(scopeName)
+        val oldName = existingScope.scopeName
 
         if (!checkNameEmpty(newName, player)) return 0
         if (!checkNameFormat(newName, player)) return 0
@@ -42,15 +46,18 @@ fun onScopeRename(
             return 0
         }
 
-        for (scope in targetRegion.geometryScope) {
+        for (scope in targetRegion.scopes) {
             if (scope !== existingScope && scope.scopeName.equals(newName, ignoreCase = true)) {
                 player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.duplicate_scope_name")!!)
                 return 0
             }
         }
 
-        existingScope.scopeName = newName
-        if (!saveRegionData(player)) return 0
+        targetRegion.renameScope(existingScope, newName)
+        if (!saveRegionData(player)) {
+            targetRegion.renameScope(existingScope, oldName)
+            return 0
+        }
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, newName, targetRegion.name)!!)
         return 1
 

@@ -22,29 +22,29 @@ fun recreateScope(
     successMessageKey: String,
     vararg extraArgs: Any
 ) {
-    val existingWorld = existingScope.worldId
-    val existingTeleportPoint = existingScope.teleportPoint
-    region.geometryScope.remove(existingScope)
+    require(region.containsScope(existingScope)) { "scope does not belong to region" }
 
     val newScope = RegionFactory.recreateScope(
         scopeName = existingScope.scopeName,
-        worldId = existingWorld,
-        teleportPoint = existingTeleportPoint,
+        worldId = existingScope.worldId,
+        teleportPoint = existingScope.teleportPoint,
         selectedPositions = newPositions,
         shapeType = shapeType
     )
 
     when (newScope) {
         is Result.Ok -> {
-            newScope.value.scopeId = existingScope.scopeId
-            region.geometryScope.add(newScope.value)
-            if (!saveRegionData(player)) return
+            val oldShape = existingScope.geoShape
+            existingScope.geoShape = newScope.value.geoShape
+            if (!saveRegionData(player)) {
+                existingScope.geoShape = oldShape
+                return
+            }
             player.sendSystemMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs)!!)
             clearSelectionDisplay(player)
             ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {
-            region.geometryScope.add(existingScope)
             val errorMsg = errorMessage(newScope.error, shapeType)
             errorMsg.forEach { player.sendSystemMessage(it) }
         }

@@ -18,12 +18,40 @@ import kotlin.math.round
 class Region(
     var name: String,
     var numberID: Int,
-    var geometryScope: MutableList<GeoScope>,
+    geometryScope: MutableList<GeoScope>,
     settings: MutableList<Setting> = mutableListOf(),
     var showOnDynmap: Boolean = true,
-    var ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
+    ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
+    private val mutableScopes = mutableListOf<GeoScope>()
+    private val mutableOwnershipHistory = mutableMapOf<Long, MutableList<ScopeOwnershipEntry>>()
     internal val settingStore = com.imyvm.iwg.domain.component.SettingStore(settings)
+
+    init {
+        replaceScopes(geometryScope)
+        replaceOwnershipHistory(ownershipHistoryByScope)
+    }
+
+    internal val scopes: List<GeoScope>
+        get() = mutableScopes
+
+    /**
+     * Binary-compatible snapshot for existing addons.
+     *
+     * Mutating the returned list does not change this Region. Use the addon API for writes.
+     */
+    var geometryScope: MutableList<GeoScope>
+        get() = mutableScopes.toMutableList()
+        set(value) = replaceScopes(value)
+
+    /**
+     * Binary-compatible snapshot for existing addons.
+     *
+     * The map and its entry lists are detached from this Region.
+     */
+    var ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>>
+        get() = mutableOwnershipHistory.mapValuesTo(mutableMapOf()) { (_, entries) -> entries.toMutableList() }
+        set(value) = replaceOwnershipHistory(value)
 
     /**
      * Binary-compatible view for existing addons.
@@ -37,13 +65,81 @@ class Region(
         set(value) = settingStore.replaceAll(value)
 
     fun getScopeByName(scopeName: String): GeoScope {
-        return geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
+        return mutableScopes.find { it.scopeName.equals(scopeName, ignoreCase = true) }
             ?: throw IllegalArgumentException(Translator.tr("region.error.no_scope", scopeName, name)!!.string)
+    }
+
+    fun containsScope(scope: GeoScope): Boolean = mutableScopes.any { it === scope }
+
+    fun addScope(scope: GeoScope) {
+        validateScope(scope, mutableScopes)
+        mutableScopes.add(scope)
+    }
+
+    fun removeScope(scope: GeoScope): Int {
+        val index = mutableScopes.indexOfFirst { it === scope }
+        require(index >= 0) { "scope does not belong to region" }
+        mutableScopes.removeAt(index)
+        return index
+    }
+
+    fun restoreScope(index: Int, scope: GeoScope) {
+        validateScope(scope, mutableScopes)
+        mutableScopes.add(index.coerceIn(0, mutableScopes.size), scope)
+    }
+
+    internal fun restoreScopes(scopes: List<GeoScope>) = replaceScopes(scopes)
+
+    fun renameScope(scope: GeoScope, newName: String) {
+        require(containsScope(scope)) { "scope does not belong to region" }
+        require(mutableScopes.none { it !== scope && it.scopeName.equals(newName, ignoreCase = true) }) {
+            "duplicate scope name"
+        }
+        scope.scopeName = newName
+    }
+
+    fun recordScopeOwnership(entry: ScopeOwnershipEntry) {
+        require(entry.toRegionNumberId == numberID) { "ownership entry targets another region" }
+        mutableOwnershipHistory.getOrPut(entry.scopeIdRaw) { mutableListOf() }.add(entry)
+    }
+
+    internal fun ownershipHistory(scopeIdRaw: Long): List<ScopeOwnershipEntry> =
+        mutableOwnershipHistory[scopeIdRaw].orEmpty()
+
+    internal fun ownershipHistorySnapshot(): MutableMap<Long, MutableList<ScopeOwnershipEntry>> =
+        ownershipHistoryByScope
+
+    internal fun replaceOwnershipHistory(value: Map<Long, List<ScopeOwnershipEntry>>) {
+        require(value.all { (scopeId, entries) -> entries.all { it.scopeIdRaw == scopeId } }) {
+            "ownership history key does not match entry"
+        }
+        mutableOwnershipHistory.clear()
+        value.forEach { (scopeId, entries) -> mutableOwnershipHistory[scopeId] = entries.toMutableList() }
+    }
+
+    private fun replaceScopes(scopes: List<GeoScope>) {
+        val names = hashSetOf<String>()
+        val assignedIds = hashSetOf<com.imyvm.iwg.domain.component.ScopeId>()
+        scopes.forEach { scope ->
+            require(names.add(scope.scopeName.lowercase())) { "duplicate scope name" }
+            if (scope.scopeId.raw != com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
+                require(assignedIds.add(scope.scopeId)) { "duplicate scope id" }
+            }
+        }
+        mutableScopes.clear()
+        mutableScopes.addAll(scopes)
+    }
+
+    private fun validateScope(scope: GeoScope, existing: List<GeoScope>) {
+        require(existing.none { it.scopeName.equals(scope.scopeName, ignoreCase = true) }) { "duplicate scope name" }
+        if (scope.scopeId.raw != com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
+            require(existing.none { it.scopeId == scope.scopeId }) { "duplicate scope id" }
+        }
     }
 
     fun getScopeInfos(server: MinecraftServer): List<Component> {
         val infos = mutableListOf<Component>()
-        geometryScope.forEachIndexed { index, geoScope ->
+        mutableScopes.forEachIndexed { index, geoScope ->
             geoScope.getScopeInfo(index)?.let { infos.add(it) }
             infos.addAll(geoScope.getSettingInfos(server))
         }
@@ -56,7 +152,7 @@ class Region(
 
     fun calculateTotalArea(): Double {
         var totalArea = 0.0
-        for (scope in geometryScope) {
+        for (scope in mutableScopes) {
             scope.geoShape?.let {
                 totalArea += it.calculateArea()
             }

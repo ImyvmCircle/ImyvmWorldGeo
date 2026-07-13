@@ -21,7 +21,7 @@ private sealed interface PermissionTarget {
     data class RegionOnly(override val region: Region) : PermissionTarget
     data class ScopeOverride(override val region: Region, val scope: GeoScope) : PermissionTarget {
         init {
-            require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
+            require(region.containsScope(scope)) { "scope does not belong to region" }
         }
     }
 }

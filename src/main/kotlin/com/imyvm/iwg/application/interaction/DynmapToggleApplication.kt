@@ -6,14 +6,23 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
 fun onTogglingRegionDynmap(player: ServerPlayer, region: Region) {
-    region.showOnDynmap = !region.showOnDynmap
-    if (!saveRegionData(player)) return
+    val oldValue = region.showOnDynmap
+    region.showOnDynmap = !oldValue
+    if (!saveRegionData(player)) {
+        region.showOnDynmap = oldValue
+        return
+    }
     player.sendSystemMessage(Translator.tr("interaction.meta.region.dynmap.toggle", region.name, region.showOnDynmap)!!)
 }
 
 fun onTogglingScopeDynmap(player: ServerPlayer, region: Region, scope: GeoScope): Int {
-    scope.showOnDynmap = !scope.showOnDynmap
-    if (!saveRegionData(player)) return 0
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    val oldValue = scope.showOnDynmap
+    scope.showOnDynmap = !oldValue
+    if (!saveRegionData(player)) {
+        scope.showOnDynmap = oldValue
+        return 0
+    }
     player.sendSystemMessage(Translator.tr("interaction.meta.scope.dynmap.toggle", region.name, scope.scopeName, scope.showOnDynmap)!!)
     return 1
 }

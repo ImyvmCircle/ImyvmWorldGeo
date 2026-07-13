@@ -14,16 +14,16 @@ class RegionDataApiTest {
         val region = Region("region", 1, mutableListOf(first))
 
         val snapshot = RegionDataApi.getRegionScopes(region)
-        region.geometryScope += scope("second")
+        region.addScope(scope("second", 2))
 
         assertEquals(listOf(first), snapshot)
     }
 
-    private fun scope(name: String) = GeoScope(
+    private fun scope(name: String, id: Long = 1) = GeoScope(
         name,
         Identifier.parse("minecraft:overworld"),
         null,
         geoShape = null,
-        scopeId = ScopeId(1)
+        scopeId = ScopeId(id)
     )
 }

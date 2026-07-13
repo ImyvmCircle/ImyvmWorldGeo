@@ -85,7 +85,7 @@ object PlayerInteractionApi {
             return getDefaultPermissionValue(keyString)
         }
         val scope = scopeName?.let {
-            region.geometryScope.firstOrNull { s -> s.scopeName.equals(it, ignoreCase = true) }
+            region.scopes.firstOrNull { s -> s.scopeName.equals(it, ignoreCase = true) }
                 ?: throw IllegalArgumentException("region.error.no_scope")
         }
         return when {
@@ -99,7 +99,7 @@ object PlayerInteractionApi {
         onCertificateRuleValue(region, null, keyString)
     fun getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean? {
         val targetRegion = requireNotNull(region) { "scope requires region" }
-        val scope = targetRegion.geometryScope.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
+        val scope = targetRegion.scopes.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
             ?: throw IllegalArgumentException("region.error.no_scope")
         return onCertificateRuleValue(targetRegion, scope, keyString)
     }

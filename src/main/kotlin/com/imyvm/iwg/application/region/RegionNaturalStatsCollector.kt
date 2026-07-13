@@ -21,7 +21,7 @@ object RegionNaturalStatsCollector {
     private const val MAX_CANDIDATE_CHUNKS = 2048
 
     fun collectRegionStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
-        collectRegionStatsFromScopes(server, region.geometryScope)
+        collectRegionStatsFromScopes(server, region.scopes)
 
     fun collectScopeStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         collectRegionStatsFromScopes(server, listOf(scope))

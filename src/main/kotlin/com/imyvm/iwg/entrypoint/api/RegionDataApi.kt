@@ -74,7 +74,7 @@ object RegionDataApi {
         System.currentTimeMillis() - parseFoundingTimeFromRegionId(region.numberID)
 
     fun getRegionScopes(region: Region): List<GeoScope> =
-        region.geometryScope.toList()
+        region.scopes.toList()
 
     fun getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?> =
         RegionDatabase.getRegionAndScope(region, scopeName)
@@ -279,7 +279,7 @@ object RegionDataApi {
         if (scope == null) getRegionActiveEffects(region, playerUUID)
         else getScopeActiveEffects(region, scope, playerUUID)
 
-    fun getRegionScopeCount(region: Region): Int = region.geometryScope.size
+    fun getRegionScopeCount(region: Region): Int = region.scopes.size
 
     fun getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectRegionStats(server, region)

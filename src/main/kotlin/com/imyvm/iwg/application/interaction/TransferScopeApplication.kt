@@ -16,7 +16,7 @@ fun onScopeTransfer(
         return 0
     }
 
-    if (sourceRegion.geometryScope.size < 2) {
+    if (sourceRegion.scopes.size < 2) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.last_scope")!!)
         return 0
     }
@@ -28,15 +28,41 @@ fun onScopeTransfer(
         return 0
     }
 
-    val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
-    val nameChanged = !resolvedName.equals(scope.scopeName, ignoreCase = false)
+    val originalName = scope.scopeName
+    val resolvedName = resolveTransferScopeName(originalName, targetRegion)
+    val nameChanged = !resolvedName.equals(originalName, ignoreCase = false)
+    val sourceIndex = sourceRegion.removeScope(scope)
+    val originalSourceHistory = sourceRegion.ownershipHistorySnapshot()
+    val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
 
     val transferTime = System.currentTimeMillis()
-    sourceRegion.geometryScope.remove(scope)
-    scope.scopeName = resolvedName
-    targetRegion.geometryScope.add(scope)
-    RegionDatabase.recordScopeOwnership(scope.scopeId, sourceRegion, targetRegion, transferTime)
-    if (!saveRegionData(player)) return 0
+    try {
+        scope.scopeName = resolvedName
+        targetRegion.addScope(scope)
+        val newSourceHistory = originalSourceHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        val newTargetHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        newSourceHistory.remove(scope.scopeId.raw)?.let { previousEntries ->
+            newTargetHistory.getOrPut(scope.scopeId.raw) { mutableListOf() }.addAll(previousEntries)
+        }
+        sourceRegion.replaceOwnershipHistory(newSourceHistory)
+        targetRegion.replaceOwnershipHistory(newTargetHistory)
+        RegionDatabase.recordScopeOwnership(scope.scopeId, sourceRegion, targetRegion, transferTime)
+    } catch (error: IllegalArgumentException) {
+        if (targetRegion.containsScope(scope)) targetRegion.removeScope(scope)
+        scope.scopeName = originalName
+        sourceRegion.restoreScope(sourceIndex, scope)
+        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        throw error
+    }
+    if (!saveRegionData(player)) {
+        targetRegion.removeScope(scope)
+        scope.scopeName = originalName
+        sourceRegion.restoreScope(sourceIndex, scope)
+        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        return 0
+    }
 
     if (nameChanged) {
         player.sendSystemMessage(
@@ -57,13 +83,13 @@ fun onScopeTransfer(
 }
 
 internal fun resolveTransferScopeName(originalName: String, targetRegion: Region): String {
-    if (targetRegion.geometryScope.none { it.scopeName.equals(originalName, ignoreCase = true) }) {
+    if (targetRegion.scopes.none { it.scopeName.equals(originalName, ignoreCase = true) }) {
         return originalName
     }
     var counter = 1
     while (true) {
         val candidate = "$originalName$counter"
-        if (targetRegion.geometryScope.none { it.scopeName.equals(candidate, ignoreCase = true) }) {
+        if (targetRegion.scopes.none { it.scopeName.equals(candidate, ignoreCase = true) }) {
             return candidate
         }
         counter++

@@ -129,7 +129,7 @@ object RegionFactory {
         val geoShape = (geoShapeResult as Result.Ok).value
 
         val existingScopes = RegionDatabase.getRegionList()
-            .flatMap { region -> region.geometryScope.filter { it.worldId == worldId }.map { Pair(it, region.name) } }
+            .flatMap { region -> region.scopes.filter { it.worldId == worldId }.map { Pair(it, region.name) } }
         val intersections = checkIntersection(geoShape, existingScopes)
         if (intersections.isNotEmpty()) {
             return Result.Err(CreationError.IntersectionBetweenScopes(intersections))

@@ -18,12 +18,17 @@ fun onAddingTeleportPoint(
     y: Int,
     z: Int
 ): Int {
+    require(targetRegion.containsScope(geoScope)) { "scope does not belong to region" }
     val teleportPoint = BlockPos(x, y, z)
     val reasonKey = geoScope.getTeleportPointInvalidReasonKey(playerExecutor.level(), teleportPoint)
 
     return if (reasonKey == null) {
+        val oldPoint = geoScope.teleportPoint
         geoScope.teleportPoint = teleportPoint
-        if (!saveRegionData(playerExecutor)) return 0
+        if (!saveRegionData(playerExecutor)) {
+            geoScope.teleportPoint = oldPoint
+            return 0
+        }
         playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name)!!)
         1
     } else {
@@ -38,8 +43,13 @@ fun onResettingTeleportPoint(
     region: Region,
     scope: GeoScope
 ): Int {
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    val oldPoint = scope.teleportPoint
     scope.teleportPoint = null
-    if (!saveRegionData(playerExecutor)) return 0
+    if (!saveRegionData(playerExecutor)) {
+        scope.teleportPoint = oldPoint
+        return 0
+    }
     playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
     return 1
 }
@@ -55,6 +65,7 @@ fun onTeleportingPlayer(
     targetRegion: Region,
     geoScope: GeoScope
 ): Int {
+    require(targetRegion.containsScope(geoScope)) { "scope does not belong to region" }
     val targetWorld = geoScope.getWorld(playerExecutor.level().server) ?: return 0
     val teleportPoint = onGettingTeleportPoint(geoScope)
 
@@ -85,7 +96,10 @@ fun onTeleportingPlayer(
 
     return if (fallback != null) {
         geoScope.teleportPoint = fallback
-        if (!saveRegionData(playerExecutor)) return 0
+        if (!saveRegionData(playerExecutor)) {
+            geoScope.teleportPoint = teleportPoint
+            return 0
+        }
         playerExecutor.teleport(TeleportTransition(
             targetWorld,
             Vec3(fallback.x.toDouble() + 0.5, fallback.y.toDouble(), fallback.z.toDouble() + 0.5),
@@ -121,8 +135,12 @@ fun onTogglingTeleportPointAccessibility(
     scope: GeoScope,
     player: ServerPlayer? = null
 ): Int {
-    scope.isTeleportPointPublic = !scope.isTeleportPointPublic
-    if (!saveRegionData(player)) return 0
+    val oldValue = scope.isTeleportPointPublic
+    scope.isTeleportPointPublic = !oldValue
+    if (!saveRegionData(player)) {
+        scope.isTeleportPointPublic = oldValue
+        return 0
+    }
     return 1
 }
 

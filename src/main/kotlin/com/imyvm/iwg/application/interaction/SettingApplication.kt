@@ -63,7 +63,7 @@ private sealed interface SettingTarget {
 
     data class ScopeTarget(val region: Region, val scope: GeoScope) : SettingTarget {
         init {
-            require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
+            require(region.containsScope(scope)) { "scope does not belong to region" }
         }
 
         override val store get() = scope.settingStore

@@ -11,7 +11,7 @@ fun getRegionEffectValue(region: Region, playerUUID: UUID, key: EffectKey): Int?
 }
 
 fun getScopeEffectValue(region: Region, scope: GeoScope, playerUUID: UUID, key: EffectKey): Int? {
-    require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
+    require(region.containsScope(scope)) { "scope does not belong to region" }
     return resolveScopeEffectValue(region, scope, playerUUID, key, scopeOverlay(scope))
 }
 
@@ -21,7 +21,7 @@ fun getRegionActiveEffects(region: Region, playerUUID: UUID): Map<EffectKey, Int
     }.toMap()
 
 fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Map<EffectKey, Int> {
-    require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
+    require(region.containsScope(scope)) { "scope does not belong to region" }
     val overlay = scopeOverlay(scope)
     val keys = buildSet {
         addAll(scope.settingStore.effectKeys())
