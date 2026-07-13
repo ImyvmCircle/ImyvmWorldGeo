@@ -120,6 +120,7 @@ object RegionDatabase {
     }
 
     internal fun writeRegions(path: Path, regions: List<Region>) {
+        validateDatabaseIdentities(regions)
         atomicWrite(path) { output ->
             val stream = DataOutputStream(output)
             stream.writeInt(DB_V1_SENTINEL)
@@ -168,6 +169,7 @@ object RegionDatabase {
                     }
                     loadedRegions.add(region)
                 }
+                validateDatabaseIdentities(loadedRegions)
                 loadedRegions
             }
         } catch (e: IllegalArgumentException) {
@@ -176,6 +178,11 @@ object RegionDatabase {
     }
 
     fun addRegion(region: Region) {
+        require(regions.none { it.numberID == region.numberID }) { "duplicate region id" }
+        val existingScopeIds = regions.flatMapTo(hashSetOf()) { existing ->
+            existing.scopes.map { it.requireAssignedScopeId() }
+        }
+        require(region.scopes.none { it.requireAssignedScopeId() in existingScopeIds }) { "duplicate scope id" }
         regions.add(region)
     }
 
@@ -305,23 +312,41 @@ object RegionDatabase {
         return null
     }
 
-    fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? {
+    fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? =
+        AssignedScopeId.from(scopeId)?.let(::getScopeByAssignedId)
+
+    fun getScopeByAssignedId(scopeId: AssignedScopeId): Pair<Region, GeoScope>? {
         for (region in regions) {
-            val match = region.scopes.firstOrNull { it.scopeId.raw == scopeId.raw }
+            val match = region.scopes.firstOrNull { it.requireAssignedScopeId() == scopeId }
             if (match != null) return region to match
         }
         return null
     }
 
-    fun nextScopeIdForNewScope(region: Region): ScopeId {
+    fun nextScopeIdForNewScope(region: Region): AssignedScopeId {
+        return nextScopeIdForNewScope(
+            region,
+            regions,
+            kotlin.random.Random.nextInt(64),
+            currentScopeCreationHours()
+        )
+    }
+
+    internal fun nextScopeIdForNewScope(
+        region: Region,
+        allRegions: List<Region>,
+        firstDiscriminator: Int,
+        creationHours: Long
+    ): AssignedScopeId {
         val regionMark = com.imyvm.iwg.application.region.parseMarkFromRegionId(region.numberID)
-        val existingIds = region.scopes.mapTo(hashSetOf()) { it.scopeId.raw }
-        val firstDiscriminator = kotlin.random.Random.nextInt(64)
-        val creationHours = currentScopeCreationHours()
+        val existingIds = allRegions.asSequence()
+            .flatMap { it.scopes.asSequence() }
+            .mapTo(hashSetOf()) { it.requireAssignedScopeId().raw }
+        region.scopes.mapTo(existingIds) { it.requireAssignedScopeId().raw }
         repeat(64) { offset ->
-            val candidate = ScopeId(
+            val candidate = AssignedScopeId.require(ScopeId(
                 generateNewScopeIdRaw(region.numberID, regionMark, (firstDiscriminator + offset) % 64, creationHours)
-            )
+            ))
             if (candidate.raw !in existingIds) return candidate
         }
         throw ScopeIdCapacityExceededException()
@@ -332,15 +357,27 @@ object RegionDatabase {
         fromRegion: Region,
         toRegion: Region,
         changedAtMillis: Long
+    ) = recordAssignedScopeOwnership(AssignedScopeId.require(scopeId), fromRegion, toRegion, changedAtMillis)
+
+    fun recordAssignedScopeOwnership(
+        scopeId: AssignedScopeId,
+        fromRegion: Region,
+        toRegion: Region,
+        changedAtMillis: Long
     ) {
         val entry = ScopeOwnershipEntry(scopeId.raw, fromRegion.numberID, toRegion.numberID, changedAtMillis)
         toRegion.recordScopeOwnership(entry)
     }
 
     fun getScopeOwnershipHistory(scopeId: ScopeId): List<ScopeOwnershipEntry> {
+        val assignedScopeId = AssignedScopeId.from(scopeId) ?: return emptyList()
+        return getAssignedScopeOwnershipHistory(assignedScopeId)
+    }
+
+    fun getAssignedScopeOwnershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> {
         val result = mutableListOf<ScopeOwnershipEntry>()
         for (region in regions) {
-            result.addAll(region.ownershipHistory(scopeId.raw))
+            result.addAll(region.ownershipHistory(scopeId))
         }
         result.sortBy { it.changedAtMillis }
         return result
@@ -355,7 +392,7 @@ object RegionDatabase {
             stream.writeBoolean(scope.isTeleportPointPublic)
             saveGeoShape(stream, scope.geoShape)
             saveSettings(stream, scope.settings)
-            stream.writeLong(scope.scopeId.raw)
+            stream.writeLong(scope.requireAssignedScopeId().raw)
         }
     }
 
@@ -372,7 +409,9 @@ object RegionDatabase {
             val scopeSettings = loadSettings(stream)
 
             val scopeId = if (isV1) {
-                ScopeId(stream.readLong())
+                val raw = stream.readLong()
+                AssignedScopeId.fromRaw(raw)?.toLegacyScopeId()
+                    ?: throw IOException("Invalid or unassigned scope id: $raw")
             } else {
                 ScopeId(generateCompatScopeIdRaw(regionNumberId, indexInRegion))
             }
@@ -382,6 +421,17 @@ object RegionDatabase {
         }
 
         return list
+    }
+
+    private fun validateDatabaseIdentities(regionsToValidate: List<Region>) {
+        val regionIds = hashSetOf<Int>()
+        val scopeIds = hashSetOf<AssignedScopeId>()
+        for (region in regionsToValidate) {
+            require(regionIds.add(region.numberID)) { "duplicate region id" }
+            for (scope in region.scopes) {
+                require(scopeIds.add(scope.requireAssignedScopeId())) { "duplicate scope id" }
+            }
+        }
     }
 
     private fun saveOwnershipHistory(

@@ -1,6 +1,7 @@
 package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.Setting
 import com.imyvm.iwg.domain.component.PermissionSetting
 import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
@@ -17,20 +18,26 @@ import kotlin.math.round
 
 class Region(
     var name: String,
-    var numberID: Int,
+    numberID: Int,
     geometryScope: MutableList<GeoScope>,
     settings: MutableList<Setting> = mutableListOf(),
     var showOnDynmap: Boolean = true,
     ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
+    private val stableNumberId = numberID.also { require(it > 0) { "region id must be positive" } }
     private val mutableScopes = mutableListOf<GeoScope>()
-    private val mutableOwnershipHistory = mutableMapOf<Long, MutableList<ScopeOwnershipEntry>>()
+    private val mutableOwnershipHistory = mutableMapOf<AssignedScopeId, MutableList<ScopeOwnershipEntry>>()
     internal val settingStore = com.imyvm.iwg.domain.component.SettingStore(settings)
 
     init {
         replaceScopes(geometryScope)
-        replaceOwnershipHistory(ownershipHistoryByScope)
+        replaceLegacyOwnershipHistory(ownershipHistoryByScope)
     }
+
+    /** Binary-compatible facade. A Region identity cannot be replaced after construction. */
+    var numberID: Int
+        get() = stableNumberId
+        set(value) = require(value == stableNumberId) { "region id cannot be changed" }
 
     internal val scopes: List<GeoScope>
         get() = mutableScopes
@@ -50,8 +57,10 @@ class Region(
      * The map and its entry lists are detached from this Region.
      */
     var ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>>
-        get() = mutableOwnershipHistory.mapValuesTo(mutableMapOf()) { (_, entries) -> entries.toMutableList() }
-        set(value) = replaceOwnershipHistory(value)
+        get() = mutableOwnershipHistory.entries.associateTo(mutableMapOf()) { (scopeId, entries) ->
+            scopeId.raw to entries.toMutableList()
+        }
+        set(value) = replaceLegacyOwnershipHistory(value)
 
     /**
      * Binary-compatible view for existing addons.
@@ -100,31 +109,39 @@ class Region(
 
     fun recordScopeOwnership(entry: ScopeOwnershipEntry) {
         require(entry.toRegionNumberId == numberID) { "ownership entry targets another region" }
-        mutableOwnershipHistory.getOrPut(entry.scopeIdRaw) { mutableListOf() }.add(entry)
+        mutableOwnershipHistory.getOrPut(entry.scopeId) { mutableListOf() }.add(entry)
     }
 
-    internal fun ownershipHistory(scopeIdRaw: Long): List<ScopeOwnershipEntry> =
-        mutableOwnershipHistory[scopeIdRaw].orEmpty()
+    internal fun ownershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> =
+        mutableOwnershipHistory[scopeId].orEmpty()
 
-    internal fun ownershipHistorySnapshot(): MutableMap<Long, MutableList<ScopeOwnershipEntry>> =
-        ownershipHistoryByScope
+    internal fun ownershipHistorySnapshot(): MutableMap<AssignedScopeId, MutableList<ScopeOwnershipEntry>> =
+        mutableOwnershipHistory.mapValuesTo(mutableMapOf()) { (_, entries) -> entries.toMutableList() }
 
-    internal fun replaceOwnershipHistory(value: Map<Long, List<ScopeOwnershipEntry>>) {
-        require(value.all { (scopeId, entries) -> entries.all { it.scopeIdRaw == scopeId } }) {
+    internal fun replaceOwnershipHistory(value: Map<AssignedScopeId, List<ScopeOwnershipEntry>>) {
+        require(value.all { (scopeId, entries) -> entries.all { it.scopeId == scopeId } }) {
             "ownership history key does not match entry"
         }
         mutableOwnershipHistory.clear()
         value.forEach { (scopeId, entries) -> mutableOwnershipHistory[scopeId] = entries.toMutableList() }
     }
 
+    private fun replaceLegacyOwnershipHistory(value: Map<Long, List<ScopeOwnershipEntry>>) {
+        val typed = value.entries.associate { (raw, entries) ->
+            val scopeId = AssignedScopeId.fromRaw(raw)
+                ?: throw IllegalArgumentException("ownership history scope id is not assigned")
+            require(entries.all { it.scopeId == scopeId }) { "ownership history key does not match entry" }
+            scopeId to entries
+        }
+        replaceOwnershipHistory(typed)
+    }
+
     private fun replaceScopes(scopes: List<GeoScope>) {
         val names = hashSetOf<String>()
-        val assignedIds = hashSetOf<com.imyvm.iwg.domain.component.ScopeId>()
+        val assignedIds = hashSetOf<com.imyvm.iwg.domain.component.AssignedScopeId>()
         scopes.forEach { scope ->
             require(names.add(scope.scopeName.lowercase())) { "duplicate scope name" }
-            if (scope.scopeId.raw != com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
-                require(assignedIds.add(scope.scopeId)) { "duplicate scope id" }
-            }
+            require(assignedIds.add(scope.requireAssignedScopeId())) { "duplicate scope id" }
         }
         mutableScopes.clear()
         mutableScopes.addAll(scopes)
@@ -132,9 +149,8 @@ class Region(
 
     private fun validateScope(scope: GeoScope, existing: List<GeoScope>) {
         require(existing.none { it.scopeName.equals(scope.scopeName, ignoreCase = true) }) { "duplicate scope name" }
-        if (scope.scopeId.raw != com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
-            require(existing.none { it.scopeId == scope.scopeId }) { "duplicate scope id" }
-        }
+        val scopeId = scope.requireAssignedScopeId()
+        require(existing.none { it.requireAssignedScopeId() == scopeId }) { "duplicate scope id" }
     }
 
     fun getScopeInfos(server: MinecraftServer): List<Component> {

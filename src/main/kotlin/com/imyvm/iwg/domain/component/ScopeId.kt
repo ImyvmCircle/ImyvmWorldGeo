@@ -2,6 +2,33 @@ package com.imyvm.iwg.domain.component
 
 class ScopeIdCapacityExceededException : IllegalStateException()
 
+/** A validated identity for a Scope that has entered a Region aggregate. */
+@JvmInline
+value class AssignedScopeId private constructor(val raw: Long) {
+    fun toLegacyScopeId(): ScopeId = ScopeId(raw)
+
+    fun toIdString(): String = "s" + java.lang.Long.toHexString(raw)
+
+    override fun toString(): String = toIdString()
+
+    companion object {
+        fun from(scopeId: ScopeId): AssignedScopeId? = fromRaw(scopeId.raw)
+
+        fun fromRaw(raw: Long): AssignedScopeId? =
+            if (raw < 0L && parseScopeFoundedInRegionNumberId(raw) > 0) AssignedScopeId(raw) else null
+
+        fun require(scopeId: ScopeId): AssignedScopeId =
+            from(scopeId) ?: throw IllegalArgumentException("scope id is not assigned")
+
+        fun parse(value: String): AssignedScopeId? = ScopeId.parse(value)?.let(::from)
+    }
+}
+
+internal sealed interface ScopeIdentity {
+    data object Unassigned : ScopeIdentity
+    data class Assigned(val id: AssignedScopeId) : ScopeIdentity
+}
+
 /**
  * Stable identifier for a [GeoScope], encoded as a single [Long].
  *
@@ -47,13 +74,13 @@ value class ScopeId(val raw: Long) {
             if (s.length < 2 || s[0] != 's') return null
             val hex = s.substring(1)
             return try {
-                ScopeId(java.lang.Long.parseUnsignedLong(hex, 16))
+                ScopeId(java.lang.Long.parseUnsignedLong(hex, 16)).takeIf { AssignedScopeId.from(it) != null }
             } catch (e: NumberFormatException) {
                 null
             }
         }
 
-        fun isScopeIdRaw(raw: Long): Boolean = raw < 0L
+        fun isScopeIdRaw(raw: Long): Boolean = AssignedScopeId.fromRaw(raw) != null
     }
 }
 
@@ -92,6 +119,7 @@ internal fun generateNewScopeIdRaw(
     discriminator: Int,
     creationHours: Long
 ): Long {
+    require(foundedInRegionNumberId > 0) { "founding region id must be positive" }
     require(discriminator in 0..63) { "scope discriminator is out of range" }
     val markValue = (if (mark in 0..15) mark else 0).toLong()
     val hoursFromEpoch = creationHours and 0xFFFFFL
@@ -102,6 +130,7 @@ internal fun generateNewScopeIdRaw(
 }
 
 fun generateCompatScopeIdRaw(foundedInRegionNumberId: Int, indexInRegion: Int): Long {
+    require(foundedInRegionNumberId > 0) { "founding region id must be positive" }
     require(indexInRegion in 0..MAX_COMPAT_INDEX) { "compatibility scope index is out of range" }
     val high = indexInRegion.toLong()
     val low = foundedInRegionNumberId.toLong() and 0xFFFFFFFFL

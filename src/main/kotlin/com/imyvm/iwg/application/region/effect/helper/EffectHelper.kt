@@ -63,5 +63,4 @@ private fun resolveScopeEffectValue(
 }
 
 private fun scopeOverlay(scope: GeoScope): Map<EffectKey, Int> =
-    if (scope.scopeId.raw == ScopeId.UNASSIGNED_RAW) emptyMap()
-    else EffectOverlayService.queryOverlay(scope.scopeId)
+    scope.assignedScopeIdOrNull?.let(EffectOverlayService::queryOverlay) ?: emptyMap()

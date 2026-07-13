@@ -24,6 +24,6 @@ class RegionDataApiTest {
         Identifier.parse("minecraft:overworld"),
         null,
         geoShape = null,
-        scopeId = ScopeId(id)
+        scopeId = ScopeId(com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(1, id.toInt()))
     )
 }

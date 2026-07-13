@@ -24,6 +24,7 @@
   "interaction.meta.create.name_auto_filled": "&7Region/scope name not provided. &rAuto-filled with &e{0}&r.",
   "interaction.meta.create.name.invalid": "&cRegion/scope name invalid.",
   "interaction.meta.create.invalid_shape": "&cInvalid shape type: &e{0}&c.",
+  "interaction.meta.create.error.id_capacity": "&cToo many regions with this mark were created in the current hour. Please try again later.",
   "interaction.meta.delete.success": "&aRegion &b{0}&a with ID &e{1}&a deleted successfully!",
   "interaction.meta.rename.success": "&aSuccessfully renamed region ID &e{0}&a to &b{1}&a.",
   "interaction.meta.region.merge.success": "&aSuccessfully merged region &b{0}&a into region &b{1}&a. Transferred &e{2}&a scope(s), &e{3}&a of which were automatically renamed due to name conflicts. The source region''s overall settings were discarded.",

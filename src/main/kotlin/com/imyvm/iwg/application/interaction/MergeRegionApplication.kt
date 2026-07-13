@@ -44,7 +44,7 @@ fun onRegionMerge(
     targetRegion.replaceOwnershipHistory(mergedHistory)
     val transferTime = System.currentTimeMillis()
     sourceScopes.forEach { scope ->
-        RegionDatabase.recordScopeOwnership(scope.scopeId, sourceRegion, targetRegion, transferTime)
+        RegionDatabase.recordAssignedScopeOwnership(scope.requireAssignedScopeId(), sourceRegion, targetRegion, transferTime)
     }
 
     val rollbackDatabase = RegionDatabase.mergeAndRemoveRegionReversibly(sourceRegion, targetRegion)

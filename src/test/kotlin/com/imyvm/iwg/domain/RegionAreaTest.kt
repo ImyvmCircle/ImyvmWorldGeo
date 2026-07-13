@@ -3,6 +3,8 @@ package com.imyvm.iwg.domain
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import net.minecraft.resources.Identifier
 import java.util.Locale
 import kotlin.test.Test
@@ -18,7 +20,8 @@ class RegionAreaTest {
                 "circle",
                 Identifier.parse("minecraft:overworld"),
                 null,
-                geoShape = GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, 1))
+                geoShape = GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, 1)),
+                scopeId = ScopeId(generateCompatScopeIdRaw(1, 0))
             )
 
             assertEquals(3.14, Region("region", 1, mutableListOf(scope)).calculateTotalArea())

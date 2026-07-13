@@ -19,9 +19,40 @@ class GeoScope(
     var geoShape: GeoShape?,
     settings: MutableList<Setting> = mutableListOf(),
     var showOnDynmap: Boolean = true,
-    var scopeId: ScopeId = ScopeId(ScopeId.UNASSIGNED_RAW)
+    scopeId: ScopeId = ScopeId(ScopeId.UNASSIGNED_RAW)
 ) {
+    private var identity: ScopeIdentity = scopeId.toIdentity()
     internal val settingStore = SettingStore(settings)
+
+    /**
+     * Binary-compatible identity facade for existing addons.
+     *
+     * A scope may move from unassigned to assigned once. Replacing an assigned identity is rejected.
+     */
+    var scopeId: ScopeId
+        get() = when (val current = identity) {
+            ScopeIdentity.Unassigned -> ScopeId(ScopeId.UNASSIGNED_RAW)
+            is ScopeIdentity.Assigned -> current.id.toLegacyScopeId()
+        }
+        set(value) {
+            when (val current = identity) {
+                ScopeIdentity.Unassigned -> identity = value.toIdentity()
+                is ScopeIdentity.Assigned -> require(current.id.toLegacyScopeId() == value) {
+                    "assigned scope id cannot be changed"
+                }
+            }
+        }
+
+    internal val assignedScopeIdOrNull: AssignedScopeId?
+        get() = (identity as? ScopeIdentity.Assigned)?.id
+
+    internal fun requireAssignedScopeId(): AssignedScopeId =
+        assignedScopeIdOrNull ?: throw IllegalStateException("scope id is not assigned")
+
+    internal fun assignScopeId(id: AssignedScopeId) {
+        require(identity === ScopeIdentity.Unassigned) { "scope id is already assigned" }
+        identity = ScopeIdentity.Assigned(id)
+    }
 
     /**
      * Binary-compatible view for existing addons.
@@ -87,4 +118,9 @@ class GeoScope(
     fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
         return geoShape?.findNearestValidTeleportPoint(world, center, searchRadius)
     }
+}
+
+private fun ScopeId.toIdentity(): ScopeIdentity = when (raw) {
+    ScopeId.UNASSIGNED_RAW -> ScopeIdentity.Unassigned
+    else -> ScopeIdentity.Assigned(AssignedScopeId.require(this))
 }

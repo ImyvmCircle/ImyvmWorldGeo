@@ -1,6 +1,7 @@
 package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.domain.component.EffectKey
+import com.imyvm.iwg.domain.component.AssignedScopeId
 
 data class TimedEffect(
     val effectKey: EffectKey,
@@ -15,4 +16,7 @@ data class TimedEffectOverlay(
     val endTickMillis: Long,
     val priority: Int,
     val source: String
-)
+) {
+    val scopeId: AssignedScopeId =
+        AssignedScopeId.fromRaw(scopeIdRaw) ?: throw IllegalArgumentException("scope id is not assigned")
+}

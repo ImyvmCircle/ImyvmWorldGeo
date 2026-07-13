@@ -304,16 +304,32 @@ object RegionDataApi {
 
     // --- 1.5.1 additions ---
 
-    fun parseScopeId(s: String): ScopeId? = ScopeId.parse(s)
+    fun parseAssignedScopeId(s: String): AssignedScopeId? = AssignedScopeId.parse(s)
 
+    @Deprecated("Use parseAssignedScopeId")
+    fun parseScopeId(s: String): ScopeId? = parseAssignedScopeId(s)?.toLegacyScopeId()
+
+    fun getScopeByAssignedId(scopeId: AssignedScopeId): Pair<Region, GeoScope>? =
+        RegionDatabase.getScopeByAssignedId(scopeId)
+
+    @Deprecated("Use getScopeByAssignedId")
     fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? = RegionDatabase.getScopeById(scopeId)
 
+    fun getAssignedScopeIdOrNull(scope: GeoScope): AssignedScopeId? = scope.assignedScopeIdOrNull
+
+    @Deprecated("Use getAssignedScopeIdOrNull")
     fun getScopeId(scope: GeoScope): ScopeId = scope.scopeId
 
-    fun getScopeFoundingTimeOrNull(scope: GeoScope): Long? = scope.scopeId.creationTimeMillisOrNull()
+    fun getScopeFoundingTimeOrNull(scope: GeoScope): Long? =
+        scope.assignedScopeIdOrNull?.toLegacyScopeId()?.creationTimeMillisOrNull()
 
-    fun getScopeFoundedInRegionNumberId(scope: GeoScope): Int = scope.scopeId.foundedInRegionNumberId()
+    fun getScopeFoundedInRegionNumberId(scope: GeoScope): Int =
+        scope.requireAssignedScopeId().toLegacyScopeId().foundedInRegionNumberId()
 
+    fun getAssignedScopeOwnershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> =
+        RegionDatabase.getAssignedScopeOwnershipHistory(scopeId)
+
+    @Deprecated("Use getAssignedScopeOwnershipHistory")
     fun getScopeOwnershipHistory(scopeId: ScopeId): List<com.imyvm.iwg.domain.ScopeOwnershipEntry> =
         RegionDatabase.getScopeOwnershipHistory(scopeId)
 
@@ -324,12 +340,13 @@ object RegionDataApi {
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
 
     fun getEffectiveEffectsForScope(region: Region, scope: GeoScope): Map<EffectKey, Int> {
+        require(region.containsScope(scope)) { "scope does not belong to region" }
         val keys = mutableSetOf<EffectKey>()
         keys.addAll(scope.settingStore.effectKeys())
         keys.addAll(region.settingStore.effectKeys())
-        val overlay = if (scope.scopeId.raw != ScopeId.UNASSIGNED_RAW)
-            com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scope.scopeId)
-        else emptyMap()
+        val overlay = scope.assignedScopeIdOrNull
+            ?.let(com.imyvm.iwg.application.region.effect.EffectOverlayService::queryOverlay)
+            ?: emptyMap()
         keys.addAll(overlay.keys)
 
         val result = mutableMapOf<EffectKey, Int>()
@@ -364,12 +381,36 @@ object RegionDataApi {
     fun applyTimedEffectOverlay(overlay: com.imyvm.iwg.domain.TimedEffectOverlay): String =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.applyTimedEffectOverlay(overlay)
 
+    fun createTimedEffectOverlay(
+        overlayId: String,
+        scopeId: AssignedScopeId,
+        effects: List<TimedEffect>,
+        startMillis: Long,
+        endMillis: Long,
+        priority: Int,
+        source: String
+    ): TimedEffectOverlay = TimedEffectOverlay(
+        overlayId, scopeId.raw, effects, startMillis, endMillis, priority, source
+    )
+
+    fun clearTimedEffectOverlay(scopeId: AssignedScopeId, overlayId: String): Boolean =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
+
+    @Deprecated("Use the AssignedScopeId overload")
     fun clearTimedEffectOverlay(scopeId: ScopeId, overlayId: String): Boolean =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
 
+    fun queryOverlay(scopeId: AssignedScopeId): Map<EffectKey, Int> =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
+
+    @Deprecated("Use the AssignedScopeId overload")
     fun queryOverlay(scopeId: ScopeId): Map<EffectKey, Int> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
 
+    fun queryActiveOverlays(scopeId: AssignedScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
+
+    @Deprecated("Use the AssignedScopeId overload")
     fun queryActiveOverlays(scopeId: ScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
 }

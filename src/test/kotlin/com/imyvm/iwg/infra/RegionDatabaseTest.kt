@@ -21,6 +21,7 @@ class RegionDatabaseTest {
     fun `round trips current database format`() = withTempDirectory { directory ->
         val path = directory.resolve("regions.db")
         val player = UUID.randomUUID()
+        val scopeId = ScopeId(generateCompatScopeIdRaw(7, 42))
         val scope = GeoScope(
             "spawn",
             Identifier.parse("minecraft:overworld"),
@@ -28,22 +29,22 @@ class RegionDatabaseTest {
             true,
             GeoShape(GeoShapeType.CIRCLE, mutableListOf(10, 20, 30)),
             mutableListOf(PermissionSetting(PermissionKey.BUILD, false, player)),
-            scopeId = ScopeId(42)
+            scopeId = scopeId
         )
         val region = Region("region", 7, mutableListOf(scope))
         region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
-        region.recordScopeOwnership(ScopeOwnershipEntry(42, 6, 7, 1234))
+        region.recordScopeOwnership(ScopeOwnershipEntry(scopeId.raw, 6, 7, 1234))
 
         RegionDatabase.writeRegions(path, listOf(region))
         val loaded = RegionDatabase.readRegions(path).single()
 
         assertEquals("region", loaded.name)
         assertEquals(7, loaded.numberID)
-        assertEquals(42L, loaded.geometryScope.single().scopeId.raw)
+        assertEquals(scopeId.raw, loaded.geometryScope.single().scopeId.raw)
         assertEquals<List<Int>?>(listOf(10, 20, 30), loaded.geometryScope.single().geoShape?.shapeParameter)
         assertEquals(player, loaded.geometryScope.single().settings.single().playerUUID)
         assertEquals(false, (loaded.settings.single() as PermissionSetting).value)
-        assertEquals(1234L, loaded.ownershipHistoryByScope.getValue(42).single().changedAtMillis)
+        assertEquals(1234L, loaded.ownershipHistoryByScope.getValue(scopeId.raw).single().changedAtMillis)
     }
 
     @Test
@@ -125,6 +126,59 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `rejects unassigned scope id in current database format`() = withTempDirectory { directory ->
+        val path = directory.resolve("invalid-scope-id.db")
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(stream, "region", 7, ScopeId.UNASSIGNED_RAW)
+        }
+
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+    }
+
+    @Test
+    fun `rejects duplicate scope ids across regions`() = withTempDirectory { directory ->
+        val path = directory.resolve("duplicate-scope-id.db")
+        val duplicate = generateCompatScopeIdRaw(7, 0)
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(2)
+            writeMinimalRegion(stream, "first", 7, duplicate)
+            writeMinimalRegion(stream, "second", 8, duplicate)
+        }
+
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+    }
+
+    @Test
+    fun `rejects writing duplicate scope ids across regions`() = withTempDirectory { directory ->
+        val path = directory.resolve("duplicate-scope-id.db")
+        Files.writeString(path, "original")
+        val duplicate = ScopeId(generateCompatScopeIdRaw(7, 0))
+        val first = Region("first", 7, mutableListOf(scope("first", duplicate)))
+        val second = Region("second", 8, mutableListOf(scope("second", duplicate)))
+
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.writeRegions(path, listOf(first, second))
+        }
+        assertEquals("original", Files.readString(path))
+    }
+
+    @Test
+    fun `rejects duplicate region ids`() = withTempDirectory { directory ->
+        val path = directory.resolve("duplicate-region-id.db")
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(2)
+            writeMinimalRegion(stream, "first", 7, generateCompatScopeIdRaw(7, 0))
+            writeMinimalRegion(stream, "second", 7, generateCompatScopeIdRaw(7, 1))
+        }
+
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+    }
+
+    @Test
     fun `failed atomic write preserves existing file`() = withTempDirectory { directory ->
         val path = directory.resolve("data.json")
         Files.writeString(path, "original")
@@ -148,4 +202,27 @@ class RegionDatabaseTest {
             directory.toFile().deleteRecursively()
         }
     }
+
+    private fun writeMinimalRegion(stream: DataOutputStream, name: String, regionId: Int, scopeIdRaw: Long) {
+        stream.writeUTF(name)
+        stream.writeInt(regionId)
+        stream.writeInt(1)
+        stream.writeUTF("scope")
+        stream.writeUTF("minecraft:overworld")
+        stream.writeBoolean(false)
+        stream.writeBoolean(false)
+        stream.writeBoolean(false)
+        stream.writeInt(0)
+        stream.writeLong(scopeIdRaw)
+        stream.writeInt(0)
+        stream.writeInt(0)
+    }
+
+    private fun scope(name: String, scopeId: ScopeId) = GeoScope(
+        name,
+        Identifier.parse("minecraft:overworld"),
+        null,
+        geoShape = null,
+        scopeId = scopeId
+    )
 }

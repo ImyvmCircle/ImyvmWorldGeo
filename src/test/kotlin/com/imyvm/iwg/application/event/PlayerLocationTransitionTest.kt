@@ -111,5 +111,16 @@ class PlayerLocationTransitionTest {
         stayStartedAt = startedAt
     )
 
-    private fun scope(name: String) = GeoScope(name, Identifier.parse("minecraft:overworld"), null, geoShape = null)
+    private fun scope(name: String) = GeoScope(
+        name,
+        Identifier.parse("minecraft:overworld"),
+        null,
+        geoShape = null,
+        scopeId = com.imyvm.iwg.domain.component.ScopeId(
+            com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(
+                (name.hashCode() and Int.MAX_VALUE).coerceAtLeast(1),
+                0
+            )
+        )
+    )
 }

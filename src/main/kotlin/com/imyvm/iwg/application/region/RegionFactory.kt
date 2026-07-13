@@ -5,6 +5,9 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShape.Companion.isPhysicalSafe
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.AssignedScopeId
+import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.generateNewScopeIdRaw
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.server.level.ServerPlayer
@@ -32,6 +35,9 @@ object RegionFactory {
         if (mainScopeResult is Result.Err) return mainScopeResult
 
         val mainScope = (mainScopeResult as Result.Ok).value
+        mainScope.assignScopeId(
+            AssignedScopeId.require(ScopeId(generateNewScopeIdRaw(numberID, parseMarkFromRegionId(numberID))))
+        )
         val geometryScope = mutableListOf<GeoScope>()
         geometryScope.add(mainScope)
 

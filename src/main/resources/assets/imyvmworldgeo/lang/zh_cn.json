@@ -24,6 +24,7 @@
   "interaction.meta.create.name_auto_filled": "&7未提供境界/地方名称。&r已自动填充为 &e{0}&r。",
   "interaction.meta.create.name.invalid": "&c境界/地方名称无效。",
   "interaction.meta.create.invalid_shape": "&c无效的形状类型：&e{0}&c。",
+  "interaction.meta.create.error.id_capacity": "&c当前小时内创建的同标记境界过多，请稍后重试。",
   "interaction.meta.delete.success": "&a境界 &b{0}&a（ID：&e{1}&a）已成功删除！",
   "interaction.meta.rename.success": "&a已成功将 ID 为 &e{0}&a 的境界重命名为 &b{1}&a。",
   "interaction.meta.region.merge.success": "&a已成功将境界 &b{0}&a 并入境界 &b{1}&a。共转移 &e{2}&a 个地方，其中 &e{3}&a 个因名称冲突已自动重命名。被并入境界的整体设置已全部丢弃。",

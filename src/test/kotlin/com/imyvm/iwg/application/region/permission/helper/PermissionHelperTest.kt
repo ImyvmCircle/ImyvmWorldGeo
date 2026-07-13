@@ -10,6 +10,8 @@ import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
+import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import net.minecraft.resources.Identifier
 import java.util.UUID
 import kotlin.test.Test
@@ -21,7 +23,13 @@ import kotlin.test.assertTrue
 class PermissionHelperTest {
     private val player = UUID.randomUUID()
     private val otherPlayer = UUID.randomUUID()
-    private val scope = GeoScope("scope", Identifier.parse("minecraft:overworld"), null, geoShape = null)
+    private val scope = GeoScope(
+        "scope",
+        Identifier.parse("minecraft:overworld"),
+        null,
+        geoShape = null,
+        scopeId = ScopeId(generateCompatScopeIdRaw(1, 0))
+    )
     private val region = Region("region", 1, mutableListOf(scope))
 
     @Test

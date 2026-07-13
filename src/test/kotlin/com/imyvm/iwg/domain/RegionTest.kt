@@ -9,16 +9,31 @@ import kotlin.test.assertFailsWith
 
 class RegionTest {
     @Test
+    fun `region identity cannot be replaced`() {
+        val region = Region("region", 7, mutableListOf(scope("main", 1)))
+
+        assertFailsWith<IllegalArgumentException> { region.numberID = 8 }
+        assertEquals(7, region.numberID)
+    }
+
+    @Test
+    fun `ownership history rejects an unassigned scope id`() {
+        assertFailsWith<IllegalArgumentException> {
+            ScopeOwnershipEntry(0, 6, 7, 10)
+        }
+    }
+
+    @Test
     fun `legacy scope and ownership collections are detached snapshots`() {
         val scope = scope("main", 1)
         val region = Region("region", 7, mutableListOf(scope))
-        region.recordScopeOwnership(ScopeOwnershipEntry(1, 6, 7, 10))
+        region.recordScopeOwnership(ScopeOwnershipEntry(scope.scopeId.raw, 6, 7, 10))
 
         region.geometryScope.clear()
-        region.ownershipHistoryByScope.getValue(1).clear()
+        region.ownershipHistoryByScope.getValue(scope.scopeId.raw).clear()
 
         assertEquals(listOf(scope), region.scopes)
-        assertEquals(1, region.ownershipHistory(1).size)
+        assertEquals(1, region.ownershipHistory(scope.requireAssignedScopeId()).size)
     }
 
     @Test
@@ -46,6 +61,6 @@ class RegionTest {
         Identifier.parse("minecraft:overworld"),
         null,
         geoShape = null,
-        scopeId = ScopeId(id)
+        scopeId = ScopeId(com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(7, id.toInt()))
     )
 }

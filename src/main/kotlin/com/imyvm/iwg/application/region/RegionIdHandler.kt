@@ -12,33 +12,35 @@ import com.imyvm.iwg.infra.RegionDatabase
  * Can represent approximately 239 years, with 128 unique IDs per hour and up to 10 distinct marks
  */
 private const val EPOCH_MILLIS = 1704067200000L
+private const val DISCRIMINATOR_COUNT = 128
+
+class RegionIdCapacityExceededException : IllegalStateException()
 
 fun generateNewRegionId(mark: Int): Int {
-    val markValue = if (mark < 0 || mark > 9) 0 else mark
     val existingIds = RegionDatabase.getRegionList().map { it.numberID }.toSet()
-    var newId: Int
-    var attempts = 0
-    val maxAttempts = 100
+    return allocateRegionId(
+        mark = mark,
+        hoursFromEpoch = getHoursFromEpoch(),
+        existingIds = existingIds,
+        initialDiscriminator = kotlin.random.Random.nextInt(DISCRIMINATOR_COUNT)
+    )
+}
 
-    do {
-        newId = generateRegionIdFromCurrentTimeMillis(markValue)
-        attempts++
-
-        if (attempts >= maxAttempts) {
-            val hoursPart = getHoursFromEpoch() shl 11
-            val markPart = markValue shl 7
-            for (randomPart in 0..127) {
-                val candidateId = hoursPart or markPart or randomPart
-                if (candidateId !in existingIds) {
-                    newId = candidateId
-                    break
-                }
-            }
-            break
-        }
-    } while (newId in existingIds)
-
-    return newId
+internal fun allocateRegionId(
+    mark: Int,
+    hoursFromEpoch: Int,
+    existingIds: Set<Int>,
+    initialDiscriminator: Int
+): Int {
+    require(initialDiscriminator in 0 until DISCRIMINATOR_COUNT)
+    val markValue = if (mark in 0..9) mark else 0
+    val baseId = ((hoursFromEpoch and 0x1FFFFF) shl 11) or (markValue shl 7)
+    repeat(DISCRIMINATOR_COUNT) { offset ->
+        val discriminator = (initialDiscriminator + offset) and 0x7F
+        val candidateId = baseId or discriminator
+        if (candidateId !in existingIds) return candidateId
+    }
+    throw RegionIdCapacityExceededException()
 }
 
 fun parseFoundingTimeFromRegionId(regionId: Int): Long {
@@ -53,14 +55,6 @@ fun parseMarkFromRegionId(regionId: Int): Int {
 fun filterRegionsByMark(mark: Int): List<Region> {
     val markValue = if (mark < 0 || mark > 9) 0 else mark
     return RegionDatabase.getRegionList().filter { parseMarkFromRegionId(it.numberID) == markValue }
-}
-
-private fun generateRegionIdFromCurrentTimeMillis(mark: Int): Int {
-    val hoursFromEpoch = getHoursFromEpoch()
-    val timePart = (hoursFromEpoch and 0x1FFFFF) shl 11
-    val markPart = (mark and 0xF) shl 7
-    val randomPart = kotlin.random.Random.nextInt(128)
-    return timePart or markPart or randomPart
 }
 
 private fun getHoursFromEpoch(): Int {

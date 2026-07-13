@@ -11,6 +11,7 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
+import com.imyvm.iwg.application.region.RegionIdCapacityExceededException
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.ScopeIdCapacityExceededException
@@ -45,7 +46,13 @@ fun onTryingRegionCreationWithReturn(
 
     val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
 
-    return when (val creationResult = tryRegionCreation(player, regionName, shapeType, idMark)) {
+    val creationResult = try {
+        tryRegionCreation(player, regionName, shapeType, idMark)
+    } catch (_: RegionIdCapacityExceededException) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
+        return null
+    }
+    return when (creationResult) {
         is Result.Ok -> {
             val saved = handleRegionCreateSuccess(player, creationResult, notify = !isApi)
             creationResult.value.takeIf { saved }
@@ -143,11 +150,7 @@ private fun tryRegionCreation(
     )
     if (regionResult is Result.Ok) {
         val mainScope = regionResult.value.scopes.firstOrNull()
-        if (mainScope != null && mainScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
-            mainScope.scopeId = com.imyvm.iwg.domain.component.ScopeId(
-                com.imyvm.iwg.domain.component.generateNewScopeIdRaw(newID, idMark)
-            )
-        }
+        check(mainScope != null && mainScope.assignedScopeIdOrNull != null)
     }
     return regionResult
 }
@@ -193,9 +196,9 @@ private fun handleScopeCreateSuccess(
     notify: Boolean
 ): Boolean {
     val newScope = creationResult.value
-    if (newScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
+    if (newScope.assignedScopeIdOrNull == null) {
         try {
-            newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
+            newScope.assignScopeId(RegionDatabase.nextScopeIdForNewScope(region))
         } catch (_: ScopeIdCapacityExceededException) {
             player.sendSystemMessage(Translator.tr("interaction.meta.scope.create.error.id_capacity")!!)
             return false
