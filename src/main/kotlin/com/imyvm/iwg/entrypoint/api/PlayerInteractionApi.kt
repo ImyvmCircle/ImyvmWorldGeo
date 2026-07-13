@@ -7,7 +7,6 @@ import com.imyvm.iwg.domain.ScopeNotFoundException
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.domain.component.ExtensionPermissionKey
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
