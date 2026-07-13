@@ -25,6 +25,12 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
 import java.util.*
+/**
+ * Supported read/query API for addons.
+ *
+ * Compatibility and deprecation policy: `docs/addon-api-compatibility.md`.
+ * Prefer explicit Region/Scope and global/player methods over nullable dispatchers.
+ */
 @Suppress("unused")
 object RegionDataApi {
     fun registerExtensionPermissionKey(key: String, defaultValue: Boolean = true) {
@@ -146,6 +152,13 @@ object RegionDataApi {
         permissionKey: PermissionKey
     ): Boolean = getScopePermissionValue(region, scope, playerUUID, permissionKey)
 
+    /**
+     * Compatibility dispatcher for the former nullable permission API.
+     *
+     * @deprecated Since R9 (unreleased). Use the explicit default/Region/Scope and
+     * global/player methods. Eligible for removal only after two released versions
+     * and explicit maintainer approval.
+     */
     @Deprecated("Use an explicit default, region, or scope permission query")
     fun getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean {
         if (region == null) {
@@ -179,6 +192,12 @@ object RegionDataApi {
         key: String
     ): Boolean = onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
 
+    /**
+     * Compatibility dispatcher for extension permissions.
+     *
+     * @deprecated Since R9 (unreleased). Use the explicit extension permission methods.
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
     @Deprecated("Use an explicit default, region, or scope extension permission query")
     fun getExtensionPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, key: String): Boolean {
         if (region == null) {
@@ -201,6 +220,13 @@ object RegionDataApi {
     fun getScopeRuleValue(region: Region, scope: GeoScope, ruleKey: RuleKey): Boolean =
         getEffectiveScopeRuleValue(region, scope, ruleKey)
 
+    /**
+     * Compatibility dispatcher for the former nullable rule API.
+     *
+     * @deprecated Since R9 (unreleased). Use [getDefaultRuleValue], [getRegionRuleValue],
+     * or [getScopeRuleValue]. Eligible for removal only after two released versions and
+     * explicit maintainer approval.
+     */
     @Deprecated("Use an explicit default, region, or scope rule query")
     fun getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean {
         if (region == null) {
@@ -226,6 +252,12 @@ object RegionDataApi {
     fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Map<EffectKey, Int> =
         resolveScopeActiveEffects(region, scope, playerUUID)
 
+    /**
+     * Compatibility dispatcher for one effect value.
+     *
+     * @deprecated Since R9 (unreleased). Use [getRegionEffectValue] or [getScopeEffectValue].
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
     @Deprecated("Use an explicit region or scope effect query")
     fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? {
         if (region == null) {
@@ -236,6 +268,12 @@ object RegionDataApi {
         else getScopeEffectValue(region, scope, playerUUID, effectKey)
     }
 
+    /**
+     * Compatibility dispatcher for active effects.
+     *
+     * @deprecated Since R9 (unreleased). Use [getRegionActiveEffects] or [getScopeActiveEffects].
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
     @Deprecated("Use an explicit region or scope effect query")
     fun getActiveEffectsForRegion(region: Region, scope: GeoScope?, playerUUID: UUID): Map<EffectKey, Int> =
         if (scope == null) getRegionActiveEffects(region, playerUUID)
@@ -253,16 +291,16 @@ object RegionDataApi {
         RegionDatabase.getRegionPlayerStats(region)
 
     fun getRegionEntryExitToggle(region: Region): Boolean =
-        region.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
+        region.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
 
     fun getRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): String? =
-        region.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
+        region.settingStore.entryExitMessage(key)
 
     fun getScopeEntryExitToggle(scope: GeoScope): Boolean =
-        scope.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
+        scope.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
 
     fun getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String? =
-        scope.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
+        scope.settingStore.entryExitMessage(key)
 
     // --- 1.5.1 additions ---
 
@@ -287,8 +325,8 @@ object RegionDataApi {
 
     fun getEffectiveEffectsForScope(region: Region, scope: GeoScope): Map<EffectKey, Int> {
         val keys = mutableSetOf<EffectKey>()
-        scope.settings.filterIsInstance<EffectSetting>().filter { !it.isPersonal }.forEach { keys.add(it.key) }
-        region.settings.filterIsInstance<EffectSetting>().filter { !it.isPersonal }.forEach { keys.add(it.key) }
+        keys.addAll(scope.settingStore.effectKeys())
+        keys.addAll(region.settingStore.effectKeys())
         val overlay = if (scope.scopeId.raw != ScopeId.UNASSIGNED_RAW)
             com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scope.scopeId)
         else emptyMap()
@@ -301,14 +339,12 @@ object RegionDataApi {
                 result[key] = overlayValue
                 continue
             }
-            val scopeValue = scope.settings.filterIsInstance<EffectSetting>()
-                .firstOrNull { !it.isPersonal && it.key == key }?.value
+            val scopeValue = scope.settingStore.globalEffect(key)
             if (scopeValue != null) {
                 result[key] = scopeValue
                 continue
             }
-            val regionValue = region.settings.filterIsInstance<EffectSetting>()
-                .firstOrNull { !it.isPersonal && it.key == key }?.value
+            val regionValue = region.settingStore.globalEffect(key)
             if (regionValue != null) result[key] = regionValue
         }
         return result
@@ -316,8 +352,8 @@ object RegionDataApi {
 
     fun getEffectiveRulesForScope(region: Region, scope: GeoScope): Map<RuleKey, Boolean> {
         val keys = mutableSetOf<RuleKey>()
-        scope.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
-        region.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
+        keys.addAll(scope.settingStore.builtInRuleKeys())
+        keys.addAll(region.settingStore.builtInRuleKeys())
         val result = mutableMapOf<RuleKey, Boolean>()
         for (key in keys) {
             result[key] = getEffectiveScopeRuleValue(region, scope, key)

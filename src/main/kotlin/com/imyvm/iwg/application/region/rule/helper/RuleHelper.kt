@@ -7,11 +7,11 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.*
 
 fun getRegionRuleValue(region: Region, key: RuleKey): Boolean? =
-    region.settings.filterIsInstance<RuleSetting>().firstOrNull { it.key == key }?.value
+    region.settingStore.rule(key)
 
 fun getScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): Boolean? {
     require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
-    return scope.settings.filterIsInstance<RuleSetting>().firstOrNull { it.key == key }?.value
+    return scope.settingStore.rule(key)
         ?: getRegionRuleValue(region, key)
 }
 
@@ -24,12 +24,15 @@ fun getEffectiveRegionRuleValue(region: Region, key: RuleKey): Boolean =
 fun getEffectiveScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): Boolean =
     getScopeRuleValue(region, scope, key) ?: getDefaultValueForRule(key)
 
-fun getRegionRuleValue(region: Region, key: ExtensionRuleKey): Boolean? =
-    region.settings.filterIsInstance<ExtensionRuleSetting>().firstOrNull { it.key == key }?.value
+fun getRegionRuleValue(region: Region, key: ExtensionRuleKey): Boolean? {
+    require(ExtensionSettingRegistry.isRegisteredRuleKey(key.id)) { "Extension rule key '${key.id}' is not registered." }
+    return region.settingStore.rule(key)
+}
 
 fun getScopeRuleValue(region: Region, scope: GeoScope, key: ExtensionRuleKey): Boolean? {
+    require(ExtensionSettingRegistry.isRegisteredRuleKey(key.id)) { "Extension rule key '${key.id}' is not registered." }
     require(region.geometryScope.contains(scope)) { "scope does not belong to region" }
-    return scope.settings.filterIsInstance<ExtensionRuleSetting>().firstOrNull { it.key == key }?.value
+    return scope.settingStore.rule(key)
         ?: getRegionRuleValue(region, key)
 }
 

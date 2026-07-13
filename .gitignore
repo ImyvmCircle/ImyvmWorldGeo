@@ -44,3 +44,6 @@ replay_*.log
 .kotlin/
 
 # agent
+
+docs/plan
+logs/

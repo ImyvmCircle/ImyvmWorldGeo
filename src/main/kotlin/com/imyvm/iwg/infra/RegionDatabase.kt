@@ -133,8 +133,7 @@ object RegionDatabase {
                     val geometryScopes = loadGeoScopes(stream, isV1, numberID)
                     val settings = loadSettings(stream)
 
-                    val region = Region(name, numberID, geometryScopes)
-                    region.settings.addAll(settings)
+                    val region = Region(name, numberID, geometryScopes, settings)
                     if (isV1) {
                         region.ownershipHistoryByScope = loadOwnershipHistory(stream)
                     }
@@ -313,8 +312,7 @@ object RegionDatabase {
                 ScopeId(generateCompatScopeIdRaw(regionNumberId, indexInRegion))
             }
 
-            val scope = GeoScope(scopeName, worldId, teleportPoint, isTeleportPointPublic, geoShape, scopeId = scopeId)
-            scope.settings.addAll(scopeSettings)
+            val scope = GeoScope(scopeName, worldId, teleportPoint, isTeleportPointPublic, geoShape, scopeSettings, scopeId = scopeId)
             list.add(scope)
         }
 

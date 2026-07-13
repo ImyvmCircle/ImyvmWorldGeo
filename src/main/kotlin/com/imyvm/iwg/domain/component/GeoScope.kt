@@ -17,10 +17,23 @@ class GeoScope(
     var teleportPoint: BlockPos?,
     var isTeleportPointPublic: Boolean = false,
     var geoShape: GeoShape?,
-    var settings: MutableList<Setting> = mutableListOf(),
+    settings: MutableList<Setting> = mutableListOf(),
     var showOnDynmap: Boolean = true,
     var scopeId: ScopeId = ScopeId(ScopeId.UNASSIGNED_RAW)
 ) {
+    internal val settingStore = SettingStore(settings)
+
+    /**
+     * Binary-compatible view for existing addons.
+     *
+     * The getter returns a detached snapshot. Mutating that list does not change this GeoScope.
+     * Use `RegionDataApi` for reads and `PlayerInteractionApi` setting operations for writes.
+     * The JVM getter, setter, and constructor parameter are retained with no scheduled removal.
+     */
+    var settings: MutableList<Setting>
+        get() = settingStore.toLegacyList().toMutableList()
+        set(value) = settingStore.replaceAll(value)
+
     fun getScopeInfo(index: Int): Component? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
         val dimensionDisplay = getDimensionDisplayName()

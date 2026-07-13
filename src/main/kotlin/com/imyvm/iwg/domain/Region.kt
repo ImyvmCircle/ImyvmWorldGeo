@@ -19,10 +19,23 @@ class Region(
     var name: String,
     var numberID: Int,
     var geometryScope: MutableList<GeoScope>,
-    var settings: MutableList<Setting> = mutableListOf(),
+    settings: MutableList<Setting> = mutableListOf(),
     var showOnDynmap: Boolean = true,
     var ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
+    internal val settingStore = com.imyvm.iwg.domain.component.SettingStore(settings)
+
+    /**
+     * Binary-compatible view for existing addons.
+     *
+     * The getter returns a detached snapshot. Mutating that list does not change this Region.
+     * Use `RegionDataApi` for reads and `PlayerInteractionApi` setting operations for writes.
+     * The JVM getter, setter, and constructor parameter are retained with no scheduled removal.
+     */
+    var settings: MutableList<Setting>
+        get() = settingStore.toLegacyList().toMutableList()
+        set(value) = settingStore.replaceAll(value)
+
     fun getScopeByName(scopeName: String): GeoScope {
         return geometryScope.find { it.scopeName.equals(scopeName, ignoreCase = true) }
             ?: throw IllegalArgumentException(Translator.tr("region.error.no_scope", scopeName, name)!!.string)

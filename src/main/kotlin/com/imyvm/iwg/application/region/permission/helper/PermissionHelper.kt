@@ -63,20 +63,20 @@ fun getScopePermissionDenialSource(
     defaultValue
 )
 
-internal fun resolveRegionGlobalPermission(region: Region, key: BaseKey): ResolvedPermission? =
+internal fun resolveRegionGlobalPermission(region: Region, key: PermissionKeyLike): ResolvedPermission? =
     resolvePermission(PermissionTarget.RegionOnly(region), PermissionSubject.Global, key)
 
-internal fun resolveRegionPlayerPermission(region: Region, playerUUID: UUID, key: BaseKey): ResolvedPermission? =
+internal fun resolveRegionPlayerPermission(region: Region, playerUUID: UUID, key: PermissionKeyLike): ResolvedPermission? =
     resolvePermission(PermissionTarget.RegionOnly(region), PermissionSubject.Player(playerUUID), key)
 
-internal fun resolveScopeGlobalPermission(region: Region, scope: GeoScope, key: BaseKey): ResolvedPermission? =
+internal fun resolveScopeGlobalPermission(region: Region, scope: GeoScope, key: PermissionKeyLike): ResolvedPermission? =
     resolvePermission(PermissionTarget.ScopeOverride(region, scope), PermissionSubject.Global, key)
 
 internal fun resolveScopePlayerPermission(
     region: Region,
     scope: GeoScope,
     playerUUID: UUID,
-    key: BaseKey
+    key: PermissionKeyLike
 ): ResolvedPermission? = resolvePermission(
     PermissionTarget.ScopeOverride(region, scope),
     PermissionSubject.Player(playerUUID),
@@ -130,15 +130,14 @@ private fun denialSource(result: ResolvedPermission?, defaultValue: Boolean): Pe
 private fun resolvePermission(
     target: PermissionTarget,
     subject: PermissionSubject,
-    key: BaseKey
+    key: PermissionKeyLike
 ): ResolvedPermission? {
     resolveExplicitPermission(target, subject, key)?.let { return it }
-    if (key is PermissionKey) {
-        var ancestor = key.parent
-        while (ancestor != null) {
-            resolveExplicitPermission(target, subject, ancestor)?.let { return it }
-            ancestor = ancestor.parent
-        }
+    if (key !is PermissionKey) return null
+    var ancestor = key.parent
+    while (ancestor != null) {
+        resolveExplicitPermission(target, subject, ancestor)?.let { return it }
+        ancestor = ancestor.parent
     }
     return null
 }
@@ -146,27 +145,22 @@ private fun resolvePermission(
 private fun resolveExplicitPermission(
     target: PermissionTarget,
     subject: PermissionSubject,
-    key: BaseKey
+    key: PermissionKeyLike
 ): ResolvedPermission? {
     if (target is PermissionTarget.ScopeOverride) {
-        findPermission(target.scope.settings, subject, key)?.let {
+        findPermission(target.scope.settingStore, subject, key)?.let {
             return ResolvedPermission(it, PermissionDenialSource.AtScope)
         }
     }
-    findPermission(target.region.settings, subject, key)?.let {
+    findPermission(target.region.settingStore, subject, key)?.let {
         return ResolvedPermission(it, PermissionDenialSource.AtRegion)
     }
     return null
 }
 
-private fun findPermission(settings: List<Setting>, subject: PermissionSubject, key: BaseKey): Boolean? {
+private fun findPermission(store: SettingStore, subject: PermissionSubject, key: PermissionKeyLike): Boolean? {
     if (subject is PermissionSubject.Player) {
-        settings.firstOrNull {
-            it.isPermissionFor(key) && it.playerUUID == subject.uuid
-        }?.let { return it.value as Boolean }
+        store.playerPermission(key, subject.uuid)?.let { return it }
     }
-    return settings.firstOrNull { it.isPermissionFor(key) && !it.isPersonal }?.value as Boolean?
+    return store.globalPermission(key)
 }
-
-private fun Setting.isPermissionFor(key: BaseKey): Boolean =
-    (this is PermissionSetting || this is ExtensionPermissionSetting) && this.key == key

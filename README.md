@@ -267,6 +267,9 @@ Each region and each scope has a `showOnDynmap` flag (default: `true`). The regi
 
 ## API Documentation
 
+Addon compatibility guarantees, deprecated API migrations, and removal rules are tracked in
+[`docs/addon-api-compatibility.md`](docs/addon-api-compatibility.md).
+
 This API provides functionality for interacting with geographical regions in a Minecraft server world,
 which allows extension mods to enrich and build features based on defined regions.
 

@@ -5,9 +5,7 @@ import com.imyvm.iwg.domain.ScopeOwnershipEntry
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
-import com.imyvm.iwg.domain.component.PermissionKey
-import com.imyvm.iwg.domain.component.PermissionSetting
-import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.*
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import java.io.DataOutputStream
@@ -33,7 +31,7 @@ class RegionDatabaseTest {
             scopeId = ScopeId(42)
         )
         val region = Region("region", 7, mutableListOf(scope))
-        region.settings += PermissionSetting(PermissionKey.PVP, false)
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
         region.ownershipHistoryByScope[42] = mutableListOf(ScopeOwnershipEntry(42, 6, 7, 1234))
 
         RegionDatabase.writeRegions(path, listOf(region))
@@ -44,7 +42,32 @@ class RegionDatabaseTest {
         assertEquals(42L, loaded.geometryScope.single().scopeId.raw)
         assertEquals<List<Int>?>(listOf(10, 20, 30), loaded.geometryScope.single().geoShape?.shapeParameter)
         assertEquals(player, loaded.geometryScope.single().settings.single().playerUUID)
+        assertEquals(false, (loaded.settings.single() as PermissionSetting).value)
         assertEquals(1234L, loaded.ownershipHistoryByScope.getValue(42).single().changedAtMillis)
+    }
+
+    @Test
+    fun `round trips every legacy setting tag through the typed store`() = withTempDirectory { directory ->
+        val path = directory.resolve("settings.db")
+        val settings = mutableListOf<Setting>(
+            PermissionSetting(PermissionKey.PVP, false),
+            EffectSetting(EffectKey.SPEED, 2),
+            RuleSetting(RuleKey.DISPENSER, false),
+            EntryExitToggleSetting(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED, false),
+            EntryExitMessageSetting(EntryExitMessageKey.ENTER_MESSAGE, "hello"),
+            ExtensionPermissionSetting(ExtensionPermissionKey("test:permission"), true),
+            ExtensionRuleSetting(ExtensionRuleKey("test:rule"), true)
+        )
+        val region = Region("region", 7, mutableListOf(), settings)
+
+        RegionDatabase.writeRegions(path, listOf(region))
+        val loaded = RegionDatabase.readRegions(path).single().settings
+
+        assertEquals(7, loaded.size)
+        assertEquals(
+            settings.associate { it.key to (it.javaClass to it.value) },
+            loaded.associate { it.key to (it.javaClass to it.value) }
+        )
     }
 
     @Test

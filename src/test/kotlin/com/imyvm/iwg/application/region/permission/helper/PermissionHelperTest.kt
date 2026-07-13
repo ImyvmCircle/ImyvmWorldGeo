@@ -7,6 +7,7 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.ExtensionPermissionKey
 import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
+import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
 import net.minecraft.resources.Identifier
@@ -31,8 +32,8 @@ class PermissionHelperTest {
 
     @Test
     fun `personal setting wins over global setting in same container`() {
-        region.settings += PermissionSetting(PermissionKey.PVP, false)
-        region.settings += PermissionSetting(PermissionKey.PVP, true, player)
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, true, player))
 
         assertTrue(hasRegionPermission(region, player, PermissionKey.PVP))
         assertFalse(hasRegionPermission(region, otherPlayer, PermissionKey.PVP))
@@ -40,23 +41,23 @@ class PermissionHelperTest {
 
     @Test
     fun `scope setting wins over region setting`() {
-        region.settings += PermissionSetting(PermissionKey.PVP, false, player)
-        scope.settings += PermissionSetting(PermissionKey.PVP, true)
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, false, player))
+        scope.settingStore.put(PermissionSetting(PermissionKey.PVP, true))
 
         assertTrue(hasScopePermission(region, scope, player, PermissionKey.PVP))
     }
 
     @Test
     fun `region setting is fallback when scope has no matching setting`() {
-        region.settings += PermissionSetting(PermissionKey.PVP, false)
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
 
         assertFalse(hasScopePermission(region, scope, player, PermissionKey.PVP))
     }
 
     @Test
     fun `child permission inherits nearest configured parent`() {
-        region.settings += PermissionSetting(PermissionKey.BUILD_BREAK, false)
-        region.settings += PermissionSetting(PermissionKey.BUILD, true)
+        region.settingStore.put(PermissionSetting(PermissionKey.BUILD_BREAK, false))
+        region.settingStore.put(PermissionSetting(PermissionKey.BUILD, true))
 
         assertTrue(hasRegionPermission(region, player, PermissionKey.BUCKET_BUILD))
         assertFalse(hasRegionPermission(region, player, PermissionKey.BREAK))
@@ -64,30 +65,30 @@ class PermissionHelperTest {
 
     @Test
     fun `explicit child setting wins over parent setting`() {
-        region.settings += PermissionSetting(PermissionKey.THROWABLE, false)
-        region.settings += PermissionSetting(PermissionKey.EGG_USE, true)
+        region.settingStore.put(PermissionSetting(PermissionKey.THROWABLE, false))
+        region.settingStore.put(PermissionSetting(PermissionKey.EGG_USE, true))
 
         assertTrue(hasRegionPermission(region, player, PermissionKey.EGG_USE))
     }
 
     @Test
     fun `API resolver falls back to global setting for a player`() {
-        region.settings += PermissionSetting(PermissionKey.PVP, false)
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
 
         assertFalse(getRegionPermissionValue(region, player, PermissionKey.PVP))
     }
 
     @Test
     fun `API resolver uses the same parent inheritance as runtime checks`() {
-        region.settings += PermissionSetting(PermissionKey.BUILD, false)
+        region.settingStore.put(PermissionSetting(PermissionKey.BUILD, false))
 
         assertFalse(getRegionPermissionValue(region, player, PermissionKey.BUCKET_BUILD))
     }
 
     @Test
     fun `denial source identifies scope region and default`() {
-        scope.settings += PermissionSetting(PermissionKey.PVP, false)
-        region.settings += PermissionSetting(PermissionKey.BUILD, false)
+        scope.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
+        region.settingStore.put(PermissionSetting(PermissionKey.BUILD, false))
 
         assertEquals(PermissionDenialSource.AtScope, getScopePermissionDenialSource(region, scope, player, PermissionKey.PVP))
         assertEquals(PermissionDenialSource.AtRegion, getScopePermissionDenialSource(region, scope, player, PermissionKey.BUILD))
@@ -102,9 +103,10 @@ class PermissionHelperTest {
 
     @Test
     fun `extension permissions use the same container and personal precedence`() {
-        val key = ExtensionPermissionKey("test:permission")
-        region.settings += ExtensionPermissionSetting(key, false)
-        scope.settings += ExtensionPermissionSetting(key, true, player)
+        ExtensionSettingRegistry.registerPermissionKey("test:permission", true)
+        val key = ExtensionSettingRegistry.permissionKey("test:permission")
+        region.settingStore.put(ExtensionPermissionSetting(key, false))
+        scope.settingStore.put(ExtensionPermissionSetting(key, true, player))
 
         assertTrue(resolveScopePlayerPermission(region, scope, player, key)!!.value)
         assertFalse(resolveScopePlayerPermission(region, scope, otherPlayer, key)!!.value)
@@ -112,10 +114,10 @@ class PermissionHelperTest {
 
     @Test
     fun `explicit queries distinguish global player region and scope`() {
-        region.settings += PermissionSetting(PermissionKey.PVP, false)
-        region.settings += PermissionSetting(PermissionKey.PVP, true, player)
-        scope.settings += PermissionSetting(PermissionKey.PVP, true)
-        scope.settings += PermissionSetting(PermissionKey.PVP, false, player)
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
+        region.settingStore.put(PermissionSetting(PermissionKey.PVP, true, player))
+        scope.settingStore.put(PermissionSetting(PermissionKey.PVP, true))
+        scope.settingStore.put(PermissionSetting(PermissionKey.PVP, false, player))
 
         assertFalse(getRegionPermissionValue(region, PermissionKey.PVP))
         assertTrue(getRegionPermissionValue(region, player, PermissionKey.PVP))
@@ -138,5 +140,13 @@ class PermissionHelperTest {
         assertFailsWith<IllegalArgumentException> {
             getScopePermissionDenialSource(otherRegion, scope, player, PermissionKey.PVP)
         }
+    }
+
+    @Test
+    fun `legacy settings getter returns a detached snapshot`() {
+        region.settings.add(PermissionSetting(PermissionKey.PVP, false))
+
+        assertTrue(hasRegionPermission(region, player, PermissionKey.PVP))
+        assertTrue(region.settings.isEmpty())
     }
 }

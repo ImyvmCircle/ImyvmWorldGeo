@@ -159,32 +159,20 @@ object PlayerRegionEntryExitTracker {
     }
 
     private fun isRegionNotificationEnabled(region: Region): Boolean {
-        return region.settings
-            .filterIsInstance<EntryExitToggleSetting>()
-            .firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }
-            ?.value ?: true
+        return region.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
     }
 
     private fun isScopeNotificationEnabled(scope: GeoScope): Boolean {
-        return scope.settings
-            .filterIsInstance<EntryExitToggleSetting>()
-            .firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }
-            ?.value ?: true
+        return scope.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
     }
 
     private fun getRegionMessage(region: Region, key: EntryExitMessageKey): Component? {
-        val raw = region.settings
-            .filterIsInstance<EntryExitMessageSetting>()
-            .firstOrNull { it.key == key }
-            ?.value ?: return null
+        val raw = region.settingStore.entryExitMessage(key) ?: return null
         return TextParser.parse(raw)
     }
 
     private fun getScopeMessage(scope: GeoScope, key: EntryExitMessageKey, regionName: String, scopeName: String): Component? {
-        val raw = scope.settings
-            .filterIsInstance<EntryExitMessageSetting>()
-            .firstOrNull { it.key == key }
-            ?.value ?: return null
+        val raw = scope.settingStore.entryExitMessage(key) ?: return null
         return TextParser.parse(raw.replace("{0}", regionName).replace("{1}", scopeName))
     }
 

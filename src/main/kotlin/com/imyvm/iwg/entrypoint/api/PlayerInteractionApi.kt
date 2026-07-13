@@ -11,6 +11,11 @@ import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 
+/**
+ * Supported player-driven mutation API for addons.
+ *
+ * Compatibility and deprecation policy: `docs/addon-api-compatibility.md`.
+ */
 @Suppress("unused")
 object PlayerInteractionApi {
     fun startSelection(player: ServerPlayer, shapeType: GeoShapeType? = null) = onStartSelection(player, shapeType)
@@ -44,7 +49,7 @@ object PlayerInteractionApi {
         val key = PermissionKey.entries.firstOrNull { it.name == keyString }
         if (key != null) return getDefaultValueForPermission(key)
         if (ExtensionSettingRegistry.isRegisteredPermissionKey(keyString)) {
-            return getDefaultValueForPermission(ExtensionPermissionKey(keyString))
+            return getDefaultValueForPermission(ExtensionSettingRegistry.permissionKey(keyString))
         }
         throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
@@ -66,6 +71,13 @@ object PlayerInteractionApi {
         keyString: String
     ): Boolean = onCertificatePermissionValue(player, region, scope, targetPlayerName, keyString)
 
+    /**
+     * Compatibility dispatcher for the former nullable permission API.
+     *
+     * @deprecated Since R9 (unreleased). Use the explicit default/Region/Scope and
+     * global/player methods. Eligible for removal only after two released versions
+     * and explicit maintainer approval.
+     */
     @Deprecated("Use an explicit default, region, or scope permission query")
     fun getPermissionValueRegion(player: ServerPlayer, region: Region?, scopeName: String?, targetPlayerNameStr: String?, keyString: String): Boolean {
         if (region == null) {
