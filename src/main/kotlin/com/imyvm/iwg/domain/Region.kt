@@ -16,6 +16,11 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.network.chat.Component
 import kotlin.math.round
 
+class ScopeNotFoundException(
+    val scopeName: String,
+    val regionName: String
+) : IllegalArgumentException("region.error.no_scope")
+
 class Region(
     var name: String,
     numberID: Int,
@@ -75,7 +80,7 @@ class Region(
 
     fun getScopeByName(scopeName: String): GeoScope {
         return mutableScopes.find { it.scopeName.equals(scopeName, ignoreCase = true) }
-            ?: throw IllegalArgumentException(Translator.tr("region.error.no_scope", scopeName, name)!!.string)
+            ?: throw ScopeNotFoundException(scopeName, name)
     }
 
     fun containsScope(scope: GeoScope): Boolean = mutableScopes.any { it === scope }

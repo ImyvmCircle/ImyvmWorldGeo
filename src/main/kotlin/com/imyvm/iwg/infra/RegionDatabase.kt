@@ -184,6 +184,7 @@ object RegionDatabase {
 
     fun addRegion(region: Region) {
         require(regions.none { it.numberID == region.numberID }) { "duplicate region id" }
+        require(regions.none { it.name.equals(region.name, ignoreCase = true) }) { "duplicate region name" }
         val existingScopeIds = regions.flatMapTo(hashSetOf()) { existing ->
             existing.scopes.map { it.requireAssignedScopeId() }
         }
@@ -276,7 +277,7 @@ object RegionDatabase {
     }
 
     fun getRegionByName(name: String): Region {
-        return regions.find { it.name == name }
+        return regions.find { it.name.equals(name, ignoreCase = true) }
             ?: throw RegionNotFoundException("Region with name '$name' not found.")
     }
 
@@ -291,12 +292,12 @@ object RegionDatabase {
         } catch (e: RegionNotFoundException) {
             return Pair(null, null)
         }
-        val scope = region.scopes.find { it.scopeName == scopeName }
+        val scope = region.scopes.find { it.scopeName.equals(scopeName, ignoreCase = true) }
         return Pair(region, scope)
     }
 
     fun getRegionAndScope(region: Region, scopeName: String): Pair<Region, GeoScope?> {
-        val scope = region.scopes.find { it.scopeName == scopeName }
+        val scope = region.scopes.find { it.scopeName.equals(scopeName, ignoreCase = true) }
         return Pair(region, scope)
     }
 
@@ -430,9 +431,11 @@ object RegionDatabase {
 
     private fun validateDatabaseIdentities(regionsToValidate: List<Region>) {
         val regionIds = hashSetOf<Int>()
+        val regionNames = TreeSet(String.CASE_INSENSITIVE_ORDER)
         val scopeIds = hashSetOf<AssignedScopeId>()
         for (region in regionsToValidate) {
             require(regionIds.add(region.numberID)) { "duplicate region id" }
+            require(regionNames.add(region.name)) { "duplicate region name" }
             for (scope in region.scopes) {
                 require(scopeIds.add(scope.requireAssignedScopeId())) { "duplicate scope id" }
             }

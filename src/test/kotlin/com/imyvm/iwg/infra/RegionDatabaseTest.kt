@@ -179,6 +179,30 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `rejects case insensitive duplicate region names on read`() = withTempDirectory { directory ->
+        val path = directory.resolve("duplicate-region-name.db")
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(2)
+            writeMinimalRegion(stream, "Region", 7, generateCompatScopeIdRaw(7, 0))
+            writeMinimalRegion(stream, "region", 8, generateCompatScopeIdRaw(8, 0))
+        }
+
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+    }
+
+    @Test
+    fun `rejects case insensitive duplicate region names before write`() = withTempDirectory { directory ->
+        val path = directory.resolve("duplicate-region-name.db")
+        Files.writeString(path, "original")
+        val first = Region("Region", 7, mutableListOf(scope("first", ScopeId(generateCompatScopeIdRaw(7, 0)))))
+        val second = Region("region", 8, mutableListOf(scope("second", ScopeId(generateCompatScopeIdRaw(8, 0)))))
+
+        assertFailsWith<IllegalArgumentException> { RegionDatabase.writeRegions(path, listOf(first, second)) }
+        assertEquals("original", Files.readString(path))
+    }
+
+    @Test
     fun `failed atomic write preserves existing file`() = withTempDirectory { directory ->
         val path = directory.resolve("data.json")
         Files.writeString(path, "original")

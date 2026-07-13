@@ -21,21 +21,15 @@ fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false)
 }
 
 fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
+    val existingScope = getScopeOrNotify(player, region, scopeName) ?: return
     if (!checkScopeSize(player, region)) return
-
-    try {
-        val existingScope = region.getScopeByName(scopeName)
-        val index = region.removeScope(existingScope)
-        if (!saveRegionData(player)) {
-            region.restoreScope(index, existingScope)
-            return
-        }
-        EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
-    } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
+    val index = region.removeScope(existingScope)
+    if (!saveRegionData(player)) {
+        region.restoreScope(index, existingScope)
         return
     }
+    EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())
+    player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
 }
 
 private fun checkScopeSize(player: ServerPlayer, region: Region): Boolean{

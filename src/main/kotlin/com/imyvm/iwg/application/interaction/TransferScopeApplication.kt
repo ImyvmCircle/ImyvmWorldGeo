@@ -21,12 +21,7 @@ fun onScopeTransfer(
         return 0
     }
 
-    val scope = try {
-        sourceRegion.getScopeByName(scopeName)
-    } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
-        return 0
-    }
+    val scope = getScopeOrNotify(player, sourceRegion, scopeName) ?: return 0
 
     val originalName = scope.scopeName
     val resolvedName = resolveTransferScopeName(originalName, targetRegion)

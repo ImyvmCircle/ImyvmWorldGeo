@@ -32,13 +32,17 @@ fun checkNameFormat(newName: String, player: ServerPlayer): Boolean {
     return true
 }
 
-fun checkNameRepeat(oldName: String = "", newName: String, player: ServerPlayer): Boolean {
-    if (oldName == newName) {
+fun checkRegionNameUnique(oldName: String = "", newName: String, player: ServerPlayer): Boolean {
+    if (oldName.equals(newName, ignoreCase = true)) {
         player.sendSystemMessage(Translator.tr("interaction.meta.name.repeated_same_name", newName)!!)
         return false
-    } else if (RegionDatabase.getRegionList().find { it.name == newName } != null) {
+    } else if (RegionDatabase.getRegionList().any { it.name.equals(newName, ignoreCase = true) }) {
         player.sendSystemMessage(Translator.tr("interaction.meta.name.duplicate_name", newName)!!)
         return false
     }
     return true
 }
+
+@Deprecated("Use checkRegionNameUnique; Scope names have a separate owner-local namespace")
+fun checkNameRepeat(oldName: String = "", newName: String, player: ServerPlayer): Boolean =
+    checkRegionNameUnique(oldName, newName, player)

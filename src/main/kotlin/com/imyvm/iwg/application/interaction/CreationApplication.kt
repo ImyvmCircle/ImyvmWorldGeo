@@ -237,13 +237,13 @@ private fun validateNameCommon(
             }
         }
         else -> nameArgument
-    }
+    }.trim()
 
     if (!checkNameEmpty(name, player)) return null
     if (!checkNameFormat(name, player)) return null
-    if (!checkNameRepeat(newName = name, player = player)) return null
-    if (type == NameType.SCOPE && regionForScope != null) {
-        if (!checkScopeUnique(name, regionForScope, player)) return null
+    when (type) {
+        NameType.REGION -> if (!checkRegionNameUnique(newName = name, player = player)) return null
+        NameType.SCOPE -> if (regionForScope != null && !checkScopeUnique(name, regionForScope, player)) return null
     }
 
     return name

@@ -3,6 +3,7 @@ package com.imyvm.iwg.inter.api
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.ScopeNotFoundException
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
@@ -86,7 +87,7 @@ object PlayerInteractionApi {
         }
         val scope = scopeName?.let {
             region.scopes.firstOrNull { s -> s.scopeName.equals(it, ignoreCase = true) }
-                ?: throw IllegalArgumentException("region.error.no_scope")
+                ?: throw ScopeNotFoundException(it, region.name)
         }
         return when {
             scope != null && targetPlayerNameStr != null -> getScopePlayerPermissionValue(player, region, scope, targetPlayerNameStr, keyString)
@@ -100,7 +101,7 @@ object PlayerInteractionApi {
     fun getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean? {
         val targetRegion = requireNotNull(region) { "scope requires region" }
         val scope = targetRegion.scopes.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }
-            ?: throw IllegalArgumentException("region.error.no_scope")
+            ?: throw ScopeNotFoundException(scopeName, targetRegion.name)
         return onCertificateRuleValue(targetRegion, scope, keyString)
     }
     fun queryRegionInfo(player: ServerPlayer, region: Region) = onQueryRegion(player, region, true)

@@ -14,24 +14,19 @@ fun onModifyScope(
     targetRegion: Region,
     scopeName: String
 ): Int {
-    try {
-        val existingScope = targetRegion.getScopeByName(scopeName)
-        val selectedPositions = checkAndGetPlayerPositions(player) ?: return 0
-        val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
-        if (shapeType == GeoShapeType.UNKNOWN) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type")!!)
-            return 0
-        }
-
-        return when (shapeType) {
-            GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
-            GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
-            GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
-            GeoShapeType.UNKNOWN -> 0
-        }
-    } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
+    val existingScope = getScopeOrNotify(player, targetRegion, scopeName) ?: return 0
+    val selectedPositions = checkAndGetPlayerPositions(player) ?: return 0
+    val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type")!!)
         return 0
+    }
+
+    return when (shapeType) {
+        GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
+        GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
+        GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
+        GeoShapeType.UNKNOWN -> 0
     }
 }
 

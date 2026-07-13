@@ -6,6 +6,7 @@ import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertIs
 
 class RegionTest {
     @Test
@@ -42,6 +43,26 @@ class RegionTest {
 
         assertFailsWith<IllegalArgumentException> { region.addScope(scope("MAIN", 2)) }
         assertFailsWith<IllegalArgumentException> { region.addScope(scope("other", 1)) }
+    }
+
+    @Test
+    fun `missing scope reports structured target without translating in the domain`() {
+        val region = Region("region", 7, mutableListOf(scope("main", 1)))
+
+        val error = assertFailsWith<ScopeNotFoundException> { region.getScopeByName("missing") }
+
+        assertIs<IllegalArgumentException>(error)
+        assertEquals("missing", error.scopeName)
+        assertEquals("region", error.regionName)
+        assertEquals("region.error.no_scope", error.message)
+    }
+
+    @Test
+    fun `scope lookup is case insensitive`() {
+        val main = scope("Main", 1)
+        val region = Region("region", 7, mutableListOf(main))
+
+        assertEquals(main, region.getScopeByName("mAiN"))
     }
 
     @Test
