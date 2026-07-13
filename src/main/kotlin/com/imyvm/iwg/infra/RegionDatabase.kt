@@ -24,7 +24,7 @@ import kotlin.collections.ArrayList
 
 class RegionNotFoundException(message: String) : RuntimeException(message)
 
-private data class RegionPlayerStatsLedger(
+internal data class RegionPlayerStatsLedger(
     val entryCounts: MutableMap<UUID, Long> = mutableMapOf(),
     val stayMillis: MutableMap<UUID, Long> = mutableMapOf(),
     val deathCounts: MutableMap<UUID, Long> = mutableMapOf(),
@@ -77,6 +77,11 @@ private data class RegionPlayerStatsLedger(
         }
     }
 }
+
+internal data class DynmapVisibility(
+    val showOnDynmap: Boolean,
+    val scopes: Map<String, Boolean>
+)
 
 object RegionDatabase {
 
@@ -657,34 +662,54 @@ object RegionDatabase {
     }
 
     private fun loadPlayerStats() {
-        regionPlayerStats.clear()
         val file = getPlayerStatsPath()
-        if (!file.toFile().exists()) return
+        val loaded = if (Files.exists(file)) readPlayerStats(file) else emptyMap()
+        val liveRegionIds = regions.mapTo(hashSetOf()) { it.numberID }
+        regionPlayerStats.clear()
+        loaded.filterKeys { it in liveRegionIds }.forEach { (regionId, ledger) ->
+            regionPlayerStats[regionId] = ledger
+        }
+    }
 
-        val root = runCatching { JsonParser.parseReader(file.toFile().reader()).asJsonObject }.getOrElse { return }
-        val regionsJson = root.getAsJsonObject("regions") ?: return
+    internal fun readPlayerStats(path: Path): Map<Int, RegionPlayerStatsLedger> {
+        val root = readJsonObject(path, "player stats")
+        val version = requirePositiveLong(root.get("version"), "player stats version")
+        if (version != 1L) throw IOException("Unsupported player stats version: $version")
+        val regionsJson = requireJsonObject(root.get("regions"), "player stats regions")
 
-        regions.forEach { region ->
-            val regionJson = regionsJson.getAsJsonObject(region.numberID.toString()) ?: return@forEach
-            val ledger = RegionPlayerStatsLedger()
-            readPlayerStatMap(regionJson.getAsJsonObject("entries"), ledger.entryCounts)
-            readPlayerStatMap(regionJson.getAsJsonObject("stayMillis"), ledger.stayMillis)
-            readPlayerStatMap(regionJson.getAsJsonObject("deaths"), ledger.deathCounts)
-            readPlayerStatMap(regionJson.getAsJsonObject("blockPlaces"), ledger.blockPlaceCounts)
-            readPlayerStatMap(regionJson.getAsJsonObject("blockBreaks"), ledger.blockBreakCounts)
-            if (!ledger.isEmpty()) {
-                regionPlayerStats[region.numberID] = ledger
+        return buildMap {
+            for ((regionKey, element) in regionsJson.entrySet()) {
+                val regionId = regionKey.toIntOrNull()?.takeIf { it > 0 }
+                    ?: throw IOException("Invalid player stats region id: $regionKey")
+                if (containsKey(regionId)) throw IOException("Duplicate player stats region id: $regionId")
+                val regionJson = requireJsonObject(element, "player stats region $regionKey")
+                val ledger = RegionPlayerStatsLedger(
+                    entryCounts = readPlayerStatMap(optionalJsonObject(regionJson, "entries", "player stats region $regionKey"), "entries"),
+                    stayMillis = readPlayerStatMap(optionalJsonObject(regionJson, "stayMillis", "player stats region $regionKey"), "stayMillis"),
+                    deathCounts = readPlayerStatMap(optionalJsonObject(regionJson, "deaths", "player stats region $regionKey"), "deaths"),
+                    blockPlaceCounts = readPlayerStatMap(optionalJsonObject(regionJson, "blockPlaces", "player stats region $regionKey"), "blockPlaces"),
+                    blockBreakCounts = readPlayerStatMap(optionalJsonObject(regionJson, "blockBreaks", "player stats region $regionKey"), "blockBreaks")
+                )
+                if (!ledger.isEmpty()) put(regionId, ledger)
             }
         }
     }
 
     private fun savePlayerStats() {
+        writePlayerStats(getPlayerStatsPath(), regions.map { it.numberID }, regionPlayerStats)
+    }
+
+    internal fun writePlayerStats(
+        path: Path,
+        regionIds: Iterable<Int>,
+        ledgers: Map<Int, RegionPlayerStatsLedger>
+    ) {
         val root = JsonObject()
         root.addProperty("version", 1)
         val regionsJson = JsonObject()
 
-        regions.forEach { region ->
-            val ledger = regionPlayerStats[region.numberID] ?: return@forEach
+        regionIds.forEach { regionId ->
+            val ledger = ledgers[regionId] ?: return@forEach
             if (ledger.isEmpty()) return@forEach
 
             val regionJson = JsonObject()
@@ -693,22 +718,23 @@ object RegionDatabase {
             regionJson.add("deaths", writePlayerStatMap(ledger.deathCounts))
             regionJson.add("blockPlaces", writePlayerStatMap(ledger.blockPlaceCounts))
             regionJson.add("blockBreaks", writePlayerStatMap(ledger.blockBreakCounts))
-            regionsJson.add(region.numberID.toString(), regionJson)
+            regionsJson.add(regionId.toString(), regionJson)
         }
 
         root.add("regions", regionsJson)
-        val file = getPlayerStatsPath()
-        atomicWriteText(file, gson.toJson(root))
+        atomicWriteText(path, gson.toJson(root))
     }
 
-    private fun readPlayerStatMap(source: JsonObject?, target: MutableMap<UUID, Long>) {
+    private fun readPlayerStatMap(source: JsonObject?, label: String): MutableMap<UUID, Long> {
+        val result = mutableMapOf<UUID, Long>()
         source?.entrySet()?.forEach { entry ->
-            val uuid = runCatching { UUID.fromString(entry.key) }.getOrNull() ?: return@forEach
-            val value = readLong(entry.value) ?: return@forEach
-            if (value > 0L) {
-                target[uuid] = value
-            }
+            val uuid = runCatching { UUID.fromString(entry.key) }.getOrNull()
+                ?.takeIf { it.toString().equals(entry.key, ignoreCase = true) }
+                ?: throw IOException("Invalid UUID in player stats $label: ${entry.key}")
+            val value = requirePositiveLong(entry.value, "player stats $label for ${entry.key}")
+            result[uuid] = value
         }
+        return result
     }
 
     private fun writePlayerStatMap(source: Map<UUID, Long>): JsonObject {
@@ -720,52 +746,82 @@ object RegionDatabase {
         return result
     }
 
-    private fun readLong(element: JsonElement?): Long? =
-        runCatching { element?.asLong }.getOrNull()
-
     private fun loadDynmapVisibility() {
         val file = getDynmapConfigPath()
-        val root = if (file.toFile().exists()) {
-            runCatching { JsonParser.parseReader(file.toFile().reader()).asJsonObject }.getOrElse { JsonObject() }
-        } else {
-            JsonObject()
-        }
-        val regionsJson = root.getAsJsonObject("regions") ?: JsonObject()
-        var modified = false
-
+        val loaded = if (Files.exists(file)) readDynmapVisibility(file) else emptyMap()
         for (region in regions) {
-            val regionKey = region.numberID.toString()
-            val regionEntry = regionsJson.getAsJsonObject(regionKey) ?: JsonObject().also {
-                regionsJson.add(regionKey, it)
-                modified = true
-            }
-            if (regionEntry.has("showOnDynmap")) {
-                region.showOnDynmap = regionEntry.get("showOnDynmap").asBoolean
-            } else {
-                regionEntry.addProperty("showOnDynmap", true)
-                modified = true
-            }
-            val scopesEntry = regionEntry.getAsJsonObject("scopes") ?: JsonObject().also {
-                regionEntry.add("scopes", it)
-                modified = true
-            }
+            val visibility = loaded[region.numberID]
+            region.showOnDynmap = visibility?.showOnDynmap ?: true
             for (scope in region.scopes) {
-                if (scopesEntry.has(scope.scopeName)) {
-                    scope.showOnDynmap = scopesEntry.get(scope.scopeName).asBoolean
-                } else {
-                    scopesEntry.addProperty(scope.scopeName, true)
-                    modified = true
-                }
+                scope.showOnDynmap = visibility?.scopes?.get(scope.scopeName) ?: true
             }
-        }
-
-        if (modified) {
-            root.add("regions", regionsJson)
-            writeDynmapConfig(root)
         }
     }
 
+    internal fun readDynmapVisibility(path: Path): Map<Int, DynmapVisibility> {
+        val root = readJsonObject(path, "Dynmap visibility")
+        val regionsJson = requireJsonObject(root.get("regions"), "Dynmap visibility regions")
+        return buildMap {
+            for ((regionKey, element) in regionsJson.entrySet()) {
+                val regionId = regionKey.toIntOrNull()?.takeIf { it > 0 }
+                    ?: throw IOException("Invalid Dynmap region id: $regionKey")
+                if (containsKey(regionId)) throw IOException("Duplicate Dynmap region id: $regionId")
+                val regionJson = requireJsonObject(element, "Dynmap region $regionKey")
+                val scopesJson = optionalJsonObject(regionJson, "scopes", "Dynmap region $regionKey")
+                val scopes = scopesJson?.entrySet()?.associate { (scopeName, value) ->
+                    scopeName to requireBoolean(value, "Dynmap scope $scopeName in region $regionKey")
+                }.orEmpty()
+                put(
+                    regionId,
+                    DynmapVisibility(
+                        showOnDynmap = regionJson.get("showOnDynmap")?.let {
+                            requireBoolean(it, "Dynmap region $regionKey visibility")
+                        } ?: true,
+                        scopes = scopes
+                    )
+                )
+            }
+        }
+    }
+
+    private fun readJsonObject(path: Path, label: String): JsonObject = try {
+        Files.newBufferedReader(path).use { reader ->
+            requireJsonObject(JsonParser.parseReader(reader), "$label root")
+        }
+    } catch (error: IOException) {
+        throw error
+    } catch (error: RuntimeException) {
+        throw IOException("Invalid $label JSON", error)
+    }
+
+    private fun requireJsonObject(element: JsonElement?, label: String): JsonObject {
+        if (element == null || !element.isJsonObject) throw IOException("$label must be an object")
+        return element.asJsonObject
+    }
+
+    private fun optionalJsonObject(parent: JsonObject, key: String, label: String): JsonObject? {
+        val element = parent.get(key) ?: return null
+        return requireJsonObject(element, "$label field '$key'")
+    }
+
+    private fun requirePositiveLong(element: JsonElement?, label: String): Long {
+        val primitive = element?.takeIf { it.isJsonPrimitive }?.asJsonPrimitive
+        val value = primitive?.takeIf { it.isNumber }?.asString?.toLongOrNull()
+        if (value == null || value <= 0L) throw IOException("$label must be a positive integer")
+        return value
+    }
+
+    private fun requireBoolean(element: JsonElement, label: String): Boolean {
+        val primitive = element.takeIf { it.isJsonPrimitive }?.asJsonPrimitive
+        if (primitive?.isBoolean != true) throw IOException("$label must be a boolean")
+        return primitive.asBoolean
+    }
+
     private fun saveDynmapVisibility() {
+        writeDynmapVisibility(getDynmapConfigPath(), regions)
+    }
+
+    internal fun writeDynmapVisibility(path: Path, regions: List<Region>) {
         val root = JsonObject()
         val regionsJson = JsonObject()
         for (region in regions) {
@@ -779,11 +835,7 @@ object RegionDatabase {
             regionsJson.add(region.numberID.toString(), regionEntry)
         }
         root.add("regions", regionsJson)
-        writeDynmapConfig(root)
-    }
-
-    private fun writeDynmapConfig(root: JsonObject) {
-        atomicWriteText(getDynmapConfigPath(), gson.toJson(root))
+        atomicWriteText(path, gson.toJson(root))
     }
 
     private fun checkedCount(value: Int, label: String): Int {

@@ -194,6 +194,111 @@ class RegionDatabaseTest {
         assertEquals(listOf("data.json"), Files.list(directory).use { files -> files.map { it.fileName.toString() }.toList() })
     }
 
+    @Test
+    fun `reads valid player stats before adopting them`() = withTempDirectory { directory ->
+        val path = directory.resolve("player-stats.json")
+        val player = UUID.randomUUID()
+        Files.writeString(path, """
+            {
+              "version": 1,
+              "regions": {
+                "7": {
+                  "entries": {"$player": 2},
+                  "stayMillis": {"$player": 3000}
+                }
+              }
+            }
+        """.trimIndent())
+
+        val stats = RegionDatabase.readPlayerStats(path).getValue(7).aggregate()
+
+        assertEquals(1, stats.trackedPlayerCount)
+        assertEquals(2, stats.entryCount)
+        assertEquals(3000, stats.stayMillis)
+    }
+
+    @Test
+    fun `round trips player stats JSON`() = withTempDirectory { directory ->
+        val path = directory.resolve("player-stats.json")
+        val player = UUID.randomUUID()
+        val ledger = RegionPlayerStatsLedger(entryCounts = mutableMapOf(player to 2L))
+
+        RegionDatabase.writePlayerStats(path, listOf(7), mapOf(7 to ledger))
+        val loaded = RegionDatabase.readPlayerStats(path).getValue(7)
+
+        assertEquals(ledger, loaded)
+    }
+
+    @Test
+    fun `rejects malformed player stats without rewriting the file`() = withTempDirectory { directory ->
+        val path = directory.resolve("player-stats.json")
+        val player = UUID.randomUUID()
+        val invalidInputs = listOf(
+            "[1]",
+            """{"version":1,"regions":[]}""",
+            """{"version":1,"regions":{"7":{"entries":{"not-a-uuid":1}}}}""",
+            """{"version":1,"regions":{"7":{"entries":{"$player":"1"}}}}"""
+        )
+
+        invalidInputs.forEach { input ->
+            Files.writeString(path, input)
+            assertFailsWith<IOException> { RegionDatabase.readPlayerStats(path) }
+            assertEquals(input, Files.readString(path))
+        }
+    }
+
+    @Test
+    fun `reads valid Dynmap visibility with defaults`() = withTempDirectory { directory ->
+        val path = directory.resolve("dynmap.json")
+        Files.writeString(path, """
+            {
+              "regions": {
+                "7": {
+                  "showOnDynmap": false,
+                  "scopes": {"spawn": true}
+                },
+                "8": {}
+              }
+            }
+        """.trimIndent())
+
+        val visibility = RegionDatabase.readDynmapVisibility(path)
+
+        assertEquals(false, visibility.getValue(7).showOnDynmap)
+        assertEquals(true, visibility.getValue(7).scopes.getValue("spawn"))
+        assertEquals(true, visibility.getValue(8).showOnDynmap)
+    }
+
+    @Test
+    fun `round trips Dynmap visibility JSON`() = withTempDirectory { directory ->
+        val path = directory.resolve("dynmap.json")
+        val scope = scope("spawn", ScopeId(generateCompatScopeIdRaw(7, 0))).apply { showOnDynmap = false }
+        val region = Region("region", 7, mutableListOf(scope), showOnDynmap = false)
+
+        RegionDatabase.writeDynmapVisibility(path, listOf(region))
+        val loaded = RegionDatabase.readDynmapVisibility(path).getValue(7)
+
+        assertEquals(false, loaded.showOnDynmap)
+        assertEquals(false, loaded.scopes.getValue("spawn"))
+    }
+
+    @Test
+    fun `rejects malformed Dynmap visibility without rewriting the file`() = withTempDirectory { directory ->
+        val path = directory.resolve("dynmap.json")
+        val invalidInputs = listOf(
+            "{",
+            """{"regions":[]}""",
+            """{"regions":{"7":{"showOnDynmap":"true"}}}""",
+            """{"regions":{"7":{"scopes":{"spawn":1}}}}"""
+        )
+
+        invalidInputs.forEach { input ->
+            Files.writeString(path, input)
+            assertFailsWith<IOException> { RegionDatabase.readDynmapVisibility(path) }
+            assertEquals(input, Files.readString(path))
+        }
+    }
+
     private fun withTempDirectory(block: (java.nio.file.Path) -> Unit) {
         val directory = Files.createTempDirectory("iwg-region-database-test")
         try {

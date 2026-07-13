@@ -11,11 +11,7 @@ fun registerDataLoadSave(){
 }
 
 private fun dataLoad() {
-    try {
-        RegionDatabase.load()
-    } catch (e: Exception) {
-        ImyvmWorldGeo.logger.error("Failed to load region database: ${e.message}", e)
-    }
+    RegionDatabase.load()
 }
 
 private fun dataSave() {
