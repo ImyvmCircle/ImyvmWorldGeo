@@ -6,7 +6,6 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import net.minecraft.core.BlockPos
-import kotlin.math.abs
 
 object ScopeAreaChangeEstimator {
 
@@ -37,16 +36,10 @@ object ScopeAreaChangeEstimator {
         shapeParams: List<Int>,
         selectedPositions: List<BlockPos>
     ): List<BlockPos>? {
-        if (shapeParams.size < 4 || selectedPositions.isEmpty()) return null
+        if (shapeParams.size != 4 || selectedPositions.size != 1) return null
 
         val point = selectedPositions[0]
-        var west = shapeParams[0]
-        var north = shapeParams[1]
-        var east = shapeParams[2]
-        var south = shapeParams[3]
-
-        if (abs(point.x.toLong() - west) < abs(point.x.toLong() - east)) west = point.x else east = point.x
-        if (abs(point.z.toLong() - north) < abs(point.z.toLong() - south)) north = point.z else south = point.z
+        val (west, north, east, south) = updateRectangleBounds(point, shapeParams)
 
         return listOf(BlockPos(west, 0, north), BlockPos(east, 0, south))
     }
@@ -55,7 +48,7 @@ object ScopeAreaChangeEstimator {
         shapeParams: List<Int>,
         selectedPositions: List<BlockPos>
     ): List<BlockPos>? {
-        if (shapeParams.size < 3 || selectedPositions.isEmpty()) return null
+        if (shapeParams.size != 3 || selectedPositions.isEmpty() || selectedPositions.size > 2) return null
 
         val centerX = shapeParams[0]
         val centerZ = shapeParams[1]
@@ -73,6 +66,8 @@ object ScopeAreaChangeEstimator {
             if (edgeX !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) return null
             listOf(BlockPos(centerX, 0, centerZ), BlockPos(edgeX.toInt(), 0, centerZ))
         } else {
+            val oldCenter = selectedPositions[0]
+            if (oldCenter.x != centerX || oldCenter.z != centerZ) return null
             val newCenter = selectedPositions[1]
             val edgeX = newCenter.x.toLong() + radius
             if (edgeX !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) return null
@@ -91,7 +86,8 @@ object ScopeAreaChangeEstimator {
         return when (selectedPositions.size) {
             1 -> handlePolygonMonoPoint(blockPosList, selectedPositions[0])
             2 -> handlePolygonMove(blockPosList, selectedPositions[0], selectedPositions[1])
-            else -> handlePolygonInsert(blockPosList, selectedPositions)
+            3 -> handlePolygonInsert(blockPosList, selectedPositions)
+            else -> null
         }
     }
 
@@ -109,6 +105,7 @@ object ScopeAreaChangeEstimator {
     }
 
     private fun handlePolygonMove(blockPosList: List<BlockPos>, oldPoint: BlockPos, newPoint: BlockPos): List<BlockPos>? {
+        if (oldPoint.x == newPoint.x && oldPoint.z == newPoint.z) return null
         if (blockPosList.none { it.x == oldPoint.x && it.z == oldPoint.z }) return null
         return blockPosList.map { if (it.x == oldPoint.x && it.z == oldPoint.z) newPoint else it }
     }

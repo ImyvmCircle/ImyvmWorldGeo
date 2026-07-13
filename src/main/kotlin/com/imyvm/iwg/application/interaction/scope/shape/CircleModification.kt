@@ -1,96 +1,119 @@
 package com.imyvm.iwg.application.interaction.scope.shape
 
+import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.interaction.scope.recreateScope
+import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
-import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerPlayer
+import kotlin.math.hypot
 
 fun modifyScopeCircleRadius(
     player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
-    selectedPositions: MutableList<BlockPos>
-) {
-    val shapeParams = existingScope.geoShape?.shapeParameter
-    if (!checkCircleParams(player, shapeParams, "circle_radius.invalid_circle")) return
-
-    val centerX = shapeParams!![0]
+    selectedPositions: List<BlockPos>
+): Boolean {
+    val shapeParams = circleParameters(player, existingScope, "circle_radius.invalid_circle") ?: return false
+    val point = selectedPositions.singleOrNull() ?: return invalidPointCount(player, selectedPositions.size)
+    val centerX = shapeParams[0]
     val centerZ = shapeParams[1]
     val oldRadius = shapeParams[2]
-
-    val pos = selectedPositions[0]
-    val dx = pos.x - centerX
-    val dz = pos.z - centerZ
-    val newRadius = kotlin.math.sqrt((dx * dx + dz * dz).toDouble()).toInt()
-
+    val radius = hypot(point.x.toDouble() - centerX, point.z.toDouble() - centerZ)
+    if (radius > Int.MAX_VALUE) return coordinateRangeExceeded(player)
+    val newRadius = radius.toInt()
     if (newRadius <= 0) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive")!!)
-        return
+        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive")))
+        return false
     }
 
-    recreateCircleScope(
-        player, region, existingScope, centerX, centerZ, newRadius,
-        "interaction.meta.scope.modify.circle_radius.success",
-        oldRadius, newRadius
+    val changed = recreateScope(
+        player,
+        region,
+        existingScope,
+        listOf(BlockPos(centerX, 0, centerZ), point),
+        GeoShapeType.CIRCLE
     )
+    if (changed) {
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "interaction.meta.scope.modify.circle_radius.success",
+            existingScope.scopeName,
+            region.name,
+            oldRadius,
+            newRadius
+        )))
+    }
+    return changed
 }
 
 fun modifyScopeCircleCenter(
     player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
-    selectedPositions: MutableList<BlockPos>
-) {
-    val shapeParams = existingScope.geoShape?.shapeParameter
-    if (!checkCircleParams(player, shapeParams, "circle_center.invalid_circle")) return
-
-    val radius = shapeParams!![2]
-    val oldCenter = selectedPositions[0]
-    val newCenter = selectedPositions[1]
-
-    recreateCircleScope(
-        player, region, existingScope, newCenter.x, newCenter.z, radius,
-        "interaction.meta.scope.modify.circle_center.success",
-        "${oldCenter.x},${oldCenter.z}",
-        "${newCenter.x},${newCenter.z}",
-        radius
-    )
-}
-
-private fun checkCircleParams(
-    player: ServerPlayer,
-    shapeParams: List<Int>?,
-    messageKey: String
+    selectedPositions: List<BlockPos>
 ): Boolean {
-    if (shapeParams == null || shapeParams.size < 3) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.$messageKey")!!)
+    val shapeParams = circleParameters(player, existingScope, "circle_center.invalid_circle") ?: return false
+    if (selectedPositions.size != 2) return invalidPointCount(player, selectedPositions.size)
+    val oldCenter = selectedPositions[0]
+    val centerX = shapeParams[0]
+    val centerZ = shapeParams[1]
+    if (oldCenter.x != centerX || oldCenter.z != centerZ) {
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "selection.feedback.modify.guidance.circle.2points_invalid_pt1",
+            oldCenter.x,
+            oldCenter.z,
+            centerX,
+            centerZ
+        )))
         return false
     }
-    return true
+
+    val radius = shapeParams[2]
+    val newCenter = selectedPositions[1]
+    val edgeX = newCenter.x.toLong() + radius
+    if (edgeX !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) return coordinateRangeExceeded(player)
+
+    val changed = recreateScope(
+        player,
+        region,
+        existingScope,
+        listOf(newCenter, BlockPos(edgeX.toInt(), 0, newCenter.z)),
+        GeoShapeType.CIRCLE
+    )
+    if (changed) {
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "interaction.meta.scope.modify.circle_center.success",
+            existingScope.scopeName,
+            region.name,
+            "$centerX,$centerZ",
+            "${newCenter.x},${newCenter.z}",
+            radius
+        )))
+    }
+    return changed
 }
 
-private fun recreateCircleScope(
-    player: ServerPlayer,
-    region: Region,
-    existingScope: GeoScope,
-    centerX: Int,
-    centerZ: Int,
-    radius: Int,
-    successKey: String,
-    vararg params: Any
-) {
-    val newPositions = mutableListOf(
-        BlockPos(centerX, 0, centerZ),
-        BlockPos(centerX + radius, 0, centerZ)
-    )
+private fun circleParameters(player: ServerPlayer, scope: GeoScope, messageKey: String): List<Int>? {
+    val shape = scope.geoShape
+    if (shape == null || shape.geoShapeType != GeoShapeType.CIRCLE || shape.shapeParameter.size != 3) {
+        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.scope.modify.$messageKey")))
+        return null
+    }
+    return shape.shapeParameter
+}
 
-    recreateScope(
-        player, region, existingScope, newPositions,
-        GeoShapeType.CIRCLE,
-        successKey,
-        *params
-    )
+private fun invalidPointCount(player: ServerPlayer, count: Int): Boolean {
+    val key = if (count == 0) "error.insufficient_points" else "selection.feedback.modify.guidance.circle.excess"
+    val message = if (count == 0) Translator.tr(key, "circle") else Translator.tr(key)
+    player.sendSystemMessage(requireNotNull(message))
+    return false
+}
+
+private fun coordinateRangeExceeded(player: ServerPlayer): Boolean {
+    errorMessage(CreationError.CoordinateRangeExceeded, GeoShapeType.CIRCLE)
+        .forEach(player::sendSystemMessage)
+    return false
 }

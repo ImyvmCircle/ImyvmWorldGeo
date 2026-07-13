@@ -9,7 +9,6 @@ import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 
@@ -17,36 +16,35 @@ fun recreateScope(
     player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
-    newPositions: MutableList<BlockPos>,
-    shapeType: GeoShapeType,
-    successMessageKey: String,
-    vararg extraArgs: Any
-) {
+    newPositions: List<BlockPos>,
+    shapeType: GeoShapeType
+): Boolean {
     require(region.containsScope(existingScope)) { "scope does not belong to region" }
 
-    val newScope = RegionFactory.recreateScope(
-        scopeName = existingScope.scopeName,
-        worldId = existingScope.worldId,
-        teleportPoint = existingScope.teleportPoint,
+    val newShape = RegionFactory.recreateScopeShape(
+        region = region,
+        existingScope = existingScope,
         selectedPositions = newPositions,
         shapeType = shapeType
     )
 
-    when (newScope) {
+    return when (newShape) {
         is Result.Ok -> {
             val oldShape = existingScope.geoShape
-            existingScope.geoShape = newScope.value.geoShape
+            existingScope.replaceGeometry(newShape.value)
             if (!saveRegionData(player)) {
-                existingScope.geoShape = oldShape
-                return
+                existingScope.replaceGeometry(oldShape)
+                false
+            } else {
+                clearSelectionDisplay(player)
+                ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
+                true
             }
-            player.sendSystemMessage(Translator.tr(successMessageKey, existingScope.scopeName, region.name, *extraArgs)!!)
-            clearSelectionDisplay(player)
-            ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
         }
         is Result.Err -> {
-            val errorMsg = errorMessage(newScope.error, shapeType)
+            val errorMsg = errorMessage(newShape.error, shapeType)
             errorMsg.forEach { player.sendSystemMessage(it) }
+            false
         }
     }
 }

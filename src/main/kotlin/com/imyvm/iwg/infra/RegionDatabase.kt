@@ -504,11 +504,12 @@ object RegionDatabase {
         if (shape == null) {
             stream.writeBoolean(false)
         } else {
-            validateShapeParameterCount(shape.geoShapeType, shape.shapeParameter.size)
+            val parameters = shape.shapeParameter
+            validateShapeParameterCount(shape.geoShapeType, parameters.size)
             stream.writeBoolean(true)
             stream.writeInt(shape.geoShapeType.ordinal)
-            stream.writeInt(checkedCount(shape.shapeParameter.size, "shape parameters"))
-            shape.shapeParameter.forEach { stream.writeInt(it) }
+            stream.writeInt(checkedCount(parameters.size, "shape parameters"))
+            parameters.forEach { stream.writeInt(it) }
         }
     }
 
@@ -520,7 +521,13 @@ object RegionDatabase {
             val paramCount = checkedCount(stream.readInt(), "shape parameters")
             val params = MutableList(paramCount) { stream.readInt() }
             validateShapeParameterCount(geoShapeType, paramCount)
-            GeoShape(geoShapeType, params)
+            try {
+                GeoShape(geoShapeType, params)
+            } catch (exception: IllegalArgumentException) {
+                throw IOException("Invalid geometry for $geoShapeType", exception)
+            } catch (exception: ArithmeticException) {
+                throw IOException("Geometry coordinates exceed the supported range for $geoShapeType", exception)
+            }
         }
     }
 
@@ -756,7 +763,7 @@ object RegionDatabase {
             val visibility = loaded[region.numberID]
             region.showOnDynmap = visibility?.showOnDynmap ?: true
             for (scope in region.scopes) {
-                scope.showOnDynmap = visibility?.scopes?.get(scope.scopeName) ?: true
+                scope.setDynmapVisibility(visibility?.scopes?.get(scope.scopeName) ?: true)
             }
         }
     }

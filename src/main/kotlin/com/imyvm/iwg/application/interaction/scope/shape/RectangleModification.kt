@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction.scope.shape
 
 import com.imyvm.iwg.application.interaction.scope.recreateScope
+import com.imyvm.iwg.application.region.updateRectangleBounds
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.Region
@@ -12,47 +13,42 @@ fun modifyScopeRectangle(
     player: ServerPlayer,
     region: Region,
     existingScope: GeoScope,
-    selectedPositions: MutableList<BlockPos>
-) {
-    val shapeParams = existingScope.geoShape?.shapeParameter
-    if (shapeParams.isNullOrEmpty() || shapeParams.size < 4) {
+    selectedPositions: List<BlockPos>
+): Boolean {
+    val shape = existingScope.geoShape
+    if (shape == null || shape.geoShapeType != GeoShapeType.RECTANGLE || shape.shapeParameter.size != 4) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle")!!)
-        return
+        return false
+    }
+    if (selectedPositions.size != 1) {
+        val key = if (selectedPositions.isEmpty()) "error.insufficient_points" else "selection.feedback.modify.guidance.rect.excess"
+        val message = if (selectedPositions.isEmpty()) Translator.tr(key, "rectangle") else Translator.tr(key)
+        player.sendSystemMessage(requireNotNull(message))
+        return false
     }
 
     val point = selectedPositions[0]
-    val (west, north, east, south) = updateRectangleBounds(point, shapeParams)
+    val (west, north, east, south) = updateRectangleBounds(point, shape.shapeParameter)
 
     val newPositions = mutableListOf(
         BlockPos(west, 0, north),
         BlockPos(east, 0, south)
     )
 
-    recreateScope(
+    val changed = recreateScope(
         player, region, existingScope, newPositions,
-        GeoShapeType.RECTANGLE,
-        "interaction.meta.scope.modify.rectangle.success",
-        west, north, east, south
+        GeoShapeType.RECTANGLE
     )
-}
-
-private fun updateRectangleBounds(point: BlockPos, shapeParams: List<Int>): List<Int> {
-    var west = shapeParams[0]
-    var north = shapeParams[1]
-    var east = shapeParams[2]
-    var south = shapeParams[3]
-
-    if (kotlin.math.abs(point.x - west) < kotlin.math.abs(point.x - east)) {
-        west = point.x
-    } else {
-        east = point.x
+    if (changed) {
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "interaction.meta.scope.modify.rectangle.success",
+            existingScope.scopeName,
+            region.name,
+            west,
+            north,
+            east,
+            south
+        )))
     }
-
-    if (kotlin.math.abs(point.z - north) < kotlin.math.abs(point.z - south)) {
-        north = point.z
-    } else {
-        south = point.z
-    }
-
-    return listOf(west, north, east, south)
+    return changed
 }

@@ -126,6 +126,28 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `rejects structurally invalid polygon geometry`() = withTempDirectory { directory ->
+        val path = directory.resolve("regions.db")
+        DataOutputStream(Files.newOutputStream(path)).use {
+            it.writeInt(-1)
+            it.writeInt(1)
+            it.writeUTF("region")
+            it.writeInt(7)
+            it.writeInt(1)
+            it.writeUTF("scope")
+            it.writeUTF("minecraft:overworld")
+            it.writeBoolean(false)
+            it.writeBoolean(false)
+            it.writeBoolean(true)
+            it.writeInt(GeoShapeType.POLYGON.ordinal)
+            it.writeInt(6)
+            listOf(0, 0, 10, 0, 20, 0).forEach(it::writeInt)
+        }
+
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+    }
+
+    @Test
     fun `rejects unassigned scope id in current database format`() = withTempDirectory { directory ->
         val path = directory.resolve("invalid-scope-id.db")
         DataOutputStream(Files.newOutputStream(path)).use { stream ->
@@ -296,7 +318,7 @@ class RegionDatabaseTest {
     @Test
     fun `round trips Dynmap visibility JSON`() = withTempDirectory { directory ->
         val path = directory.resolve("dynmap.json")
-        val scope = scope("spawn", ScopeId(generateCompatScopeIdRaw(7, 0))).apply { showOnDynmap = false }
+        val scope = scope("spawn", ScopeId(generateCompatScopeIdRaw(7, 0))).apply { setDynmapVisibility(false) }
         val region = Region("region", 7, mutableListOf(scope), showOnDynmap = false)
 
         RegionDatabase.writeDynmapVisibility(path, listOf(region))

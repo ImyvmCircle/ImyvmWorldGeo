@@ -109,7 +109,7 @@ class Region(
         require(mutableScopes.none { it !== scope && it.scopeName.equals(newName, ignoreCase = true) }) {
             "duplicate scope name"
         }
-        scope.scopeName = newName
+        scope.renameTo(newName)
     }
 
     fun recordScopeOwnership(entry: ScopeOwnershipEntry) {

@@ -12,17 +12,89 @@ import net.minecraft.core.BlockPos
 import net.minecraft.world.level.Level
 
 class GeoScope(
-    var scopeName: String,
-    var worldId: Identifier,
-    var teleportPoint: BlockPos?,
-    var isTeleportPointPublic: Boolean = false,
-    var geoShape: GeoShape?,
+    scopeName: String,
+    worldId: Identifier,
+    teleportPoint: BlockPos?,
+    isTeleportPointPublic: Boolean = false,
+    geoShape: GeoShape?,
     settings: MutableList<Setting> = mutableListOf(),
-    var showOnDynmap: Boolean = true,
+    showOnDynmap: Boolean = true,
     scopeId: ScopeId = ScopeId(ScopeId.UNASSIGNED_RAW)
 ) {
+    private var currentScopeName: String = scopeName
+    private val currentWorldId: Identifier = worldId
+    private var currentTeleportPoint: BlockPos? = teleportPoint
+    private var currentTeleportPointPublic: Boolean = isTeleportPointPublic
+    private var currentGeoShape: GeoShape? = geoShape
+    private var currentShowOnDynmap: Boolean = showOnDynmap
     private var identity: ScopeIdentity = scopeId.toIdentity()
     internal val settingStore = SettingStore(settings)
+
+    /**
+     * Binary-compatible property for existing addons. Renaming is controlled by the owning Region.
+     */
+    var scopeName: String
+        get() = currentScopeName
+        set(value) {
+            require(value == currentScopeName) { "scope name must be changed through its owning region" }
+        }
+
+    /** Binary-compatible property. A Scope cannot change dimension after construction. */
+    var worldId: Identifier
+        get() = currentWorldId
+        set(value) {
+            require(value == currentWorldId) { "scope world cannot be changed" }
+        }
+
+    /** Binary-compatible property. Use supported interaction operations to update the teleport point. */
+    var teleportPoint: BlockPos?
+        get() = currentTeleportPoint
+        set(value) {
+            require(value == currentTeleportPoint) { "teleport point must be changed through the application boundary" }
+        }
+
+    /** Binary-compatible property. Use supported interaction operations to change accessibility. */
+    var isTeleportPointPublic: Boolean
+        get() = currentTeleportPointPublic
+        set(value) {
+            require(value == currentTeleportPointPublic) {
+                "teleport point accessibility must be changed through the application boundary"
+            }
+        }
+
+    /** Binary-compatible property. Use supported interaction operations to replace geometry. */
+    var geoShape: GeoShape?
+        get() = currentGeoShape
+        set(value) {
+            require(value === currentGeoShape) { "scope geometry must be changed through the application boundary" }
+        }
+
+    /** Binary-compatible property. Use supported interaction operations to change Dynmap visibility. */
+    var showOnDynmap: Boolean
+        get() = currentShowOnDynmap
+        set(value) {
+            require(value == currentShowOnDynmap) { "Dynmap visibility must be changed through the application boundary" }
+        }
+
+    internal fun renameTo(name: String) {
+        currentScopeName = name
+    }
+
+    internal fun replaceGeometry(shape: GeoShape?) {
+        currentGeoShape = shape
+    }
+
+    internal fun updateTeleportPoint(point: BlockPos?) {
+        currentTeleportPoint = point
+    }
+
+    internal fun setTeleportPointPublic(value: Boolean) {
+        currentTeleportPointPublic = value
+    }
+
+    internal fun setDynmapVisibility(value: Boolean) {
+        currentShowOnDynmap = value
+    }
 
     /**
      * Binary-compatible identity facade for existing addons.
@@ -68,7 +140,8 @@ class GeoScope(
     fun getScopeInfo(index: Int): Component? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
         val dimensionDisplay = getDimensionDisplayName()
-        return if (teleportPoint == null) {
+        val point = teleportPoint
+        return if (point == null) {
             Translator.tr("geo.scope.info",
                 index,
                 scopeName,
@@ -81,9 +154,9 @@ class GeoScope(
                 scopeName,
                 shapeInfoString,
                 isTeleportPointPublic,
-                teleportPoint!!.x,
-                teleportPoint!!.y,
-                teleportPoint!!.z,
+                point.x,
+                point.y,
+                point.z,
                 dimensionDisplay,
                 showOnDynmap)!!
         }

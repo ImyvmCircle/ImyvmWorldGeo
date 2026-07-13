@@ -24,9 +24,9 @@ fun onAddingTeleportPoint(
 
     return if (reasonKey == null) {
         val oldPoint = geoScope.teleportPoint
-        geoScope.teleportPoint = teleportPoint
+        geoScope.updateTeleportPoint(teleportPoint)
         if (!saveRegionData(playerExecutor)) {
-            geoScope.teleportPoint = oldPoint
+            geoScope.updateTeleportPoint(oldPoint)
             return 0
         }
         playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name)!!)
@@ -45,9 +45,9 @@ fun onResettingTeleportPoint(
 ): Int {
     require(region.containsScope(scope)) { "scope does not belong to region" }
     val oldPoint = scope.teleportPoint
-    scope.teleportPoint = null
+    scope.updateTeleportPoint(null)
     if (!saveRegionData(playerExecutor)) {
-        scope.teleportPoint = oldPoint
+        scope.updateTeleportPoint(oldPoint)
         return 0
     }
     playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
@@ -95,9 +95,9 @@ fun onTeleportingPlayer(
     val fallback = geoScope.findNearestValidTeleportPoint(targetWorld, teleportPoint, searchRadius)
 
     return if (fallback != null) {
-        geoScope.teleportPoint = fallback
+        geoScope.updateTeleportPoint(fallback)
         if (!saveRegionData(playerExecutor)) {
-            geoScope.teleportPoint = teleportPoint
+            geoScope.updateTeleportPoint(teleportPoint)
             return 0
         }
         playerExecutor.teleport(TeleportTransition(
@@ -136,9 +136,9 @@ fun onTogglingTeleportPointAccessibility(
     player: ServerPlayer? = null
 ): Int {
     val oldValue = scope.isTeleportPointPublic
-    scope.isTeleportPointPublic = !oldValue
+    scope.setTeleportPointPublic(!oldValue)
     if (!saveRegionData(player)) {
-        scope.isTeleportPointPublic = oldValue
+        scope.setTeleportPointPublic(oldValue)
         return 0
     }
     return 1

@@ -1,6 +1,6 @@
 package com.imyvm.iwg.domain.component
 
-import com.imyvm.iwg.util.geo.*
+import com.imyvm.iwg.util.geo.distanceOrderedGrid
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.network.chat.Component
@@ -10,56 +10,44 @@ import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.Level
 
 class GeoShape(
-    var geoShapeType: GeoShapeType,
-    var shapeParameter: MutableList<Int>
+    geoShapeType: GeoShapeType,
+    shapeParameter: MutableList<Int>
 ) {
+    private var geometry: ShapeGeometry = ShapeGeometry.from(geoShapeType, shapeParameter)
 
-    init {
-        validateParameters()
-    }
+    var geoShapeType: GeoShapeType
+        get() = geometry.type
+        set(value) {
+            require(value == geometry.type) {
+                "shape type cannot be changed without compatible parameters"
+            }
+        }
+
+    var shapeParameter: MutableList<Int>
+        get() = geometry.toLegacyParameters()
+        set(value) {
+            geometry = ShapeGeometry.from(geometry.type, value)
+        }
 
     fun getShapeInfo(): Component? {
-        validateParameters()
         val area = "%.2f".format(calculateArea())
 
-        return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> getCircleInfo(area)
-            GeoShapeType.RECTANGLE -> getRectangleInfo(area)
-            GeoShapeType.POLYGON -> getPolygonInfo(area)
-            else -> Translator.tr("geo.shape.unknown.info", area)!!
+        return when (val current = geometry) {
+            is CircleGeometry -> getCircleInfo(current, area)
+            is RectangleGeometry -> getRectangleInfo(current, area)
+            is PolygonGeometry -> getPolygonInfo(current, area)
+            UnknownGeometry -> Translator.tr("geo.shape.unknown.info", area)!!
         }
     }
 
     fun containsPoint(x: Int, y: Int): Boolean {
-        validateParameters()
-        return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> circleContainsPoint(x, y, shapeParameter)
-            GeoShapeType.RECTANGLE -> rectangleContainsPoint(x, y, shapeParameter)
-            GeoShapeType.POLYGON -> polygonContainsPoint(x, y, shapeParameter)
-            else -> false
-        }
+        return geometry.containsPoint(x, y)
     }
 
-    fun calculateArea(): Double {
-        validateParameters()
-        return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> calculateCircleArea(this.shapeParameter)
-            GeoShapeType.RECTANGLE -> calculateRectangleArea(this.shapeParameter)
-            GeoShapeType.POLYGON -> calculatePolygonArea(shapeParameter)
-            else -> 0.0
-        }
-    }
+    fun calculateArea(): Double = geometry.calculateArea()
 
     fun generateTeleportPoint(world: Level): BlockPos? {
-        validateParameters()
-        val par = this.shapeParameter
-
-        return when (this.geoShapeType) {
-            GeoShapeType.CIRCLE -> generateTeleportPointByType(world, par, GeoShapeType.CIRCLE)
-            GeoShapeType.RECTANGLE -> generateTeleportPointByType(world, par, GeoShapeType.RECTANGLE)
-            GeoShapeType.POLYGON -> generateTeleportPointByType(world, par, GeoShapeType.POLYGON)
-            GeoShapeType.UNKNOWN -> null
-        }
+        return generateTeleportPointByType(world)
     }
 
     fun certificateTeleportPoint(world: Level, pointToTest: BlockPos): Boolean {
@@ -94,78 +82,42 @@ class GeoShape(
     }
 
     fun validateParameters() {
-        when (geoShapeType) {
-            GeoShapeType.CIRCLE -> {
-                require(shapeParameter.size == 3) { "circle requires center x/z and radius" }
-                val radius = shapeParameter[2]
-                require(radius >= 0) { "circle radius must not be negative" }
-                Math.subtractExact(shapeParameter[0], radius)
-                Math.addExact(shapeParameter[0], radius)
-                Math.subtractExact(shapeParameter[1], radius)
-                Math.addExact(shapeParameter[1], radius)
-            }
-            GeoShapeType.RECTANGLE -> {
-                require(shapeParameter.size == 4) { "rectangle requires west/north/east/south" }
-                require(shapeParameter[0] <= shapeParameter[2] && shapeParameter[1] <= shapeParameter[3]) {
-                    "rectangle bounds are inverted"
-                }
-            }
-            GeoShapeType.POLYGON -> require(shapeParameter.size >= 6 && shapeParameter.size % 2 == 0) {
-                "polygon requires at least three coordinate pairs"
-            }
-            GeoShapeType.UNKNOWN -> require(shapeParameter.isEmpty()) { "unknown shape must not have parameters" }
-        }
+        // Construction and the compatibility setter replace the complete validated geometry atomically.
     }
 
-    private fun getCircleInfo(area: String): Component? {
-        if (shapeParameter.size < 3) {
-            return Translator.tr("geo.shape.circle.invalid.info", area)!!
-        }
+    private fun getCircleInfo(circle: CircleGeometry, area: String): Component? {
         return Translator.tr(
             "geo.shape.circle.info",
-            shapeParameter[0], // centerX
-            shapeParameter[1], // centerZ
-            shapeParameter[2], // radius
+            circle.centerX,
+            circle.centerZ,
+            circle.radius,
             area
         )!!
     }
 
-    private fun getRectangleInfo(area: String): Component? {
-        if (shapeParameter.size < 4) {
-            return Translator.tr("geo.shape.rectangle.invalid.info", area)!!
-        }
+    private fun getRectangleInfo(rectangle: RectangleGeometry, area: String): Component? {
         return Translator.tr(
             "geo.shape.rectangle.info",
-            shapeParameter[0], // west
-            shapeParameter[1], // north
-            shapeParameter[2], // east
-            shapeParameter[3], // south
+            rectangle.west,
+            rectangle.north,
+            rectangle.east,
+            rectangle.south,
             area
         )!!
     }
 
-    private fun getPolygonInfo(area: String): Component? {
-        if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
-            return Translator.tr("geo.shape.polygon.invalid.info", area)!!
+    private fun getPolygonInfo(polygon: PolygonGeometry, area: String): Component? {
+        val coords = buildString {
+            for (index in 0 until polygon.vertexCount) {
+                if (index > 0) append(", ")
+                append('(').append(polygon.x(index)).append(", ").append(polygon.z(index)).append(')')
+            }
         }
-        val coords = shapeParameter.chunked(2)
-            .joinToString(", ") { "(${it[0]}, ${it[1]})" }
         return Translator.tr("geo.shape.polygon.info", coords, area)!!
     }
 
-    private fun generateTeleportPointByType(
-        world: Level,
-        shapeParameters: MutableList<Int>,
-        geoShapeType: GeoShapeType
-    ): BlockPos? {
-        val points = when (geoShapeType) {
-            GeoShapeType.CIRCLE -> iterateCirclePointSequence(shapeParameters[0], shapeParameters[1], shapeParameters[2])
-            GeoShapeType.RECTANGLE -> iterateRectanglePointSequence(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
-            GeoShapeType.POLYGON -> iteratePolygonPointSequence(shapeParameters)
-            GeoShapeType.UNKNOWN -> return null
-        }
-
-        for (point in points) {
+    private fun generateTeleportPointByType(world: Level): BlockPos? {
+        for (point in geometry.pointSequence()) {
             val blockPos = generateSurfacePoint(world, point)
             if (blockPos != null) return blockPos
         }

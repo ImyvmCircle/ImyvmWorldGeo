@@ -73,6 +73,16 @@ object RegionFactory {
         shapeType
     )
 
+    internal fun recreateScopeShape(
+        region: Region,
+        existingScope: GeoScope,
+        selectedPositions: List<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoShape, CreationError> {
+        require(region.containsScope(existingScope)) { "scope does not belong to region" }
+        return createGeoShape(selectedPositions, shapeType, existingScope.worldId, existingScope)
+    }
+
     @Deprecated("Use createScopeForPlayer or recreateScope")
     fun createScope(
         scopeName: String,
@@ -116,7 +126,8 @@ object RegionFactory {
     private fun createGeoShape(
         positions: List<BlockPos>,
         shapeType: GeoShapeType,
-        worldId: Identifier
+        worldId: Identifier,
+        excludedScope: GeoScope? = null
     ): Result<GeoShape, CreationError> {
         val requiredPoints = requiredPoints(shapeType)
         if (positions.size < requiredPoints) {
@@ -135,7 +146,11 @@ object RegionFactory {
         val geoShape = (geoShapeResult as Result.Ok).value
 
         val existingScopes = RegionDatabase.getRegionList()
-            .flatMap { region -> region.scopes.filter { it.worldId == worldId }.map { Pair(it, region.name) } }
+            .flatMap { region ->
+                region.scopes
+                    .filter { it !== excludedScope && it.worldId == worldId }
+                    .map { Pair(it, region.name) }
+            }
         val intersections = checkIntersection(geoShape, existingScopes)
         if (intersections.isNotEmpty()) {
             return Result.Err(CreationError.IntersectionBetweenScopes(intersections))
@@ -183,10 +198,21 @@ object RegionFactory {
         val radius = circleRadius(center, circumference)
         if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
         if (radius > Int.MAX_VALUE) return Result.Err(CreationError.CoordinateRangeExceeded)
+        val intRadius = radius.toInt()
+        if (!circleExtentsFit(center.x, center.z, intRadius)) {
+            return Result.Err(CreationError.CoordinateRangeExceeded)
+        }
 
         return Result.Ok(
-            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))
+            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, intRadius))
         )
+    }
+
+    private fun circleExtentsFit(centerX: Int, centerZ: Int, radius: Int): Boolean {
+        val min = Int.MIN_VALUE.toLong()
+        val max = Int.MAX_VALUE.toLong()
+        return centerX.toLong() - radius in min..max && centerX.toLong() + radius in min..max &&
+            centerZ.toLong() - radius in min..max && centerZ.toLong() + radius in min..max
     }
 
     private fun circleRadius(center: BlockPos, circumference: BlockPos): Double =
@@ -196,7 +222,7 @@ object RegionFactory {
         )
 
     private fun createPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
-        val distinct = positions.distinct()
+        val distinct = positions.distinctBy { it.x to it.z }
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
         val error = checkPolygonSize(positions)

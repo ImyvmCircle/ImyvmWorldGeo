@@ -16,7 +16,7 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.chat.Component
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
-import kotlin.math.sqrt
+import kotlin.math.hypot
 
 fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
@@ -189,10 +189,10 @@ private fun validateRectanglePoints(points: List<BlockPos>): String {
         p1.z == p2.z ->
             Translator.raw("selection.feedback.warn.rect.coincident_z", p1.z) ?: ""
         else -> {
-            val w = abs(p1.x - p2.x); val h = abs(p1.z - p2.z); val area = w * h
+            val w = abs(p1.x.toLong() - p2.x); val h = abs(p1.z.toLong() - p2.z); val area = w.toDouble() * h
             val minSide = GeoConfig.MIN_SIDE_LENGTH.value; val minArea = GeoConfig.MIN_RECTANGLE_AREA.value
             val minAspect = GeoConfig.MIN_ASPECT_RATIO.value
-            val aspect = if (h == 0) Double.MAX_VALUE else w.toDouble() / h
+            val aspect = if (h == 0L) Double.MAX_VALUE else w.toDouble() / h
             when {
                 area < minArea || w < minSide || h < minSide ->
                     Translator.raw(
@@ -216,8 +216,7 @@ private fun validateCirclePoints(points: List<BlockPos>): String {
     if (points.size < 2) return ""
     val c = points[0]; val p = points[1]
     if (c.x == p.x && c.z == p.z) return Translator.raw("selection.feedback.warn.circle.same_point") ?: ""
-    val dx = p.x - c.x; val dz = p.z - c.z
-    val radius = sqrt((dx * dx + dz * dz).toDouble())
+    val radius = hypot(p.x.toDouble() - c.x, p.z.toDouble() - c.z)
     val minRadius = GeoConfig.MIN_CIRCLE_RADIUS.value
     return if (radius < minRadius)
         Translator.raw(
@@ -426,8 +425,7 @@ private fun appendModifyGuidance(msg: StringBuilder, shapeType: GeoShapeType, ne
                             cx, cz, existingRadius
                         ) ?: ""
                     } else {
-                        val dx = pt.x - cx; val dz = pt.z - cz
-                        val newRadius = sqrt((dx * dx + dz * dz).toDouble()).toInt()
+                        val newRadius = hypot(pt.x.toDouble() - cx, pt.z.toDouble() - cz).toInt()
                         Translator.raw(
                             "selection.feedback.modify.guidance.circle.1point",
                             pt.x, pt.z, cx, cz, newRadius
@@ -559,8 +557,7 @@ private fun buildModifyValidationWarning(shapeType: GeoShapeType, newPoints: Lis
             if (newPoints.size == 1) {
                 val pt = newPoints[0]
                 if (pt.x == cx && pt.z == cz) return ""
-                val dx = pt.x - cx; val dz = pt.z - cz
-                val newRadius = sqrt((dx * dx + dz * dz).toDouble())
+                val newRadius = hypot(pt.x.toDouble() - cx, pt.z.toDouble() - cz)
                 when {
                     newRadius < GeoConfig.MIN_CIRCLE_RADIUS.value ->
                         Translator.raw(

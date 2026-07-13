@@ -25,9 +25,9 @@ fun onModifyScope(
     return when (shapeType) {
         GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
         GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
-        GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
-        GeoShapeType.UNKNOWN -> 0
-    }
+        GeoShapeType.RECTANGLE -> modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
+        GeoShapeType.UNKNOWN -> false
+    }.let { if (it) 1 else 0 }
 }
 
 private fun checkAndGetPlayerPositions(player: ServerPlayer): MutableList<BlockPos>? {
@@ -44,12 +44,11 @@ private fun modifyPolygonScope(
     targetRegion: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
-): Int {
+): Boolean {
     return when (selectedPositions.size) {
-        0 -> { player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_insufficient_points")!!); 0}
-        1 -> { modifyScopePolygonMonoPoint(player, targetRegion, existingScope, selectedPositions); 1 }
-        2 -> { modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions); 1 }
-        else -> { modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions); 1 }
+        1 -> modifyScopePolygonMonoPoint(player, targetRegion, existingScope, selectedPositions)
+        2 -> modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
+        else -> modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions)
     }
 }
 
@@ -58,18 +57,10 @@ private fun modifyCircleScope(
     targetRegion: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
-): Int {
-    if (selectedPositions.size == 1) modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
-    else modifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
-    return 1
-}
-
-private fun modifyRectangleScope(
-    player: ServerPlayer,
-    targetRegion: Region,
-    existingScope: GeoScope,
-    selectedPositions: MutableList<BlockPos>
-): Int {
-    modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
-    return 1
+): Boolean {
+    return if (selectedPositions.size == 1) {
+        modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
+    } else {
+        modifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
+    }
 }

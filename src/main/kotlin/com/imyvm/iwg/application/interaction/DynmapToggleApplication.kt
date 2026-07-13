@@ -18,9 +18,9 @@ fun onTogglingRegionDynmap(player: ServerPlayer, region: Region) {
 fun onTogglingScopeDynmap(player: ServerPlayer, region: Region, scope: GeoScope): Int {
     require(region.containsScope(scope)) { "scope does not belong to region" }
     val oldValue = scope.showOnDynmap
-    scope.showOnDynmap = !oldValue
+    scope.setDynmapVisibility(!oldValue)
     if (!saveRegionData(player)) {
-        scope.showOnDynmap = oldValue
+        scope.setDynmapVisibility(oldValue)
         return 0
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.scope.dynmap.toggle", region.name, scope.scopeName, scope.showOnDynmap)!!)

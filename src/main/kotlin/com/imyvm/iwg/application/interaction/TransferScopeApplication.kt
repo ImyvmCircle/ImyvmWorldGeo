@@ -33,7 +33,7 @@ fun onScopeTransfer(
     val transferTime = System.currentTimeMillis()
     try {
         val scopeId = scope.requireAssignedScopeId()
-        scope.scopeName = resolvedName
+        scope.renameTo(resolvedName)
         targetRegion.addScope(scope)
         val newSourceHistory = originalSourceHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
         val newTargetHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
@@ -45,7 +45,7 @@ fun onScopeTransfer(
         RegionDatabase.recordAssignedScopeOwnership(scopeId, sourceRegion, targetRegion, transferTime)
     } catch (error: IllegalArgumentException) {
         if (targetRegion.containsScope(scope)) targetRegion.removeScope(scope)
-        scope.scopeName = originalName
+        scope.renameTo(originalName)
         sourceRegion.restoreScope(sourceIndex, scope)
         sourceRegion.replaceOwnershipHistory(originalSourceHistory)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)
@@ -53,7 +53,7 @@ fun onScopeTransfer(
     }
     if (!saveRegionData(player)) {
         targetRegion.removeScope(scope)
-        scope.scopeName = originalName
+        scope.renameTo(originalName)
         sourceRegion.restoreScope(sourceIndex, scope)
         sourceRegion.replaceOwnershipHistory(originalSourceHistory)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)

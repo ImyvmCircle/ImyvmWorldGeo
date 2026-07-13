@@ -26,11 +26,11 @@ fun onRegionMerge(
             val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
             if (!resolvedName.equals(scope.scopeName, ignoreCase = false)) renamedCount++
             sourceRegion.removeScope(scope)
-            scope.scopeName = resolvedName
+            scope.renameTo(resolvedName)
             targetRegion.addScope(scope)
         }
     } catch (error: IllegalArgumentException) {
-        originalNames.forEach { (scope, name) -> scope.scopeName = name }
+        originalNames.forEach { (scope, name) -> scope.renameTo(name) }
         sourceRegion.restoreScopes(sourceScopes)
         targetRegion.restoreScopes(targetScopes)
         throw error
@@ -50,7 +50,7 @@ fun onRegionMerge(
     val rollbackDatabase = RegionDatabase.mergeAndRemoveRegionReversibly(sourceRegion, targetRegion)
     if (!saveRegionData(player)) {
         rollbackDatabase()
-        originalNames.forEach { (scope, name) -> scope.scopeName = name }
+        originalNames.forEach { (scope, name) -> scope.renameTo(name) }
         sourceRegion.restoreScopes(sourceScopes)
         targetRegion.restoreScopes(targetScopes)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)
