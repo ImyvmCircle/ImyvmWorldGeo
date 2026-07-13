@@ -40,6 +40,20 @@ object PlayerInteractionApi {
     fun resetTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope) = onResettingTeleportPoint(player, region, scope)
     fun getTeleportPoint(scope: GeoScope) = onGettingTeleportPoint(scope)
     fun teleportPlayerToScope(player: ServerPlayer, targetRegion: Region, scope: GeoScope) = onTeleportingPlayer(player, targetRegion, scope)
+    fun toggleTeleportPointAccessibility(player: ServerPlayer, region: Region, scope: GeoScope) =
+        onTogglingTeleportPointAccessibility(player, region, scope)
+
+    /**
+     * Compatibility entry point that resolves the Scope's canonical owner from RegionDatabase.
+     *
+     * Detached copies, orphaned scopes, and unassigned scopes are rejected.
+     *
+     * @deprecated Since R11 (unreleased). Use [toggleTeleportPointAccessibility] with the
+     * executing player and owning Region. Eligible for removal only after two released versions
+     * and explicit maintainer approval.
+    */
+    @Deprecated("Use toggleTeleportPointAccessibility(player, region, scope)")
+    @Suppress("DEPRECATION")
     fun toggleTeleportPointAccessibility(scope: GeoScope) = onTogglingTeleportPointAccessibility(scope)
     fun modifyScope(player: ServerPlayer, region: Region, scopeName: String) = onModifyScope(player, region, scopeName)
     fun addSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?) = addRegionSetting(player, region, keyString, valueString, targetPlayerStr)

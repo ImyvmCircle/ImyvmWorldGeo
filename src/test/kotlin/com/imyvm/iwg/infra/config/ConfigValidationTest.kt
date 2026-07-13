@@ -1,5 +1,6 @@
 package com.imyvm.iwg.infra.config
 
+import com.imyvm.iwg.domain.component.MAX_TELEPORT_FALLBACK_SEARCH_RADIUS
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
@@ -25,6 +26,7 @@ class ConfigValidationTest {
         initializeConfigValidation()
         val oldTicker = CoreConfig.LAZY_TICKER_SECONDS.value
         val oldEffect = EffectConfig.EFFECT_DURATION_SECONDS.value
+        val oldFallbackRadius = TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
 
         assertFailsWith<IllegalArgumentException> { CoreConfig.LAZY_TICKER_SECONDS.setValue(0) }
         assertEquals(oldTicker, CoreConfig.LAZY_TICKER_SECONDS.value)
@@ -33,5 +35,12 @@ class ConfigValidationTest {
             EffectConfig.EFFECT_DURATION_SECONDS.setValue(CoreConfig.LAZY_TICKER_SECONDS.value)
         }
         assertEquals(oldEffect, EffectConfig.EFFECT_DURATION_SECONDS.value)
+
+        assertFailsWith<IllegalArgumentException> {
+            TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.setValue(
+                MAX_TELEPORT_FALLBACK_SEARCH_RADIUS + 1
+            )
+        }
+        assertEquals(oldFallbackRadius, TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value)
     }
 }

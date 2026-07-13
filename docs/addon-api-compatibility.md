@@ -30,6 +30,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `RegionDataApi.getEffectValueForRegion` | R9 (unreleased) | `getRegionEffectValue` or `getScopeEffectValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `RegionDataApi.getActiveEffectsForRegion` | R9 (unreleased) | `getRegionActiveEffects` or `getScopeActiveEffects` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `PlayerInteractionApi.getPermissionValueRegion` | R9 (unreleased) | Explicit default/Region/Scope and global/player methods | Deprecated | Two released versions, then maintainer review | JVM method delegates |
+| `PlayerInteractionApi.toggleTeleportPointAccessibility(GeoScope)` | R11 (unreleased) | `toggleTeleportPointAccessibility(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | JVM method delegates after resolving the canonical database owner; detached/orphan/unassigned scopes are rejected |
 | `Region.settings` / `GeoScope.settings` | Not scheduled | `RegionDataApi` for reads; `PlayerInteractionApi` setting operations for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getter returns a detached snapshot |
 | `Region.geometryScope` / `Region.ownershipHistoryByScope` | R10 (unreleased) | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots |
 | `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | R11 (unreleased) | Construct a complete validated `GeoShape`; use supported interaction APIs to replace Scope geometry | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; parameter getter returns a detached snapshot and incompatible partial updates are rejected |
@@ -82,3 +83,11 @@ Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `
 `GeoShape.shapeParameter` is a detached compatibility snapshot. Mutating the returned list no longer changes the live geometry, and `geoShapeType` cannot be changed independently from its parameters. Construct a complete validated `GeoShape` and use the supported Scope mutation operation instead of applying partial updates through the legacy properties.
 
 `GeoScope` identity, owner-dependent name, dimension, geometry, teleport point, accessibility, and Dynmap visibility are no longer independent mutation channels. Their legacy JVM setters remain linkable, but reject changes made outside the owning Region or application operation so ownership checks, rollback, and persistence cannot be bypassed.
+
+Use the owner-explicit teleport accessibility operation for new addon code:
+
+```kotlin
+PlayerInteractionApi.toggleTeleportPointAccessibility(player, region, scope)
+```
+
+The deprecated Scope-only overload remains linkable, but succeeds only for the exact live Scope object resolved from `RegionDatabase`; copying an assigned ID into another object does not grant a mutation path.

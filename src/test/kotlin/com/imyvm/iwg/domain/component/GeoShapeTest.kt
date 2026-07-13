@@ -5,8 +5,35 @@ import kotlin.test.assertFails
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
+import kotlin.test.assertFailsWith
 
 class GeoShapeTest {
+    @Test
+    fun `fallback radius is bounded before searching`() {
+        assertEquals(0, requireTeleportFallbackSearchRadius(0))
+        assertEquals(
+            MAX_TELEPORT_FALLBACK_SEARCH_RADIUS,
+            requireTeleportFallbackSearchRadius(MAX_TELEPORT_FALLBACK_SEARCH_RADIUS)
+        )
+        assertFailsWith<IllegalArgumentException> { requireTeleportFallbackSearchRadius(-1) }
+        assertFailsWith<IllegalArgumentException> {
+            requireTeleportFallbackSearchRadius(MAX_TELEPORT_FALLBACK_SEARCH_RADIUS + 1)
+        }
+    }
+
+    @Test
+    fun `fallback candidates are ordered by Manhattan distance`() {
+        val center = net.minecraft.core.BlockPos.ZERO
+        val verticallyNear = center.above()
+        val sameLayerFar = center.offset(8, 0, 8)
+
+        val result = findClosestMatchingBlockPos(center, 8) {
+            it == verticallyNear || it == sameLayerFar
+        }
+
+        assertEquals(verticallyNear, result)
+    }
+
     @Test
     fun `invalid parameters fail explicitly`() {
         assertFails { GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0)) }

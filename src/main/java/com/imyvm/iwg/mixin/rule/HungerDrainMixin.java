@@ -1,11 +1,7 @@
 package com.imyvm.iwg.mixin.rule;
 
 import com.imyvm.iwg.application.region.rule.helper.RuleHelper;
-import com.imyvm.iwg.domain.Region;
-import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.RuleKey;
-import com.imyvm.iwg.infra.RegionDatabase;
-import kotlin.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.player.Player;
@@ -24,10 +20,8 @@ public class HungerDrainMixin {
         Level level = self.level();
         if (!(level instanceof ServerLevel serverLevel)) return;
         BlockPos pos = self.blockPosition();
-        Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(serverLevel, pos.getX(), pos.getZ());
-        if (regionAndScope == null) return;
-        Boolean value = RuleHelper.getScopeRuleValue(regionAndScope.getFirst(), RuleKey.RPG_HUNGER, regionAndScope.getSecond());
-        if (value != null && !value) {
+        Boolean value = RuleHelper.getEffectiveRuleValueAt(serverLevel, pos, RuleKey.RPG_HUNGER);
+        if (Boolean.FALSE.equals(value)) {
             ci.cancel();
         }
     }

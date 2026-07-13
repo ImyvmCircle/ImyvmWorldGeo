@@ -5,6 +5,9 @@ package com.imyvm.iwg.application.region.rule.helper
 import com.imyvm.iwg.application.interaction.getDefaultValueForRule
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.*
+import com.imyvm.iwg.infra.RegionDatabase
+import net.minecraft.core.BlockPos
+import net.minecraft.world.level.Level
 
 fun getRegionRuleValue(region: Region, key: RuleKey): Boolean? =
     region.settingStore.rule(key)
@@ -23,6 +26,11 @@ fun getEffectiveRegionRuleValue(region: Region, key: RuleKey): Boolean =
 
 fun getEffectiveScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): Boolean =
     getScopeRuleValue(region, scope, key) ?: getDefaultValueForRule(key)
+
+fun getEffectiveRuleValueAt(world: Level, pos: BlockPos, key: RuleKey): Boolean? {
+    val (region, scope) = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return null
+    return getEffectiveScopeRuleValue(region, scope, key)
+}
 
 fun getRegionRuleValue(region: Region, key: ExtensionRuleKey): Boolean? {
     require(ExtensionSettingRegistry.isRegisteredRuleKey(key.id)) { "Extension rule key '${key.id}' is not registered." }

@@ -1,6 +1,5 @@
 package com.imyvm.iwg.domain.component
 
-import com.imyvm.iwg.util.geo.distanceOrderedGrid
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.network.chat.Component
@@ -8,6 +7,24 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.Level
+
+internal const val MAX_TELEPORT_FALLBACK_SEARCH_RADIUS = 8
+
+internal fun requireTeleportFallbackSearchRadius(searchRadius: Int): Int {
+    require(searchRadius in 0..MAX_TELEPORT_FALLBACK_SEARCH_RADIUS) {
+        "search radius must be between 0 and $MAX_TELEPORT_FALLBACK_SEARCH_RADIUS"
+    }
+    return searchRadius
+}
+
+internal fun findClosestMatchingBlockPos(
+    center: BlockPos,
+    searchRadius: Int,
+    matches: (BlockPos) -> Boolean
+): BlockPos? {
+    val radius = requireTeleportFallbackSearchRadius(searchRadius)
+    return BlockPos.findClosestMatch(center, radius, radius, matches).orElse(null)
+}
 
 class GeoShape(
     geoShapeType: GeoShapeType,
@@ -60,25 +77,9 @@ class GeoShape(
     }
 
     fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
-        require(searchRadius >= 0) { "search radius must not be negative" }
-        val minX = (center.x.toLong() - searchRadius).coerceAtLeast(Int.MIN_VALUE.toLong()).toInt()
-        val maxX = (center.x.toLong() + searchRadius).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-        val minZ = (center.z.toLong() - searchRadius).coerceAtLeast(Int.MIN_VALUE.toLong()).toInt()
-        val maxZ = (center.z.toLong() + searchRadius).coerceAtMost(Int.MAX_VALUE.toLong()).toInt()
-        val horizontal = distanceOrderedGrid(center.x, center.z, minX, maxX, minZ, maxZ)
-        for (verticalDistance in 0..searchRadius) {
-            val offsets = if (verticalDistance == 0) intArrayOf(0) else intArrayOf(-verticalDistance, verticalDistance)
-            for (dy in offsets) {
-                val y = center.y.toLong() + dy
-                if (y !in Int.MIN_VALUE.toLong()..Int.MAX_VALUE.toLong()) continue
-                for ((x, z) in horizontal) {
-                    if (x == center.x && y.toInt() == center.y && z == center.z) continue
-                    val candidate = BlockPos(x, y.toInt(), z)
-                    if (isValidTeleportPoint(world, candidate)) return candidate
-                }
-            }
+        return findClosestMatchingBlockPos(center, searchRadius) { candidate ->
+            candidate != center && isValidTeleportPoint(world, candidate)
         }
-        return null
     }
 
     fun validateParameters() {

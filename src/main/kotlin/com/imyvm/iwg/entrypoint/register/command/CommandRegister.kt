@@ -596,7 +596,7 @@ private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack
 
 private fun runToggleTeleportPointAccessibility(context: CommandContext<CommandSourceStack>): Int{
     val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
-    val result = onTogglingTeleportPointAccessibility(scope, player)
+    val result = onTogglingTeleportPointAccessibility(player, region, scope)
     if (result == 1) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName)!!)
     }

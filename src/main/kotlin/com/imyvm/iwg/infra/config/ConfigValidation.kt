@@ -1,6 +1,7 @@
 package com.imyvm.iwg.infra.config
 
 import com.imyvm.hoki.config.Option
+import com.imyvm.iwg.domain.component.requireTeleportFallbackSearchRadius
 
 internal fun positiveInt(path: String?, value: Int): Int {
     require(value > 0) { "$path must be greater than 0" }
@@ -23,7 +24,6 @@ private val positiveOptions by lazy { listOf(
     SelectionConfig.SELECTION_DISPLAY_PILLAR_STEP
 ) }
 private val nonNegativeOptions by lazy { listOf(
-    TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS,
     EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS,
     PermissionConfig.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS,
     PermissionConfig.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
@@ -35,6 +35,9 @@ fun initializeConfigValidation() {
 
     positiveOptions.forEach { validateOnChange(it, ::positiveInt) }
     nonNegativeOptions.forEach { validateOnChange(it, ::nonNegativeInt) }
+    validateOnChange(TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS) { _, value ->
+        requireTeleportFallbackSearchRadius(value)
+    }
 
     listOf(
         CoreConfig.LAZY_TICKER_SECONDS,
@@ -49,6 +52,9 @@ fun initializeConfigValidation() {
 private fun validateCurrentConfig() {
     positiveOptions.forEach { positiveInt(it.key, it.value) }
     nonNegativeOptions.forEach { nonNegativeInt(it.key, it.value) }
+    requireTeleportFallbackSearchRadius(
+        TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
+    )
     validateCurrentRelations()
 }
 

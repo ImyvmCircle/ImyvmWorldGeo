@@ -126,14 +126,14 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | SPAWN_MONSTERS | true | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
 | SPAWN_PHANTOMS | true | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
 | TNT_BLOCK_PROTECTION | false | When set to true, explosions from TNT, TNT minecarts, end crystals, beds used in the End, respawn anchors used outside the Nether, wither spawning, and wither skulls do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
-| ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. When set to false, the enderman PickUpBlockGoal is suppressed for the region. |
-| SCULK_SPREAD | true | Controls whether sculk can spread inside the region. When set to false, the sculk catalyst tick is suppressed, preventing all sculk spread within the region. |
+| ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. The rule is checked against the actual selected block immediately before removal. |
+| SCULK_SPREAD | true | Controls whether sculk growth, substrate conversion, and sculk-vein placement may write to blocks inside the region. World-generation spreading is unchanged. |
 | SNOW_GOLEM_TRAIL | true | Controls whether snow golems leave snow trails inside the region. When set to false, the setBlockState call for snow placement is suppressed. |
 | DISPENSER | true | Controls whether dispensers can fire into the region. When set to false, any dispenser whose output face points into the region is blocked, including dispensers placed outside the region. |
 | PRESSURE_PLATE | true | Controls whether pressure plates inside the region can be activated. When set to false, entity collision with pressure plates in the region is suppressed. |
-| PISTON | true | Controls whether pistons can push or break blocks inside the region. When set to false, any piston move that would affect a block inside the region is cancelled, including pistons placed outside the region. |
+| PISTON | true | Controls whether pistons can move blocks from or into the region or destroy blocks inside it. A denied source, destination, or destroy target cancels the move, including for pistons outside the region. |
 | RPG_NATURAL_REGEN | true | (RPG) Controls whether players naturally regenerate health inside the region. When set to false, the saturation-based heal from food is suppressed. |
-| RPG_FIRE_SPREAD | true | (RPG) Controls whether fire spreads inside the region. When set to false, the fire block tick is suppressed, preventing spread and natural burn-out. |
+| RPG_FIRE_SPREAD | true | (RPG) Controls whether fire may burn or place fire at target blocks inside the region. Source fire still ages and extinguishes normally. |
 | RPG_HUNGER | true | (RPG) Controls whether hunger and exhaustion drain for players inside the region. When set to false, all food exhaustion calls are suppressed. |
 
 #### Namespaced Extension Boolean Keys
@@ -235,9 +235,10 @@ The physical safety requirements are:
 
 These requirements allow indoor teleport points as long as the space is clear and the floor is solid.
 When teleportation is requested, the safety of the stored teleport point is rechecked against the current world state.
-If the point is no longer safe (e.g., due to subsequent block changes), the system searches a 5x5x5 cube
-centered on the original point (with height priority, meaning positions at the same vertical distance are
-checked before moving further away) for the nearest safe alternative. If a safe alternative is found,
+If the point is no longer safe (e.g., due to subsequent block changes), the system searches a configurable,
+bounded cube centered on the original point (radius 0-8, with a 5x5x5 cube used by default). Candidates are
+checked in increasing Manhattan distance using Minecraft's native block-position traversal, and must remain
+inside the scope and satisfy the same physical safety requirements. If a safe alternative is found,
 the teleport point is automatically updated and the player is teleported there with a warning message.
 If no safe alternative is found within the search area, teleportation is cancelled and the player is informed.
 
@@ -335,8 +336,8 @@ Handles player-triggered actions related to regions and their scopes.
 - `getTeleportPoint(scope: GeoScope)`
   Retrieves the teleport point of a scope.
 
-- `toggleTeleportPointAccessibility(scope: GeoScope)`
- Toggles the access permission of a scope's teleport point.
+- `toggleTeleportPointAccessibility(player: ServerPlayerEntity, region: Region, scope: GeoScope)`
+  Toggles the access permission of a scope's teleport point and persists the change. The scope must belong to the supplied region.
 
 - `teleportPlayerToScope(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
   Teleports a player to the teleport point of a scope.
