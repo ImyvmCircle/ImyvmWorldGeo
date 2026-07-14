@@ -144,6 +144,7 @@ object RegionDatabase {
     fun load() {
         val file = getDatabasePath()
         if (!file.toFile().exists()) {
+            rejectOrphanCompanionFiles(listOf(getDynmapConfigPath(), getPlayerStatsPath()))
             regions = mutableListOf()
             regionPlayerStats.clear()
             return
@@ -152,6 +153,11 @@ object RegionDatabase {
         regions = readRegions(file)
         loadDynmapVisibility()
         loadPlayerStats()
+    }
+
+    internal fun rejectOrphanCompanionFiles(companionFiles: List<Path>) {
+        val orphan = companionFiles.firstOrNull(Files::exists) ?: return
+        throw IOException("Region database is missing while companion file exists: ${orphan.fileName}")
     }
 
     internal fun readRegions(path: Path): MutableList<Region> {

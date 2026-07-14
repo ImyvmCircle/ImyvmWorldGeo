@@ -19,6 +19,25 @@ import kotlin.test.assertTrue
 
 class RegionDatabaseTest {
     @Test
+    fun `rejects orphan companion files without modifying them`() = withTempDirectory { directory ->
+        val dynmap = directory.resolve("dynmap.json")
+        val playerStats = directory.resolve("player-stats.json")
+        val companionFiles = listOf(dynmap, playerStats)
+
+        RegionDatabase.rejectOrphanCompanionFiles(companionFiles)
+
+        companionFiles.forEach { orphan ->
+            Files.writeString(orphan, "original")
+
+            assertFailsWith<IOException> {
+                RegionDatabase.rejectOrphanCompanionFiles(companionFiles)
+            }
+            assertEquals("original", Files.readString(orphan))
+            Files.delete(orphan)
+        }
+    }
+
+    @Test
     fun `region mutations require both canonical database objects`() {
         val source = Region("source", 1, mutableListOf())
         val target = Region("target", 2, mutableListOf())
