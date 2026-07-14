@@ -11,6 +11,8 @@ fun onScopeTransfer(
     scopeName: String,
     targetRegion: Region
 ): Int {
+    RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
+
     if (sourceRegion.numberID == targetRegion.numberID) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.same_region")!!)
         return 0

@@ -19,6 +19,30 @@ import kotlin.test.assertTrue
 
 class RegionDatabaseTest {
     @Test
+    fun `region mutations require both canonical database objects`() {
+        val source = Region("source", 1, mutableListOf())
+        val target = Region("target", 2, mutableListOf())
+        val currentRegions = listOf(source, target)
+
+        RegionDatabase.requireCanonicalRegions(source, target, currentRegions)
+
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.requireCanonicalRegions(
+                Region("source", 1, mutableListOf()),
+                target,
+                currentRegions
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.requireCanonicalRegions(
+                source,
+                Region("target", 2, mutableListOf()),
+                currentRegions
+            )
+        }
+    }
+
+    @Test
     fun `round trips current database format`() = withTempDirectory { directory ->
         val path = directory.resolve("regions.db")
         val player = UUID.randomUUID()

@@ -10,6 +10,8 @@ fun onRegionMerge(
     sourceRegion: Region,
     targetRegion: Region
 ): Int {
+    RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
+
     if (sourceRegion.numberID == targetRegion.numberID) {
         player.sendSystemMessage(Translator.tr("interaction.meta.region.merge.error.same_region")!!)
         return 0

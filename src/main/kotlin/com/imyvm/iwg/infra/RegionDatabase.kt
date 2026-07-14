@@ -197,6 +197,16 @@ object RegionDatabase {
         regionPlayerStats.remove(regionToDelete.numberID)
     }
 
+    internal fun requireCanonicalRegions(
+        sourceRegion: Region,
+        targetRegion: Region,
+        currentRegions: List<Region> = regions
+    ) {
+        require(currentRegions.any { it === sourceRegion } && currentRegions.any { it === targetRegion }) {
+            "regions must be canonical database objects"
+        }
+    }
+
     internal fun removeRegionReversibly(region: Region): () -> Unit {
         val index = regions.indexOf(region)
         require(index >= 0) { "region does not belong to database" }
@@ -210,6 +220,7 @@ object RegionDatabase {
     }
 
     internal fun mergeAndRemoveRegionReversibly(sourceRegion: Region, targetRegion: Region): () -> Unit {
+        requireCanonicalRegions(sourceRegion, targetRegion)
         val sourceStats = regionPlayerStats[sourceRegion.numberID]?.detachedCopy()
         val targetStats = regionPlayerStats[targetRegion.numberID]?.detachedCopy()
         val restoreRegion = removeRegionReversibly(sourceRegion)
