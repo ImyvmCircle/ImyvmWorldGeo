@@ -32,6 +32,9 @@ class GeoShape(
 ) {
     private var geometry: ShapeGeometry = ShapeGeometry.from(geoShapeType, shapeParameter)
 
+    internal val typedGeometry: ShapeGeometry
+        get() = geometry
+
     var geoShapeType: GeoShapeType
         get() = geometry.type
         set(value) {

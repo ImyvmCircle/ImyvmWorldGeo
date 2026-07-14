@@ -388,7 +388,7 @@ Handles player-triggered actions related to regions and their scopes.
   Queries the same persistent aggregated player statistics as `queryRegionNaturalStats(..., "players")`.
 
 - `toggleActionBar(player: ServerPlayerEntity)`
-  Toggles the action bar display for regions for the player. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered using the scope boundary visual effect. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries are still shown.
+  Toggles the action bar display for regions for the player. When enabling, scopes with a shape in the player's current world have their boundaries immediately rendered using a bounded best-effort visual effect. Very large or numerous boundaries are sampled within one fixed per-player render budget. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries use any remaining budget.
 
 - `estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null)`  
   Estimates the area of a region to be created based on selected points and shape type.  
@@ -690,7 +690,7 @@ Provides utility functions for region data to improve usability for extension mo
   List all regions.
 
 - `/imyvmWorldGeo toggle`  
-  Toggle the action bar display for regions. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered. Scope boundaries remain visible while in selection mode; the scope being modified is highlighted in orange.
+  Toggle the action bar display for regions. When enabling, current-world scope boundaries are rendered on a bounded best-effort basis. Very large or numerous boundaries are sampled within one fixed per-player render budget. Scope boundaries remain visible while in selection mode; the scope being modified is highlighted in orange and other scopes use any remaining budget.
 
 - `/imyvmWorldGeo help`  
   Show the help message.
