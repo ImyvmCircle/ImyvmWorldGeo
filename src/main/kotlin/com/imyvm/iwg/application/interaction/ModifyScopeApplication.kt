@@ -15,7 +15,7 @@ fun onModifyScope(
     scopeName: String
 ): Int {
     val existingScope = getScopeOrNotify(player, targetRegion, scopeName) ?: return 0
-    val selectedPositions = checkAndGetPlayerPositions(player) ?: return 0
+    val selectedPositions = checkAndGetPlayerPositions(player, targetRegion, existingScope) ?: return 0
     val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
     if (shapeType == GeoShapeType.UNKNOWN) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type")!!)
@@ -26,17 +26,33 @@ fun onModifyScope(
         GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
         GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
         GeoShapeType.RECTANGLE -> modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
-        GeoShapeType.UNKNOWN -> false
     }.let { if (it) 1 else 0 }
 }
 
-private fun checkAndGetPlayerPositions(player: ServerPlayer): MutableList<BlockPos>? {
-    val playerUUID = player.uuid
-    if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+private fun checkAndGetPlayerPositions(
+    player: ServerPlayer,
+    targetRegion: Region,
+    existingScope: GeoScope
+): MutableList<BlockPos>? {
+    val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
+    if (state == null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
         return null
     }
-    return ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points
+    if (!isModifySelectionFor(state, existingScope)) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.modify_target_mismatch")!!)
+        return null
+    }
+    val error = validateModifySelectionTarget(
+        targetRegion,
+        existingScope,
+        player.level().dimension().identifier()
+    )
+    if (error != null) {
+        sendModifySelectionTargetError(player, error)
+        return null
+    }
+    return state.points
 }
 
 private fun modifyPolygonScope(

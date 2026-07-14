@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.interaction.scope
 
-import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.interaction.clearPlayerSelection
 import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.interaction.saveRegionData
 import com.imyvm.iwg.application.region.RegionFactory
@@ -37,7 +37,7 @@ fun recreateScope(
                 false
             } else {
                 clearSelectionDisplay(player)
-                ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
+                clearPlayerSelection(player.uuid)
                 true
             }
         }

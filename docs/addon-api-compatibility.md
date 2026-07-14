@@ -91,3 +91,16 @@ PlayerInteractionApi.toggleTeleportPointAccessibility(player, region, scope)
 ```
 
 The deprecated Scope-only overload remains linkable, but succeeds only for the exact live Scope object resolved from `RegionDatabase`; copying an assigned ID into another object does not grant a mutation path.
+
+## Selection API contract
+
+Call `PlayerInteractionApi` selection operations on the Minecraft server thread. A normal selection
+may create a Region or Scope, while a modification selection may modify only the exact live Scope it
+was started for. These modes are not interchangeable.
+
+`startSelectionForModify` accepts only an assigned canonical Scope currently owned by
+`RegionDatabase`, with a supported non-`UNKNOWN` shape, in the executing player's current dimension.
+Detached copies, orphaned or unassigned Scopes, cross-dimension targets, and attempts to apply a
+selection to another Scope fail without mutation. Disconnecting, changing dimension, or stopping the
+server clears transient selection state; deleting a Region or Scope clears selections that reference
+it only after the deletion is successfully persisted.

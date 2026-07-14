@@ -7,32 +7,116 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.domain.component.SelectionState
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.AssignedScopeId
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
+import net.minecraft.resources.Identifier
 import net.minecraft.server.level.ServerPlayer
+import java.util.UUID
+
+internal enum class ModifySelectionTargetError {
+    INVALID_TARGET,
+    WRONG_WORLD
+}
+
+internal fun isCreationSelection(state: SelectionState): Boolean =
+    state.hypotheticalShape !is HypotheticalShape.ModifyExisting
+
+internal fun isModifySelectionFor(state: SelectionState, scope: GeoScope): Boolean =
+    (state.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope === scope
+
+internal fun resetSelectionState(state: SelectionState, shapeType: GeoShapeType?): Boolean {
+    if (shapeType != null && !isCreationSelection(state)) return false
+    state.points.clear()
+    if (shapeType != null) state.hypotheticalShape = HypotheticalShape.Normal(shapeType)
+    return true
+}
+
+internal fun validateModifySelectionStartTarget(
+    scope: GeoScope,
+    playerWorldId: Identifier,
+    findScope: (AssignedScopeId) -> Pair<Region, GeoScope>? = RegionDatabase::getScopeByAssignedId
+): ModifySelectionTargetError? {
+    val scopeId = scope.assignedScopeIdOrNull ?: return ModifySelectionTargetError.INVALID_TARGET
+    val canonicalScope = findScope(scopeId)?.second
+    return validateModifySelectionScope(scope, canonicalScope, playerWorldId)
+}
+
+internal fun validateModifySelectionTarget(
+    region: Region,
+    scope: GeoScope,
+    playerWorldId: Identifier,
+    findScope: (AssignedScopeId) -> Pair<Region, GeoScope>? = RegionDatabase::getScopeByAssignedId
+): ModifySelectionTargetError? {
+    val scopeId = scope.assignedScopeIdOrNull ?: return ModifySelectionTargetError.INVALID_TARGET
+    val canonicalTarget = findScope(scopeId) ?: return ModifySelectionTargetError.INVALID_TARGET
+    if (canonicalTarget.first !== region) return ModifySelectionTargetError.INVALID_TARGET
+    return validateModifySelectionScope(scope, canonicalTarget.second, playerWorldId)
+}
+
+private fun validateModifySelectionScope(
+    scope: GeoScope,
+    canonicalScope: GeoScope?,
+    playerWorldId: Identifier
+): ModifySelectionTargetError? {
+    val shape = scope.geoShape
+    if (canonicalScope !== scope || shape == null || shape.geoShapeType == GeoShapeType.UNKNOWN) {
+        return ModifySelectionTargetError.INVALID_TARGET
+    }
+    return if (scope.worldId == playerWorldId) null else ModifySelectionTargetError.WRONG_WORLD
+}
+
+internal fun clearPlayerSelection(playerId: UUID): Boolean =
+    ImyvmWorldGeo.pointSelectingPlayers.remove(playerId) != null
+
+internal fun clearAllSelections() {
+    ImyvmWorldGeo.pointSelectingPlayers.clear()
+}
+
+internal fun clearSelectionsReferencing(scopes: Collection<GeoScope>) {
+    if (scopes.isEmpty()) return
+    for ((playerId, state) in ImyvmWorldGeo.pointSelectingPlayers) {
+        val target = (state.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope ?: continue
+        if (scopes.any { it === target }) {
+            ImyvmWorldGeo.pointSelectingPlayers.remove(playerId, state)
+        }
+    }
+}
+
+internal fun onPlayerSelectionWorldChanged(player: ServerPlayer) {
+    if (clearPlayerSelection(player.uuid)) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.cleared.world_change")!!)
+    }
+}
 
 fun onStartSelection(player: ServerPlayer, shapeType: GeoShapeType? = null): Int {
     val playerUUID = player.uuid
-    return if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.pointSelectingPlayers[playerUUID] = SelectionState(
-            hypotheticalShape = shapeType?.let { HypotheticalShape.Normal(it) }
-        )
-        if (shapeType != null) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.select.start.with_shape", shapeType.name)!!)
-        } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.select.start")!!)
-        }
-        1
-    } else {
+    if (ImyvmWorldGeo.pointSelectingPlayers[playerUUID] != null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
-        0
+        return 0
     }
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeType.name)!!)
+        return 0
+    }
+    val state = SelectionState(hypotheticalShape = shapeType?.let { HypotheticalShape.Normal(it) })
+    if (ImyvmWorldGeo.pointSelectingPlayers.putIfAbsent(playerUUID, state) != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
+        return 0
+    }
+    if (shapeType != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.start.with_shape", shapeType.name)!!)
+    } else {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.start")!!)
+    }
+    return 1
 }
 
 fun onStopSelection(player: ServerPlayer): Int {
     val playerUUID = player.uuid
-    return if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+    return if (clearPlayerSelection(playerUUID)) {
         clearSelectionDisplay(player)
-        ImyvmWorldGeo.pointSelectingPlayers.remove(playerUUID)
         player.sendSystemMessage(Translator.tr("interaction.meta.select.stop")!!)
         1
     } else {
@@ -42,31 +126,38 @@ fun onStopSelection(player: ServerPlayer): Int {
 }
 
 fun onResetSelection(player: ServerPlayer, shapeType: GeoShapeType? = null): Int {
-    val playerUUID = player.uuid
-    return if (ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-        val state = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]!!
-        state.points.clear()
-        if (shapeType != null) {
-            state.hypotheticalShape = HypotheticalShape.Normal(shapeType)
-            player.sendSystemMessage(Translator.tr("interaction.meta.select.reset.with_shape", shapeType.name)!!)
-        } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.select.reset")!!)
-        }
-        1
-    } else {
-        player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
-        0
-    }
-}
-
-fun onSetSelectionShape(player: ServerPlayer, shapeType: GeoShapeType): Int {
-    val playerUUID = player.uuid
-    if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+    val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
+    if (state == null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
         return 0
     }
-    val state = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]!!
-    if (state.hypotheticalShape is HypotheticalShape.ModifyExisting) {
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeType.name)!!)
+        return 0
+    }
+    if (!resetSelectionState(state, shapeType)) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.shape.cannot_change_modify")!!)
+        return 0
+    }
+    if (shapeType != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.reset.with_shape", shapeType.name)!!)
+    } else {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.reset")!!)
+    }
+    return 1
+}
+
+fun onSetSelectionShape(player: ServerPlayer, shapeType: GeoShapeType): Int {
+    val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
+    if (state == null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
+        return 0
+    }
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeType.name)!!)
+        return 0
+    }
+    if (!isCreationSelection(state)) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.shape.cannot_change_modify")!!)
         return 0
     }
@@ -77,14 +168,31 @@ fun onSetSelectionShape(player: ServerPlayer, shapeType: GeoShapeType): Int {
 
 fun onStartSelectionForModify(player: ServerPlayer, scope: GeoScope): Int {
     val playerUUID = player.uuid
-    return if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
-        ImyvmWorldGeo.pointSelectingPlayers[playerUUID] = SelectionState(
-            hypotheticalShape = HypotheticalShape.ModifyExisting(scope)
-        )
-        player.sendSystemMessage(buildModifyStartMessage(scope))
-        1
-    } else {
+    if (ImyvmWorldGeo.pointSelectingPlayers[playerUUID] != null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
-        0
+        return 0
     }
+    val error = validateModifySelectionStartTarget(
+        scope,
+        player.level().dimension().identifier()
+    )
+    if (error != null) {
+        sendModifySelectionTargetError(player, error)
+        return 0
+    }
+    val state = SelectionState(hypotheticalShape = HypotheticalShape.ModifyExisting(scope))
+    if (ImyvmWorldGeo.pointSelectingPlayers.putIfAbsent(playerUUID, state) != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
+        return 0
+    }
+    player.sendSystemMessage(buildModifyStartMessage(scope))
+    return 1
+}
+
+internal fun sendModifySelectionTargetError(player: ServerPlayer, error: ModifySelectionTargetError) {
+    val key = when (error) {
+        ModifySelectionTargetError.INVALID_TARGET -> "interaction.meta.select.modify.invalid_target"
+        ModifySelectionTargetError.WRONG_WORLD -> "interaction.meta.select.modify.wrong_world"
+    }
+    player.sendSystemMessage(Translator.tr(key)!!)
 }

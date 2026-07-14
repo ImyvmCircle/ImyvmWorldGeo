@@ -14,6 +14,7 @@ fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false)
         rollback()
         return
     }
+    clearSelectionsReferencing(region.scopes)
     region.scopes.forEach { EffectOverlayService.clearScope(it.requireAssignedScopeId()) }
     if (isApi.not()) {
         player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
@@ -28,6 +29,7 @@ fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
         region.restoreScope(index, existingScope)
         return
     }
+    clearSelectionsReferencing(listOf(existingScope))
     EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())
     player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
 }

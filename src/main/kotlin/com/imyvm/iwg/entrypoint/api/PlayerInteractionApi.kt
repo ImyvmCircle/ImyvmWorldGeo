@@ -18,10 +18,20 @@ import net.minecraft.core.BlockPos
  */
 @Suppress("unused")
 object PlayerInteractionApi {
+    /** Starts a normal creation selection. Call selection operations on the Minecraft server thread. */
     fun startSelection(player: ServerPlayer, shapeType: GeoShapeType? = null) = onStartSelection(player, shapeType)
     fun stopSelection(player: ServerPlayer) = onStopSelection(player)
+
+    /** Clears points without changing mode. A shape may be supplied only for a creation selection. */
     fun resetSelection(player: ServerPlayer, shapeType: GeoShapeType? = null) = onResetSelection(player, shapeType)
     fun setSelectionShape(player: ServerPlayer, shapeType: GeoShapeType) = onSetSelectionShape(player, shapeType)
+
+    /**
+     * Starts a modification selection for an exact live Scope in RegionDatabase.
+     *
+     * The Scope must be assigned, have a supported geometry, and belong to the player's current
+     * dimension. Detached copies, orphaned Scopes, and later attempts to modify another Scope fail.
+     */
     fun startSelectionForModify(player: ServerPlayer, scope: GeoScope) = onStartSelectionForModify(player, scope)
     fun createRegion(player: ServerPlayer, name: String?, idMark: Int = 0) = onRegionCreation(player, name, null, isApi = true, idMark)
     fun createAndGetRegion(player: ServerPlayer, name: String?, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, null, isApi = true, idMark)
