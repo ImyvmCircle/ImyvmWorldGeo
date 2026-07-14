@@ -35,6 +35,38 @@ class GeoShapeTest {
     }
 
     @Test
+    fun `initial teleport candidate must be safe and inside the shape`() {
+        val shape = GeoShape(GeoShapeType.RECTANGLE, mutableListOf(0, 0, 10, 10))
+        val inside = net.minecraft.core.BlockPos(5, 64, 5)
+        val outside = net.minecraft.core.BlockPos(11, 64, 5)
+
+        assertTrue(shape.isValidTeleportPoint(inside, physicallySafe = true))
+        assertFalse(shape.isValidTeleportPoint(outside, physicallySafe = true))
+        assertFalse(shape.isValidTeleportPoint(inside, physicallySafe = false))
+    }
+
+    @Test
+    fun `legacy teleport generation uses constant time representative points`() {
+        assertEquals(
+            3 to 4,
+            GeoShape(GeoShapeType.CIRCLE, mutableListOf(3, 4, 2)).typedGeometry.representativePoint()
+        )
+        assertEquals(
+            -1 to -1,
+            GeoShape(
+                GeoShapeType.RECTANGLE,
+                mutableListOf(Int.MIN_VALUE, Int.MIN_VALUE, Int.MAX_VALUE, Int.MAX_VALUE)
+            ).typedGeometry.representativePoint()
+        )
+        assertEquals(
+            1 to 2,
+            GeoShape(GeoShapeType.POLYGON, mutableListOf(1, 2, 5, 2, 1, 6))
+                .typedGeometry.representativePoint()
+        )
+        assertEquals(null, GeoShape(GeoShapeType.UNKNOWN, mutableListOf()).typedGeometry.representativePoint())
+    }
+
+    @Test
     fun `invalid parameters fail explicitly`() {
         assertFails { GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0)) }
         assertFails { GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, -1)) }

@@ -66,8 +66,12 @@ class GeoShape(
 
     fun calculateArea(): Double = geometry.calculateArea()
 
+    /**
+     * Retained for JVM compatibility. Checks one deterministic representative surface position
+     * and returns null when that position is unsafe; it does not scan the complete shape.
+     */
     fun generateTeleportPoint(world: Level): BlockPos? {
-        return generateTeleportPointByType(world)
+        return geometry.representativePoint()?.let { generateSurfacePoint(world, it) }
     }
 
     fun certificateTeleportPoint(world: Level, pointToTest: BlockPos): Boolean {
@@ -120,14 +124,6 @@ class GeoShape(
         return Translator.tr("geo.shape.polygon.info", coords, area)!!
     }
 
-    private fun generateTeleportPointByType(world: Level): BlockPos? {
-        for (point in geometry.pointSequence()) {
-            val blockPos = generateSurfacePoint(world, point)
-            if (blockPos != null) return blockPos
-        }
-        return null
-    }
-
     private fun generateSurfacePoint(world: Level, point: Pair<Int, Int>): BlockPos? {
         val x = point.first
         val z = point.second
@@ -141,9 +137,11 @@ class GeoShape(
     }
 
     private fun isValidTeleportPoint(world: Level, pos: BlockPos): Boolean {
-        if (!isPhysicalSafe(world, pos)) return false
-        return this.containsPoint(pos.x, pos.z)
+        return isValidTeleportPoint(pos, isPhysicalSafe(world, pos))
     }
+
+    internal fun isValidTeleportPoint(pos: BlockPos, physicallySafe: Boolean): Boolean =
+        physicallySafe && containsPoint(pos.x, pos.z)
 
     companion object {
         fun isPhysicalSafe(world: Level, pos: BlockPos): Boolean {

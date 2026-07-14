@@ -234,6 +234,9 @@ The physical safety requirements are:
 4. Neither the feet block nor the head block may contain a liquid (water or lava), to prevent drowning or burning.
 
 These requirements allow indoor teleport points as long as the space is clear and the floor is solid.
+When a scope is created, the player's position is used only if it is inside the new scope and physically safe.
+Otherwise, the same bounded fallback search described below is performed around the player; if no valid
+position is found, the scope is created without a teleport point and one can be set later.
 When teleportation is requested, the safety of the stored teleport point is rechecked against the current world state.
 If the point is no longer safe (e.g., due to subsequent block changes), the system searches a configurable,
 bounded cube centered on the original point (radius 0-8, with a 5x5x5 cube used by default). Candidates are

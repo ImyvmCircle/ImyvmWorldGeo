@@ -101,6 +101,8 @@ Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `
 
 Polygon geometry is limited to 256 vertices. The complete `GeoShape` constructor and compatibility setter reject larger polygons, and persisted polygons above this safety limit fail fast during loading. The database tag, parameter-count encoding, and supported `GeoShape` JVM descriptors are unchanged; addons that generate larger polygons must simplify them to 256 vertices or fewer before construction.
 
+`GeoShape.generateTeleportPoint(Level)` remains JVM-linkable but no longer scans every block in a shape. It checks one deterministic representative surface position and returns `null` when that position is unsafe. Normal Region and Scope creation instead validates the player's position and uses the configured bounded fallback search; addons that require a specific location should set and validate that location explicitly.
+
 `GeoScope` identity, owner-dependent name, dimension, geometry, teleport point, accessibility, and Dynmap visibility are no longer independent mutation channels. Their legacy JVM setters remain linkable, but reject changes made outside the owning Region or application operation so ownership checks, rollback, and persistence cannot be bypassed.
 
 Use the owner-explicit teleport accessibility operation for new addon code:

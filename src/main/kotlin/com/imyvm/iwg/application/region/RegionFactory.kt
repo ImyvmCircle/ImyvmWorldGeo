@@ -3,13 +3,13 @@ package com.imyvm.iwg.application.region
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
-import com.imyvm.iwg.domain.component.GeoShape.Companion.isPhysicalSafe
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.generateNewScopeIdRaw
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.resources.Identifier
@@ -113,15 +113,20 @@ object RegionFactory {
     }
 
     private fun getTeleportPoint(
-        playerExecutor: ServerPlayer?,
+        playerExecutor: ServerPlayer,
         geoShape: GeoShape
     ): BlockPos? {
-        if (playerExecutor == null) return null
-
         val playerWorld = playerExecutor.level()
         val playerPosition = playerExecutor.blockPosition()
-        return if (isPhysicalSafe(playerWorld, playerPosition)) playerPosition
-        else geoShape.generateTeleportPoint(playerWorld)
+        return if (geoShape.certificateTeleportPoint(playerWorld, playerPosition)) {
+            playerPosition
+        } else {
+            geoShape.findNearestValidTeleportPoint(
+                playerWorld,
+                playerPosition,
+                TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
+            )
+        }
     }
 
     private fun createGeoShape(

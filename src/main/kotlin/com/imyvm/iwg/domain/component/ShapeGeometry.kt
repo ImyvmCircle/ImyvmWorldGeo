@@ -1,9 +1,6 @@
 package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.util.geo.circleContainsPoint
-import com.imyvm.iwg.util.geo.generateShapePointSequence
-import com.imyvm.iwg.util.geo.iterateCirclePointSequence
-import com.imyvm.iwg.util.geo.iterateRectanglePointSequence
 import com.imyvm.iwg.util.geo.isConvexCoordinates
 import com.imyvm.iwg.util.geo.polygonContainsPointCoordinates
 import com.imyvm.iwg.util.geo.polygonTwiceArea
@@ -22,7 +19,7 @@ internal sealed interface ShapeGeometry {
 
     fun calculateArea(): Double
 
-    fun pointSequence(): Sequence<Pair<Int, Int>>
+    fun representativePoint(): Pair<Int, Int>?
 
     companion object {
         fun from(type: GeoShapeType, parameters: List<Int>): ShapeGeometry = when (type) {
@@ -70,7 +67,7 @@ internal data class CircleGeometry(
 
     override fun calculateArea(): Double = Math.PI * radius.toDouble() * radius
 
-    override fun pointSequence(): Sequence<Pair<Int, Int>> = iterateCirclePointSequence(centerX, centerZ, radius)
+    override fun representativePoint(): Pair<Int, Int> = centerX to centerZ
 }
 
 internal data class RectangleGeometry(
@@ -91,13 +88,14 @@ internal data class RectangleGeometry(
 
     override fun calculateArea(): Double = (east.toDouble() - west) * (south.toDouble() - north)
 
-    override fun pointSequence(): Sequence<Pair<Int, Int>> = iterateRectanglePointSequence(west, north, east, south)
+    override fun representativePoint(): Pair<Int, Int> =
+        (west.toLong() + (east.toLong() - west) / 2).toInt() to
+            (north.toLong() + (south.toLong() - north) / 2).toInt()
 }
 
 internal class PolygonGeometry(parameters: IntArray) : ShapeGeometry {
     override val type: GeoShapeType = GeoShapeType.POLYGON
     private val coordinates: IntArray = parameters.copyOf()
-    private val bounds: IntArray
 
     val vertexCount: Int
         get() = coordinates.size / 2
@@ -111,7 +109,6 @@ internal class PolygonGeometry(parameters: IntArray) : ShapeGeometry {
         }
         require(hasDistinctVertices()) { "polygon vertices must be distinct" }
         require(isConvexCoordinates(vertexCount, ::x, ::z)) { "polygon must be convex and non-degenerate" }
-        bounds = calculateBounds()
     }
 
     fun x(index: Int): Int = coordinates[index * 2]
@@ -126,8 +123,7 @@ internal class PolygonGeometry(parameters: IntArray) : ShapeGeometry {
 
     override fun calculateArea(): Double = polygonTwiceArea(vertexCount, ::x, ::z).toDouble() / 2.0
 
-    override fun pointSequence(): Sequence<Pair<Int, Int>> =
-        generateShapePointSequence(bounds[0], bounds[2], bounds[1], bounds[3], ::containsPoint)
+    override fun representativePoint(): Pair<Int, Int> = x(0) to z(0)
 
     private fun hasDistinctVertices(): Boolean {
         val seen = HashSet<Long>(vertexCount)
@@ -138,19 +134,6 @@ internal class PolygonGeometry(parameters: IntArray) : ShapeGeometry {
         return true
     }
 
-    private fun calculateBounds(): IntArray {
-        var minX = x(0)
-        var minZ = z(0)
-        var maxX = minX
-        var maxZ = minZ
-        for (index in 1 until vertexCount) {
-            minX = minOf(minX, x(index))
-            minZ = minOf(minZ, z(index))
-            maxX = maxOf(maxX, x(index))
-            maxZ = maxOf(maxZ, z(index))
-        }
-        return intArrayOf(minX, minZ, maxX, maxZ)
-    }
 }
 
 internal data object UnknownGeometry : ShapeGeometry {
@@ -162,5 +145,5 @@ internal data object UnknownGeometry : ShapeGeometry {
 
     override fun calculateArea(): Double = 0.0
 
-    override fun pointSequence(): Sequence<Pair<Int, Int>> = emptySequence()
+    override fun representativePoint(): Pair<Int, Int>? = null
 }
