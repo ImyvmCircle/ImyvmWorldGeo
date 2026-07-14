@@ -289,6 +289,7 @@
   "selection.feedback.header_undo": "&eUndid point: &b({0},{1})&e.",
   "selection.feedback.all_points_header": "&7Selection (covers full height, bedrock to sky):",
   "selection.feedback.modify.existing_header": "&6Existing scope &b{0}&6 ({1}):",
+  "selection.feedback.modify.existing_omitted": "&8... {0} more existing vertices omitted.",
   "selection.feedback.modify.new_header": "&aNew selection:",
   "selection.feedback.none": "&7(none)",
   "selection.feedback.point_line": "&b({0},{1}){2}",

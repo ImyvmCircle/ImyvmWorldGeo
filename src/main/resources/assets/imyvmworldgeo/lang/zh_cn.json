@@ -289,6 +289,7 @@
   "selection.feedback.header_undo": "&e已撤销点：&b({0},{1})&e。",
   "selection.feedback.all_points_header": "&7当前选点（覆盖从基岩到天顶的完整高度）：",
   "selection.feedback.modify.existing_header": "&6地方 &b{0}&6 现有选点（{1}）：",
+  "selection.feedback.modify.existing_omitted": "&8……另有 {0} 个现有顶点未显示。",
   "selection.feedback.modify.new_header": "&a新选点：",
   "selection.feedback.none": "&7（无）",
   "selection.feedback.point_line": "&b({0},{1}){2}",

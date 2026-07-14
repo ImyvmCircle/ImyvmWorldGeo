@@ -1,11 +1,15 @@
 package com.imyvm.iwg.application.selection
 
-import com.imyvm.iwg.application.interaction.scope.getPolygonPoints
 import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.component.CircleGeometry
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
+import com.imyvm.iwg.domain.component.PolygonGeometry
+import com.imyvm.iwg.domain.component.RectangleGeometry
 import com.imyvm.iwg.domain.component.SelectionState
+import com.imyvm.iwg.domain.component.ShapeGeometry
+import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.infra.config.GeoConfig
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
@@ -19,6 +23,8 @@ import net.minecraft.network.chat.Component
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.hypot
+
+private const val MAX_DISPLAYED_EXISTING_POINTS = 8
 
 fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
@@ -44,16 +50,18 @@ fun buildPointUndoMessage(state: SelectionState, removedPos: BlockPos): Componen
 
 fun buildModifyStartMessage(scope: GeoScope): Component {
     val msg = StringBuilder()
-    val shapeType = scope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
+    val geometry = scope.geoShape?.typedGeometry ?: UnknownGeometry
+    val oldPoints = extractScopePoints(geometry)
+    val shapeType = geometry.type
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
     msg.append("\n")
     msg.append(Translator.raw("interaction.meta.select.start.modify_scope", scope.scopeName, shapeType.name) ?: "")
     msg.append("\n")
-    appendExistingScopePoints(msg, scope, shapeType)
+    appendExistingScopePoints(msg, scope.scopeName, shapeType, oldPoints)
     msg.append("\n")
     appendModifyShapeParameterBlock(msg, shapeType, scope)
     msg.append("\n")
-    appendModifyGuidance(msg, shapeType, emptyList(), scope)
+    appendModifyGuidance(msg, geometry, emptyList(), scope.scopeName, oldPoints)
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
     return TextParser.parse(msg.toString())
@@ -256,12 +264,14 @@ private fun validatePolygonPoints(points: List<BlockPos>): String {
 }
 
 private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventPos: BlockPos, scope: GeoScope, isUndo: Boolean) {
-    val shapeType = scope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
+    val geometry = scope.geoShape?.typedGeometry ?: UnknownGeometry
+    val oldPoints = extractScopePoints(geometry)
+    val shapeType = geometry.type
     val newPoints = state.points
 
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
     msg.append("\n")
-    appendExistingScopePoints(msg, scope, shapeType)
+    appendExistingScopePoints(msg, scope.scopeName, shapeType, oldPoints)
 
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.modify.new_header") ?: "")
@@ -270,7 +280,7 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append(Translator.raw("selection.feedback.none") ?: "")
     } else {
         for ((idx, pt) in newPoints.withIndex()) {
-            val role = getModifyNewPointRole(shapeType, newPoints, idx, scope)
+            val role = getModifyNewPointRole(geometry, newPoints, idx, oldPoints)
             msg.append("\n")
             msg.append(Translator.raw("selection.feedback.point_line", pt.x, pt.z, role) ?: "")
         }
@@ -279,7 +289,7 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
     msg.append("\n")
     appendModifyShapeParameterBlock(msg, shapeType, scope)
     msg.append("\n")
-    appendModifyGuidance(msg, shapeType, newPoints, scope)
+    appendModifyGuidance(msg, geometry, newPoints, scope.scopeName, oldPoints)
 
     val particleNote = Translator.raw("selection.feedback.particles.modify") ?: ""
     if (particleNote.isNotEmpty()) {
@@ -292,24 +302,33 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append(Translator.raw("selection.feedback.header_undo", eventPos.x, eventPos.z) ?: "")
     } else {
         val pointIndex = newPoints.size - 1
-        val roleRaw = getModifyNewPointRole(shapeType, newPoints, pointIndex, scope)
+        val roleRaw = getModifyNewPointRole(geometry, newPoints, pointIndex, oldPoints)
         msg.append(Translator.raw("selection.feedback.header_added", eventPos.x, eventPos.z, roleRaw) ?: "")
     }
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
 }
 
-private fun appendExistingScopePoints(msg: StringBuilder, scope: GeoScope, shapeType: GeoShapeType) {
-    msg.append(Translator.raw("selection.feedback.modify.existing_header", scope.scopeName, shapeType.name) ?: "")
-    val oldPoints = extractScopePoints(scope)
+private fun appendExistingScopePoints(
+    msg: StringBuilder,
+    scopeName: String,
+    shapeType: GeoShapeType,
+    oldPoints: List<BlockPos>
+) {
+    msg.append(Translator.raw("selection.feedback.modify.existing_header", scopeName, shapeType.name) ?: "")
     if (oldPoints.isEmpty()) {
         msg.append("\n")
         msg.append(Translator.raw("selection.feedback.none") ?: "")
     } else {
-        for ((idx, pt) in oldPoints.withIndex()) {
+        for ((idx, pt) in oldPoints.take(MAX_DISPLAYED_EXISTING_POINTS).withIndex()) {
             val role = getOldPointRole(shapeType, idx)
             msg.append("\n")
             msg.append(Translator.raw("selection.feedback.point_line_old", pt.x, pt.z, role) ?: "")
+        }
+        val omitted = oldPoints.size - MAX_DISPLAYED_EXISTING_POINTS
+        if (omitted > 0) {
+            msg.append("\n")
+            msg.append(Translator.raw("selection.feedback.modify.existing_omitted", omitted) ?: "")
         }
     }
 }
@@ -327,29 +346,31 @@ private fun getOldPointRole(shapeType: GeoShapeType, idx: Int): String = when (s
     else -> ""
 }
 
-private fun extractScopePoints(scope: GeoScope): List<BlockPos> {
-    val geoShape = scope.geoShape ?: return emptyList()
-    val params = geoShape.shapeParameter
-    return when (geoShape.geoShapeType) {
-        GeoShapeType.RECTANGLE -> {
-            if (params.size < 4) emptyList()
-            else listOf(BlockPos(params[0], 0, params[1]), BlockPos(params[2], 0, params[3]))
-        }
-        GeoShapeType.CIRCLE -> {
-            if (params.size < 3) emptyList()
-            else listOf(BlockPos(params[0], 0, params[1]), BlockPos(params[0] + params[2], 0, params[1]))
-        }
-        GeoShapeType.POLYGON -> getPolygonPoints(scope)
-        else -> emptyList()
+private fun extractScopePoints(geometry: ShapeGeometry): List<BlockPos> = when (geometry) {
+    is RectangleGeometry -> listOf(
+        BlockPos(geometry.west, 0, geometry.north),
+        BlockPos(geometry.east, 0, geometry.south)
+    )
+    is CircleGeometry -> listOf(
+        BlockPos(geometry.centerX, 0, geometry.centerZ),
+        BlockPos(geometry.centerX + geometry.radius, 0, geometry.centerZ)
+    )
+    is PolygonGeometry -> List(geometry.vertexCount) { index ->
+        BlockPos(geometry.x(index), 0, geometry.z(index))
     }
+    UnknownGeometry -> emptyList()
 }
 
-private fun getModifyNewPointRole(shapeType: GeoShapeType, newPoints: List<BlockPos>, idx: Int, scope: GeoScope): String {
-    return when (shapeType) {
-        GeoShapeType.CIRCLE -> {
-            val params = scope.geoShape?.shapeParameter
-            val cx = params?.getOrNull(0) ?: Int.MIN_VALUE
-            val cz = params?.getOrNull(1) ?: Int.MIN_VALUE
+private fun getModifyNewPointRole(
+    geometry: ShapeGeometry,
+    newPoints: List<BlockPos>,
+    idx: Int,
+    oldPoints: List<BlockPos>
+): String {
+    return when (geometry) {
+        is CircleGeometry -> {
+            val cx = geometry.centerX
+            val cz = geometry.centerZ
             val pt0IsCenter = newPoints.isNotEmpty() && newPoints[0].x == cx && newPoints[0].z == cz
             when {
                 idx == 0 -> {
@@ -367,11 +388,10 @@ private fun getModifyNewPointRole(shapeType: GeoShapeType, newPoints: List<Block
                 else -> Translator.raw("selection.feedback.modify.role.circle_excess") ?: ""
             }
         }
-        GeoShapeType.RECTANGLE -> Translator.raw("selection.feedback.modify.role.rect_anchor") ?: ""
-        GeoShapeType.POLYGON -> {
+        is RectangleGeometry -> Translator.raw("selection.feedback.modify.role.rect_anchor") ?: ""
+        is PolygonGeometry -> {
             val count = newPoints.size
-            val oldVertices = if (scope.geoShape?.geoShapeType == GeoShapeType.POLYGON) getPolygonPoints(scope) else emptyList()
-            fun isExisting(pt: BlockPos) = oldVertices.any { it.x == pt.x && it.z == pt.z }
+            fun isExisting(pt: BlockPos) = oldPoints.any { it.x == pt.x && it.z == pt.z }
             when {
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -407,22 +427,27 @@ private fun getModifyNewPointRole(shapeType: GeoShapeType, newPoints: List<Block
                 }
             }
         }
-        else -> ""
+        UnknownGeometry -> ""
     }
 }
 
-private fun appendModifyGuidance(msg: StringBuilder, shapeType: GeoShapeType, newPoints: List<BlockPos>, scope: GeoScope) {
+private fun appendModifyGuidance(
+    msg: StringBuilder,
+    geometry: ShapeGeometry,
+    newPoints: List<BlockPos>,
+    scopeName: String,
+    oldPoints: List<BlockPos>
+) {
     val count = newPoints.size
-    val guidanceRaw = when (shapeType) {
-        GeoShapeType.CIRCLE -> {
-            val params = scope.geoShape?.shapeParameter
-            val cx = params?.getOrNull(0) ?: 0
-            val cz = params?.getOrNull(1) ?: 0
-            val existingRadius = params?.getOrNull(2) ?: 0
+    val guidanceRaw = when (geometry) {
+        is CircleGeometry -> {
+            val cx = geometry.centerX
+            val cz = geometry.centerZ
+            val existingRadius = geometry.radius
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.circle.start",
-                    scope.scopeName, existingRadius
+                    scopeName, existingRadius
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -456,16 +481,11 @@ private fun appendModifyGuidance(msg: StringBuilder, shapeType: GeoShapeType, ne
                 else -> Translator.raw("selection.feedback.modify.guidance.circle.excess") ?: ""
             }
         }
-        GeoShapeType.RECTANGLE -> {
-            val params = scope.geoShape?.shapeParameter
-            val w = params?.getOrNull(0) ?: 0
-            val n = params?.getOrNull(1) ?: 0
-            val e = params?.getOrNull(2) ?: 0
-            val s = params?.getOrNull(3) ?: 0
+        is RectangleGeometry -> {
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.rect.start",
-                    scope.scopeName, w, n, e, s
+                    scopeName, geometry.west, geometry.north, geometry.east, geometry.south
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -474,29 +494,28 @@ private fun appendModifyGuidance(msg: StringBuilder, shapeType: GeoShapeType, ne
                 else -> Translator.raw("selection.feedback.modify.guidance.rect.excess") ?: ""
             }
         }
-        GeoShapeType.POLYGON -> {
-            val oldVertices = if (scope.geoShape?.geoShapeType == GeoShapeType.POLYGON) getPolygonPoints(scope) else emptyList()
-            fun isExisting(pt: BlockPos) = oldVertices.any { it.x == pt.x && it.z == pt.z }
+        is PolygonGeometry -> {
+            fun isExisting(pt: BlockPos) = oldPoints.any { it.x == pt.x && it.z == pt.z }
             fun areAdjacent(a: BlockPos, b: BlockPos): Boolean {
-                val n = oldVertices.size
-                val ia = oldVertices.indexOfFirst { it.x == a.x && it.z == a.z }
-                val ib = oldVertices.indexOfFirst { it.x == b.x && it.z == b.z }
+                val n = oldPoints.size
+                val ia = oldPoints.indexOfFirst { it.x == a.x && it.z == a.z }
+                val ib = oldPoints.indexOfFirst { it.x == b.x && it.z == b.z }
                 return ia != -1 && ib != -1 && ((ia + 1) % n == ib || (ib + 1) % n == ia)
             }
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.polygon.start",
-                    scope.scopeName, oldVertices.size
+                    scopeName, oldPoints.size
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
                     if (isExisting(pt)) {
-                        if (oldVertices.size <= 3)
+                        if (oldPoints.size <= 3)
                             Translator.raw("selection.feedback.modify.guidance.polygon.1point_delete_min", pt.x, pt.z) ?: ""
                         else
-                            Translator.raw("selection.feedback.modify.guidance.polygon.1point_delete", pt.x, pt.z, oldVertices.size) ?: ""
+                            Translator.raw("selection.feedback.modify.guidance.polygon.1point_delete", pt.x, pt.z, oldPoints.size) ?: ""
                     } else {
-                        val (adjA, adjB) = findNearestAdjacentPoints(oldVertices, pt)
+                        val (adjA, adjB) = findNearestAdjacentPoints(oldPoints, pt)
                         Translator.raw(
                             "selection.feedback.modify.guidance.polygon.1point_insert",
                             pt.x, pt.z, adjA.x, adjA.z, adjB.x, adjB.z
@@ -526,7 +545,7 @@ private fun appendModifyGuidance(msg: StringBuilder, shapeType: GeoShapeType, ne
                         !areAdjacent(adj1, adj2) ->
                             Translator.raw("selection.feedback.modify.guidance.polygon.3pts_not_adjacent", adj1.x, adj1.z, adj2.x, adj2.z) ?: ""
                         else -> {
-                            val newPoly = evaluateModifyPolygonExplicitInsert(adj1, adj2, ins, oldVertices)
+                            val newPoly = evaluateModifyPolygonExplicitInsert(adj1, adj2, ins, oldPoints)
                             if (newPoly != null)
                                 Translator.raw(
                                     "selection.feedback.modify.guidance.polygon.3plus",
@@ -543,24 +562,23 @@ private fun appendModifyGuidance(msg: StringBuilder, shapeType: GeoShapeType, ne
                 else -> Translator.raw("selection.feedback.modify.guidance.polygon.excess") ?: ""
             }
         }
-        else -> ""
+        UnknownGeometry -> ""
     }
     if (guidanceRaw.isNotEmpty()) msg.append(guidanceRaw)
 
-    val warningRaw = buildModifyValidationWarning(shapeType, newPoints, scope)
+    val warningRaw = buildModifyValidationWarning(geometry, newPoints)
     if (warningRaw.isNotEmpty()) {
         msg.append("\n")
         msg.append(warningRaw)
     }
 }
 
-private fun buildModifyValidationWarning(shapeType: GeoShapeType, newPoints: List<BlockPos>, scope: GeoScope): String {
-    return when (shapeType) {
-        GeoShapeType.CIRCLE -> {
+private fun buildModifyValidationWarning(geometry: ShapeGeometry, newPoints: List<BlockPos>): String {
+    return when (geometry) {
+        is CircleGeometry -> {
             if (newPoints.size < 1) return ""
-            val params = scope.geoShape?.shapeParameter ?: return ""
-            val cx = params.getOrNull(0) ?: return ""
-            val cz = params.getOrNull(1) ?: return ""
+            val cx = geometry.centerX
+            val cz = geometry.centerZ
             if (newPoints.size == 1) {
                 val pt = newPoints[0]
                 if (pt.x == cx && pt.z == cz) return ""
@@ -576,7 +594,7 @@ private fun buildModifyValidationWarning(shapeType: GeoShapeType, newPoints: Lis
                 }
             } else ""
         }
-        GeoShapeType.POLYGON -> ""
+        is PolygonGeometry -> ""
         else -> ""
     }
 }

@@ -361,15 +361,12 @@ private fun displayModifyCirclePreview(
             drawCircleOutline(player, params[0], params[1], params[2], session)
         }
         2 -> {
-            val first = newPoints[0]
-            val second = newPoints[1]
-            val (center, edge) = if (first.x == centerX && first.z == centerZ) first to second
-            else if (second.x == centerX && second.z == centerZ) second to first
-            else return
-            val params = evaluateModifyCircleCenter(center, edge, existingParams) ?: return
+            val oldCenter = newPoints[0]
+            val newCenter = newPoints[1]
+            val params = evaluateModifyCircleCenter(oldCenter, newCenter, existingParams) ?: return
             val circleSamples = maxOf(1, session.surfaceUnits * 3 / 4)
             drawCircleOutline(player, params[0], params[1], params[2], session, circleSamples)
-            emitLineSurface(player, center, edge, session)
+            emitLineSurface(player, oldCenter, newCenter, session)
         }
     }
 }
@@ -395,12 +392,8 @@ private fun displayModifyPolygonPreview(
             emitLineSurface(player, point, polygon[(index + 1) % polygon.size], session)
         }
         2 -> {
-            val first = newPoints[0]
-            val second = newPoints[1]
-            val oldVertex = if (existingVertices.any { it.x == first.x && it.z == first.z }) first
-            else if (existingVertices.any { it.x == second.x && it.z == second.z }) second
-            else return
-            val newVertex = if (oldVertex == first) second else first
+            val oldVertex = newPoints[0]
+            val newVertex = newPoints[1]
             val polygon = evaluateModifyPolygonReplace(oldVertex, newVertex, existingVertices) ?: return
             emitClosedBoundary(player, polygon.size, { polygon[it].x }, { polygon[it].z }, BoundaryStyle.SELECTION, session)
             emitLineSurface(player, oldVertex, newVertex, session)
