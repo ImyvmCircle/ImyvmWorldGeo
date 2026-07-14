@@ -22,6 +22,8 @@ fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false)
 }
 
 fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
+    RegionDatabase.requireCanonicalRegion(region)
+
     val existingScope = getScopeOrNotify(player, region, scopeName) ?: return
     if (!checkScopeSize(player, region)) return
     val index = region.removeScope(existingScope)

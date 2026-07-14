@@ -9,6 +9,8 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
 fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
+    RegionDatabase.requireCanonicalRegion(region)
+
     val normalizedName = newName.trim()
     if (!checkNameEmpty(normalizedName, player)) return 0
     if (!checkNameFormat(normalizedName, player)) return 0
@@ -35,6 +37,8 @@ fun onScopeRename(
     scopeName: String,
     newName: String
 ): Int {
+    RegionDatabase.requireCanonicalRegion(targetRegion)
+
     val existingScope = getScopeOrNotify(player, targetRegion, scopeName) ?: return 0
     val oldName = existingScope.scopeName
     val normalizedName = newName.trim()

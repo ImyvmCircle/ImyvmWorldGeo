@@ -84,6 +84,8 @@ fun onTryingScopeCreationWithReturn (
     shapeTypeName: String?,
     isApi: Boolean = true
 ): Pair<Region, GeoScope>? {
+    RegionDatabase.requireCanonicalRegion(region)
+
     val selectionState = getCreationSelectionOrNotify(player) ?: return null
     val shapeType = getShapeTypeCheck(player, selectionState, shapeTypeName) ?: return null
 

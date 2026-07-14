@@ -208,9 +208,21 @@ object RegionDatabase {
         targetRegion: Region,
         currentRegions: List<Region> = regions
     ) {
-        require(currentRegions.any { it === sourceRegion } && currentRegions.any { it === targetRegion }) {
-            "regions must be canonical database objects"
-        }
+        requireCanonicalRegion(sourceRegion, currentRegions)
+        requireCanonicalRegion(targetRegion, currentRegions)
+    }
+
+    internal fun requireCanonicalRegion(region: Region, currentRegions: List<Region> = regions) {
+        require(currentRegions.any { it === region }) { "region must be a canonical database object" }
+    }
+
+    internal fun requireCanonicalScope(
+        region: Region,
+        scope: GeoScope,
+        currentRegions: List<Region> = regions
+    ) {
+        requireCanonicalRegion(region, currentRegions)
+        require(region.containsScope(scope)) { "scope must be a canonical child of region" }
     }
 
     internal fun removeRegionReversibly(region: Region): () -> Unit {

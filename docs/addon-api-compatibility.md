@@ -76,6 +76,23 @@ val resolved = RegionDataApi.getScopeByAssignedId(scopeId)
 val parsed = RegionDataApi.parseAssignedScopeId(scopeId.toIdString())
 ```
 
+Supported `PlayerInteractionApi` mutations require the exact live `Region` and `GeoScope` objects
+currently owned by the database. Equal IDs, names, or copied fields do not make a detached or stale
+object a valid mutation target. Resolve retained references again after a database reload:
+
+```kotlin
+val liveRegion = RegionDataApi.getRegion(staleRegion.numberID) ?: return
+val liveScope = RegionDataApi.getScopeByAssignedId(scopeId)
+    ?.takeIf { (owner, _) -> owner === liveRegion }
+    ?.second
+    ?: return
+
+PlayerInteractionApi.resetTeleportPoint(player, liveRegion, liveScope)
+```
+
+Detached targets now fail before mutation or persistence. Existing method descriptors remain unchanged;
+unsafe mutation through copied or stale domain objects is not retained as compatibility behavior.
+
 Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `scopeIdRaw` constructors remain binary compatible, but invalid assigned IDs, blank overlay/source IDs, empty or duplicate effect lists, amplifiers outside `0..255`, and non-positive durations (`startMillis >= endMillis`) are rejected. The API and overlay service defensively snapshot effect lists, so later mutation of an addon-owned list cannot change an active overlay.
 
 ## R11 geometry mutation migration

@@ -62,6 +62,39 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `region and scope mutations require exact canonical targets`() {
+        val scopeId = ScopeId(generateCompatScopeIdRaw(7, 1))
+        val canonicalScope = scope("scope", scopeId)
+        val canonicalRegion = Region("region", 7, mutableListOf(canonicalScope))
+        val currentRegions = listOf(canonicalRegion)
+
+        RegionDatabase.requireCanonicalRegion(canonicalRegion, currentRegions)
+        RegionDatabase.requireCanonicalScope(canonicalRegion, canonicalScope, currentRegions)
+
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.requireCanonicalRegion(
+                Region("region", 7, mutableListOf(scope("scope", scopeId))),
+                currentRegions
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.requireCanonicalScope(
+                canonicalRegion,
+                scope("scope", scopeId),
+                currentRegions
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            val detachedScope = scope("scope", scopeId)
+            RegionDatabase.requireCanonicalScope(
+                Region("region", 7, mutableListOf(detachedScope)),
+                detachedScope,
+                currentRegions
+            )
+        }
+    }
+
+    @Test
     fun `round trips current database format`() = withTempDirectory { directory ->
         val path = directory.resolve("regions.db")
         val player = UUID.randomUUID()

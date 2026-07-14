@@ -8,6 +8,7 @@ import com.imyvm.iwg.application.region.permission.helper.resolveScopeGlobalPerm
 import com.imyvm.iwg.application.region.permission.helper.resolveScopePlayerPermission
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUILD_BREAK
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_CONTAINER
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FLY
@@ -57,13 +58,17 @@ private sealed interface SettingTarget {
     val scopeName: String?
 
     data class RegionTarget(val region: Region) : SettingTarget {
+        init {
+            RegionDatabase.requireCanonicalRegion(region)
+        }
+
         override val store get() = region.settingStore
         override val scopeName: String? = null
     }
 
     data class ScopeTarget(val region: Region, val scope: GeoScope) : SettingTarget {
         init {
-            require(region.containsScope(scope)) { "scope does not belong to region" }
+            RegionDatabase.requireCanonicalScope(region, scope)
         }
 
         override val store get() = scope.settingStore

@@ -19,7 +19,7 @@ fun onAddingTeleportPoint(
     y: Int,
     z: Int
 ): Int {
-    require(targetRegion.containsScope(geoScope)) { "scope does not belong to region" }
+    RegionDatabase.requireCanonicalScope(targetRegion, geoScope)
     val targetWorld = resolveScopeWorldOrReport(playerExecutor, targetRegion, geoScope) ?: return 0
     val teleportPoint = BlockPos(x, y, z)
     val reasonKey = geoScope.getTeleportPointInvalidReasonKey(targetWorld, teleportPoint)
@@ -45,7 +45,7 @@ fun onResettingTeleportPoint(
     region: Region,
     scope: GeoScope
 ): Int {
-    require(region.containsScope(scope)) { "scope does not belong to region" }
+    RegionDatabase.requireCanonicalScope(region, scope)
     val oldPoint = scope.teleportPoint
     scope.updateTeleportPoint(null)
     if (!saveRegionData(playerExecutor)) {
@@ -67,7 +67,7 @@ fun onTeleportingPlayer(
     targetRegion: Region,
     geoScope: GeoScope
 ): Int {
-    require(targetRegion.containsScope(geoScope)) { "scope does not belong to region" }
+    RegionDatabase.requireCanonicalScope(targetRegion, geoScope)
     val targetWorld = resolveScopeWorldOrReport(playerExecutor, targetRegion, geoScope) ?: return 0
     val teleportPoint = onGettingTeleportPoint(geoScope)
 
