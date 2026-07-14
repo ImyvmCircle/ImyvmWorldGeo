@@ -72,7 +72,10 @@ providing them with regional features via settings, and enabling teleportation t
 ### Scope
 
 A scope is a sub-area within a region, defined by a name unique to other scopes in the same region and a shape.
-A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters` parsed by corresponding type. Polygon shapes support at most 256 vertices.
+A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type. Addons should construct immutable shapes
+through `GeoShape.rectangle`, `GeoShape.circle`, or `GeoShape.polygon`; the legacy flat
+`shapeParameter` list is retained only for binary and persistence compatibility. Polygon shapes
+support at most 256 vertices.
 
 ### Setting
 
@@ -347,6 +350,11 @@ Handles player-triggered actions related to regions and their scopes.
 
 - `modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
   Modifies the properties of a scope.
+
+- `replaceScopeShape(player: ServerPlayerEntity, region: Region, scope: GeoScope, newShape: GeoShape)`
+  Replaces a live scope's geometry with an immutable shape of the same type. The operation validates
+  ownership, configured size limits, and intersections, persists the change, and restores the old
+  shape if saving fails.
 
 - `addSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?)`  
   Adds a setting to a region.

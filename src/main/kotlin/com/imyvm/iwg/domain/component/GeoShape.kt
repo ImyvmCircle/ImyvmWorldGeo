@@ -26,15 +26,22 @@ internal fun findClosestMatchingBlockPos(
     return BlockPos.findClosestMatch(center, radius, radius, matches).orElse(null)
 }
 
+/**
+ * Immutable validated shape value.
+ *
+ * The raw type/parameter constructor is retained for database and addon ABI compatibility.
+ * New code should use [circle], [rectangle], or [polygon].
+ */
 class GeoShape(
     geoShapeType: GeoShapeType,
     shapeParameter: MutableList<Int>
 ) {
-    private var geometry: ShapeGeometry = ShapeGeometry.from(geoShapeType, shapeParameter)
+    private val geometry: ShapeGeometry = ShapeGeometry.from(geoShapeType, shapeParameter)
 
     internal val typedGeometry: ShapeGeometry
         get() = geometry
 
+    @set:Deprecated("GeoShape is immutable; construct a replacement with a named factory")
     var geoShapeType: GeoShapeType
         get() = geometry.type
         set(value) {
@@ -43,10 +50,14 @@ class GeoShape(
             }
         }
 
+    /** Legacy ABI and persistence view. New code should use the named factories. */
+    @set:Deprecated("GeoShape is immutable; construct a replacement with a named factory")
     var shapeParameter: MutableList<Int>
         get() = geometry.toLegacyParameters()
         set(value) {
-            geometry = ShapeGeometry.from(geometry.type, value)
+            require(value == geometry.toLegacyParameters()) {
+                "shape parameters cannot be changed; construct a replacement GeoShape"
+            }
         }
 
     fun getShapeInfo(): Component? {
@@ -144,6 +155,38 @@ class GeoShape(
         physicallySafe && containsPoint(pos.x, pos.z)
 
     companion object {
+        /** Creates a structurally validated circle. Placement policy is checked by the owning Scope operation. */
+        @JvmStatic
+        fun circle(center: GeoPoint, radius: Int): GeoShape =
+            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius))
+
+        /** Creates a structurally validated rectangle from two order-independent opposite corners. */
+        @JvmStatic
+        fun rectangle(firstCorner: GeoPoint, oppositeCorner: GeoPoint): GeoShape = GeoShape(
+            GeoShapeType.RECTANGLE,
+            mutableListOf(
+                minOf(firstCorner.x, oppositeCorner.x),
+                minOf(firstCorner.z, oppositeCorner.z),
+                maxOf(firstCorner.x, oppositeCorner.x),
+                maxOf(firstCorner.z, oppositeCorner.z)
+            )
+        )
+
+        /** Creates a structurally validated polygon and snapshots the supplied vertices. */
+        @JvmStatic
+        fun polygon(vertices: List<GeoPoint>): GeoShape {
+            require(vertices.size >= 3) { "polygon requires at least three vertices" }
+            require(isPolygonVertexCountSupported(vertices.size)) {
+                "polygon must not exceed $MAX_POLYGON_VERTICES vertices"
+            }
+            val parameters = ArrayList<Int>(vertices.size * 2)
+            for (vertex in vertices) {
+                parameters.add(vertex.x)
+                parameters.add(vertex.z)
+            }
+            return GeoShape(GeoShapeType.POLYGON, parameters)
+        }
+
         fun isPhysicalSafe(world: Level, pos: BlockPos): Boolean {
             val feetState = world.getBlockState(pos)
             val headState = world.getBlockState(pos.above())

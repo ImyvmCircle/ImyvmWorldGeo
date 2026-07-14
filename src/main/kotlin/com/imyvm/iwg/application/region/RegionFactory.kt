@@ -2,7 +2,12 @@ package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoShape
+import com.imyvm.iwg.domain.component.CircleGeometry
+import com.imyvm.iwg.domain.component.PolygonGeometry
+import com.imyvm.iwg.domain.component.RectangleGeometry
+import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.ScopeId
@@ -14,7 +19,6 @@ import com.imyvm.iwg.util.geo.*
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.resources.Identifier
 import net.minecraft.core.BlockPos
-import kotlin.math.abs
 
 object RegionFactory {
 
@@ -150,20 +154,41 @@ object RegionFactory {
         if (geoShapeResult is Result.Err) return geoShapeResult
 
         val geoShape = (geoShapeResult as Result.Ok).value
+        val placementError = validateGeoShapePlacement(geoShape, worldId, excludedScope)
+        if (placementError != null) return Result.Err(placementError)
 
-        val existingScopes = RegionDatabase.getRegionList()
+        return Result.Ok(geoShape)
+    }
+
+    internal fun validateGeoShapePlacement(
+        geoShape: GeoShape,
+        worldId: Identifier,
+        excludedScope: GeoScope?,
+        currentRegions: List<Region> = RegionDatabase.getRegionList()
+    ): CreationError? {
+        validateGeoShapeSize(geoShape)?.let { return it }
+        val existingScopes = currentRegions
             .flatMap { region ->
                 region.scopes
                     .filter { it !== excludedScope && it.worldId == worldId }
                     .map { Pair(it, region.name) }
             }
         val intersections = checkIntersection(geoShape, existingScopes)
-        if (intersections.isNotEmpty()) {
-            return Result.Err(CreationError.IntersectionBetweenScopes(intersections))
-        }
-
-        return Result.Ok(geoShape)
+        return intersections.takeIf { it.isNotEmpty() }?.let(CreationError::IntersectionBetweenScopes)
     }
+
+    internal fun validateGeoShapeSize(geoShape: GeoShape): CreationError? =
+        when (val geometry = geoShape.typedGeometry) {
+            is CircleGeometry -> if (checkCircleSize(geometry.radius.toDouble())) null else CreationError.UnderSizeLimit
+            is RectangleGeometry -> checkRectangleSize(
+                geometry.east.toLong() - geometry.west,
+                geometry.south.toLong() - geometry.north
+            )
+            is PolygonGeometry -> checkPolygonSize(
+                List(geometry.vertexCount) { BlockPos(geometry.x(it), 0, geometry.z(it)) }
+            )
+            UnknownGeometry -> CreationError.InsufficientPoints
+        }
 
     private fun requiredPoints(shapeType: GeoShapeType): Int =
         when (shapeType) {
@@ -180,19 +205,12 @@ object RegionFactory {
         if (pos1 == pos2) return Result.Err(CreationError.DuplicatedPoints)
         if (pos1.x == pos2.x || pos1.z == pos2.z) return Result.Err(CreationError.CoincidentPoints)
 
-        val width = abs(pos1.x.toLong() - pos2.x)
-        val length = abs(pos1.z.toLong() - pos2.z)
-        val error = checkRectangleSize(width, length)
-        if (error != null) return Result.Err(error)
-
         val west = minOf(pos1.x, pos2.x)
         val east = maxOf(pos1.x, pos2.x)
         val north = minOf(pos1.z, pos2.z)
         val south = maxOf(pos1.z, pos2.z)
 
-        return Result.Ok(
-            GeoShape(GeoShapeType.RECTANGLE, mutableListOf(west, north, east, south))
-        )
+        return Result.Ok(GeoShape.rectangle(GeoPoint(west, north), GeoPoint(east, south)))
     }
 
     internal fun createCircle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
@@ -202,16 +220,13 @@ object RegionFactory {
         if (center == circumference) return Result.Err(CreationError.DuplicatedPoints)
 
         val radius = circleRadius(center, circumference)
-        if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
         if (radius > Int.MAX_VALUE) return Result.Err(CreationError.CoordinateRangeExceeded)
         val intRadius = radius.toInt()
         if (!circleExtentsFit(center.x, center.z, intRadius)) {
             return Result.Err(CreationError.CoordinateRangeExceeded)
         }
 
-        return Result.Ok(
-            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, intRadius))
-        )
+        return Result.Ok(GeoShape.circle(GeoPoint(center.x, center.z), intRadius))
     }
 
     private fun circleExtentsFit(centerX: Int, centerZ: Int, radius: Int): Boolean {
@@ -234,15 +249,7 @@ object RegionFactory {
         val distinct = positions.distinctBy { it.x to it.z }
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
-        val error = checkPolygonSize(positions)
-        if (error != null) return Result.Err(error)
-
-        return Result.Ok(
-            GeoShape(
-                geoShapeType = GeoShapeType.POLYGON,
-                positions.flatMap { listOf(it.x, it.z) }.toMutableList()
-            )
-        )
+        return Result.Ok(GeoShape.polygon(positions.map { GeoPoint(it.x, it.z) }))
     }
 }
 

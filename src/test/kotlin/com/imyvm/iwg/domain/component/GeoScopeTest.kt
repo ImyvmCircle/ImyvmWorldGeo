@@ -36,6 +36,18 @@ class GeoScopeTest {
     }
 
     @Test
+    @Suppress("DEPRECATION")
+    fun `live scope geometry cannot be mutated through legacy shape parameters`() {
+        val shape = GeoShape.circle(GeoPoint(0, 0), 10)
+        val scope = GeoScope("scope", Identifier.parse("minecraft:overworld"), null, geoShape = shape)
+
+        assertFails { scope.geoShape!!.shapeParameter = mutableListOf(0, 0, 20) }
+
+        assertSame(shape, scope.geoShape)
+        assertEquals(listOf(0, 0, 10), scope.geoShape!!.shapeParameter)
+    }
+
+    @Test
     fun `controlled operations replace complete scope state`() {
         val scope = GeoScope(
             "scope",

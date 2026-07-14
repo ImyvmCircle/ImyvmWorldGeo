@@ -9,6 +9,31 @@ import kotlin.test.assertFailsWith
 
 class GeoShapeTest {
     @Test
+    fun `named factories encode typed shape inputs`() {
+        val circle = GeoShape.circle(GeoPoint(3, 4), 5)
+        val rectangle = GeoShape.rectangle(GeoPoint(10, 20), GeoPoint(-10, -20))
+        val vertices = mutableListOf(GeoPoint(0, 0), GeoPoint(10, 0), GeoPoint(0, 10))
+        val polygon = GeoShape.polygon(vertices)
+
+        vertices[0] = GeoPoint(100, 100)
+
+        assertEquals(GeoShapeType.CIRCLE, circle.geoShapeType)
+        assertEquals(listOf(3, 4, 5), circle.shapeParameter)
+        assertEquals(listOf(-10, -20, 10, 20), rectangle.shapeParameter)
+        assertEquals(listOf(0, 0, 10, 0, 0, 10), polygon.shapeParameter)
+    }
+
+    @Test
+    fun `polygon factory bounds work before flattening vertices`() {
+        assertFailsWith<ArithmeticException> {
+            GeoShape.circle(GeoPoint(Int.MAX_VALUE, 0), 1)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            GeoShape.polygon(List(MAX_POLYGON_VERTICES + 1) { GeoPoint(it, it) })
+        }
+    }
+
+    @Test
     fun `fallback radius is bounded before searching`() {
         assertEquals(0, requireTeleportFallbackSearchRadius(0))
         assertEquals(
@@ -94,10 +119,15 @@ class GeoShapeTest {
     }
 
     @Test
+    @Suppress("DEPRECATION")
     fun `legacy setters cannot leave a partially invalid geometry`() {
         val shape = GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, 10))
 
+        shape.geoShapeType = GeoShapeType.CIRCLE
+        shape.shapeParameter = mutableListOf(0, 0, 10)
+
         assertFails { shape.geoShapeType = GeoShapeType.RECTANGLE }
+        assertFails { shape.shapeParameter = mutableListOf(0, 0, 20) }
         assertFails { shape.shapeParameter = mutableListOf(0, 0, -1) }
 
         assertEquals(GeoShapeType.CIRCLE, shape.geoShapeType)
@@ -139,12 +169,15 @@ class GeoShapeTest {
     @Test
     fun `polygon accepts 256 vertices and rejects 257`() {
         val supported = squarePolygonParameters()
+        val vertices = supported.chunked(2).map { GeoPoint(it[0], it[1]) }
 
         assertEquals(256, supported.size / 2)
         val shape = GeoShape(GeoShapeType.POLYGON, supported)
+        assertEquals(supported, GeoShape.polygon(vertices).shapeParameter)
         assertFailsWith<IllegalArgumentException> {
             GeoShape(GeoShapeType.POLYGON, MutableList(514) { it })
         }
+        @Suppress("DEPRECATION")
         assertFailsWith<IllegalArgumentException> {
             shape.shapeParameter = MutableList(514) { it }
         }

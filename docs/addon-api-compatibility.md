@@ -33,7 +33,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `PlayerInteractionApi.toggleTeleportPointAccessibility(GeoScope)` | R11 (unreleased) | `toggleTeleportPointAccessibility(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | JVM method delegates after resolving the canonical database owner; detached/orphan/unassigned scopes are rejected |
 | `Region.settings` / `GeoScope.settings` | Not scheduled | `RegionDataApi` for reads; `PlayerInteractionApi` setting operations for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getter returns a detached snapshot |
 | `Region.geometryScope` / `Region.ownershipHistoryByScope` | R10 (unreleased) | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots |
-| `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | R11 (unreleased) | Construct a complete validated `GeoShape`; use supported interaction APIs to replace Scope geometry | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; parameter getter returns a detached snapshot and incompatible partial updates are rejected |
+| `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | R11 (unreleased) | Use the named `GeoShape` factories and `PlayerInteractionApi.replaceScopeShape` | Compatibility surface | No removal scheduled | Raw constructor, getter, and setter descriptors remain; the getter returns a detached snapshot and state-changing setter calls fail fast |
 | Mutable `GeoScope` state properties | R11 (unreleased) | `RegionDataApi` for reads; supported Region and interaction operations for writes | Compatibility surface | No removal scheduled | Constructor and property accessor descriptors remain; uncontrolled state changes through legacy setters are rejected |
 | `ScopeId` compatibility encoding | R10 (unreleased) | `RegionDataApi.parseScopeId` and ScopeId query methods | Compatible encoding fix | No removal scheduled | Existing raw IDs remain parseable; newly migrated legacy scopes use a marker bit and full local index without changing the persisted `Long` field |
 | `ScopeId` query and overlay methods | R11 (unreleased) | `AssignedScopeId` and the corresponding `RegionDataApi` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; `GeoScope` constructor and scopeId getter/setter descriptors remain |
@@ -97,9 +97,37 @@ Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `
 
 ## R11 geometry mutation migration
 
-`GeoShape.shapeParameter` is a detached compatibility snapshot. Mutating the returned list no longer changes the live geometry, and `geoShapeType` cannot be changed independently from its parameters. Construct a complete validated `GeoShape` and use the supported Scope mutation operation instead of applying partial updates through the legacy properties.
+`GeoShape` is immutable. `shapeParameter` is a detached legacy ABI and persistence snapshot, not a
+mutation protocol. Mutating the returned list has no effect, and assigning different parameters or a
+different type through the retained setters fails fast. The raw `(GeoShapeType, MutableList<Int>)`
+constructor remains linkable for old addons and the database codec, but new code should use the named
+factories:
 
-Polygon geometry is limited to 256 vertices. The complete `GeoShape` constructor and compatibility setter reject larger polygons, and persisted polygons above this safety limit fail fast during loading. The database tag, parameter-count encoding, and supported `GeoShape` JVM descriptors are unchanged; addons that generate larger polygons must simplify them to 256 vertices or fewer before construction.
+```kotlin
+val circle = GeoShape.circle(GeoPoint(100, 200), radius = 48)
+val rectangle = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(100, 100))
+val polygon = GeoShape.polygon(listOf(
+    GeoPoint(0, 0),
+    GeoPoint(100, 0),
+    GeoPoint(50, 100)
+))
+```
+
+To replace live Scope geometry, pass a complete same-type shape through the owner-explicit API:
+
+```kotlin
+PlayerInteractionApi.replaceScopeShape(player, region, scope, polygon)
+```
+
+The Region and Scope must be the exact canonical database objects. The operation checks the configured
+size policy and intersections before mutation, excludes the target Scope from its own intersection
+check, and restores the previous shape if persistence fails. Circle, Rectangle, and Polygon type
+conversion is not supported by this API.
+
+Polygon geometry is limited to 256 vertices. The named factory and raw compatibility constructor
+reject larger polygons before storing them, and persisted polygons above this safety limit fail fast
+during loading. The database tag and parameter-count encoding are unchanged; addons that generate
+larger polygons must simplify them before construction.
 
 `GeoShape.generateTeleportPoint(Level)` remains JVM-linkable but no longer scans every block in a shape. It checks one deterministic representative surface position and returns `null` when that position is unsafe. Normal Region and Scope creation instead validates the player's position and uses the configured bounded fallback search; addons that require a specific location should set and validate that location explicitly.
 

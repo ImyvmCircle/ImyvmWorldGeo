@@ -1,10 +1,12 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.interaction.*
+import com.imyvm.iwg.application.interaction.scope.onReplacingScopeShape
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.ScopeNotFoundException
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
@@ -65,6 +67,13 @@ object PlayerInteractionApi {
     @Suppress("DEPRECATION")
     fun toggleTeleportPointAccessibility(scope: GeoScope) = onTogglingTeleportPointAccessibility(scope)
     fun modifyScope(player: ServerPlayer, region: Region, scopeName: String) = onModifyScope(player, region, scopeName)
+
+    /**
+     * Replaces the geometry of an exact live Scope with a complete immutable shape of the same type.
+     * Size and intersection policy are validated before mutation; persistence failure restores the old shape.
+     */
+    fun replaceScopeShape(player: ServerPlayer, region: Region, scope: GeoScope, newShape: GeoShape) =
+        onReplacingScopeShape(player, region, scope, newShape)
     fun addSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?) = addRegionSetting(player, region, keyString, valueString, targetPlayerStr)
     fun addSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?) = addScopeSetting(player, region, region.getScopeByName(scopeName), keyString, valueString, targetPlayerStr)
     fun removeSettingRegion(player: ServerPlayer, region: Region, keyString: String, targetPlayerStr: String?) = removeRegionSetting(player, region, keyString, targetPlayerStr)

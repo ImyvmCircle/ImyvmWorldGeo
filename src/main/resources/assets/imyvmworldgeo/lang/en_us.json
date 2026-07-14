@@ -63,6 +63,7 @@
   "interaction.meta.scope.modify.circle_center.success": "&aSuccessfully moved the circle center of scope &b{0}&a in region &b{1}&a from &e({2})&a to &e({3})&a with radius &e{4}&a.",
   "interaction.meta.scope.modify.rectangle.invalid_rectangle": "&cThe selected scope is not a valid rectangle.",
   "interaction.meta.scope.modify.rectangle.success": "&aSuccessfully updated rectangle scope &b{0}&a in region &b{1}&a. &7New coordinates: &rwest: &e{2}&r, north: &e{3}&r, east: &e{4}&r, south: &e{5}&r.",
+  "interaction.meta.scope.modify.shape_replace.success": "&aSuccessfully replaced the geometry of scope &b{0}&a in region &b{1}&a.",
   "interaction.meta.scope.rename.repeated_same_name": "&eThe new name is the same as the old name. &7Please choose a different name.",
   "interaction.meta.scope.rename.duplicate_scope_name": "&cA scope with the name &e{0}&c already exists in region &b{1}&c.",
   "interaction.meta.scope.rename.success": "&aSuccessfully renamed scope &b{0}&a to &b{1}&a in region &b{2}&a.",

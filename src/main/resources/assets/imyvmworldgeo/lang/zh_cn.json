@@ -63,6 +63,7 @@
   "interaction.meta.scope.modify.circle_center.success": "&a已成功将境界 &b{1}&a 中地方 &b{0}&a 的圆心从 &e({2})&a 移至 &e({3})&a，半径为 &e{4}&a。",
   "interaction.meta.scope.modify.rectangle.invalid_rectangle": "&c所选地方不是有效的矩形。",
   "interaction.meta.scope.modify.rectangle.success": "&a已成功更新境界 &b{1}&a 中的矩形地方 &b{0}&a。&7新坐标：&r西：&e{2}&r，北：&e{3}&r，东：&e{4}&r，南：&e{5}&r。",
+  "interaction.meta.scope.modify.shape_replace.success": "&a已成功替换境界 &b{1}&a 中地方 &b{0}&a 的几何形状。",
   "interaction.meta.scope.rename.repeated_same_name": "&e新名称与旧名称相同。&7请选择其他名称。",
   "interaction.meta.scope.rename.duplicate_scope_name": "&c境界 &b{1}&c 中已存在名为 &e{0}&c 的地方。",
   "interaction.meta.scope.rename.success": "&a已成功将境界 &b{2}&a 中的地方 &b{0}&a 重命名为 &b{1}&a。",
