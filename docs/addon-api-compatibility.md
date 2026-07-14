@@ -76,7 +76,7 @@ val resolved = RegionDataApi.getScopeByAssignedId(scopeId)
 val parsed = RegionDataApi.parseAssignedScopeId(scopeId.toIdString())
 ```
 
-Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `scopeIdRaw` constructors remain binary compatible, but reject unassigned or positive values when entering the typed runtime.
+Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `scopeIdRaw` constructors remain binary compatible, but invalid assigned IDs, blank overlay/source IDs, empty or duplicate effect lists, amplifiers outside `0..255`, and non-positive durations (`startMillis >= endMillis`) are rejected. The API and overlay service defensively snapshot effect lists, so later mutation of an addon-owned list cannot change an active overlay.
 
 ## R11 geometry mutation migration
 

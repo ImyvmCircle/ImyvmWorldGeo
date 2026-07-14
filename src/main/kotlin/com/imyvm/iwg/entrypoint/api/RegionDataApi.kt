@@ -381,6 +381,7 @@ object RegionDataApi {
     fun applyTimedEffectOverlay(overlay: com.imyvm.iwg.domain.TimedEffectOverlay): String =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.applyTimedEffectOverlay(overlay)
 
+    /** Creates a validated overlay with an immutable snapshot of [effects]. */
     fun createTimedEffectOverlay(
         overlayId: String,
         scopeId: AssignedScopeId,
@@ -391,7 +392,7 @@ object RegionDataApi {
         source: String
     ): TimedEffectOverlay = TimedEffectOverlay(
         overlayId, scopeId.raw, effects, startMillis, endMillis, priority, source
-    )
+    ).immutableSnapshot()
 
     fun clearTimedEffectOverlay(scopeId: AssignedScopeId, overlayId: String): Boolean =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)

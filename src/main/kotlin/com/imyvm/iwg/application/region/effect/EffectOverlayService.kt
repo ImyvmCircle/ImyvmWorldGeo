@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.region.effect
 
 import com.imyvm.iwg.domain.TimedEffectOverlay
+import com.imyvm.iwg.domain.immutableSnapshot
 import com.imyvm.iwg.domain.component.EffectKey
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.AssignedScopeId
@@ -25,12 +26,16 @@ object EffectOverlayService {
     }
 
     internal fun applyTimedEffectOverlayForExistingScope(overlay: TimedEffectOverlay): String {
-        val list = overlaysByScope.getOrPut(overlay.scopeId) { mutableListOf() }
-        synchronized(list) {
-            list.removeAll { it.overlayId == overlay.overlayId }
-            list.add(overlay)
+        val storedOverlay = overlay.immutableSnapshot()
+        overlaysByScope.compute(storedOverlay.scopeId) { _, existing ->
+            val list = existing ?: mutableListOf()
+            synchronized(list) {
+                list.removeAll { it.overlayId == storedOverlay.overlayId }
+                list.add(storedOverlay)
+            }
+            list
         }
-        return overlay.overlayId
+        return storedOverlay.overlayId
     }
 
     fun clearTimedEffectOverlay(scopeId: ScopeId, overlayId: String): Boolean {
@@ -39,12 +44,14 @@ object EffectOverlayService {
     }
 
     fun clearTimedEffectOverlay(scopeId: AssignedScopeId, overlayId: String): Boolean {
-        val list = overlaysByScope[scopeId] ?: return false
-        return synchronized(list) {
-            val removed = list.removeAll { it.overlayId == overlayId }
-            if (list.isEmpty()) overlaysByScope.remove(scopeId)
-            removed
+        var removed = false
+        overlaysByScope.computeIfPresent(scopeId) { _, list ->
+            synchronized(list) {
+                removed = list.removeAll { it.overlayId == overlayId }
+                list.takeIf { it.isNotEmpty() }
+            }
         }
+        return removed
     }
 
     fun queryOverlay(scopeId: ScopeId, nowMillis: Long = System.currentTimeMillis()): Map<EffectKey, Int> {
@@ -88,14 +95,13 @@ object EffectOverlayService {
         overlaysByScope.remove(scopeId)
     }
 
-    private fun sweepExpired(nowMillis: Long) {
-        val iterator = overlaysByScope.entries.iterator()
-        while (iterator.hasNext()) {
-            val entry = iterator.next()
-            val list = entry.value
-            synchronized(list) {
-                list.removeAll { it.endTickMillis <= nowMillis }
-                if (list.isEmpty()) iterator.remove()
+    internal fun sweepExpired(nowMillis: Long) {
+        for (scopeId in overlaysByScope.keys) {
+            overlaysByScope.computeIfPresent(scopeId) { _, list ->
+                synchronized(list) {
+                    list.removeAll { it.endTickMillis <= nowMillis }
+                    list.takeIf { it.isNotEmpty() }
+                }
             }
         }
     }
