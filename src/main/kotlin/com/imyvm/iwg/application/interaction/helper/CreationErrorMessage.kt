@@ -5,6 +5,7 @@ import com.imyvm.iwg.util.geo.IntersectionDetail
 import com.imyvm.iwg.util.geo.VertexInsideInfo
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import net.minecraft.network.chat.Component
 
 fun errorMessage(
@@ -21,6 +22,9 @@ fun errorMessage(
         else -> Translator.tr("error.generic_too_small")!!
     })
     CreationError.CoordinateRangeExceeded -> listOfNotNull(Translator.tr("error.coordinate_range_exceeded"))
+    CreationError.PolygonVertexLimitExceeded -> listOfNotNull(
+        Translator.tr("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES)
+    )
     CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit")!!)
     CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid")!!)
     CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short")!!)

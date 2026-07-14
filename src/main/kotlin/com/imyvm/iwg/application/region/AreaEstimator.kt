@@ -3,6 +3,7 @@ package com.imyvm.iwg.application.region
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
@@ -65,6 +66,9 @@ object AreaEstimator {
     }
 
     private fun estimatePolygonArea(positions: List<BlockPos>): AreaEstimationResult {
+        if (!isPolygonVertexCountSupported(positions.size)) {
+            return AreaEstimationResult.Error(CreationError.PolygonVertexLimitExceeded)
+        }
         val distinct = positions.distinct()
         if (distinct.size != positions.size) return AreaEstimationResult.Error(CreationError.DuplicatedPoints)
         

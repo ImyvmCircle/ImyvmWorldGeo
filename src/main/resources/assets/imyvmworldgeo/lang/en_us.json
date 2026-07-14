@@ -182,6 +182,7 @@
   "error.polygon_too_small": "&cThe polygon is too small. &7The area must be at least the minimum size.",
   "error.generic_too_small": "&cThe region is too small.",
   "error.coordinate_range_exceeded": "&cThe selected shape exceeds the supported coordinate range.",
+  "error.polygon_vertex_limit_exceeded": "&cA polygon can have at most {0} vertices.",
   "interaction.meta.persistence.save_failed": "&cThe change could not be saved and was rolled back. Check the server log and retry.",
   "error.under_bounding_box_limit": "&cThe region is under the bounding box limit. &7Its x span or z span is too small.",
   "error.aspect_ratio_invalid": "&cThe region aspect ratio exceeds the maximum allowed limit. &7Very elongated regions are not allowed.",

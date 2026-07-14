@@ -103,4 +103,26 @@ class GeoShapeTest {
         assertTrue(polygon.containsPoint(0, 0))
         assertTrue(polygon.containsPoint(0, Int.MIN_VALUE))
     }
+
+    @Test
+    fun `polygon accepts 256 vertices and rejects 257`() {
+        val supported = squarePolygonParameters()
+
+        assertEquals(256, supported.size / 2)
+        val shape = GeoShape(GeoShapeType.POLYGON, supported)
+        assertFailsWith<IllegalArgumentException> {
+            GeoShape(GeoShapeType.POLYGON, MutableList(514) { it })
+        }
+        assertFailsWith<IllegalArgumentException> {
+            shape.shapeParameter = MutableList(514) { it }
+        }
+        assertEquals(supported, shape.shapeParameter)
+    }
+
+    private fun squarePolygonParameters(): MutableList<Int> = buildList {
+        for (x in 0 until 128 step 2) addAll(listOf(x, 0))
+        for (z in 0 until 128 step 2) addAll(listOf(128, z))
+        for (x in 128 downTo 2 step 2) addAll(listOf(x, 128))
+        for (z in 128 downTo 2 step 2) addAll(listOf(0, z))
+    }.toMutableList()
 }

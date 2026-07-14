@@ -10,6 +10,8 @@ import com.imyvm.iwg.infra.config.GeoConfig
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.geo.isConvex
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
+import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonExplicitInsert
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
@@ -229,6 +231,9 @@ private fun validateCirclePoints(points: List<BlockPos>): String {
 
 private fun validatePolygonPoints(points: List<BlockPos>): String {
     if (points.size < 3) return ""
+    if (!isPolygonVertexCountSupported(points.size)) {
+        return Translator.raw("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES) ?: ""
+    }
     if (points.distinct().size != points.size) return Translator.raw("selection.feedback.warn.polygon.duplicate") ?: ""
     if (!isConvex(points)) return Translator.raw("selection.feedback.warn.polygon.not_convex") ?: ""
     return when (checkPolygonSize(points)) {
@@ -244,6 +249,8 @@ private fun validatePolygonPoints(points: List<BlockPos>): String {
                 String.format("%.2f", GeoConfig.MIN_ASPECT_RATIO.value),
                 String.format("%.2f", 1.0 / GeoConfig.MIN_ASPECT_RATIO.value)
             ) ?: ""
+        CreationError.PolygonVertexLimitExceeded ->
+            Translator.raw("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES) ?: ""
         else -> ""
     }
 }
@@ -584,7 +591,10 @@ private fun buildNormalParticleNote(shape: GeoShapeType, isAuto: Boolean, points
         effectiveShape == GeoShapeType.RECTANGLE && count >= 2 ->
             Translator.raw("selection.feedback.particles.rect_complete") ?: ""
         effectiveShape == GeoShapeType.POLYGON && count >= 3 -> {
-            val isValid = points.distinct().size == points.size && isConvex(points) && checkPolygonSize(points) == null
+            val isValid = isPolygonVertexCountSupported(count) &&
+                points.distinct().size == points.size &&
+                isConvex(points) &&
+                checkPolygonSize(points) == null
             if (isValid) Translator.raw("selection.feedback.particles.polygon_valid") ?: ""
             else Translator.raw("selection.feedback.particles.polygon_invalid") ?: ""
         }

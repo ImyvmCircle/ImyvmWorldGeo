@@ -7,8 +7,9 @@ import com.imyvm.iwg.infra.config.GeoConfig.MIN_POLYGON_SPAN
 import com.imyvm.iwg.infra.config.GeoConfig.MIN_ASPECT_RATIO
 import com.imyvm.iwg.infra.config.GeoConfig.MIN_EDGE_LENGTH
 import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import net.minecraft.core.BlockPos
-import kotlin.math.abs
+import java.math.BigInteger
 
 fun checkRectangleSize(width: Int, length: Int): CreationError? =
     checkRectangleSize(width.toLong(), length.toLong())
@@ -27,10 +28,11 @@ fun checkRectangleSize(width: Long, length: Long): CreationError? {
 fun checkCircleSize(radius: Double) = radius >= MIN_CIRCLE_RADIUS.value
 
 fun checkPolygonSize(positions: List<BlockPos>): CreationError? {
+    if (!isPolygonVertexCountSupported(positions.size)) return CreationError.PolygonVertexLimitExceeded
     val xs = positions.map { it.x }
     val zs = positions.map { it.z }
 
-    return checkArea(calculatePolygonArea(positions))
+    return checkArea(polygonTwiceArea(positions.size, { positions[it].x }, { positions[it].z }))
         ?: checkBoundingBox(xs, zs)
         ?: checkAspectRatio(xs, zs)
         ?: checkEdges(positions)
@@ -58,14 +60,16 @@ fun calculateRectangleArea(shapeParameter: MutableList<Int>) : Double {
 @JvmName("calculatePolygonAreaInt")
 fun calculatePolygonArea(shapeParameter: List<Int>): Double {
     if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) return 0.0
-    val vertices = shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
-    return calculatePolygonAreaCore(vertices)
+    return polygonTwiceArea(
+        shapeParameter.size / 2,
+        { shapeParameter[it * 2] },
+        { shapeParameter[it * 2 + 1] }
+    ).toDouble() / 2.0
 }
 
 fun calculatePolygonArea(positions: List<BlockPos>): Double {
     if (positions.size < 3) return 0.0
-    val vertices = positions.map { Pair(it.x, it.z) }
-    return calculatePolygonAreaCore(vertices)
+    return polygonTwiceArea(positions.size, { positions[it].x }, { positions[it].z }).toDouble() / 2.0
 }
 
 fun getBoundingBox(shapeParameters: MutableList<Int>): IntArray {
@@ -76,8 +80,8 @@ fun getBoundingBox(shapeParameters: MutableList<Int>): IntArray {
     return intArrayOf(minX, minZ, maxX, maxZ)
 }
 
-private fun checkArea(area: Double): CreationError? {
-    return if (area < MIN_POLYGON_AREA.value) CreationError.UnderSizeLimit else null
+private fun checkArea(twiceArea: BigInteger): CreationError? {
+    return if (twiceArea.toDouble() < MIN_POLYGON_AREA.value * 2.0) CreationError.UnderSizeLimit else null
 }
 
 private fun checkBoundingBox(xs: List<Int>, zs: List<Int>): CreationError? {
@@ -112,14 +116,17 @@ private fun checkEdges(positions: List<BlockPos>): CreationError? {
     return null
 }
 
-private fun calculatePolygonAreaCore(vertices: List<Pair<Int, Int>>): Double {
-    if (vertices.size < 3) return 0.0
-    var area = 0.0
-    val n = vertices.size
-    for (i in 0 until n) {
-        val current = vertices[i]
-        val next = vertices[(i + 1) % n]
-        area += (current.first.toDouble() * next.second.toDouble() - next.first.toDouble() * current.second.toDouble())
+internal inline fun polygonTwiceArea(
+    vertexCount: Int,
+    xAt: (Int) -> Int,
+    zAt: (Int) -> Int
+): BigInteger {
+    var twiceArea = BigInteger.ZERO
+    for (index in 0 until vertexCount) {
+        val next = (index + 1) % vertexCount
+        val forward = BigInteger.valueOf(xAt(index).toLong()).multiply(BigInteger.valueOf(zAt(next).toLong()))
+        val backward = BigInteger.valueOf(xAt(next).toLong()).multiply(BigInteger.valueOf(zAt(index).toLong()))
+        twiceArea = twiceArea.add(forward.subtract(backward))
     }
-    return abs(area) / 2.0
+    return twiceArea.abs()
 }

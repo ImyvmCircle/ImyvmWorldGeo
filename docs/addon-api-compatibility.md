@@ -82,6 +82,8 @@ Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `
 
 `GeoShape.shapeParameter` is a detached compatibility snapshot. Mutating the returned list no longer changes the live geometry, and `geoShapeType` cannot be changed independently from its parameters. Construct a complete validated `GeoShape` and use the supported Scope mutation operation instead of applying partial updates through the legacy properties.
 
+Polygon geometry is limited to 256 vertices. The complete `GeoShape` constructor and compatibility setter reject larger polygons, and persisted polygons above this safety limit fail fast during loading. The database tag, parameter-count encoding, and supported `GeoShape` JVM descriptors are unchanged; addons that generate larger polygons must simplify them to 256 vertices or fewer before construction.
+
 `GeoScope` identity, owner-dependent name, dimension, geometry, teleport point, accessibility, and Dynmap visibility are no longer independent mutation channels. Their legacy JVM setters remain linkable, but reject changes made outside the owning Region or application operation so ownership checks, rollback, and persistence cannot be bypassed.
 
 Use the owner-explicit teleport accessibility operation for new addon code:

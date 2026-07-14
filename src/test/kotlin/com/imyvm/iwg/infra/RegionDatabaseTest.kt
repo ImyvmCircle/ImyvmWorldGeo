@@ -15,6 +15,7 @@ import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertTrue
 
 class RegionDatabaseTest {
     @Test
@@ -145,6 +146,47 @@ class RegionDatabaseTest {
         }
 
         assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+    }
+
+    @Test
+    fun `rejects oversized polygon parameter count before reading coordinates`() = withTempDirectory { directory ->
+        val path = directory.resolve("regions.db")
+        DataOutputStream(Files.newOutputStream(path)).use {
+            it.writeInt(-1)
+            it.writeInt(1)
+            it.writeUTF("region")
+            it.writeInt(7)
+            it.writeInt(1)
+            it.writeUTF("scope")
+            it.writeUTF("minecraft:overworld")
+            it.writeBoolean(false)
+            it.writeBoolean(false)
+            it.writeBoolean(true)
+            it.writeInt(GeoShapeType.POLYGON.ordinal)
+            it.writeInt(514)
+        }
+
+        val error = assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+        assertTrue(error.message.orEmpty().contains("Invalid parameter count 514"))
+    }
+
+    @Test
+    fun `round trips polygon at the 256 vertex limit`() = withTempDirectory { directory ->
+        val path = directory.resolve("polygon-limit.db")
+        val scopeId = ScopeId(generateCompatScopeIdRaw(7, 0))
+        val parameters = squarePolygonParameters()
+        val scope = GeoScope(
+            "polygon",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape(GeoShapeType.POLYGON, parameters),
+            scopeId = scopeId
+        )
+
+        RegionDatabase.writeRegions(path, listOf(Region("region", 7, mutableListOf(scope))))
+        val loaded = RegionDatabase.readRegions(path).single().geometryScope.single().geoShape
+
+        assertEquals(parameters, loaded?.shapeParameter)
     }
 
     @Test
@@ -376,4 +418,11 @@ class RegionDatabaseTest {
         geoShape = null,
         scopeId = scopeId
     )
+
+    private fun squarePolygonParameters(): MutableList<Int> = buildList {
+        for (x in 0 until 128 step 2) addAll(listOf(x, 0))
+        for (z in 0 until 128 step 2) addAll(listOf(128, z))
+        for (x in 128 downTo 2 step 2) addAll(listOf(x, 128))
+        for (z in 128 downTo 2 step 2) addAll(listOf(0, z))
+    }.toMutableList()
 }

@@ -41,3 +41,17 @@ internal inline fun isConvexCoordinates(
 internal fun exactConvexityCross(ax: Long, az: Long, bx: Long, bz: Long): BigInteger =
     BigInteger.valueOf(ax).multiply(BigInteger.valueOf(bz))
         .subtract(BigInteger.valueOf(az).multiply(BigInteger.valueOf(bx)))
+
+@PublishedApi
+internal fun orientationSign(ax: Int, az: Int, bx: Int, bz: Int, px: Int, pz: Int): Int {
+    val edgeX = bx.toLong() - ax
+    val edgeZ = bz.toLong() - az
+    val pointX = px.toLong() - ax
+    val pointZ = pz.toLong() - az
+    val firstProduct = edgeX.toDouble() * pointZ
+    val secondProduct = edgeZ.toDouble() * pointX
+    val determinant = firstProduct - secondProduct
+    val fallbackThreshold = (abs(firstProduct) + abs(secondProduct)) * 1e-12
+    if (abs(determinant) > fallbackThreshold) return determinant.compareTo(0.0)
+    return exactConvexityCross(edgeX, edgeZ, pointX, pointZ).signum()
+}

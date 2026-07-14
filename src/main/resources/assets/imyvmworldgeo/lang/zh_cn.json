@@ -182,6 +182,7 @@
   "error.polygon_too_small": "&c多边形过小。&7面积必须至少达到最小值。",
   "error.generic_too_small": "&c该境界过小。",
   "error.coordinate_range_exceeded": "&c所选境界超出了支持的坐标范围。",
+  "error.polygon_vertex_limit_exceeded": "&c多边形最多允许 {0} 个顶点。",
   "interaction.meta.persistence.save_failed": "&c更改无法保存，已恢复至修改前状态。请检查服务器日志后重试。",
   "error.under_bounding_box_limit": "&c该境界低于边界框限制。&7其 X 跨度或 Z 跨度过小。",
   "error.aspect_ratio_invalid": "&c该境界的长宽比超过允许的最大值。&7过于细长的境界不被允许。",

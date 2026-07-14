@@ -111,4 +111,37 @@ class AreaEstimatorTest {
 
         assertEquals(AreaEstimationResult.Error(CreationError.NotConvex), result)
     }
+
+    @Test
+    fun `polygon area threshold is exact near int maximum coordinates`() {
+        val maximum = Int.MAX_VALUE
+        val positions = listOf(
+            BlockPos(maximum - 50, 0, maximum - 195),
+            BlockPos(maximum, 0, maximum - 195),
+            BlockPos(maximum - 50, 0, maximum)
+        )
+
+        assertEquals(4875.0, com.imyvm.iwg.util.geo.calculatePolygonArea(positions))
+        assertEquals(
+            4875.0,
+            GeoShape(
+                GeoShapeType.POLYGON,
+                positions.flatMap { listOf(it.x, it.z) }.toMutableList()
+            ).calculateArea()
+        )
+        assertEquals(
+            AreaEstimationResult.Error(CreationError.UnderSizeLimit),
+            AreaEstimator.estimateShapeArea(positions, GeoShapeType.POLYGON)
+        )
+    }
+
+    @Test
+    fun `polygon area estimation rejects more than 256 vertices before geometry work`() {
+        val positions = List(257) { BlockPos(it, 0, it) }
+
+        assertEquals(
+            AreaEstimationResult.Error(CreationError.PolygonVertexLimitExceeded),
+            AreaEstimator.estimateShapeArea(positions, GeoShapeType.POLYGON)
+        )
+    }
 }

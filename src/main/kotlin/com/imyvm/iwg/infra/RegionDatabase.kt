@@ -519,8 +519,8 @@ object RegionDatabase {
         else {
             val geoShapeType = readEnum(stream, GeoShapeType.entries, "shape type")
             val paramCount = checkedCount(stream.readInt(), "shape parameters")
-            val params = MutableList(paramCount) { stream.readInt() }
             validateShapeParameterCount(geoShapeType, paramCount)
+            val params = MutableList(paramCount) { stream.readInt() }
             try {
                 GeoShape(geoShapeType, params)
             } catch (exception: IllegalArgumentException) {
@@ -860,7 +860,7 @@ object RegionDatabase {
             GeoShapeType.UNKNOWN -> count == 0
             GeoShapeType.CIRCLE -> count == 3
             GeoShapeType.RECTANGLE -> count == 4
-            GeoShapeType.POLYGON -> count >= 6 && count % 2 == 0
+            GeoShapeType.POLYGON -> count in 6..(MAX_POLYGON_VERTICES * 2) && count % 2 == 0
         }
         if (!valid) throw IOException("Invalid parameter count $count for $type")
     }

@@ -21,9 +21,12 @@ fun rectangleContainsPoint(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
 
 fun polygonContainsPoint(x: Int, z: Int, shapeParameter: List<Int>): Boolean {
     if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) return false
-    return polygonContainsPoint(
-        x, z,
-        shapeParameter.chunked(2).map { Pair(it[0], it[1]) }
+    return polygonContainsPointCoordinates(
+        shapeParameter.size / 2,
+        { shapeParameter[it * 2] },
+        { shapeParameter[it * 2 + 1] },
+        x,
+        z
     )
 }
 
@@ -51,30 +54,43 @@ fun rectangleContainsPoint(x: Int, z: Int, west: Int, east: Int, north: Int, sou
 
 @JvmName("polygonPointContainment")
 fun polygonContainsPoint(x: Int, z: Int, vertices: List<Pair<Int, Int>>): Boolean {
-    var inside = false
-    var j = vertices.size - 1
+    return polygonContainsPointCoordinates(
+        vertices.size,
+        { vertices[it].first },
+        { vertices[it].second },
+        x,
+        z
+    )
+}
 
-    for (i in vertices.indices) {
-        val xi = vertices[i].first
-        val zi = vertices[i].second
-        val xj = vertices[j].first
-        val zj = vertices[j].second
-
-        val cross = (x.toDouble() - xi) * (zj.toDouble() - zi) -
-            (z.toDouble() - zi) * (xj.toDouble() - xi)
-        if (cross == 0.0) {
-            if (x in minOf(xi, xj)..maxOf(xi, xj) &&
-                z in minOf(zi, zj)..maxOf(zi, zj)
-            ) {
-                return true
-            }
+internal inline fun polygonContainsPointCoordinates(
+    vertexCount: Int,
+    xAt: (Int) -> Int,
+    zAt: (Int) -> Int,
+    x: Int,
+    z: Int
+): Boolean {
+    var winding = 0
+    var previous = vertexCount - 1
+    for (current in 0 until vertexCount) {
+        val currentX = xAt(current)
+        val currentZ = zAt(current)
+        val previousX = xAt(previous)
+        val previousZ = zAt(previous)
+        val orientation = orientationSign(previousX, previousZ, currentX, currentZ, x, z)
+        if (orientation == 0 &&
+            x in minOf(currentX, previousX)..maxOf(currentX, previousX) &&
+            z in minOf(currentZ, previousZ)..maxOf(currentZ, previousZ)
+        ) {
+            return true
         }
 
-        val intersect = ((zi > z) != (zj > z)) &&
-                (x < (xj - xi) * (z - zi).toDouble() / (zj - zi) + xi)
-        if (intersect) inside = !inside
-        j = i
+        if (previousZ <= z) {
+            if (currentZ > z && orientation > 0) winding++
+        } else if (currentZ <= z && orientation < 0) {
+            winding--
+        }
+        previous = current
     }
-
-    return inside
+    return winding != 0
 }

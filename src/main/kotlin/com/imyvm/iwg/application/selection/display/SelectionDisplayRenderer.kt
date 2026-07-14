@@ -15,6 +15,7 @@ import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.isConvex
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
@@ -171,7 +172,11 @@ private fun displayPolygonSelection(
     points: List<BlockPos>,
     session: SelectionDisplaySession
 ) {
-    if (points.size < 3 || !isConvex(points) || checkPolygonSize(points) != null) return
+    if (points.size < 3 ||
+        !isPolygonVertexCountSupported(points.size) ||
+        !isConvex(points) ||
+        checkPolygonSize(points) != null
+    ) return
     emitClosedBoundary(player, points.size, { points[it].x }, { points[it].z }, BoundaryStyle.SELECTION, session)
 }
 

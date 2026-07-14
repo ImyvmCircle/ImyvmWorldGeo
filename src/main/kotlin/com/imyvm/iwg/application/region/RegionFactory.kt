@@ -8,6 +8,7 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.generateNewScopeIdRaw
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.server.level.ServerPlayer
@@ -222,6 +223,9 @@ object RegionFactory {
         )
 
     private fun createPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
+        if (!isPolygonVertexCountSupported(positions.size)) {
+            return Result.Err(CreationError.PolygonVertexLimitExceeded)
+        }
         val distinct = positions.distinctBy { it.x to it.z }
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)

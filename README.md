@@ -72,7 +72,7 @@ providing them with regional features via settings, and enabling teleportation t
 ### Scope
 
 A scope is a sub-area within a region, defined by a name unique to other scopes in the same region and a shape.
-A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters` parsed by corresponding type.
+A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters` parsed by corresponding type. Polygon shapes support at most 256 vertices.
 
 ### Setting
 

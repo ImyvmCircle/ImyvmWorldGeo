@@ -4,6 +4,8 @@ import com.imyvm.iwg.util.geo.checkCircleSize
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.checkRectangleSize
 import com.imyvm.iwg.util.geo.isConvex
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
+import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.sqrt
@@ -62,6 +64,7 @@ fun evaluateModifyCircleCenter(oldCenter: BlockPos, newCenter: BlockPos, existin
 
 fun evaluateModifyPolygonInsert(newPoint: BlockPos, existingPoints: List<BlockPos>): List<BlockPos>? {
     if (existingPoints.size < 3) return null
+    if (existingPoints.size >= MAX_POLYGON_VERTICES) return null
     var bestIndex = 0
     var bestDist = Double.MAX_VALUE
     val n = existingPoints.size
@@ -86,6 +89,7 @@ fun evaluateModifyPolygonInsert(newPoint: BlockPos, existingPoints: List<BlockPo
 }
 
 fun evaluateModifyPolygonReplace(existingVertex: BlockPos, newPoint: BlockPos, existingPoints: List<BlockPos>): List<BlockPos>? {
+    if (!isPolygonVertexCountSupported(existingPoints.size)) return null
     val newPolygon = existingPoints.map {
         if (it.x == existingVertex.x && it.z == existingVertex.z) newPoint else it
     }
@@ -95,6 +99,7 @@ fun evaluateModifyPolygonReplace(existingVertex: BlockPos, newPoint: BlockPos, e
 }
 
 fun evaluateModifyPolygonExplicitInsert(adj1: BlockPos, adj2: BlockPos, newPoint: BlockPos, existingPoints: List<BlockPos>): List<BlockPos>? {
+    if (existingPoints.size >= MAX_POLYGON_VERTICES) return null
     val n = existingPoints.size
     val indexA = existingPoints.indexOfFirst { it.x == adj1.x && it.z == adj1.z }
     val indexB = existingPoints.indexOfFirst { it.x == adj2.x && it.z == adj2.z }
