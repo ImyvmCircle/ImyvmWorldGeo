@@ -6,6 +6,9 @@ import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.EffectKey
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
+import java.util.concurrent.CountDownLatch
+import java.util.concurrent.Executors
+import java.util.concurrent.TimeUnit
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -25,7 +28,7 @@ class EffectOverlayServiceTest {
     @Test
     fun `clearing a scope removes its transient overlays`() {
         val overlay = overlay()
-        EffectOverlayService.applyTimedEffectOverlayForExistingScope(overlay)
+        store(overlay)
 
         assertEquals(1, EffectOverlayService.queryOverlay(scopeId, 1)[EffectKey.SPEED])
 
@@ -51,16 +54,14 @@ class EffectOverlayServiceTest {
     @Test
     fun `service snapshots effects and replaces overlays atomically by id`() {
         val effects = mutableListOf(TimedEffect(EffectKey.SPEED, 1))
-        EffectOverlayService.applyTimedEffectOverlayForExistingScope(overlay(effects = effects))
+        store(overlay(effects = effects))
         effects.clear()
 
         assertEquals(1, EffectOverlayService.queryOverlay(scopeId, 1)[EffectKey.SPEED])
         val storedEffects = EffectOverlayService.queryActiveOverlays(scopeId, 1).single().effects
         assertFailsWith<UnsupportedOperationException> { (storedEffects as MutableList).clear() }
 
-        EffectOverlayService.applyTimedEffectOverlayForExistingScope(
-            overlay(effects = listOf(TimedEffect(EffectKey.HASTE, 2)))
-        )
+        store(overlay(effects = listOf(TimedEffect(EffectKey.HASTE, 2))))
 
         val resolved = EffectOverlayService.queryOverlay(scopeId, 1)
         assertNull(resolved[EffectKey.SPEED])
@@ -69,11 +70,50 @@ class EffectOverlayServiceTest {
 
     @Test
     fun `sweep removes overlays whose end is reached`() {
-        EffectOverlayService.applyTimedEffectOverlayForExistingScope(overlay(end = 10))
+        store(overlay(end = 10))
 
         EffectOverlayService.sweepExpired(10)
 
         assertFalse(EffectOverlayService.clearTimedEffectOverlay(scopeId, "overlay"))
+    }
+
+    @Test
+    fun `scope deletion is atomic with a concurrent addon apply`() {
+        val existenceChecked = CountDownLatch(1)
+        val continueApply = CountDownLatch(1)
+        val deleteEntered = CountDownLatch(1)
+        val executor = Executors.newFixedThreadPool(2)
+        try {
+            val apply = executor.submit<String> {
+                EffectOverlayService.applyTimedEffectOverlay(overlay()) {
+                    existenceChecked.countDown()
+                    check(continueApply.await(5, TimeUnit.SECONDS))
+                    true
+                }
+            }
+            assertTrue(existenceChecked.await(5, TimeUnit.SECONDS))
+
+            val delete = executor.submit {
+                EffectOverlayService.withScopeLifecycle {
+                    deleteEntered.countDown()
+                    EffectOverlayService.clearScope(scopeId)
+                }
+            }
+            assertFalse(deleteEntered.await(200, TimeUnit.MILLISECONDS))
+
+            continueApply.countDown()
+            apply.get(5, TimeUnit.SECONDS)
+            delete.get(5, TimeUnit.SECONDS)
+
+            assertTrue(EffectOverlayService.queryOverlay(scopeId, 1).isEmpty())
+        } finally {
+            continueApply.countDown()
+            executor.shutdownNow()
+        }
+    }
+
+    private fun store(overlay: TimedEffectOverlay) {
+        EffectOverlayService.applyTimedEffectOverlay(overlay) { it == scopeId }
     }
 
     private fun overlay(

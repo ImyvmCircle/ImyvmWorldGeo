@@ -13,6 +13,8 @@ import java.util.concurrent.ConcurrentHashMap
 object EffectOverlayService {
 
     private val overlaysByScope: ConcurrentHashMap<AssignedScopeId, MutableList<TimedEffectOverlay>> = ConcurrentHashMap()
+    // ponytail: one lock is enough for low-frequency deletion/apply; use per-scope stripes only if contention is measured.
+    private val scopeLifecycleMonitor = Any()
 
     fun register() {
         LazyTicker.registerTask { _ ->
@@ -20,12 +22,14 @@ object EffectOverlayService {
         }
     }
 
-    fun applyTimedEffectOverlay(overlay: TimedEffectOverlay): String {
-        require(RegionDatabase.getScopeByAssignedId(overlay.scopeId) != null) { "scope does not exist" }
-        return applyTimedEffectOverlayForExistingScope(overlay)
-    }
+    fun applyTimedEffectOverlay(overlay: TimedEffectOverlay): String =
+        applyTimedEffectOverlay(overlay) { RegionDatabase.getScopeByAssignedId(it) != null }
 
-    internal fun applyTimedEffectOverlayForExistingScope(overlay: TimedEffectOverlay): String {
+    internal fun applyTimedEffectOverlay(
+        overlay: TimedEffectOverlay,
+        scopeExists: (AssignedScopeId) -> Boolean
+    ): String = withScopeLifecycle {
+        require(scopeExists(overlay.scopeId)) { "scope does not exist" }
         val storedOverlay = overlay.immutableSnapshot()
         overlaysByScope.compute(storedOverlay.scopeId) { _, existing ->
             val list = existing ?: mutableListOf()
@@ -35,8 +39,11 @@ object EffectOverlayService {
             }
             list
         }
-        return storedOverlay.overlayId
+        storedOverlay.overlayId
     }
+
+    internal fun <T> withScopeLifecycle(operation: () -> T): T =
+        synchronized(scopeLifecycleMonitor, operation)
 
     fun clearTimedEffectOverlay(scopeId: ScopeId, overlayId: String): Boolean {
         val assignedScopeId = AssignedScopeId.from(scopeId) ?: return false
@@ -92,7 +99,7 @@ object EffectOverlayService {
     }
 
     fun clearScope(scopeId: AssignedScopeId) {
-        overlaysByScope.remove(scopeId)
+        withScopeLifecycle { overlaysByScope.remove(scopeId) }
     }
 
     internal fun sweepExpired(nowMillis: Long) {

@@ -9,13 +9,20 @@ import com.imyvm.iwg.application.region.effect.EffectOverlayService
 fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false){
     val regionName = region.name
     val regionId = region.numberID
-    val rollback = RegionDatabase.removeRegionReversibly(region)
-    if (!saveRegionData(player)) {
-        rollback()
-        return
+    val deletedScopes = region.scopes
+    val deleted = EffectOverlayService.withScopeLifecycle {
+        val rollback = RegionDatabase.removeRegionReversibly(region)
+        if (!saveRegionData(player)) {
+            rollback()
+            false
+        } else {
+            deletedScopes.forEach { EffectOverlayService.clearScope(it.requireAssignedScopeId()) }
+            true
+        }
     }
-    clearSelectionsReferencing(region.scopes)
-    region.scopes.forEach { EffectOverlayService.clearScope(it.requireAssignedScopeId()) }
+    if (!deleted) return
+
+    clearSelectionsReferencing(deletedScopes)
     if (isApi.not()) {
         player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
     }
@@ -26,13 +33,19 @@ fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
 
     val existingScope = getScopeOrNotify(player, region, scopeName) ?: return
     if (!checkScopeSize(player, region)) return
-    val index = region.removeScope(existingScope)
-    if (!saveRegionData(player)) {
-        region.restoreScope(index, existingScope)
-        return
+    val deleted = EffectOverlayService.withScopeLifecycle {
+        val index = region.removeScope(existingScope)
+        if (!saveRegionData(player)) {
+            region.restoreScope(index, existingScope)
+            false
+        } else {
+            EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())
+            true
+        }
     }
+    if (!deleted) return
+
     clearSelectionsReferencing(listOf(existingScope))
-    EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())
     player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
 }
 
