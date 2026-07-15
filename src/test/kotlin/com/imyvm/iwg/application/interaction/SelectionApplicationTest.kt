@@ -98,7 +98,7 @@ class SelectionApplicationTest {
     fun `modify application target requires the canonical owner and exact scope`() {
         val scope = assignedScope("scope", 7, 1)
         val region = Region("region", 7, mutableListOf(scope))
-        val otherRegion = Region("other", 8, mutableListOf())
+        val otherRegion = Region("other", 8, mutableListOf(assignedScope("other-scope", 8, 1)))
 
         assertNull(validateModifySelectionTarget(region, scope, overworld) { region to scope })
         assertEquals(

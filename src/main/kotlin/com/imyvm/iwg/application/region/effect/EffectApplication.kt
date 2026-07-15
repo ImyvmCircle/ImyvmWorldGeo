@@ -17,7 +17,7 @@ fun applyRegionEffectsToPlayers(server: MinecraftServer) {
         val duration = EFFECT_DURATION_SECONDS.value * 20
         for ((key, amplifier) in effects) {
             val effectEntry = BuiltInRegistries.MOB_EFFECT.get(Identifier.parse("minecraft:${key.effectId}")).orElse(null) ?: continue
-            player.addEffect(MobEffectInstance(effectEntry, duration, amplifier.coerceIn(0, 255), true, false, true))
+            player.addEffect(MobEffectInstance(effectEntry, duration, amplifier, true, false, true))
         }
     }
 }

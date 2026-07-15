@@ -42,7 +42,11 @@ class EffectSetting(
     override val key: EffectKey,
     override val value: Int,
     playerUUID: UUID? = null
-) : Setting(playerUUID)
+) : Setting(playerUUID) {
+    init {
+        require(value in 0..255) { "effect amplifier must be between 0 and 255" }
+    }
+}
 
 class RuleSetting(
     override val key: RuleKey,

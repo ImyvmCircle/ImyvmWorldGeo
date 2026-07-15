@@ -9,6 +9,17 @@ import kotlin.test.assertSame
 
 class GeoScopeTest {
     @Test
+    fun `scope rejects invalid construction and controlled rename names`() {
+        assertFails {
+            GeoScope("1scope", Identifier.parse("minecraft:overworld"), null, geoShape = null)
+        }
+        val scope = GeoScope("scope", Identifier.parse("minecraft:overworld"), null, geoShape = null)
+
+        assertFails { scope.renameTo("scope_") }
+        assertEquals("scope", scope.scopeName)
+    }
+
+    @Test
     fun `legacy property setters reject uncontrolled state changes`() {
         val shape = GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, 10))
         val scope = GeoScope(

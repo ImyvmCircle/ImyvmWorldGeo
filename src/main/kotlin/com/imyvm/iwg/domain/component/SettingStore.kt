@@ -66,7 +66,11 @@ internal class SettingStore(settings: Iterable<Setting> = emptyList()) {
 
     fun replaceAll(settings: Iterable<Setting>) {
         val validated = settings.toList()
-        validated.forEach(::requireSupported)
+        val identities = hashSetOf<Pair<SettingKey, SettingSubject>>()
+        validated.forEach { setting ->
+            val subject = setting.playerUUID?.let(SettingSubject::Player) ?: SettingSubject.Global
+            require(identities.add(settingKey(setting) to subject)) { "duplicate setting identity" }
+        }
         clear()
         validated.forEach(::put)
     }
@@ -98,13 +102,15 @@ internal class SettingStore(settings: Iterable<Setting> = emptyList()) {
         entryExitMessages.clear()
     }
 
-    private fun requireSupported(setting: Setting) {
-        require(
-            setting is PermissionSetting || setting is ExtensionPermissionSetting ||
-                setting is EffectSetting || setting is RuleSetting ||
-                setting is ExtensionRuleSetting || setting is EntryExitToggleSetting ||
-                setting is EntryExitMessageSetting
-        ) { "Unsupported setting type: ${setting.javaClass.name}" }
+    private fun settingKey(setting: Setting): SettingKey = when (setting) {
+        is PermissionSetting -> setting.key
+        is ExtensionPermissionSetting -> setting.key
+        is EffectSetting -> setting.key
+        is RuleSetting -> setting.key
+        is ExtensionRuleSetting -> setting.key
+        is EntryExitToggleSetting -> setting.key
+        is EntryExitMessageSetting -> setting.key
+        else -> throw IllegalArgumentException("Unsupported setting type: ${setting.javaClass.name}")
     }
 
     private fun permissionSetting(key: PermissionKeyLike, value: Boolean, uuid: UUID?): Setting = when (key) {

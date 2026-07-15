@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.ScopeOwnershipEntry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -42,9 +43,16 @@ fun onScopeTransfer(
         newSourceHistory.remove(scopeId)?.let { previousEntries ->
             newTargetHistory.getOrPut(scopeId) { mutableListOf() }.addAll(previousEntries)
         }
+        newTargetHistory.getOrPut(scopeId) { mutableListOf() }.add(
+            ScopeOwnershipEntry(
+                scopeId.raw,
+                sourceRegion.numberID,
+                targetRegion.numberID,
+                transferTime
+            )
+        )
         sourceRegion.replaceOwnershipHistory(newSourceHistory)
         targetRegion.replaceOwnershipHistory(newTargetHistory)
-        RegionDatabase.recordAssignedScopeOwnership(scopeId, sourceRegion, targetRegion, transferTime)
     } catch (error: IllegalArgumentException) {
         if (targetRegion.containsScope(scope)) targetRegion.removeScope(scope)
         scope.renameTo(originalName)

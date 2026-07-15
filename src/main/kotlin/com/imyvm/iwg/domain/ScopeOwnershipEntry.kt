@@ -10,4 +10,11 @@ data class ScopeOwnershipEntry(
 ) {
     val scopeId: AssignedScopeId =
         AssignedScopeId.fromRaw(scopeIdRaw) ?: throw IllegalArgumentException("scope id is not assigned")
+
+    init {
+        require(fromRegionNumberId > 0) { "source region id must be positive" }
+        require(toRegionNumberId > 0) { "target region id must be positive" }
+        require(fromRegionNumberId != toRegionNumberId) { "ownership transfer must change region" }
+        require(changedAtMillis >= 0L) { "ownership change time must not be negative" }
+    }
 }

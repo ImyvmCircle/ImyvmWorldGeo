@@ -9,12 +9,13 @@ import kotlin.test.assertNull
 import kotlin.test.assertSame
 
 class PlayerLocationTransitionTest {
-    private val regionA = Region("A", 1, mutableListOf())
-    private val regionB = Region("B", 2, mutableListOf())
-    private val regionC = Region("C", 3, mutableListOf())
-    private val scopeA = scope("scope-A")
-    private val scopeB = scope("scope-B")
-    private val scopeC = scope("scope-C")
+    private val scopeA = scope("scope-A", 1, 0)
+    private val scopeA2 = scope("scope-A2", 1, 1)
+    private val scopeB = scope("scope-B", 2, 0)
+    private val scopeC = scope("scope-C", 3, 0)
+    private val regionA = Region("A", 1, mutableListOf(scopeA, scopeA2))
+    private val regionB = Region("B", 2, mutableListOf(scopeB))
+    private val regionC = Region("C", 3, mutableListOf(scopeC))
 
     @Test
     fun `first sample establishes baseline without transition output`() {
@@ -85,13 +86,13 @@ class PlayerLocationTransitionTest {
 
     @Test
     fun `scope-only change leaves region stay untouched`() {
-        val transition = calculateLocationTransition(state(regionA, scopeA, 10), PlayerLocation(regionA, scopeB), 30, 1_000)
+        val transition = calculateLocationTransition(state(regionA, scopeA, 10), PlayerLocation(regionA, scopeA2), 30, 1_000)
 
         assertNull(transition.regionEvent)
         assertNull(transition.completedStay)
         assertSame(regionA, transition.scopeExit?.region)
         assertSame(scopeA, transition.scopeExit?.scope)
-        assertSame(scopeB, transition.scopeEntry?.scope)
+        assertSame(scopeA2, transition.scopeEntry?.scope)
         assertEquals(10, transition.state.stayStartedAt)
     }
 
@@ -111,15 +112,15 @@ class PlayerLocationTransitionTest {
         stayStartedAt = startedAt
     )
 
-    private fun scope(name: String) = GeoScope(
+    private fun scope(name: String, regionId: Int, index: Int) = GeoScope(
         name,
         Identifier.parse("minecraft:overworld"),
         null,
         geoShape = null,
         scopeId = com.imyvm.iwg.domain.component.ScopeId(
             com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(
-                (name.hashCode() and Int.MAX_VALUE).coerceAtLeast(1),
-                0
+                regionId,
+                index
             )
         )
     )

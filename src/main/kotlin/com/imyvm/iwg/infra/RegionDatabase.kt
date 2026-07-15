@@ -54,26 +54,53 @@ internal data class RegionPlayerStatsLedger(
         trackedPlayers.addAll(blockBreakCounts.keys)
         return RegionPlayerStats(
             trackedPlayerCount = trackedPlayers.size,
-            entryCount = entryCounts.values.sum(),
-            stayMillis = stayMillis.values.sum(),
-            deathCount = deathCounts.values.sum(),
-            blockPlaceCount = blockPlaceCounts.values.sum(),
-            blockBreakCount = blockBreakCounts.values.sum()
+            entryCount = checkedSum(entryCounts.values),
+            stayMillis = checkedSum(stayMillis.values),
+            deathCount = checkedSum(deathCounts.values),
+            blockPlaceCount = checkedSum(blockPlaceCounts.values),
+            blockBreakCount = checkedSum(blockBreakCounts.values)
         )
     }
 
     fun mergeFrom(other: RegionPlayerStatsLedger) {
-        mergeMap(entryCounts, other.entryCounts)
-        mergeMap(stayMillis, other.stayMillis)
-        mergeMap(deathCounts, other.deathCounts)
-        mergeMap(blockPlaceCounts, other.blockPlaceCounts)
-        mergeMap(blockBreakCounts, other.blockBreakCounts)
+        val mergedEntryCounts = mergedMap(entryCounts, other.entryCounts)
+        val mergedStayMillis = mergedMap(stayMillis, other.stayMillis)
+        val mergedDeathCounts = mergedMap(deathCounts, other.deathCounts)
+        val mergedBlockPlaceCounts = mergedMap(blockPlaceCounts, other.blockPlaceCounts)
+        val mergedBlockBreakCounts = mergedMap(blockBreakCounts, other.blockBreakCounts)
+        entryCounts.replaceWith(mergedEntryCounts)
+        stayMillis.replaceWith(mergedStayMillis)
+        deathCounts.replaceWith(mergedDeathCounts)
+        blockPlaceCounts.replaceWith(mergedBlockPlaceCounts)
+        blockBreakCounts.replaceWith(mergedBlockBreakCounts)
     }
 
-    private fun mergeMap(target: MutableMap<UUID, Long>, source: Map<UUID, Long>) {
+    fun mergedWith(other: RegionPlayerStatsLedger): RegionPlayerStatsLedger = detachedCopy().apply {
+        mergeFrom(other)
+    }
+
+    private fun mergedMap(target: Map<UUID, Long>, source: Map<UUID, Long>): MutableMap<UUID, Long> {
+        require(target.values.all { it > 0L }) { "player stats values must be positive" }
+        val result = target.toMutableMap()
         source.forEach { (uuid, value) ->
-            target[uuid] = (target[uuid] ?: 0L) + value
+            require(value > 0L) { "player stats values must be positive" }
+            result[uuid] = Math.addExact(result[uuid] ?: 0L, value)
         }
+        return result
+    }
+
+    private fun checkedSum(values: Collection<Long>): Long {
+        var result = 0L
+        values.forEach {
+            require(it > 0L) { "player stats values must be positive" }
+            result = Math.addExact(result, it)
+        }
+        return result
+    }
+
+    private fun MutableMap<UUID, Long>.replaceWith(replacement: Map<UUID, Long>) {
+        clear()
+        putAll(replacement)
     }
 }
 
@@ -272,12 +299,12 @@ object RegionDatabase {
 
     internal fun mergeAndRemoveRegionReversibly(sourceRegion: Region, targetRegion: Region): () -> Unit {
         requireCanonicalRegions(sourceRegion, targetRegion)
+        require(sourceRegion !== targetRegion) { "source and target regions must differ" }
         val sourceStats = regionPlayerStats[sourceRegion.numberID]?.detachedCopy()
         val targetStats = regionPlayerStats[targetRegion.numberID]?.detachedCopy()
+        val mergedStats = sourceStats?.let { (targetStats ?: RegionPlayerStatsLedger()).mergedWith(it) }
         val restoreRegion = removeRegionReversibly(sourceRegion)
-        sourceStats?.let {
-            regionPlayerStats.getOrPut(targetRegion.numberID) { RegionPlayerStatsLedger() }.mergeFrom(it)
-        }
+        if (mergedStats != null) regionPlayerStats[targetRegion.numberID] = mergedStats
         return {
             restoreRegion()
             if (sourceStats != null) regionPlayerStats[sourceRegion.numberID] = sourceStats
@@ -327,10 +354,17 @@ object RegionDatabase {
     }
 
     fun mergeRegionPlayerStats(sourceRegion: Region, targetRegion: Region) {
+        require(sourceRegion.numberID != targetRegion.numberID) { "source and target regions must differ" }
         val source = regionPlayerStats[sourceRegion.numberID] ?: return
-        val target = regionPlayerStats.getOrPut(targetRegion.numberID) { RegionPlayerStatsLedger() }
-        target.mergeFrom(source)
+        val merged = (regionPlayerStats[targetRegion.numberID] ?: RegionPlayerStatsLedger()).mergedWith(source)
+        regionPlayerStats[targetRegion.numberID] = merged
         regionPlayerStats.remove(sourceRegion.numberID)
+    }
+
+    internal fun requireMergeableRegionPlayerStats(sourceRegion: Region, targetRegion: Region) {
+        require(sourceRegion !== targetRegion) { "source and target regions must differ" }
+        val source = regionPlayerStats[sourceRegion.numberID] ?: return
+        (regionPlayerStats[targetRegion.numberID] ?: RegionPlayerStatsLedger()).mergedWith(source)
     }
 
     fun savePlayerStatsSnapshot() {
@@ -448,7 +482,6 @@ object RegionDatabase {
         for (region in regions) {
             result.addAll(region.ownershipHistory(scopeId))
         }
-        result.sortBy { it.changedAtMillis }
         return result
     }
 
@@ -496,11 +529,18 @@ object RegionDatabase {
         val regionIds = hashSetOf<Int>()
         val regionNames = TreeSet(String.CASE_INSENSITIVE_ORDER)
         val scopeIds = hashSetOf<AssignedScopeId>()
+        val ownershipScopeIds = hashSetOf<AssignedScopeId>()
         for (region in regionsToValidate) {
+            require(isValidGeoName(region.name)) { "invalid region name" }
+            require(region.scopes.isNotEmpty()) { "region must contain at least one scope" }
             require(regionIds.add(region.numberID)) { "duplicate region id" }
             require(regionNames.add(region.name)) { "duplicate region name" }
             for (scope in region.scopes) {
+                require(isValidGeoName(scope.scopeName)) { "invalid scope name" }
                 require(scopeIds.add(scope.requireAssignedScopeId())) { "duplicate scope id" }
+            }
+            region.ownershipHistorySnapshot().keys.forEach { scopeId ->
+                require(ownershipScopeIds.add(scopeId)) { "ownership history is stored by multiple regions" }
             }
         }
     }
@@ -527,6 +567,7 @@ object RegionDatabase {
         val result = mutableMapOf<Long, MutableList<ScopeOwnershipEntry>>()
         repeat(mapSize) {
             val key = stream.readLong()
+            require(!result.containsKey(key)) { "duplicate ownership history scope id" }
             val entryCount = checkedCount(stream.readInt(), "ownership entries")
             val entries = ArrayList<ScopeOwnershipEntry>(entryCount)
             repeat(entryCount) {
@@ -731,7 +772,7 @@ object RegionDatabase {
     ) {
         val ledger = regionPlayerStats.getOrPut(regionId) { RegionPlayerStatsLedger() }
         val target = ledger.selector()
-        target[playerUUID] = (target[playerUUID] ?: 0L) + delta
+        target[playerUUID] = Math.addExact(target[playerUUID] ?: 0L, delta)
     }
 
     private fun loadPlayerStats(
@@ -762,6 +803,11 @@ object RegionDatabase {
                     blockPlaceCounts = readPlayerStatMap(optionalJsonObject(regionJson, "blockPlaces", "player stats region $regionKey"), "blockPlaces"),
                     blockBreakCounts = readPlayerStatMap(optionalJsonObject(regionJson, "blockBreaks", "player stats region $regionKey"), "blockBreaks")
                 )
+                try {
+                    ledger.aggregate()
+                } catch (error: ArithmeticException) {
+                    throw IOException("Player stats totals exceed the supported range", error)
+                }
                 if (!ledger.isEmpty()) put(regionId, ledger)
             }
         }
@@ -812,9 +858,11 @@ object RegionDatabase {
     private fun writePlayerStatMap(source: Map<UUID, Long>): JsonObject {
         val result = JsonObject()
         source.entries
-            .filter { it.value > 0L }
             .sortedBy { it.key.toString() }
-            .forEach { (uuid, value) -> result.addProperty(uuid.toString(), value) }
+            .forEach { (uuid, value) ->
+                require(value > 0L) { "player stats values must be positive" }
+                result.addProperty(uuid.toString(), value)
+            }
         return result
     }
 

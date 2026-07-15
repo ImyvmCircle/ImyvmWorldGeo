@@ -27,4 +27,13 @@ class RegionIdHandlerTest {
             allocateRegionId(4, 123, existingIds, initialDiscriminator = 42)
         }
     }
+
+    @Test
+    fun `rejects marks outside the supported range`() {
+        listOf(-1, 10).forEach { mark ->
+            assertFailsWith<IllegalArgumentException> {
+                allocateRegionId(mark, 123, emptySet(), initialDiscriminator = 0)
+            }
+        }
+    }
 }

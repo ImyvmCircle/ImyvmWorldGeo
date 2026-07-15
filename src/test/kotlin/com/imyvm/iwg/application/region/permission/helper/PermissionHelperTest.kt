@@ -143,7 +143,14 @@ class PermissionHelperTest {
 
     @Test
     fun `scope query rejects a scope owned by another region`() {
-        val otherRegion = Region("other", 2, mutableListOf())
+        val otherScope = GeoScope(
+            "other-scope",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = null,
+            scopeId = ScopeId(generateCompatScopeIdRaw(2, 0))
+        )
+        val otherRegion = Region("other", 2, mutableListOf(otherScope))
 
         assertFailsWith<IllegalArgumentException> {
             getScopePermissionDenialSource(otherRegion, scope, player, PermissionKey.PVP)

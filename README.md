@@ -159,7 +159,7 @@ Extension settings are persisted by their string key, so addon-defined keys do n
 
 #### Effect Keys
 
-Effect settings apply Minecraft status effects to players inside a region or scope. The value is the effect amplifier (0-indexed: 0 = Level 1, 1 = Level 2, etc.). Effects are refreshed every lazy ticker interval and last for `effect.duration_seconds` (default 5 s) after each application. Effect settings can be global or personal. The effective value follows the priority: scope personal → scope global → region personal → region global.
+Effect settings apply Minecraft status effects to players inside a region or scope. The value is an effect amplifier from `0` to `255` (0-indexed: 0 = Level 1, 1 = Level 2, etc.). Effects are refreshed every lazy ticker interval and last for `effect.duration_seconds` (default 5 s) after each application. Effect settings can be global or personal. The effective value follows the priority: scope personal → scope global → region personal → region global.
 
 Effects are applied silently (ambient-style: icon shown, no particles).
 
@@ -301,7 +301,7 @@ Handles player-triggered actions related to regions and their scopes.
   Starts selection mode locked to scope-modification for the given scope.
 
 - `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
-  Creates a region with an optional name, shape, and ID marker. If shapeTypeName is null, shape is inferred from selection state.
+  Creates a region with an optional name, shape, and ID marker. `idMark` must be from `0` to `9`. If shapeTypeName is null, shape is inferred from selection state.
 
 - `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
   Creates a region and returns the created region.
@@ -442,7 +442,7 @@ Provides access to region data and database operations for extension functions.
   Retrieves the list of all regions.
 
 - `getRegionListFiltered(idMark: Int): List<Region>`  
-  Retrieves a filtered list of regions based on ID mark.
+  Retrieves a filtered list of regions based on an ID mark from `0` to `9`. Other values fail fast.
 
 - `getRegionFoundingTime(region: Region): Long`  
   Gets the founding time of a region.

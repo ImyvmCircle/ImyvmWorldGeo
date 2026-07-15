@@ -17,6 +17,7 @@ private const val DISCRIMINATOR_COUNT = 128
 class RegionIdCapacityExceededException : IllegalStateException()
 
 fun generateNewRegionId(mark: Int): Int {
+    require(mark in 0..9) { "region mark must be between 0 and 9" }
     val existingIds = RegionDatabase.getRegionList().map { it.numberID }.toSet()
     return allocateRegionId(
         mark = mark,
@@ -32,9 +33,9 @@ internal fun allocateRegionId(
     existingIds: Set<Int>,
     initialDiscriminator: Int
 ): Int {
+    require(mark in 0..9) { "region mark must be between 0 and 9" }
     require(initialDiscriminator in 0 until DISCRIMINATOR_COUNT)
-    val markValue = if (mark in 0..9) mark else 0
-    val baseId = ((hoursFromEpoch and 0x1FFFFF) shl 11) or (markValue shl 7)
+    val baseId = ((hoursFromEpoch and 0x1FFFFF) shl 11) or (mark shl 7)
     repeat(DISCRIMINATOR_COUNT) { offset ->
         val discriminator = (initialDiscriminator + offset) and 0x7F
         val candidateId = baseId or discriminator
@@ -53,8 +54,8 @@ fun parseMarkFromRegionId(regionId: Int): Int {
 }
 
 fun filterRegionsByMark(mark: Int): List<Region> {
-    val markValue = if (mark < 0 || mark > 9) 0 else mark
-    return RegionDatabase.getRegionList().filter { parseMarkFromRegionId(it.numberID) == markValue }
+    require(mark in 0..9) { "region mark must be between 0 and 9" }
+    return RegionDatabase.getRegionList().filter { parseMarkFromRegionId(it.numberID) == mark }
 }
 
 private fun getHoursFromEpoch(): Int {

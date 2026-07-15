@@ -97,7 +97,7 @@
   "interaction.meta.setting.delete.error.no_such_setting": "&c未找到键 &e{0}&c 对应的设置。",
   "interaction.meta.setting.error.invalid_key": "&c无效的设置键。",
   "interaction.meta.setting.error.invalid_value_boolean": "&c&e{0}&c 的值无效。&7期望一个布尔值（true/false），但得到：&e{1}&c。",
-  "interaction.meta.setting.error.invalid_value_int": "&c&e{0}&c 的值无效。&7期望一个整数，但得到：&e{1}&c。",
+  "interaction.meta.setting.error.invalid_value_int": "&c&e{0}&c 的值无效。&7期望 0 到 255 之间的整数，但得到：&e{1}&c。",
   "interaction.meta.setting.error.invalid_target_player": "&c无效的目标玩家：&e{0}&c。",
   "interaction.meta.setting.error.missing_target_player": "&c缺少目标玩家名称。",
   "interaction.meta.setting.error.rule_no_personal": "&c规则设置不支持按玩家个人分配。",

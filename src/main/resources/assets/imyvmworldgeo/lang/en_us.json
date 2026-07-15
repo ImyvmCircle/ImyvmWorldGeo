@@ -97,7 +97,7 @@
   "interaction.meta.setting.delete.error.no_such_setting": "&cNo such setting found for key: &e{0}&c.",
   "interaction.meta.setting.error.invalid_key": "&cInvalid setting key.",
   "interaction.meta.setting.error.invalid_value_boolean": "&cInvalid value for &e{0}&c. &7Expected a boolean (true/false), but got: &e{1}&c.",
-  "interaction.meta.setting.error.invalid_value_int": "&cInvalid value for &e{0}&c. &7Expected an integer, but got: &e{1}&c.",
+  "interaction.meta.setting.error.invalid_value_int": "&cInvalid value for &e{0}&c. &7Expected an integer from 0 to 255, but got: &e{1}&c.",
   "interaction.meta.setting.error.invalid_target_player": "&cInvalid target player: &e{0}&c.",
   "interaction.meta.setting.error.missing_target_player": "&cMissing target player name.",
   "interaction.meta.setting.error.rule_no_personal": "&cRule settings do not support personal player assignment.",

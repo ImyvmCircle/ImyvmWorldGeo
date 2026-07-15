@@ -42,8 +42,9 @@ class TeleportPointApplicationTest {
         assertEquals(0, toggleTeleportPointAccessibility(region, scope, findScope) { false })
         assertTrue(scope.isTeleportPointPublic)
 
+        val otherScope = assignedScope("other-scope", 8, 1)
         assertFailsWith<IllegalArgumentException> {
-            toggleTeleportPointAccessibility(Region("other", 8, mutableListOf()), scope, findScope) { true }
+            toggleTeleportPointAccessibility(Region("other", 8, mutableListOf(otherScope)), scope, findScope) { true }
         }
     }
 

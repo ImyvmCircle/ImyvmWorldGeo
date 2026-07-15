@@ -10,6 +10,7 @@ import com.imyvm.iwg.domain.component.RuleSetting
 import com.imyvm.iwg.domain.component.ExtensionRuleSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
+import com.imyvm.iwg.domain.component.isValidGeoName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
@@ -22,19 +23,26 @@ class ScopeNotFoundException(
 ) : IllegalArgumentException("region.error.no_scope")
 
 class Region(
-    var name: String,
+    name: String,
     numberID: Int,
     geometryScope: MutableList<GeoScope>,
     settings: MutableList<Setting> = mutableListOf(),
     var showOnDynmap: Boolean = true,
     ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
+    var name: String = name
+        set(value) {
+            require(isValidGeoName(value)) { "invalid region name" }
+            field = value
+        }
+
     private val stableNumberId = numberID.also { require(it > 0) { "region id must be positive" } }
     private val mutableScopes = mutableListOf<GeoScope>()
     private val mutableOwnershipHistory = mutableMapOf<AssignedScopeId, MutableList<ScopeOwnershipEntry>>()
     internal val settingStore = com.imyvm.iwg.domain.component.SettingStore(settings)
 
     init {
+        require(isValidGeoName(name)) { "invalid region name" }
         replaceScopes(geometryScope)
         replaceLegacyOwnershipHistory(ownershipHistoryByScope)
     }
@@ -114,7 +122,9 @@ class Region(
 
     fun recordScopeOwnership(entry: ScopeOwnershipEntry) {
         require(entry.toRegionNumberId == numberID) { "ownership entry targets another region" }
-        mutableOwnershipHistory.getOrPut(entry.scopeId) { mutableListOf() }.add(entry)
+        val updated = mutableOwnershipHistory[entry.scopeId].orEmpty() + entry
+        validateOwnershipChain(entry.scopeId, updated)
+        mutableOwnershipHistory[entry.scopeId] = updated.toMutableList()
     }
 
     internal fun ownershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> =
@@ -124,9 +134,7 @@ class Region(
         mutableOwnershipHistory.mapValuesTo(mutableMapOf()) { (_, entries) -> entries.toMutableList() }
 
     internal fun replaceOwnershipHistory(value: Map<AssignedScopeId, List<ScopeOwnershipEntry>>) {
-        require(value.all { (scopeId, entries) -> entries.all { it.scopeId == scopeId } }) {
-            "ownership history key does not match entry"
-        }
+        value.forEach(::validateOwnershipChain)
         mutableOwnershipHistory.clear()
         value.forEach { (scopeId, entries) -> mutableOwnershipHistory[scopeId] = entries.toMutableList() }
     }
@@ -141,7 +149,20 @@ class Region(
         replaceOwnershipHistory(typed)
     }
 
+    private fun validateOwnershipChain(scopeId: AssignedScopeId, entries: List<ScopeOwnershipEntry>) {
+        require(entries.isNotEmpty()) { "ownership history must not be empty" }
+        require(entries.all { it.scopeId == scopeId }) { "ownership history key does not match entry" }
+        for (index in 1 until entries.size) {
+            val previous = entries[index - 1]
+            val current = entries[index]
+            require(previous.toRegionNumberId == current.fromRegionNumberId) { "ownership history chain is broken" }
+            require(previous.changedAtMillis <= current.changedAtMillis) { "ownership history is out of order" }
+        }
+        require(entries.last().toRegionNumberId == numberID) { "ownership history does not end at its owner" }
+    }
+
     private fun replaceScopes(scopes: List<GeoScope>) {
+        require(scopes.isNotEmpty()) { "region must contain at least one scope" }
         val names = hashSetOf<String>()
         val assignedIds = hashSetOf<com.imyvm.iwg.domain.component.AssignedScopeId>()
         scopes.forEach { scope ->

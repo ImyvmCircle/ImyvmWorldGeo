@@ -97,6 +97,26 @@ Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `
 
 Overlay APIs remain safe for synchronous calls from arbitrary addon threads. Applying an overlay is serialized with Region and Scope deletion: a successful deletion clears the Scope's transient overlays before another apply can complete, while a failed save restores the Scope without clearing its overlays. Queries and clearing an individual overlay remain thread-safe and do not wait for Region persistence.
 
+## B3 domain input invariants
+
+Existing JVM constructors and API method descriptors remain available, but invalid inputs now fail
+fast instead of being normalized or persisted:
+
+- Region and Scope names must start with a supported letter. Later characters may be supported
+  letters or ASCII digits; space, `_`, `-`, and `'` are allowed only as isolated separators and
+  cannot end the name.
+- A Region must contain at least one assigned Scope when constructed or persisted.
+- Region `idMark` values must be from `0` to `9`; creation and filtered queries reject other values.
+- `EffectSetting` amplifiers must be from `0` to `255`.
+- Replacing a legacy settings snapshot rejects duplicate type/key/subject identities before changing
+  the live store.
+- Ownership history records require positive, distinct source/target Region IDs, non-negative ordered
+  timestamps, an unbroken transfer chain, and a final owner matching the Region that stores the chain.
+
+Malformed database records and overflowing player-stat ledgers are rejected without rewriting their
+source files. Unsafe addon inputs that previously relied on clamping, defaulting to mark `0`, duplicate
+last-write-wins behavior, or empty Regions are not retained as behavioral compatibility.
+
 ## R11 geometry mutation migration
 
 `GeoShape` is immutable. `shapeParameter` is a detached legacy ABI and persistence snapshot, not a

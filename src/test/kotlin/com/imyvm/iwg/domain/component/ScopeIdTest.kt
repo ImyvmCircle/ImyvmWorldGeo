@@ -106,7 +106,7 @@ class ScopeIdTest {
     fun `new scope id allocation includes scopes transferred to another region`() {
         val creationHours = currentScopeCreationHours()
         val transferred = scope(7, 17, creationHours)
-        val source = Region("source", 7, mutableListOf())
+        val source = Region("source", 7, mutableListOf(scope(7, 0, creationHours)))
         val target = Region("target", 8, mutableListOf(transferred))
 
         val allocated = RegionDatabase.nextScopeIdForNewScope(

@@ -21,6 +21,10 @@ class GeoScope(
     showOnDynmap: Boolean = true,
     scopeId: ScopeId = ScopeId(ScopeId.UNASSIGNED_RAW)
 ) {
+    init {
+        require(isValidGeoName(scopeName)) { "invalid scope name" }
+    }
+
     private var currentScopeName: String = scopeName
     private val currentWorldId: Identifier = worldId
     private var currentTeleportPoint: BlockPos? = teleportPoint
@@ -77,6 +81,7 @@ class GeoScope(
         }
 
     internal fun renameTo(name: String) {
+        require(isValidGeoName(name)) { "invalid scope name" }
         currentScopeName = name
     }
 

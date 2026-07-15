@@ -126,15 +126,15 @@ class RegionDatabaseTest {
 
     @Test
     fun `region mutations require both canonical database objects`() {
-        val source = Region("source", 1, mutableListOf())
-        val target = Region("target", 2, mutableListOf())
+        val source = regionWithScope("source", 1)
+        val target = regionWithScope("target", 2)
         val currentRegions = listOf(source, target)
 
         RegionDatabase.requireCanonicalRegions(source, target, currentRegions)
 
         assertFailsWith<IllegalArgumentException> {
             RegionDatabase.requireCanonicalRegions(
-                Region("source", 1, mutableListOf()),
+                regionWithScope("source", 1),
                 target,
                 currentRegions
             )
@@ -142,7 +142,7 @@ class RegionDatabaseTest {
         assertFailsWith<IllegalArgumentException> {
             RegionDatabase.requireCanonicalRegions(
                 source,
-                Region("target", 2, mutableListOf()),
+                regionWithScope("target", 2),
                 currentRegions
             )
         }
@@ -223,7 +223,12 @@ class RegionDatabaseTest {
             ExtensionPermissionSetting(ExtensionPermissionKey("test:permission"), true),
             ExtensionRuleSetting(ExtensionRuleKey("test:rule"), true)
         )
-        val region = Region("region", 7, mutableListOf(), settings)
+        val region = Region(
+            "region",
+            7,
+            mutableListOf(scope("scope", ScopeId(generateCompatScopeIdRaw(7, 0)))),
+            settings
+        )
 
         RegionDatabase.writeRegions(path, listOf(region))
         val loaded = RegionDatabase.readRegions(path).single().settings
@@ -419,6 +424,135 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `rejects empty regions and invalid persisted names without rewriting the file`() = withTempDirectory { directory ->
+        val emptyRegion = directory.resolve("empty-region.db")
+        DataOutputStream(Files.newOutputStream(emptyRegion)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            stream.writeUTF("region")
+            stream.writeInt(7)
+            stream.writeInt(0)
+            stream.writeInt(0)
+            stream.writeInt(0)
+        }
+        assertMalformedRegionFileUnchanged(emptyRegion)
+
+        listOf("1region" to "scope", "region" to "scope_").forEachIndexed { index, (regionName, scopeName) ->
+            val path = directory.resolve("invalid-name-$index.db")
+            DataOutputStream(Files.newOutputStream(path)).use { stream ->
+                stream.writeInt(-1)
+                stream.writeInt(1)
+                writeMinimalRegion(
+                    stream,
+                    regionName,
+                    7,
+                    generateCompatScopeIdRaw(7, index),
+                    scopeName = scopeName
+                )
+            }
+            assertMalformedRegionFileUnchanged(path)
+        }
+    }
+
+    @Test
+    fun `rejects invalid and duplicate persisted settings without rewriting the file`() = withTempDirectory { directory ->
+        val invalidEffect = directory.resolve("invalid-effect.db")
+        DataOutputStream(Files.newOutputStream(invalidEffect)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(
+                stream,
+                "region",
+                7,
+                generateCompatScopeIdRaw(7, 0),
+                writeRegionSettings = {
+                    it.writeInt(1)
+                    it.writeInt(1)
+                    it.writeInt(EffectKey.SPEED.ordinal)
+                    it.writeInt(256)
+                    it.writeUTF("")
+                }
+            )
+        }
+        assertMalformedRegionFileUnchanged(invalidEffect)
+
+        val duplicate = directory.resolve("duplicate-setting.db")
+        DataOutputStream(Files.newOutputStream(duplicate)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(
+                stream,
+                "region",
+                7,
+                generateCompatScopeIdRaw(7, 0),
+                writeRegionSettings = {
+                    it.writeInt(2)
+                    repeat(2) { index ->
+                        it.writeInt(0)
+                        it.writeInt(PermissionKey.BUILD.ordinal)
+                        it.writeBoolean(index == 0)
+                        it.writeUTF("")
+                    }
+                }
+            )
+        }
+        assertMalformedRegionFileUnchanged(duplicate)
+    }
+
+    @Test
+    fun `rejects broken and duplicate persisted ownership histories without rewriting the file`() = withTempDirectory { directory ->
+        val scopeId = generateCompatScopeIdRaw(7, 0)
+        val broken = directory.resolve("broken-history.db")
+        DataOutputStream(Files.newOutputStream(broken)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(
+                stream,
+                "region",
+                7,
+                scopeId,
+                ownershipHistory = listOf(
+                    scopeId to listOf(
+                        ScopeOwnershipEntry(scopeId, 5, 6, 20),
+                        ScopeOwnershipEntry(scopeId, 5, 7, 10)
+                    )
+                )
+            )
+        }
+        assertMalformedRegionFileUnchanged(broken)
+
+        val duplicate = directory.resolve("duplicate-history.db")
+        val entry = ScopeOwnershipEntry(scopeId, 6, 7, 10)
+        DataOutputStream(Files.newOutputStream(duplicate)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(
+                stream,
+                "region",
+                7,
+                scopeId,
+                ownershipHistory = listOf(scopeId to listOf(entry), scopeId to listOf(entry))
+            )
+        }
+        assertMalformedRegionFileUnchanged(duplicate)
+    }
+
+    @Test
+    fun `rejects ownership history stored by multiple regions`() = withTempDirectory { directory ->
+        val path = directory.resolve("duplicate-history-owner.db")
+        val historyScopeId = generateCompatScopeIdRaw(9, 0)
+        val first = regionWithScope("first", 7).apply {
+            recordScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 7, 10))
+        }
+        val second = regionWithScope("second", 8).apply {
+            recordScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 8, 10))
+        }
+
+        assertFailsWith<IllegalArgumentException> { RegionDatabase.writeRegions(path, listOf(first, second)) }
+        assertFalse(Files.exists(path))
+    }
+
+    @Test
     fun `rejects case insensitive duplicate region names before write`() = withTempDirectory { directory ->
         val path = directory.resolve("duplicate-region-name.db")
         Files.writeString(path, "original")
@@ -469,6 +603,52 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `player stats aggregate and merge fail without partial mutation on overflow`() {
+        val first = UUID.randomUUID()
+        val second = UUID.randomUUID()
+        val overflowingAggregate = RegionPlayerStatsLedger(
+            entryCounts = mutableMapOf(first to Long.MAX_VALUE, second to 1L)
+        )
+        assertFailsWith<ArithmeticException> { overflowingAggregate.aggregate() }
+
+        val target = RegionPlayerStatsLedger(
+            entryCounts = mutableMapOf(first to 2L),
+            stayMillis = mutableMapOf(first to Long.MAX_VALUE)
+        )
+        val original = target.detachedCopy()
+        val source = RegionPlayerStatsLedger(
+            entryCounts = mutableMapOf(first to 3L),
+            stayMillis = mutableMapOf(first to 1L)
+        )
+
+        assertFailsWith<ArithmeticException> { target.mergeFrom(source) }
+        assertEquals(original, target)
+    }
+
+    @Test
+    fun `overflowing database stats merge keeps both regions and ledgers`() = withTempDirectory { directory ->
+        val player = UUID.randomUUID()
+        val source = regionWithScope("source", 1)
+        val target = regionWithScope("target", 2)
+        RegionDatabase.writeRegions(directory.resolve("iwg_regions.db"), listOf(source, target))
+        Files.writeString(
+            directory.resolve("iwg_player_stats.json"),
+            """{"version":1,"regions":{"1":{"entries":{"$player":${Long.MAX_VALUE}}},"2":{"entries":{"$player":1}}}}"""
+        )
+        RegionDatabase.bindSession(directory)
+        val loadedSource = RegionDatabase.getRegionByNumberId(1)
+        val loadedTarget = RegionDatabase.getRegionByNumberId(2)
+
+        assertFailsWith<ArithmeticException> {
+            RegionDatabase.mergeAndRemoveRegionReversibly(loadedSource, loadedTarget)
+        }
+
+        assertEquals(2, RegionDatabase.getRegionList().size)
+        assertEquals(Long.MAX_VALUE, RegionDatabase.getRegionPlayerStats(loadedSource).entryCount)
+        assertEquals(1L, RegionDatabase.getRegionPlayerStats(loadedTarget).entryCount)
+    }
+
+    @Test
     fun `round trips player stats JSON`() = withTempDirectory { directory ->
         val path = directory.resolve("player-stats.json")
         val player = UUID.randomUUID()
@@ -488,7 +668,8 @@ class RegionDatabaseTest {
             "[1]",
             """{"version":1,"regions":[]}""",
             """{"version":1,"regions":{"7":{"entries":{"not-a-uuid":1}}}}""",
-            """{"version":1,"regions":{"7":{"entries":{"$player":"1"}}}}"""
+            """{"version":1,"regions":{"7":{"entries":{"$player":"1"}}}}""",
+            """{"version":1,"regions":{"7":{"entries":{"$player":${Long.MAX_VALUE},"00000000-0000-0000-0000-000000000001":1}}}}"""
         )
 
         invalidInputs.forEach { input ->
@@ -496,6 +677,23 @@ class RegionDatabaseTest {
             assertFailsWith<IOException> { RegionDatabase.readPlayerStats(path) }
             assertEquals(input, Files.readString(path))
         }
+    }
+
+    @Test
+    fun `player stats writer rejects non-positive values without replacing the file`() = withTempDirectory { directory ->
+        val path = directory.resolve("player-stats.json")
+        val player = UUID.randomUUID()
+        Files.writeString(path, "original")
+
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.writePlayerStats(
+                path,
+                listOf(7),
+                mapOf(7 to RegionPlayerStatsLedger(entryCounts = mutableMapOf(player to -1L)))
+            )
+        }
+
+        assertEquals("original", Files.readString(path))
     }
 
     @Test
@@ -567,19 +765,49 @@ class RegionDatabaseTest {
         return Region("region", regionId, mutableListOf(scope("scope", assignedScopeId)))
     }
 
-    private fun writeMinimalRegion(stream: DataOutputStream, name: String, regionId: Int, scopeIdRaw: Long) {
+    private fun regionWithScope(name: String, regionId: Int): Region = Region(
+        name,
+        regionId,
+        mutableListOf(scope("scope", ScopeId(generateCompatScopeIdRaw(regionId, 0))))
+    )
+
+    private fun writeMinimalRegion(
+        stream: DataOutputStream,
+        name: String,
+        regionId: Int,
+        scopeIdRaw: Long,
+        scopeName: String = "scope",
+        writeRegionSettings: (DataOutputStream) -> Unit = { it.writeInt(0) },
+        ownershipHistory: List<Pair<Long, List<ScopeOwnershipEntry>>> = emptyList()
+    ) {
         stream.writeUTF(name)
         stream.writeInt(regionId)
         stream.writeInt(1)
-        stream.writeUTF("scope")
+        stream.writeUTF(scopeName)
         stream.writeUTF("minecraft:overworld")
         stream.writeBoolean(false)
         stream.writeBoolean(false)
         stream.writeBoolean(false)
         stream.writeInt(0)
         stream.writeLong(scopeIdRaw)
-        stream.writeInt(0)
-        stream.writeInt(0)
+        writeRegionSettings(stream)
+        stream.writeInt(ownershipHistory.size)
+        ownershipHistory.forEach { (key, entries) ->
+            stream.writeLong(key)
+            stream.writeInt(entries.size)
+            entries.forEach { entry ->
+                stream.writeLong(entry.scopeIdRaw)
+                stream.writeInt(entry.fromRegionNumberId)
+                stream.writeInt(entry.toRegionNumberId)
+                stream.writeLong(entry.changedAtMillis)
+            }
+        }
+    }
+
+    private fun assertMalformedRegionFileUnchanged(path: java.nio.file.Path) {
+        val original = Files.readAllBytes(path)
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
+        assertTrue(original.contentEquals(Files.readAllBytes(path)))
     }
 
     private fun scope(name: String, scopeId: ScopeId) = GeoScope(

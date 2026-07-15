@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.ScopeOwnershipEntry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -16,14 +17,16 @@ fun onRegionMerge(
         player.sendSystemMessage(Translator.tr("interaction.meta.region.merge.error.same_region")!!)
         return 0
     }
+    RegionDatabase.requireMergeableRegionPlayerStats(sourceRegion, targetRegion)
 
     val sourceScopes = sourceRegion.scopes.toList()
     val targetScopes = targetRegion.scopes.toList()
     val originalNames = sourceScopes.associateWith { it.scopeName }
     val sourceHistory = sourceRegion.ownershipHistorySnapshot()
     val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
+    val scopeCount = sourceScopes.size
     var renamedCount = 0
-    try {
+    val rollbackDatabase = try {
         for (scope in sourceScopes) {
             val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
             if (!resolvedName.equals(scope.scopeName, ignoreCase = false)) renamedCount++
@@ -31,25 +34,33 @@ fun onRegionMerge(
             scope.renameTo(resolvedName)
             targetRegion.addScope(scope)
         }
-    } catch (error: IllegalArgumentException) {
+
+        val mergedHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        sourceHistory.forEach { (scopeId, entries) ->
+            mergedHistory.getOrPut(scopeId) { mutableListOf() }.addAll(entries)
+        }
+        val transferTime = System.currentTimeMillis()
+        sourceScopes.forEach { scope ->
+            val scopeId = scope.requireAssignedScopeId()
+            mergedHistory.getOrPut(scopeId) { mutableListOf() }.add(
+                ScopeOwnershipEntry(
+                    scopeId.raw,
+                    sourceRegion.numberID,
+                    targetRegion.numberID,
+                    transferTime
+                )
+            )
+        }
+        targetRegion.replaceOwnershipHistory(mergedHistory)
+        RegionDatabase.mergeAndRemoveRegionReversibly(sourceRegion, targetRegion)
+    } catch (error: RuntimeException) {
         originalNames.forEach { (scope, name) -> scope.renameTo(name) }
         sourceRegion.restoreScopes(sourceScopes)
         targetRegion.restoreScopes(targetScopes)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
         throw error
     }
-    val scopeCount = sourceScopes.size
 
-    val mergedHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
-    sourceHistory.forEach { (scopeId, entries) ->
-        mergedHistory.getOrPut(scopeId) { mutableListOf() }.addAll(entries)
-    }
-    targetRegion.replaceOwnershipHistory(mergedHistory)
-    val transferTime = System.currentTimeMillis()
-    sourceScopes.forEach { scope ->
-        RegionDatabase.recordAssignedScopeOwnership(scope.requireAssignedScopeId(), sourceRegion, targetRegion, transferTime)
-    }
-
-    val rollbackDatabase = RegionDatabase.mergeAndRemoveRegionReversibly(sourceRegion, targetRegion)
     if (!saveRegionData(player)) {
         rollbackDatabase()
         originalNames.forEach { (scope, name) -> scope.renameTo(name) }
