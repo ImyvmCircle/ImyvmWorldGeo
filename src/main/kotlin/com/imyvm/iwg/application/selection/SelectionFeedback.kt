@@ -25,6 +25,7 @@ import kotlin.math.abs
 import kotlin.math.hypot
 
 private const val MAX_DISPLAYED_EXISTING_POINTS = 8
+internal const val MAX_DISPLAYED_SELECTION_POINTS = 12
 
 fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
@@ -82,11 +83,12 @@ private fun buildNormalMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append("\n")
         msg.append(Translator.raw("selection.feedback.none") ?: "")
     } else {
-        for ((idx, pt) in points.withIndex()) {
+        for ((idx, pt) in points.take(MAX_DISPLAYED_SELECTION_POINTS).withIndex()) {
             val role = getNormalPointRole(effectiveShape, isAuto, idx, count)
             msg.append("\n")
             msg.append(Translator.raw("selection.feedback.point_line", pt.x, pt.z, role) ?: "")
         }
+        appendOmittedSelectionPointCount(msg, points.size)
     }
 
     msg.append("\n")
@@ -279,11 +281,12 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append("\n")
         msg.append(Translator.raw("selection.feedback.none") ?: "")
     } else {
-        for ((idx, pt) in newPoints.withIndex()) {
+        for ((idx, pt) in newPoints.take(MAX_DISPLAYED_SELECTION_POINTS).withIndex()) {
             val role = getModifyNewPointRole(geometry, newPoints, idx, oldPoints)
             msg.append("\n")
             msg.append(Translator.raw("selection.feedback.point_line", pt.x, pt.z, role) ?: "")
         }
+        appendOmittedSelectionPointCount(msg, newPoints.size)
     }
 
     msg.append("\n")
@@ -307,6 +310,14 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
     }
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
+}
+
+private fun appendOmittedSelectionPointCount(msg: StringBuilder, total: Int) {
+    val omitted = total - MAX_DISPLAYED_SELECTION_POINTS
+    if (omitted > 0) {
+        msg.append("\n")
+        msg.append(Translator.raw("selection.feedback.points_omitted", omitted) ?: "")
+    }
 }
 
 private fun appendExistingScopePoints(

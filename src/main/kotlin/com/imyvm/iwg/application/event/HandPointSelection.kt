@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.selection.MAX_DISPLAYED_SELECTION_POINTS
 import com.imyvm.iwg.application.selection.buildPointAddedMessage
 import com.imyvm.iwg.application.selection.formatXZOnly
 import com.imyvm.iwg.infra.config.SelectionConfig
@@ -52,4 +53,12 @@ fun handPointSelection(
 
 internal fun formatSimpleXZList(positions: List<BlockPos>): String =
     if (positions.isEmpty()) "&7(none)"
-    else positions.joinToString(separator = "\n") { "&b(${it.x},${it.z})" }
+    else buildString {
+        positions.take(MAX_DISPLAYED_SELECTION_POINTS)
+            .joinTo(this, separator = "\n") { "&b(${it.x},${it.z})" }
+        val omitted = positions.size - MAX_DISPLAYED_SELECTION_POINTS
+        if (omitted > 0) {
+            append("\n")
+            append(Translator.raw("selection.feedback.points_omitted", omitted) ?: "")
+        }
+    }
