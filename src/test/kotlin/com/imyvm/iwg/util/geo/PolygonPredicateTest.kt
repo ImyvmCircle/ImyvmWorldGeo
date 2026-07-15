@@ -1,6 +1,7 @@
 package com.imyvm.iwg.util.geo
 
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.resources.Identifier
@@ -78,6 +79,80 @@ class PolygonPredicateTest {
                 shape(GeoShapeType.RECTANGLE, 90, 90, 110, 110),
                 listOf(scope("existing", polygon) to "region")
             ).size
+        )
+    }
+
+    @Test
+    fun `circle overlap remains exact at int scale`() {
+        val maximum = Int.MAX_VALUE
+        val circle = GeoShape.circle(GeoPoint(0, 0), maximum)
+        val touching = scope("touching", GeoShape.circle(GeoPoint(maximum, 0), 0))
+        val separated = scope("separated", GeoShape.circle(GeoPoint(maximum, 1), 0))
+
+        assertEquals(
+            listOf("touching"),
+            checkIntersection(circle, listOf(touching to "region", separated to "region")).map { it.scopeName }
+        )
+    }
+
+    @Test
+    fun `rectangle and polygon circle overlap remain exact at int scale`() {
+        val radius = Int.MAX_VALUE - 100
+        val circle = GeoShape.circle(GeoPoint(0, 0), radius)
+        val touchingRectangle = scope(
+            "touching-rectangle",
+            GeoShape.rectangle(GeoPoint(radius, 0), GeoPoint(Int.MAX_VALUE, 100))
+        )
+        val separatedRectangle = scope(
+            "separated-rectangle",
+            GeoShape.rectangle(GeoPoint(radius, 1), GeoPoint(Int.MAX_VALUE, 100))
+        )
+        val touchingPolygon = scope(
+            "touching-polygon",
+            GeoShape.polygon(
+                listOf(
+                    GeoPoint(radius, -100),
+                    GeoPoint(Int.MAX_VALUE, -100),
+                    GeoPoint(Int.MAX_VALUE, 100),
+                    GeoPoint(radius, 100)
+                )
+            )
+        )
+        val separatedPolygon = scope(
+            "separated-polygon",
+            GeoShape.polygon(
+                listOf(
+                    GeoPoint(radius, 1),
+                    GeoPoint(Int.MAX_VALUE, 1),
+                    GeoPoint(Int.MAX_VALUE, 100),
+                    GeoPoint(radius, 100)
+                )
+            )
+        )
+        val edgeSeparatedPolygon = scope(
+            "edge-separated-polygon",
+            GeoShape.polygon(
+                listOf(
+                    GeoPoint(radius + 1, -100),
+                    GeoPoint(Int.MAX_VALUE, -100),
+                    GeoPoint(Int.MAX_VALUE, 100),
+                    GeoPoint(radius + 1, 100)
+                )
+            )
+        )
+
+        assertEquals(
+            listOf("touching-rectangle", "touching-polygon"),
+            checkIntersection(
+                circle,
+                listOf(
+                    touchingRectangle,
+                    separatedRectangle,
+                    touchingPolygon,
+                    separatedPolygon,
+                    edgeSeparatedPolygon
+                ).map { it to "region" }
+            ).map { it.scopeName }
         )
     }
 

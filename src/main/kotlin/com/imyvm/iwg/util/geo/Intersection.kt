@@ -6,6 +6,7 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.PolygonGeometry
 import com.imyvm.iwg.domain.component.RectangleGeometry
 import com.imyvm.iwg.domain.component.UnknownGeometry
+import java.math.BigInteger
 
 data class VertexInsideInfo(val index: Int, val x: Int, val z: Int)
 
@@ -76,18 +77,20 @@ private fun rectangleOverlapRectangle(first: RectangleGeometry, second: Rectangl
 private fun rectangleOverlapCircle(rectangle: RectangleGeometry, circle: CircleGeometry): Boolean {
     val closestX = circle.centerX.coerceIn(rectangle.west, rectangle.east)
     val closestZ = circle.centerZ.coerceIn(rectangle.north, rectangle.south)
-    return kotlin.math.hypot(
-        circle.centerX.toDouble() - closestX,
-        circle.centerZ.toDouble() - closestZ
-    ) <= circle.radius
+    return distanceWithinRadius(
+        circle.centerX.toLong() - closestX,
+        circle.centerZ.toLong() - closestZ,
+        circle.radius.toLong()
+    )
 }
 
 private fun circleOverlapCircle(first: CircleGeometry, second: CircleGeometry): Boolean {
     val radiusSum = first.radius.toLong() + second.radius
-    return kotlin.math.hypot(
-        first.centerX.toDouble() - second.centerX,
-        first.centerZ.toDouble() - second.centerZ
-    ) <= radiusSum
+    return distanceWithinRadius(
+        first.centerX.toLong() - second.centerX,
+        first.centerZ.toLong() - second.centerZ,
+        radiusSum
+    )
 }
 
 private fun rectangleOverlapPolygon(rectangle: RectangleGeometry, polygon: PolygonGeometry): Boolean =
@@ -112,10 +115,11 @@ private fun polygonOverlapPolygon(first: PolygonGeometry, second: PolygonGeometr
 
 private fun polygonOverlapCircle(polygon: PolygonGeometry, circle: CircleGeometry): Boolean {
     for (index in 0 until polygon.vertexCount) {
-        if (kotlin.math.hypot(
-                polygon.x(index).toDouble() - circle.centerX,
-                polygon.z(index).toDouble() - circle.centerZ
-            ) <= circle.radius
+        if (distanceWithinRadius(
+                polygon.x(index).toLong() - circle.centerX,
+                polygon.z(index).toLong() - circle.centerZ,
+                circle.radius.toLong()
+            )
         ) {
             return true
         }
@@ -145,21 +149,43 @@ private fun segmentCircleIntersects(
     endZ: Int,
     circle: CircleGeometry
 ): Boolean {
-    val dx = endX.toDouble() - startX
-    val dz = endZ.toDouble() - startZ
-    val fx = startX.toDouble() - circle.centerX
-    val fz = startZ.toDouble() - circle.centerZ
-    val a = dx * dx + dz * dz
-    if (a == 0.0) return kotlin.math.hypot(fx, fz) <= circle.radius
-    val b = 2 * (fx * dx + fz * dz)
-    val c = fx * fx + fz * fz - circle.radius.toDouble() * circle.radius
-    val discriminant = b * b - 4 * a * c
-    if (discriminant < 0) return false
-    val squareRoot = kotlin.math.sqrt(discriminant)
-    val first = (-b - squareRoot) / (2 * a)
-    val second = (-b + squareRoot) / (2 * a)
-    return first in 0.0..1.0 || second in 0.0..1.0
+    val edgeX = endX.toLong() - startX
+    val edgeZ = endZ.toLong() - startZ
+    val centerX = circle.centerX.toLong() - startX
+    val centerZ = circle.centerZ.toLong() - startZ
+    val edgeLengthSquared = exactDot(edgeX, edgeZ, edgeX, edgeZ)
+    if (edgeLengthSquared.signum() == 0) {
+        return distanceWithinRadius(centerX, centerZ, circle.radius.toLong())
+    }
+
+    val projection = exactDot(centerX, centerZ, edgeX, edgeZ)
+    if (projection.signum() <= 0) {
+        return distanceWithinRadius(centerX, centerZ, circle.radius.toLong())
+    }
+    if (projection >= edgeLengthSquared) {
+        return distanceWithinRadius(
+            circle.centerX.toLong() - endX,
+            circle.centerZ.toLong() - endZ,
+            circle.radius.toLong()
+        )
+    }
+
+    val cross = exactConvexityCross(edgeX, edgeZ, centerX, centerZ)
+    val radiusSquared = BigInteger.valueOf(circle.radius.toLong()).pow(2)
+    return cross.pow(2) <= radiusSquared.multiply(edgeLengthSquared)
 }
+
+private fun distanceWithinRadius(dx: Long, dz: Long, radius: Long): Boolean {
+    if (dx < -radius || dx > radius || dz < -radius || dz > radius) return false
+    if (radius <= Int.MAX_VALUE) return circleContainsPoint(dx, dz, radius.toInt())
+
+    val distanceSquared = exactDot(dx, dz, dx, dz)
+    return distanceSquared <= BigInteger.valueOf(radius).pow(2)
+}
+
+private fun exactDot(ax: Long, az: Long, bx: Long, bz: Long): BigInteger =
+    BigInteger.valueOf(ax).multiply(BigInteger.valueOf(bx))
+        .add(BigInteger.valueOf(az).multiply(BigInteger.valueOf(bz)))
 
 private fun polygonsIntersect(
     firstCount: Int,
