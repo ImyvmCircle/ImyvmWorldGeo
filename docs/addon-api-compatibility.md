@@ -143,6 +143,14 @@ PlayerInteractionApi.toggleTeleportPointAccessibility(player, region, scope)
 
 The deprecated Scope-only overload remains linkable, but succeeds only for the exact live Scope object resolved from `RegionDatabase`; copying an assigned ID into another object does not grant a mutation path.
 
+`PlayerInteractionApi.teleportPlayerToScope(player, region, scope)` is the ordinary player-facing entry and now requires the teleport point to be public. Use the explicit administrator entry only when an addon has already authorized the operation:
+
+```kotlin
+PlayerInteractionApi.teleportPlayerToScopeAsAdministrator(player, region, scope)
+```
+
+The administrator entry bypasses only accessibility. Both entries still require the exact live Region/Scope pair and enforce dimension availability, physical safety, bounded fallback, persistence, and rollback. The retained ordinary method descriptor is unchanged; unrestricted use of private teleport points is not retained as compatibility behavior.
+
 ## Selection API contract
 
 Call `PlayerInteractionApi` selection operations on the Minecraft server thread. A normal selection

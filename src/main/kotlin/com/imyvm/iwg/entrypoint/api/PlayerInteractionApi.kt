@@ -50,7 +50,15 @@ object PlayerInteractionApi {
         onAddingTeleportPoint(player, targetRegion, scope, player.blockPosition().x, player.blockPosition().y, player.blockPosition().z)
     fun resetTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope) = onResettingTeleportPoint(player, region, scope)
     fun getTeleportPoint(scope: GeoScope) = onGettingTeleportPoint(scope)
+    /** Teleports only when the Scope teleport point is publicly accessible. */
     fun teleportPlayerToScope(player: ServerPlayer, targetRegion: Region, scope: GeoScope) = onTeleportingPlayer(player, targetRegion, scope)
+
+    /**
+     * Teleports as an administrator, bypassing only teleport-point accessibility.
+     * Canonical ownership, dimension availability and physical safety are still enforced.
+     */
+    fun teleportPlayerToScopeAsAdministrator(player: ServerPlayer, targetRegion: Region, scope: GeoScope) =
+        onTeleportingPlayerAsAdministrator(player, targetRegion, scope)
     fun toggleTeleportPointAccessibility(player: ServerPlayer, region: Region, scope: GeoScope) =
         onTogglingTeleportPointAccessibility(player, region, scope)
 

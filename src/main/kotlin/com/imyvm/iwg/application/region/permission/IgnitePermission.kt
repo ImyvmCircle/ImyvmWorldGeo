@@ -6,9 +6,6 @@ import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.fabricmc.fabric.api.event.player.UseEntityCallback
 import net.minecraft.world.item.Items
 import net.minecraft.world.InteractionResult
-import net.minecraft.world.level.block.CampfireBlock
-import net.minecraft.world.level.block.CandleBlock
-import net.minecraft.world.level.block.CandleCakeBlock
 
 fun playerIgnitePermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
@@ -16,8 +13,7 @@ fun playerIgnitePermission() {
         if (!stack.`is`(Items.FLINT_AND_STEEL) && !stack.`is`(Items.FIRE_CHARGE)) return@register InteractionResult.PASS
         val clickedPos = hitResult.blockPos
         val state = world.getBlockState(clickedPos)
-        val lightsClickedBlock = CampfireBlock.canLight(state) || CandleBlock.canLight(state) || CandleCakeBlock.canLight(state)
-        val pos = igniteTarget(clickedPos, hitResult.direction, lightsClickedBlock)
+        val pos = igniteTarget(clickedPos, hitResult.direction, state)
         if (denyPermissionAt(player, world, pos, PermissionKey.IGNITE,
                 PERMISSION_DEFAULT_IGNITE.value, "setting.permission.ignite")) return@register InteractionResult.CONSUME
         InteractionResult.PASS

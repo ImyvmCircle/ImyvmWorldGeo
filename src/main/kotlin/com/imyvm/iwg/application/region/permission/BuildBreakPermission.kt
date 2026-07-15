@@ -38,6 +38,8 @@ import net.minecraft.world.item.SolidBucketItem
 import net.minecraft.world.InteractionResult
 import net.minecraft.world.phys.HitResult
 import net.minecraft.world.level.ClipContext
+import net.minecraft.world.level.block.LiquidBlockContainer
+import net.minecraft.world.level.material.Fluids
 
 fun playerBuildPermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
@@ -48,7 +50,7 @@ fun playerBuildPermission() {
         if (!player.isCrouching && isInteractiveBlock(block)) return@register InteractionResult.PASS
         val cropBlock = (stack.item as BlockItem).block
         if ((cropBlock is CropBlock || cropBlock is SweetBerryBushBlock) && block == Blocks.FARMLAND) return@register InteractionResult.PASS
-        val placePos = pos.relative(hitResult.direction)
+        val placePos = blockPlacementTarget(player, hand, stack, hitResult)
         if (denyPermissionAt(player, world, placePos, PermissionKey.BUILD, PERMISSION_DEFAULT_BUILD.value,
                 "setting.permission.build")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
@@ -63,7 +65,7 @@ fun playerBucketUsePermission() {
             if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
                     "setting.permission.bucket_scoop")) return@register InteractionResult.CONSUME
         } else if (stack.item is SolidBucketItem) {
-            val placePos = hitResult.blockPos.relative(hitResult.direction)
+            val placePos = blockPlacementTarget(player, hand, stack, hitResult)
             if (denyPermissionAt(player, world, placePos, PermissionKey.BUCKET_BUILD, PERMISSION_DEFAULT_BUCKET_BUILD.value,
                     "setting.permission.bucket_build")) return@register InteractionResult.CONSUME
         }
@@ -72,7 +74,7 @@ fun playerBucketUsePermission() {
 
     UseItemCallback.EVENT.register { player, world, hand ->
         val stack = player.getItemInHand(hand)
-        if (stack.item !is BucketItem) return@register InteractionResult.PASS
+        val bucket = stack.item as? BucketItem ?: return@register InteractionResult.PASS
         val eyePos = player.eyePosition
         val lookVec = player.getViewVector(1.0f)
         val reach = 5.0
@@ -87,7 +89,17 @@ fun playerBucketUsePermission() {
             if (denyPermissionAt(player, world, pos, PermissionKey.BUCKET_SCOOP, PERMISSION_DEFAULT_BUCKET_SCOOP.value,
                     "setting.permission.bucket_scoop")) return@register InteractionResult.CONSUME
         } else {
-            val placePos = pos.relative(blockHit.direction)
+            val state = world.getBlockState(pos)
+            val container = state.block as? LiquidBlockContainer
+            val content = bucket.content
+            val clickedAcceptsContents = content === Fluids.WATER && container != null &&
+                (state.canBeReplaced(content) || container.canPlaceLiquid(player, world, pos, state, content))
+            val placePos = filledBucketTarget(
+                pos,
+                blockHit.direction,
+                clickedAcceptsContents,
+                player.isShiftKeyDown
+            )
             if (denyPermissionAt(player, world, placePos, PermissionKey.BUCKET_BUILD, PERMISSION_DEFAULT_BUCKET_BUILD.value,
                     "setting.permission.bucket_build")) return@register InteractionResult.CONSUME
         }

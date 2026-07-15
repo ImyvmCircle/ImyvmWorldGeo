@@ -159,7 +159,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runTeleportPlayer(it) }
+                                            .executes { runTeleportPlayerAsAdministrator(it) }
                                     )
                             )
                     )
@@ -581,14 +581,23 @@ private fun runTeleportPlayer(context: CommandContext<CommandSourceStack>): Int 
     }
 }
 
+private fun runTeleportPlayerAsAdministrator(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = getScopeOrNotify(player, region, scopeName) ?: return@identifierHandler
+        onTeleportingPlayerAsAdministrator(player, region, scope)
+    }
+}
+
 private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
-        val (region, scope) = RegionDatabase.getRegionAndScope(regionToTeleport, regionToTeleport.scopes.firstOrNull()?.scopeName ?: "")
+        val scope = findPublicTeleportScope(regionToTeleport)
         if (scope != null) {
-            onTeleportingPlayer(player, region, scope)
+            onTeleportingPlayer(player, regionToTeleport, scope)
         } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_scope", region.name)!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_public_scope", regionToTeleport.name)!!)
             0
         }
     }

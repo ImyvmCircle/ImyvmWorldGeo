@@ -68,6 +68,31 @@ fun onTeleportingPlayer(
     geoScope: GeoScope
 ): Int {
     RegionDatabase.requireCanonicalScope(targetRegion, geoScope)
+    if (!isTeleportPointPubliclyAccessible(geoScope)) {
+        playerExecutor.sendSystemMessage(Translator.tr(
+            "interaction.meta.scope.teleport_point.private",
+            geoScope.scopeName,
+            targetRegion.name
+        )!!)
+        return 0
+    }
+    return teleportPlayerToCanonicalScope(playerExecutor, targetRegion, geoScope)
+}
+
+fun onTeleportingPlayerAsAdministrator(
+    playerExecutor: ServerPlayer,
+    targetRegion: Region,
+    geoScope: GeoScope
+): Int {
+    RegionDatabase.requireCanonicalScope(targetRegion, geoScope)
+    return teleportPlayerToCanonicalScope(playerExecutor, targetRegion, geoScope)
+}
+
+private fun teleportPlayerToCanonicalScope(
+    playerExecutor: ServerPlayer,
+    targetRegion: Region,
+    geoScope: GeoScope
+): Int {
     val targetWorld = resolveScopeWorldOrReport(playerExecutor, targetRegion, geoScope) ?: return 0
     val teleportPoint = onGettingTeleportPoint(geoScope)
 
@@ -127,6 +152,12 @@ fun onTeleportingPlayer(
         0
     }
 }
+
+internal fun isTeleportPointPubliclyAccessible(scope: GeoScope): Boolean =
+    scope.isTeleportPointPublic
+
+internal fun findPublicTeleportScope(region: Region): GeoScope? =
+    region.scopes.firstOrNull { isTeleportPointPubliclyAccessible(it) && it.teleportPoint != null }
 
 private fun resolveScopeWorldOrReport(
     player: ServerPlayer,

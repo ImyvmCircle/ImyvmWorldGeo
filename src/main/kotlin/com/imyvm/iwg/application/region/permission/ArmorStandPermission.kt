@@ -41,7 +41,7 @@ fun playerArmorStandPermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
         val stack = player.getItemInHand(hand)
         if (!stack.`is`(Items.ARMOR_STAND)) return@register InteractionResult.PASS
-        val placePos = hitResult.blockPos.relative(hitResult.direction)
+        val placePos = blockPlacementTarget(player, hand, stack, hitResult)
         if (denyPermissionAt(player, world, placePos, PermissionKey.ARMOR_STAND,
                 PERMISSION_DEFAULT_ARMOR_STAND.value, "setting.permission.armor_stand")) return@register InteractionResult.CONSUME
         InteractionResult.PASS

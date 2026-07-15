@@ -35,11 +35,12 @@ ImyvmWorldGeo : ModInitializer {
 		registerRegionEntryExit()
 		registerPlayerStats()
 		registerLocationDisplay()
+		// UseBlockCallback stops at the first non-PASS result; active selection must run first.
+		registerPointSelection()
 		registerRegionPermissions()
 		registerRegionEffects()
 
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
-		registerPointSelection()
 		registerSelectionDisplay()
 
 		if (FabricLoader.getInstance().isModLoaded("dynmap")) {

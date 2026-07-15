@@ -330,23 +330,26 @@ Handles player-triggered actions related to regions and their scopes.
 - `mergeRegion(player: ServerPlayerEntity, sourceRegion: Region, targetRegion: Region)`  
   Merges one region into another: all scopes are moved to the target (with automatic renaming on conflict). The source region's overall settings are discarded. The source region is deleted afterward.
 
-- `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
+- `addTeleportPoint(player: ServerPlayer, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
   Adds a teleport point with a given location.
 
-- `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
+- `addTeleportPoint(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
   Adds a teleport point at the player's current location.
 
-- `resetTeleportPoint(player: ServerPlayerEntity, region: Region, scope: GeoScope)`
+- `resetTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope)`
   Resets the teleport point of a scope.
 
 - `getTeleportPoint(scope: GeoScope)`
   Retrieves the teleport point of a scope.
 
-- `toggleTeleportPointAccessibility(player: ServerPlayerEntity, region: Region, scope: GeoScope)`
+- `toggleTeleportPointAccessibility(player: ServerPlayer, region: Region, scope: GeoScope)`
   Toggles the access permission of a scope's teleport point and persists the change. The scope must belong to the supplied region.
 
-- `teleportPlayerToScope(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
-  Teleports a player to the teleport point of a scope.
+- `teleportPlayerToScope(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
+  Teleports a player only when the scope's teleport point is publicly accessible.
+
+- `teleportPlayerToScopeAsAdministrator(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
+  Bypasses teleport-point accessibility for administrative use. Ownership, dimension, and physical safety checks still apply.
 
 - `modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
   Modifies the properties of a scope.
@@ -657,8 +660,11 @@ Provides utility functions for region data to improve usability for extension mo
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be displayed.
     - If player is not in any scope, an error message will be shown.
 
-- `/imyvmWorldGeo teleport <regionIdentifier> <scopeName>`  
-  Teleport the player to the teleport point of the specified region and scope.
+- `/imyvmWorldGeo teleport <regionIdentifier> [scopeName]`
+  Teleport the player to a publicly accessible teleport point. Omitting `scopeName` selects the first public scope with a teleport point.
+
+- `/imyvmWorldGeo teleportPoint teleport <regionIdentifier> <scopeName>`
+  Administrator-only teleport that bypasses teleport-point accessibility while retaining target safety checks.
 
 - `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`  
   Toggle the accessibility of the teleport point for the specified region and scope.

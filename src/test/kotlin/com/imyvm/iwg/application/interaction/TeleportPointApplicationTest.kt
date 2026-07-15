@@ -5,6 +5,7 @@ import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
+import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -15,6 +16,20 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class TeleportPointApplicationTest {
+    @Test
+    fun `public teleport selector skips private and unset scopes`() {
+        val privateScope = assignedScope("private", 7, 1, BlockPos.ZERO, false)
+        val unsetPublicScope = assignedScope("unset", 7, 2, null, true)
+        val publicScope = assignedScope("public", 7, 3, BlockPos(1, 2, 3), true)
+        val laterPublicScope = assignedScope("later", 7, 4, BlockPos(4, 5, 6), true)
+        val region = Region("region", 7, mutableListOf(privateScope, unsetPublicScope, publicScope, laterPublicScope))
+
+        assertFalse(isTeleportPointPubliclyAccessible(privateScope))
+        assertTrue(isTeleportPointPubliclyAccessible(publicScope))
+        assertSame(publicScope, findPublicTeleportScope(region))
+        assertNull(findPublicTeleportScope(Region("empty", 7, mutableListOf(privateScope, unsetPublicScope))))
+    }
+
     @Test
     fun `accessibility mutation validates owner and restores state when save fails`() {
         val scope = assignedScope("scope", 7, 1)
@@ -76,10 +91,17 @@ class TeleportPointApplicationTest {
         })
     }
 
-    private fun assignedScope(name: String, regionId: Int, index: Int) = GeoScope(
+    private fun assignedScope(
+        name: String,
+        regionId: Int,
+        index: Int,
+        teleportPoint: BlockPos? = null,
+        isTeleportPointPublic: Boolean = false
+    ) = GeoScope(
         name,
         Identifier.parse("minecraft:overworld"),
-        null,
+        teleportPoint,
+        isTeleportPointPublic,
         geoShape = null,
         scopeId = ScopeId(generateCompatScopeIdRaw(regionId, index))
     )
