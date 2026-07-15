@@ -136,3 +136,9 @@ internal fun tickDeadline(currentTick: Long, seconds: Int): Long {
     require(seconds >= 0) { "duration must not be negative" }
     return Math.addExact(currentTick, seconds.toLong() * 20L)
 }
+
+internal fun clearFlySessionState() {
+    pendingLanding.clear()
+    systemGrantedFly.clear()
+    fallImmunity.clear()
+}

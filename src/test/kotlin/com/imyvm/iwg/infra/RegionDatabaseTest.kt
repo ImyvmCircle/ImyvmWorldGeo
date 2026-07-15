@@ -14,10 +14,97 @@ import java.nio.file.Files
 import java.util.UUID
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
 import kotlin.test.assertTrue
 
 class RegionDatabaseTest {
+    @Test
+    fun `binds data to one world root at a time`() = withTempDirectory { directory ->
+        val firstRoot = directory.resolve("first")
+        val secondRoot = directory.resolve("second")
+        val region = sessionRegion().apply {
+            showOnDynmap = false
+            scopes.single().setDynmapVisibility(false)
+        }
+        val player = UUID.randomUUID()
+
+        RegionDatabase.bindSession(firstRoot)
+        RegionDatabase.addRegion(region)
+        RegionDatabase.incrementRegionEntryStat(region, player)
+        RegionDatabase.saveForShutdown()
+        RegionDatabase.unbindSession()
+
+        RegionDatabase.bindSession(secondRoot)
+        assertTrue(RegionDatabase.getRegionList().isEmpty())
+        RegionDatabase.saveForShutdown()
+        RegionDatabase.unbindSession()
+
+        RegionDatabase.bindSession(firstRoot)
+        val loaded = RegionDatabase.getRegionList().single()
+        assertEquals("region", loaded.name)
+        assertFalse(loaded.showOnDynmap)
+        assertFalse(loaded.scopes.single().showOnDynmap)
+        assertEquals(1L, RegionDatabase.getRegionPlayerStats(loaded).entryCount)
+    }
+
+    @Test
+    fun `failed bind restores the unbound state`() = withTempDirectory { directory ->
+        val invalidRoot = directory.resolve("invalid")
+        val validRoot = directory.resolve("valid")
+        Files.createDirectories(invalidRoot)
+        val orphan = invalidRoot.resolve("iwg_dynmap.json")
+        Files.writeString(orphan, "original")
+
+        assertFailsWith<IOException> { RegionDatabase.bindSession(invalidRoot) }
+
+        assertFalse(RegionDatabase.hasActiveSession())
+        assertTrue(RegionDatabase.getRegionList().isEmpty())
+        assertEquals("original", Files.readString(orphan))
+        RegionDatabase.bindSession(validRoot)
+        assertTrue(RegionDatabase.hasActiveSession())
+    }
+
+    @Test
+    fun `session lifecycle misuse fails without replacing active data`() = withTempDirectory { directory ->
+        val firstRoot = directory.resolve("first")
+        val secondRoot = directory.resolve("second")
+        RegionDatabase.bindSession(firstRoot)
+        RegionDatabase.addRegion(sessionRegion())
+
+        assertFailsWith<IllegalStateException> { RegionDatabase.bindSession(secondRoot) }
+        assertEquals("region", RegionDatabase.getRegionList().single().name)
+
+        RegionDatabase.unbindSession()
+        assertFailsWith<IllegalStateException> { RegionDatabase.save() }
+        assertFailsWith<IllegalStateException> { RegionDatabase.saveForShutdown() }
+        RegionDatabase.savePlayerStatsSnapshot()
+        @Suppress("DEPRECATION")
+        assertFailsWith<IllegalStateException> { RegionDatabase.load() }
+    }
+
+    @Test
+    fun `shutdown save persists without invoking projections`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        RegionDatabase.addRegion(sessionRegion())
+        var projectionCalls = 0
+        RegionDatabase.onSave = { projectionCalls++ }
+
+        RegionDatabase.save()
+        assertEquals(1, projectionCalls)
+
+        RegionDatabase.saveForShutdown()
+        assertEquals(1, projectionCalls)
+
+        RegionDatabase.onSave = {
+            projectionCalls++
+            throw IOException("projection failed")
+        }
+        RegionDatabase.save()
+        assertEquals(2, projectionCalls)
+        assertTrue(Files.exists(directory.resolve("iwg_regions.db")))
+    }
+
     @Test
     fun `rejects orphan companion files without modifying them`() = withTempDirectory { directory ->
         val dynmap = directory.resolve("dynmap.json")
@@ -468,8 +555,16 @@ class RegionDatabaseTest {
         try {
             block(directory)
         } finally {
+            RegionDatabase.onSave = null
+            RegionDatabase.unbindSession()
             directory.toFile().deleteRecursively()
         }
+    }
+
+    private fun sessionRegion(): Region {
+        val regionId = 7
+        val assignedScopeId = ScopeId(generateCompatScopeIdRaw(regionId, 0))
+        return Region("region", regionId, mutableListOf(scope("scope", assignedScopeId)))
     }
 
     private fun writeMinimalRegion(stream: DataOutputStream, name: String, regionId: Int, scopeIdRaw: Long) {

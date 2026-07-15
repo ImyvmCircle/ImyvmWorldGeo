@@ -2,6 +2,7 @@ package com.imyvm.iwg.infra.dynmap
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.infra.RegionDatabase
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import org.dynmap.DynmapCommonAPI
 import org.dynmap.DynmapCommonAPIListener
 import org.dynmap.markers.MarkerAPI
@@ -18,6 +19,7 @@ object DynmapIntegration : DynmapCommonAPIListener() {
     fun registerIfLoaded() {
         DynmapCommonAPIListener.register(this)
         RegionDatabase.onSave = { syncRegions() }
+        ServerLifecycleEvents.SERVER_STARTED.register { syncRegions() }
         ImyvmWorldGeo.logger.info("Dynmap detected, region map integration enabled.")
     }
 

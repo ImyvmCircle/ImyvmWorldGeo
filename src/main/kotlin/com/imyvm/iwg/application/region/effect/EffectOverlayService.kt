@@ -102,6 +102,10 @@ object EffectOverlayService {
         withScopeLifecycle { overlaysByScope.remove(scopeId) }
     }
 
+    internal fun clearAll() {
+        withScopeLifecycle { overlaysByScope.clear() }
+    }
+
     internal fun sweepExpired(nowMillis: Long) {
         for (scopeId in overlaysByScope.keys) {
             overlaysByScope.computeIfPresent(scopeId) { _, list ->

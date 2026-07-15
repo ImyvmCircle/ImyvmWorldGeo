@@ -7,7 +7,6 @@ import com.google.gson.JsonElement
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.imyvm.iwg.ImyvmWorldGeo
-import net.fabricmc.loader.api.FabricLoader
 import net.minecraft.resources.Identifier
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.Level
@@ -85,7 +84,8 @@ internal data class DynmapVisibility(
 
 object RegionDatabase {
 
-    private lateinit var regions: MutableList<Region>
+    private var regions: MutableList<Region> = mutableListOf()
+    private var sessionWorldRoot: Path? = null
     private const val DATABASE_FILENAME = "iwg_regions.db"
     private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
     private const val PLAYER_STATS_FILENAME = "iwg_player_stats.json"
@@ -97,11 +97,20 @@ object RegionDatabase {
 
     @Throws(IOException::class)
     fun save() {
+        persistFiles()
+        runCatching { onSave?.invoke() }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to update persisted region projections: ${it.message}", it) }
+    }
+
+    internal fun saveForShutdown() {
+        persistFiles()
+    }
+
+    private fun persistFiles() {
         withFileRollback(listOf(getDatabasePath(), getDynmapConfigPath(), getPlayerStatsPath())) {
             writeRegions(getDatabasePath(), regions)
             saveDynmapVisibility()
             savePlayerStats()
-            onSave?.invoke()
         }
     }
 
@@ -140,19 +149,43 @@ object RegionDatabase {
         }
     }
 
-    @Throws(IOException::class)
-    fun load() {
-        val file = getDatabasePath()
-        if (!file.toFile().exists()) {
-            rejectOrphanCompanionFiles(listOf(getDynmapConfigPath(), getPlayerStatsPath()))
-            regions = mutableListOf()
-            regionPlayerStats.clear()
-            return
-        }
+    internal fun hasActiveSession(): Boolean = sessionWorldRoot != null
 
-        regions = readRegions(file)
-        loadDynmapVisibility()
-        loadPlayerStats()
+    internal fun bindSession(worldRoot: Path) {
+        check(!hasActiveSession()) { "Region database session is already active" }
+        val normalizedRoot = worldRoot.toAbsolutePath().normalize()
+        try {
+            val databasePath = normalizedRoot.resolve(DATABASE_FILENAME)
+            val dynmapPath = normalizedRoot.resolve(DYNMAP_CONFIG_FILENAME)
+            val playerStatsPath = normalizedRoot.resolve(PLAYER_STATS_FILENAME)
+            val loadedRegions = if (Files.exists(databasePath)) {
+                readRegions(databasePath)
+            } else {
+                rejectOrphanCompanionFiles(listOf(dynmapPath, playerStatsPath))
+                mutableListOf()
+            }
+            applyDynmapVisibility(loadedRegions, dynmapPath)
+            val loadedStats = loadPlayerStats(loadedRegions, playerStatsPath)
+
+            regions = loadedRegions
+            regionPlayerStats.clear()
+            regionPlayerStats.putAll(loadedStats)
+            sessionWorldRoot = normalizedRoot
+        } catch (error: Throwable) {
+            unbindSession()
+            throw error
+        }
+    }
+
+    internal fun unbindSession() {
+        regions.clear()
+        regionPlayerStats.clear()
+        sessionWorldRoot = null
+    }
+
+    @Deprecated("RegionDatabase lifecycle is managed by the Minecraft server")
+    fun load(): Unit {
+        error("RegionDatabase is loaded automatically for each server session")
     }
 
     internal fun rejectOrphanCompanionFiles(companionFiles: List<Path>) {
@@ -301,6 +334,7 @@ object RegionDatabase {
     }
 
     fun savePlayerStatsSnapshot() {
+        if (!hasActiveSession()) return
         runCatching { savePlayerStats() }
             .onFailure { ImyvmWorldGeo.logger.error("Failed to save player stats: ${it.message}", it) }
     }
@@ -700,14 +734,13 @@ object RegionDatabase {
         target[playerUUID] = (target[playerUUID] ?: 0L) + delta
     }
 
-    private fun loadPlayerStats() {
-        val file = getPlayerStatsPath()
-        val loaded = if (Files.exists(file)) readPlayerStats(file) else emptyMap()
-        val liveRegionIds = regions.mapTo(hashSetOf()) { it.numberID }
-        regionPlayerStats.clear()
-        loaded.filterKeys { it in liveRegionIds }.forEach { (regionId, ledger) ->
-            regionPlayerStats[regionId] = ledger
-        }
+    private fun loadPlayerStats(
+        loadedRegions: List<Region>,
+        path: Path
+    ): Map<Int, RegionPlayerStatsLedger> {
+        val loaded = if (Files.exists(path)) readPlayerStats(path) else emptyMap()
+        val liveRegionIds = loadedRegions.mapTo(hashSetOf()) { it.numberID }
+        return loaded.filterKeys { it in liveRegionIds }
     }
 
     internal fun readPlayerStats(path: Path): Map<Int, RegionPlayerStatsLedger> {
@@ -785,10 +818,9 @@ object RegionDatabase {
         return result
     }
 
-    private fun loadDynmapVisibility() {
-        val file = getDynmapConfigPath()
-        val loaded = if (Files.exists(file)) readDynmapVisibility(file) else emptyMap()
-        for (region in regions) {
+    private fun applyDynmapVisibility(loadedRegions: List<Region>, path: Path) {
+        val loaded = if (Files.exists(path)) readDynmapVisibility(path) else emptyMap()
+        for (region in loadedRegions) {
             val visibility = loaded[region.numberID]
             region.showOnDynmap = visibility?.showOnDynmap ?: true
             for (scope in region.scopes) {
@@ -920,14 +952,17 @@ object RegionDatabase {
     }
 
     private fun getDynmapConfigPath(): Path {
-        return FabricLoader.getInstance().gameDir.resolve("world").resolve(DYNMAP_CONFIG_FILENAME)
+        return requireSessionWorldRoot().resolve(DYNMAP_CONFIG_FILENAME)
     }
 
     private fun getPlayerStatsPath(): Path {
-        return FabricLoader.getInstance().gameDir.resolve("world").resolve(PLAYER_STATS_FILENAME)
+        return requireSessionWorldRoot().resolve(PLAYER_STATS_FILENAME)
     }
 
     private fun getDatabasePath(): Path {
-        return FabricLoader.getInstance().gameDir.resolve("world").resolve(DATABASE_FILENAME)
+        return requireSessionWorldRoot().resolve(DATABASE_FILENAME)
     }
+
+    private fun requireSessionWorldRoot(): Path =
+        checkNotNull(sessionWorldRoot) { "No active region database session" }
 }
