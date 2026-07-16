@@ -16,6 +16,39 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 
+internal fun applyModifiedShape(
+    player: ServerPlayer,
+    region: Region,
+    scope: GeoScope,
+    shapeResult: Result<GeoShape, CreationError>,
+    shapeType: GeoShapeType
+): Boolean = when (shapeResult) {
+    is Result.Ok -> {
+        when (val replacement = replaceScopeShape(region, scope, shapeResult.value) { saveRegionData(player) }) {
+            ScopeShapeReplacementResult.Success -> {
+                clearSelectionDisplay(player)
+                clearPlayerSelection(player.uuid)
+                true
+            }
+            is ScopeShapeReplacementResult.Rejected -> {
+                errorMessage(replacement.error, shapeType).forEach(player::sendSystemMessage)
+                false
+            }
+            ScopeShapeReplacementResult.PersistenceFailed -> false
+        }
+    }
+    is Result.Err -> {
+        errorMessage(shapeResult.error, shapeType).forEach(player::sendSystemMessage)
+        false
+    }
+}
+
+/**
+ * Legacy JVM compatibility wrapper for position-based Scope recreation.
+ *
+ * New production code should construct a typed replacement shape and use [applyModifiedShape].
+ */
+@Deprecated("Use typed geometry modification and replaceScopeShape")
 fun recreateScope(
     player: ServerPlayer,
     region: Region,
@@ -23,29 +56,13 @@ fun recreateScope(
     newPositions: List<BlockPos>,
     shapeType: GeoShapeType
 ): Boolean {
-    require(region.containsScope(existingScope)) { "scope does not belong to region" }
-
-    val newShape = RegionFactory.recreateScopeShape(
+    val shapeResult = RegionFactory.recreateScopeShape(
         region = region,
         existingScope = existingScope,
         selectedPositions = newPositions,
         shapeType = shapeType
     )
-
-    return when (newShape) {
-        is Result.Ok -> {
-            if (replaceScopeGeometryAndSave(existingScope, newShape.value) { saveRegionData(player) }) {
-                clearSelectionDisplay(player)
-                clearPlayerSelection(player.uuid)
-                true
-            } else false
-        }
-        is Result.Err -> {
-            val errorMsg = errorMessage(newShape.error, shapeType)
-            errorMsg.forEach { player.sendSystemMessage(it) }
-            false
-        }
-    }
+    return applyModifiedShape(player, region, existingScope, shapeResult, shapeType)
 }
 
 fun onReplacingScopeShape(

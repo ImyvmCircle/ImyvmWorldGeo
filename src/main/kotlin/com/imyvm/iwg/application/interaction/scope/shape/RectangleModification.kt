@@ -1,6 +1,6 @@
 package com.imyvm.iwg.application.interaction.scope.shape
 
-import com.imyvm.iwg.application.interaction.scope.recreateScope
+import com.imyvm.iwg.application.interaction.scope.applyModifiedShape
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.application.region.modifyRectangle
 import com.imyvm.iwg.domain.component.GeoScope
@@ -31,27 +31,21 @@ fun modifyScopeRectangle(
 
     val point = selectedPositions[0]
     val shapeResult = modifyRectangle(geometry, point)
-    if (shapeResult is Result.Err) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle")!!)
-        return false
+    val newGeometry = when (shapeResult) {
+        is Result.Ok -> shapeResult.value.typedGeometry as RectangleGeometry
+        is Result.Err -> null
     }
-    val newShape = (shapeResult as Result.Ok).value
-    val newGeometry = newShape.typedGeometry as RectangleGeometry
-
-    val changed = recreateScope(
-        player, region, existingScope,
-        listOf(BlockPos(newGeometry.west, 0, newGeometry.north), BlockPos(newGeometry.east, 0, newGeometry.south)),
-        GeoShapeType.RECTANGLE
-    )
+    val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.RECTANGLE)
     if (changed) {
+        val replacementGeometry = requireNotNull(newGeometry)
         player.sendSystemMessage(requireNotNull(Translator.tr(
             "interaction.meta.scope.modify.rectangle.success",
             existingScope.scopeName,
             region.name,
-            newGeometry.west,
-            newGeometry.north,
-            newGeometry.east,
-            newGeometry.south
+            replacementGeometry.west,
+            replacementGeometry.north,
+            replacementGeometry.east,
+            replacementGeometry.south
         )))
     }
     return changed

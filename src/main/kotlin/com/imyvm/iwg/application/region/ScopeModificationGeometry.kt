@@ -54,20 +54,35 @@ internal fun modifyCircleCenter(geometry: CircleGeometry, newCenter: BlockPos): 
     return constructShape(positions, GeoShapeType.CIRCLE)
 }
 
-internal fun modifyPolygonDelete(geometry: PolygonGeometry, point: BlockPos): Result<GeoShape, CreationError>? {
-    if (geometry.vertexCount <= 3) return null
-    val vertices = geometryToBlockPosList(geometry)
-    val filtered = vertices.filter { !(it.x == point.x && it.z == point.z) }
-    if (filtered.size == vertices.size) return null
-    return constructShape(filtered, GeoShapeType.POLYGON)
+internal sealed interface PolygonModificationResult {
+    data class Shape(val result: Result<GeoShape, CreationError>) : PolygonModificationResult
+    data object MinimumPoints : PolygonModificationResult
+    data object PointNotFound : PolygonModificationResult
+    data object PointsNotAdjacent : PolygonModificationResult
 }
 
-internal fun modifyPolygonMove(geometry: PolygonGeometry, oldPoint: BlockPos, newPoint: BlockPos): Result<GeoShape, CreationError>? {
-    if (oldPoint.x == newPoint.x && oldPoint.z == newPoint.z) return Result.Err(CreationError.DuplicatedPoints)
+internal fun modifyPolygonDelete(geometry: PolygonGeometry, point: BlockPos): PolygonModificationResult {
+    if (geometry.vertexCount <= 3) return PolygonModificationResult.MinimumPoints
     val vertices = geometryToBlockPosList(geometry)
-    if (vertices.none { it.x == oldPoint.x && it.z == oldPoint.z }) return null
+    val filtered = vertices.filter { !(it.x == point.x && it.z == point.z) }
+    if (filtered.size == vertices.size) return PolygonModificationResult.PointNotFound
+    return PolygonModificationResult.Shape(constructShape(filtered, GeoShapeType.POLYGON))
+}
+
+internal fun modifyPolygonMove(
+    geometry: PolygonGeometry,
+    oldPoint: BlockPos,
+    newPoint: BlockPos
+): PolygonModificationResult {
+    if (oldPoint.x == newPoint.x && oldPoint.z == newPoint.z) {
+        return PolygonModificationResult.Shape(Result.Err(CreationError.DuplicatedPoints))
+    }
+    val vertices = geometryToBlockPosList(geometry)
+    if (vertices.none { it.x == oldPoint.x && it.z == oldPoint.z }) {
+        return PolygonModificationResult.PointNotFound
+    }
     val moved = vertices.map { if (it.x == oldPoint.x && it.z == oldPoint.z) newPoint else it }
-    return constructShape(moved, GeoShapeType.POLYGON)
+    return PolygonModificationResult.Shape(constructShape(moved, GeoShapeType.POLYGON))
 }
 
 internal fun modifyPolygonInsert(
@@ -75,16 +90,18 @@ internal fun modifyPolygonInsert(
     adj1: BlockPos,
     adj2: BlockPos,
     newPoint: BlockPos
-): Result<GeoShape, CreationError>? {
+): PolygonModificationResult {
     val vertices = geometryToBlockPosList(geometry)
     val n = vertices.size
     val indexA = vertices.indexOfFirst { it.x == adj1.x && it.z == adj1.z }
     val indexB = vertices.indexOfFirst { it.x == adj2.x && it.z == adj2.z }
-    if (indexA == -1 || indexB == -1) return null
-    if ((indexA + 1) % n != indexB && (indexB + 1) % n != indexA) return null
+    if (indexA == -1 || indexB == -1) return PolygonModificationResult.PointNotFound
+    if ((indexA + 1) % n != indexB && (indexB + 1) % n != indexA) {
+        return PolygonModificationResult.PointsNotAdjacent
+    }
     val insertIndex = if ((indexA + 1) % n == indexB) indexB else indexA
     val newList = vertices.toMutableList().apply { add(insertIndex, newPoint) }
-    return constructShape(newList, GeoShapeType.POLYGON)
+    return PolygonModificationResult.Shape(constructShape(newList, GeoShapeType.POLYGON))
 }
 
 internal fun geometryToBlockPosList(geometry: PolygonGeometry): List<BlockPos> =

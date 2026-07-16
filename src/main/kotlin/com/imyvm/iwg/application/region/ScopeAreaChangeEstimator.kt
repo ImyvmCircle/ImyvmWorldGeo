@@ -61,7 +61,7 @@ object ScopeAreaChangeEstimator {
         if (selectedPositions.isEmpty()) return null
         val vertices = geometryToBlockPosList(geometry)
 
-        return when (selectedPositions.size) {
+        val modification = when (selectedPositions.size) {
             1 -> {
                 val point = selectedPositions[0]
                 if (vertices.any { it.x == point.x && it.z == point.z }) {
@@ -73,7 +73,8 @@ object ScopeAreaChangeEstimator {
             }
             2 -> modifyPolygonMove(geometry, selectedPositions[0], selectedPositions[1])
             3 -> modifyPolygonInsert(geometry, selectedPositions[0], selectedPositions[1], selectedPositions[2])
-            else -> null
+            else -> return null
         }
+        return (modification as? PolygonModificationResult.Shape)?.result
     }
 }

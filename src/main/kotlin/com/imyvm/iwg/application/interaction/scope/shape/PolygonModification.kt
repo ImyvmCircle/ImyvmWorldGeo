@@ -1,10 +1,15 @@
 package com.imyvm.iwg.application.interaction.scope.shape
 
-import com.imyvm.iwg.application.interaction.scope.getPolygonPoints
-import com.imyvm.iwg.application.interaction.scope.recreateScope
-import com.imyvm.iwg.application.interaction.scope.validatePolygon
+import com.imyvm.iwg.application.interaction.scope.applyModifiedShape
+import com.imyvm.iwg.application.region.modifyPolygonDelete
+import com.imyvm.iwg.application.region.modifyPolygonInsert
+import com.imyvm.iwg.application.region.modifyPolygonMove
+import com.imyvm.iwg.application.region.PolygonModificationResult
+import com.imyvm.iwg.application.region.Result
+import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.PolygonGeometry
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.text.Translator
@@ -17,17 +22,16 @@ fun modifyScopePolygonMonoPoint(
     existingScope: GeoScope,
     selectedPositions: List<BlockPos>
 ): Boolean {
-    if (!validatePolygon(player, existingScope)) return false
+    val geometry = polygonGeometry(player, existingScope) ?: return false
     val point = selectedPositions.singleOrNull() ?: return invalidPolygonPointCount(player, selectedPositions.size)
 
-    val blockPosList = getPolygonPoints(existingScope)
+    val blockPosList = List(geometry.vertexCount) { BlockPos(geometry.x(it), 0, geometry.z(it)) }
 
     return if (blockPosList.any { it.x == point.x && it.z == point.z }) {
-        modifyScopePolygonDeletePoint(player, region, existingScope, point)
+        modifyScopePolygonDeletePoint(player, region, existingScope, geometry, point)
     } else {
         val (pointA, pointB) = findNearestAdjacentPoints(blockPosList, point)
-        val insertPositions = mutableListOf(pointA, pointB, point)
-        modifyScopePolygonInsertPoint(player, region, existingScope, insertPositions)
+        modifyScopePolygonInsertPoint(player, region, existingScope, geometry, listOf(pointA, pointB, point))
     }
 }
 
@@ -37,33 +41,35 @@ fun modifyScopePolygonMove(
     existingScope: GeoScope,
     selectedPositions: List<BlockPos>
 ): Boolean {
-    if (!validatePolygon(player, existingScope)) return false
+    val geometry = polygonGeometry(player, existingScope) ?: return false
     if (selectedPositions.size != 2) return invalidPolygonPointCount(player, selectedPositions.size)
 
     val oldPoint = selectedPositions[0]
     val newPoint = selectedPositions[1]
 
-    if (oldPoint.x == newPoint.x && oldPoint.z == newPoint.z) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_duplicate_points")!!)
-        return false
+    val shapeResult = when (val modification = modifyPolygonMove(geometry, oldPoint, newPoint)) {
+        is PolygonModificationResult.Shape -> {
+            if (modification.result == Result.Err(CreationError.DuplicatedPoints)) {
+                player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_duplicate_points")!!)
+                return false
+            }
+            modification.result
+        }
+        PolygonModificationResult.PointNotFound -> {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found")!!)
+            return false
+        }
+        PolygonModificationResult.MinimumPoints,
+        PolygonModificationResult.PointsNotAdjacent -> error("unexpected polygon move result")
     }
 
-    val blockPosList = getPolygonPoints(existingScope)
-    if (blockPosList.none { it.x == oldPoint.x && it.z == oldPoint.z }) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found")!!)
-        return false
+    val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.POLYGON)
+    if (changed) {
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "interaction.meta.scope.modify.polygon_move_success", existingScope.scopeName, region.name
+        )))
     }
-
-    val newPositions = blockPosList.map {
-        if (it.x == oldPoint.x && it.z == oldPoint.z) {
-            BlockPos(newPoint.x, newPoint.y, newPoint.z)
-        } else it
-    }.toMutableList()
-
-    return completePolygonModification(
-        player, region, existingScope, newPositions,
-        "interaction.meta.scope.modify.polygon_move_success"
-    )
+    return changed
 }
 
 fun modifyScopePolygonInsertPoint(
@@ -72,60 +78,76 @@ fun modifyScopePolygonInsertPoint(
     existingScope: GeoScope,
     selectedPositions: List<BlockPos>
 ): Boolean {
-    if (!validatePolygon(player, existingScope)) return false
+    val geometry = polygonGeometry(player, existingScope) ?: return false
     if (selectedPositions.size != 3) return invalidPolygonPointCount(player, selectedPositions.size)
+    return modifyScopePolygonInsertPoint(player, region, existingScope, geometry, selectedPositions)
+}
 
+private fun modifyScopePolygonInsertPoint(
+    player: ServerPlayer,
+    region: Region,
+    existingScope: GeoScope,
+    geometry: PolygonGeometry,
+    selectedPositions: List<BlockPos>
+): Boolean {
     val (pointA, pointB, newPoint) = selectedPositions
-    val blockPosList = getPolygonPoints(existingScope).toMutableList()
-
-    val indexA = blockPosList.indexOfFirst { it.x == pointA.x && it.z == pointA.z }
-    val indexB = blockPosList.indexOfFirst { it.x == pointB.x && it.z == pointB.z }
-
-    if (!validateInsertPoints(player, blockPosList.size, indexA, indexB)) return false
-
-    val insertIndex = if ((indexA + 1) % blockPosList.size == indexB) indexB else indexA
-    blockPosList.add(insertIndex, BlockPos(newPoint.x, newPoint.y, newPoint.z))
-
-    return completePolygonModification(
-        player, region, existingScope, blockPosList,
-        "interaction.meta.scope.modify.polygon_insert_success"
-    )
-}
-
-fun modifyScopePolygonDeletePoint(
-    player: ServerPlayer,
-    region: Region,
-    existingScope: GeoScope,
-    point: BlockPos
-): Boolean {
-    val blockPosList = getPolygonPoints(existingScope).toMutableList()
-    if (blockPosList.size <= 3) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_minimum_points")!!)
-        return false
-    }
-    if (!blockPosList.removeIf { it.x == point.x && it.z == point.z }) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found")!!)
-        return false
+    val shapeResult = when (val modification = modifyPolygonInsert(geometry, pointA, pointB, newPoint)) {
+        is PolygonModificationResult.Shape -> modification.result
+        PolygonModificationResult.PointNotFound -> {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_found")!!)
+            return false
+        }
+        PolygonModificationResult.PointsNotAdjacent -> {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_adjacent")!!)
+            return false
+        }
+        PolygonModificationResult.MinimumPoints -> error("unexpected polygon insert result")
     }
 
-    return completePolygonModification(
-        player, region, existingScope, blockPosList,
-        "interaction.meta.scope.modify.polygon_delete_success"
-    )
-}
-
-private fun completePolygonModification(
-    player: ServerPlayer,
-    region: Region,
-    existingScope: GeoScope,
-    positions: List<BlockPos>,
-    successKey: String
-): Boolean {
-    val changed = recreateScope(player, region, existingScope, positions, GeoShapeType.POLYGON)
+    val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.POLYGON)
     if (changed) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(successKey, existingScope.scopeName, region.name)))
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "interaction.meta.scope.modify.polygon_insert_success", existingScope.scopeName, region.name
+        )))
     }
     return changed
+}
+
+private fun modifyScopePolygonDeletePoint(
+    player: ServerPlayer,
+    region: Region,
+    existingScope: GeoScope,
+    geometry: PolygonGeometry,
+    point: BlockPos
+): Boolean {
+    val shapeResult = when (val modification = modifyPolygonDelete(geometry, point)) {
+        is PolygonModificationResult.Shape -> modification.result
+        PolygonModificationResult.MinimumPoints -> {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_minimum_points")!!)
+            return false
+        }
+        PolygonModificationResult.PointNotFound -> {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found")!!)
+            return false
+        }
+        PolygonModificationResult.PointsNotAdjacent -> error("unexpected polygon delete result")
+    }
+
+    val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.POLYGON)
+    if (changed) {
+        player.sendSystemMessage(requireNotNull(Translator.tr(
+            "interaction.meta.scope.modify.polygon_delete_success", existingScope.scopeName, region.name
+        )))
+    }
+    return changed
+}
+
+private fun polygonGeometry(player: ServerPlayer, scope: GeoScope): PolygonGeometry? {
+    val geometry = scope.geoShape?.typedGeometry as? PolygonGeometry
+    if (geometry == null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.invalid_polygon")!!)
+    }
+    return geometry
 }
 
 private fun invalidPolygonPointCount(player: ServerPlayer, count: Int): Boolean {
@@ -137,18 +159,4 @@ private fun invalidPolygonPointCount(player: ServerPlayer, count: Int): Boolean 
     val message = if (count == 0) Translator.tr(key, "polygon") else Translator.tr(key)
     player.sendSystemMessage(requireNotNull(message))
     return false
-}
-
-private fun validateInsertPoints(player: ServerPlayer, n: Int, indexA: Int, indexB: Int): Boolean {
-    if (indexA == -1 || indexB == -1) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_found")!!)
-        return false
-    }
-
-    val areAdjacent = (indexA + 1) % n == indexB || (indexB + 1) % n == indexA
-    if (!areAdjacent) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_adjacent")!!)
-        return false
-    }
-    return true
 }
