@@ -18,6 +18,47 @@ internal data class PlayerLocationState(
     val stayStartedAt: Long? = null
 )
 
+internal fun PlayerLocationState.removeIfReferencing(region: Region): PlayerLocationState? {
+    val referencesRegion = location.region === region ||
+        pendingExit?.fromRegion === region ||
+        scheduledEntryTitle?.region === region
+    return if (referencesRegion) null else this
+}
+
+internal fun PlayerLocationState.retargetRegion(source: Region, target: Region): PlayerLocationState {
+    val retargetedLocation = if (location.region === source) {
+        location.copy(region = target)
+    } else {
+        location
+    }
+    val retargetedPendingExit = pendingExit?.let { pending ->
+        if (pending.fromRegion === source) pending.copy(fromRegion = target) else pending
+    }
+    val retargetedEntryTitle = scheduledEntryTitle?.let { title ->
+        if (title.region === source) title.copy(region = target) else title
+    }
+    if (
+        retargetedLocation === location &&
+        retargetedPendingExit === pendingExit &&
+        retargetedEntryTitle === scheduledEntryTitle
+    ) {
+        return this
+    }
+    return copy(
+        location = retargetedLocation,
+        pendingExit = retargetedPendingExit,
+        scheduledEntryTitle = retargetedEntryTitle
+    )
+}
+
+internal fun <K> MutableMap<K, PlayerLocationState>.removeStatesReferencing(region: Region) {
+    entries.removeIf { (_, state) -> state.removeIfReferencing(region) == null }
+}
+
+internal fun <K> MutableMap<K, PlayerLocationState>.retargetStates(source: Region, target: Region) {
+    replaceAll { _, state -> state.retargetRegion(source, target) }
+}
+
 internal data class StayPeriod(val region: Region, val startedAt: Long, val endedAt: Long)
 
 internal data class LocationTransition(

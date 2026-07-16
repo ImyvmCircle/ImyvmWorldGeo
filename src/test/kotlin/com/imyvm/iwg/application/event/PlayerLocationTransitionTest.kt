@@ -107,6 +107,101 @@ class PlayerLocationTransitionTest {
         assertEquals(20, entered.state.stayStartedAt)
     }
 
+    @Test
+    fun `delete removes state when any delayed transition reference uses deleted region`() {
+        val states = listOf(
+            PlayerLocationState(PlayerLocation(regionA, scopeA), stayStartedAt = 10),
+            PlayerLocationState(
+                PlayerLocation(regionB, scopeB),
+                pendingExit = PendingWildernessExit(regionA, 20)
+            ),
+            PlayerLocationState(
+                PlayerLocation(regionB, scopeB),
+                scheduledEntryTitle = ScheduledEntryTitle(regionA, 30)
+            )
+        )
+
+        states.forEach { assertNull(it.removeIfReferencing(regionA)) }
+    }
+
+    @Test
+    fun `delete keeps unrelated and detached same id states`() {
+        val detachedSameId = Region("detachedA", regionA.numberID, mutableListOf(scope("detached", 1, 4)))
+        val unrelated = PlayerLocationState(
+            PlayerLocation(detachedSameId, detachedSameId.scopes.single()),
+            pendingExit = PendingWildernessExit(regionB, 20),
+            scheduledEntryTitle = ScheduledEntryTitle(regionC, 30),
+            stayStartedAt = 10
+        )
+
+        assertSame(unrelated, unrelated.removeIfReferencing(regionA))
+    }
+
+    @Test
+    fun `merge retargets every region reference and preserves scope identity and timing`() {
+        val original = PlayerLocationState(
+            PlayerLocation(regionA, scopeA),
+            pendingExit = PendingWildernessExit(regionA, 20),
+            scheduledEntryTitle = ScheduledEntryTitle(regionA, 30),
+            stayStartedAt = 10
+        )
+
+        val retargeted = original.retargetRegion(regionA, regionB)
+
+        assertSame(regionB, retargeted.location.region)
+        assertSame(scopeA, retargeted.location.scope)
+        assertSame(regionB, retargeted.pendingExit?.fromRegion)
+        assertEquals(20, retargeted.pendingExit?.startedAt)
+        assertSame(regionB, retargeted.scheduledEntryTitle?.region)
+        assertEquals(30, retargeted.scheduledEntryTitle?.scheduledAt)
+        assertEquals(10, retargeted.stayStartedAt)
+    }
+
+    @Test
+    fun `merge ignores unrelated and detached same id references`() {
+        val detachedSameId = Region("detachedA", regionA.numberID, mutableListOf(scope("detached", 1, 4)))
+        val unrelated = PlayerLocationState(
+            PlayerLocation(detachedSameId, detachedSameId.scopes.single()),
+            pendingExit = PendingWildernessExit(regionB, 20),
+            scheduledEntryTitle = ScheduledEntryTitle(regionC, 30),
+            stayStartedAt = 10
+        )
+
+        assertSame(unrelated, unrelated.retargetRegion(regionA, regionB))
+    }
+
+    @Test
+    fun `delete collection mutation prevents old state from surviving id reuse`() {
+        val states = mutableMapOf(
+            1 to PlayerLocationState(PlayerLocation(regionA, scopeA), stayStartedAt = 10),
+            2 to PlayerLocationState(PlayerLocation(regionB, scopeB), stayStartedAt = 20)
+        )
+
+        states.removeStatesReferencing(regionA)
+        val reusedRegion = Region("reused", regionA.numberID, mutableListOf(scope("reused", 1, 5)))
+        states[3] = initialPlayerLocationState(PlayerLocation(reusedRegion, reusedRegion.scopes.single()), 30)
+
+        assertNull(states[1])
+        assertSame(regionB, states[2]?.location?.region)
+        assertSame(reusedRegion, states[3]?.location?.region)
+        assertEquals(30, states[3]?.stayStartedAt)
+    }
+
+    @Test
+    fun `merge collection mutation makes later stay accounting target canonical region`() {
+        val states = mutableMapOf(
+            1 to PlayerLocationState(PlayerLocation(regionA, scopeA), stayStartedAt = 10),
+            2 to PlayerLocationState(PlayerLocation(regionC, scopeC), stayStartedAt = 20)
+        )
+
+        states.retargetStates(regionA, regionB)
+
+        assertSame(regionB, states[1]?.location?.region)
+        assertEquals(10, states[1]?.stayStartedAt)
+        assertSame(regionC, states[2]?.location?.region)
+        assertEquals(20, states[2]?.stayStartedAt)
+    }
+
     private fun state(region: Region, scope: GeoScope, startedAt: Long) = PlayerLocationState(
         PlayerLocation(region, scope),
         stayStartedAt = startedAt

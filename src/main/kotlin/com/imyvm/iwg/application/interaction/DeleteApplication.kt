@@ -1,5 +1,6 @@
 package com.imyvm.iwg.application.interaction
 
+import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
@@ -16,6 +17,7 @@ fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false)
             rollback()
             false
         } else {
+            PlayerRegionEntryExitTracker.onRegionDeleted(region)
             deletedScopes.forEach { EffectOverlayService.clearScope(it.requireAssignedScopeId()) }
             true
         }

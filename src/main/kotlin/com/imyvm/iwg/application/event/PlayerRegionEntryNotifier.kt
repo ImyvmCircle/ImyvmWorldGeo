@@ -30,6 +30,14 @@ object PlayerRegionEntryExitTracker {
 
     private val playerStates = mutableMapOf<UUID, PlayerLocationState>()
 
+    internal fun onRegionDeleted(region: Region) {
+        playerStates.removeStatesReferencing(region)
+    }
+
+    internal fun onRegionMerged(source: Region, target: Region) {
+        playerStates.retargetStates(source, target)
+    }
+
     fun processTransitions(server: MinecraftServer) {
         val allCurrent = PlayerRegionChecker.getAllRegionScopesWithPlayers()
         val now = System.currentTimeMillis()
