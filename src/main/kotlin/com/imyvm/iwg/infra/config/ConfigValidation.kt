@@ -17,7 +17,6 @@ private var validationInitialized = false
 private var revertingInvalidUpdate = false
 private val positiveOptions by lazy { listOf(
     CoreConfig.LAZY_TICKER_SECONDS,
-    EffectConfig.EFFECT_DURATION_SECONDS,
     SelectionConfig.SELECTION_MAX_POINTS,
     SelectionConfig.SELECTION_MIN_POINTS,
     SelectionConfig.SELECTION_DISPLAY_LINE_STEP,
@@ -36,6 +35,10 @@ fun initializeConfigValidation() {
 
     positiveOptions.forEach { validateOnChange(it, ::positiveInt) }
     nonNegativeOptions.forEach { validateOnChange(it, ::nonNegativeInt) }
+    validateOnChange(EffectConfig.EFFECT_DURATION_SECONDS) { _, seconds ->
+        effectDurationTicks(seconds)
+        seconds
+    }
     validateOnChange(TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS) { _, value ->
         requireTeleportFallbackSearchRadius(value)
     }
@@ -53,6 +56,7 @@ fun initializeConfigValidation() {
 private fun validateCurrentConfig() {
     positiveOptions.forEach { positiveInt(it.key, it.value) }
     nonNegativeOptions.forEach { nonNegativeInt(it.key, it.value) }
+    effectDurationTicks(EffectConfig.EFFECT_DURATION_SECONDS.value)
     requireTeleportFallbackSearchRadius(
         TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
     )
