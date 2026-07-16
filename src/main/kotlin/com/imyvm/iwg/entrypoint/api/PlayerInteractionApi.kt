@@ -136,8 +136,10 @@ object PlayerInteractionApi {
             else -> getRegionPermissionValue(player, region, keyString)
         }
     }
+    @Deprecated("Use RegionDataApi.getRegionRuleValue, getScopeRuleValue, or the extension rule queries")
     fun getRuleValueRegion(region: Region?, keyString: String) =
         onCertificateRuleValue(region, null, keyString)
+    @Deprecated("Use RegionDataApi.getScopeRuleValue or getScopeExtensionRuleValue")
     fun getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean? {
         val targetRegion = requireNotNull(region) { "scope requires region" }
         val scope = targetRegion.scopes.firstOrNull { it.scopeName.equals(scopeName, ignoreCase = true) }

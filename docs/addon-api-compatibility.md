@@ -27,6 +27,9 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `RegionDataApi.getPermissionValueRegion` | R9 (unreleased) | Explicit default/Region/Scope and global/player permission methods | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `RegionDataApi.getExtensionPermissionValueRegion` | R9 (unreleased) | Explicit extension permission methods | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `RegionDataApi.getRuleValueForRegion` | R9 (unreleased) | `getDefaultRuleValue`, `getRegionRuleValue`, or `getScopeRuleValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
+| `RegionDataApi.getExtensionRuleValueForRegion` | R9 (unreleased) | `getDefaultExtensionRuleValue`, `getRegionExtensionRuleValue`, or `getScopeExtensionRuleValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
+| `PlayerInteractionApi.getRuleValueRegion` | R9 (unreleased) | `RegionDataApi.getRegionRuleValue` / `getRegionExtensionRuleValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
+| `PlayerInteractionApi.getRuleValueScope` | R9 (unreleased) | `RegionDataApi.getScopeRuleValue` / `getScopeExtensionRuleValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `RegionDataApi.getEffectValueForRegion` | R9 (unreleased) | `getRegionEffectValue` or `getScopeEffectValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `RegionDataApi.getActiveEffectsForRegion` | R9 (unreleased) | `getRegionActiveEffects` or `getScopeActiveEffects` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `PlayerInteractionApi.getPermissionValueRegion` | R9 (unreleased) | Explicit default/Region/Scope and global/player methods | Deprecated | Two released versions, then maintainer review | JVM method delegates |
@@ -61,6 +64,24 @@ val playerValue = RegionDataApi.getScopePlayerPermissionValue(region, scope, pla
 ```
 
 Extension permission and rule keys must be registered through `RegionDataApi` before commands or queries use them.
+
+## R9 rule query migration
+
+Use the explicit rule query matching the intended target:
+
+```kotlin
+// Built-in rules
+val defaultRule = RegionDataApi.getDefaultRuleValue(RuleKey.SPAWN_MONSTERS)
+val regionRule = RegionDataApi.getRegionRuleValue(region, RuleKey.TNT_BLOCK_PROTECTION)
+val scopeRule = RegionDataApi.getScopeRuleValue(region, scope, RuleKey.PVP)
+
+// Extension rules
+val extDefault = RegionDataApi.getDefaultExtensionRuleValue("myaddon:custom.rule")
+val extRegion = RegionDataApi.getRegionExtensionRuleValue(region, "myaddon:custom.rule")
+val extScope = RegionDataApi.getScopeExtensionRuleValue(region, scope, "myaddon:custom.rule")
+```
+
+`getEffectiveRulesForScope` now returns all `RuleKey` entries with their effective values (scope → region → default fallback), regardless of whether the store contains explicit overrides.
 
 ## R10 Region collection migration
 

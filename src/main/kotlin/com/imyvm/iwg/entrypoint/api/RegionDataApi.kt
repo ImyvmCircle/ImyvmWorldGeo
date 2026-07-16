@@ -236,6 +236,25 @@ object RegionDataApi {
         return if (scope == null) getRegionRuleValue(region, ruleKey) else getScopeRuleValue(region, scope, ruleKey)
     }
 
+    fun getDefaultExtensionRuleValue(key: String): Boolean =
+        getEffectiveExtensionRuleValue(null, null, key)
+
+    fun getRegionExtensionRuleValue(region: Region, key: String): Boolean =
+        getEffectiveExtensionRuleValue(region, null, key)
+
+    fun getScopeExtensionRuleValue(region: Region, scope: GeoScope, key: String): Boolean {
+        require(region.containsScope(scope)) { "scope does not belong to region" }
+        return getEffectiveExtensionRuleValue(region, scope, key)
+    }
+
+    /**
+     * Compatibility dispatcher for extension rules.
+     *
+     * @deprecated Since R9 (unreleased). Use [getDefaultExtensionRuleValue],
+     * [getRegionExtensionRuleValue], or [getScopeExtensionRuleValue].
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
+    @Deprecated("Use an explicit default, region, or scope extension rule query")
     fun getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String): Boolean {
         return getEffectiveExtensionRuleValue(region, scope, key)
     }
@@ -368,11 +387,9 @@ object RegionDataApi {
     }
 
     fun getEffectiveRulesForScope(region: Region, scope: GeoScope): Map<RuleKey, Boolean> {
-        val keys = mutableSetOf<RuleKey>()
-        keys.addAll(scope.settingStore.builtInRuleKeys())
-        keys.addAll(region.settingStore.builtInRuleKeys())
+        require(region.containsScope(scope)) { "scope does not belong to region" }
         val result = mutableMapOf<RuleKey, Boolean>()
-        for (key in keys) {
+        for (key in RuleKey.entries) {
             result[key] = getEffectiveScopeRuleValue(region, scope, key)
         }
         return result
