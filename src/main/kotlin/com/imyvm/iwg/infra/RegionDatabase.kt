@@ -368,9 +368,18 @@ object RegionDatabase {
     }
 
     fun savePlayerStatsSnapshot() {
-        if (!hasActiveSession()) return
-        runCatching { savePlayerStats() }
-            .onFailure { ImyvmWorldGeo.logger.error("Failed to save player stats: ${it.message}", it) }
+        trySavePlayerStatsSnapshot()
+    }
+
+    internal fun trySavePlayerStatsSnapshot(save: () -> Unit = ::savePlayerStats): Boolean {
+        if (!hasActiveSession()) return false
+        return try {
+            save()
+            true
+        } catch (error: Exception) {
+            ImyvmWorldGeo.logger.error("Failed to save player stats: ${error.message}", error)
+            false
+        }
     }
 
     fun getRegionByName(name: String): Region {
