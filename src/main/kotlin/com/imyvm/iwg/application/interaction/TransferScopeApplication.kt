@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.ScopeOwnershipEntry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -11,31 +12,63 @@ fun onScopeTransfer(
     scopeName: String,
     targetRegion: Region
 ): Int {
+    RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
+
     if (sourceRegion.numberID == targetRegion.numberID) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.same_region")!!)
         return 0
     }
 
-    if (sourceRegion.geometryScope.size < 2) {
+    if (sourceRegion.scopes.size < 2) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.last_scope")!!)
         return 0
     }
 
-    val scope = try {
-        sourceRegion.getScopeByName(scopeName)
-    } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
-        return 0
-    }
+    val scope = getScopeOrNotify(player, sourceRegion, scopeName) ?: return 0
 
-    val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
-    val nameChanged = !resolvedName.equals(scope.scopeName, ignoreCase = false)
+    val originalName = scope.scopeName
+    val resolvedName = resolveTransferScopeName(originalName, targetRegion)
+    val nameChanged = !resolvedName.equals(originalName, ignoreCase = false)
+    val sourceIndex = sourceRegion.removeScope(scope)
+    val originalSourceHistory = sourceRegion.ownershipHistorySnapshot()
+    val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
 
     val transferTime = System.currentTimeMillis()
-    sourceRegion.geometryScope.remove(scope)
-    scope.scopeName = resolvedName
-    targetRegion.geometryScope.add(scope)
-    RegionDatabase.recordScopeOwnership(scope.scopeId, sourceRegion, targetRegion, transferTime)
+    try {
+        val scopeId = scope.requireAssignedScopeId()
+        scope.renameTo(resolvedName)
+        targetRegion.addScope(scope)
+        val newSourceHistory = originalSourceHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        val newTargetHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        newSourceHistory.remove(scopeId)?.let { previousEntries ->
+            newTargetHistory.getOrPut(scopeId) { mutableListOf() }.addAll(previousEntries)
+        }
+        newTargetHistory.getOrPut(scopeId) { mutableListOf() }.add(
+            ScopeOwnershipEntry(
+                scopeId.raw,
+                sourceRegion.numberID,
+                targetRegion.numberID,
+                transferTime
+            )
+        )
+        sourceRegion.replaceOwnershipHistory(newSourceHistory)
+        targetRegion.replaceOwnershipHistory(newTargetHistory)
+    } catch (error: IllegalArgumentException) {
+        if (targetRegion.containsScope(scope)) targetRegion.removeScope(scope)
+        scope.renameTo(originalName)
+        sourceRegion.restoreScope(sourceIndex, scope)
+        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        throw error
+    }
+    if (!saveRegionData(player)) {
+        targetRegion.removeScope(scope)
+        scope.renameTo(originalName)
+        sourceRegion.restoreScope(sourceIndex, scope)
+        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        return 0
+    }
 
     if (nameChanged) {
         player.sendSystemMessage(
@@ -56,13 +89,13 @@ fun onScopeTransfer(
 }
 
 internal fun resolveTransferScopeName(originalName: String, targetRegion: Region): String {
-    if (targetRegion.geometryScope.none { it.scopeName.equals(originalName, ignoreCase = true) }) {
+    if (targetRegion.scopes.none { it.scopeName.equals(originalName, ignoreCase = true) }) {
         return originalName
     }
     var counter = 1
     while (true) {
         val candidate = "$originalName$counter"
-        if (targetRegion.geometryScope.none { it.scopeName.equals(candidate, ignoreCase = true) }) {
+        if (targetRegion.scopes.none { it.scopeName.equals(candidate, ignoreCase = true) }) {
             return candidate
         }
         counter++

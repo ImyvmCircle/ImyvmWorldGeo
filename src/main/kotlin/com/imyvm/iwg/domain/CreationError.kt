@@ -7,6 +7,8 @@ sealed class CreationError {
     data object InsufficientPoints : CreationError()
     data object CoincidentPoints : CreationError()
     data object UnderSizeLimit : CreationError()
+    data object CoordinateRangeExceeded : CreationError()
+    data object PolygonVertexLimitExceeded : CreationError()
     data object UnderBoundingBoxLimit : CreationError()
     data object AspectRatioInvalid : CreationError()
     data object EdgeTooShort : CreationError()

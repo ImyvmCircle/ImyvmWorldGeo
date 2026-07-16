@@ -11,9 +11,13 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
+import com.imyvm.iwg.application.region.RegionIdCapacityExceededException
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.ScopeIdCapacityExceededException
+import com.imyvm.iwg.domain.component.SelectionState
 import net.minecraft.server.level.ServerPlayer
+import net.minecraft.core.BlockPos
 
 fun onRegionCreation(
     player: ServerPlayer,
@@ -33,7 +37,7 @@ fun onTryingRegionCreationWithReturn(
     isApi: Boolean = true,
     idMark: Int
 ): Region? {
-    if (!selectionModeCheck(player)) return null
+    val selectionState = getCreationSelectionOrNotify(player) ?: return null
 
     val regionName = validateNameCommon(
         player,
@@ -42,13 +46,18 @@ fun onTryingRegionCreationWithReturn(
         autoFill = !isApi
     ) ?: return null
 
-    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
+    val shapeType = getShapeTypeCheck(player, selectionState, shapeTypeName) ?: return null
 
-    return when (val creationResult = tryRegionCreation(player, regionName, shapeType, idMark)) {
+    val creationResult = try {
+        tryRegionCreation(player, regionName, shapeType, idMark, selectionState.points)
+    } catch (_: RegionIdCapacityExceededException) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
+        return null
+    }
+    return when (creationResult) {
         is Result.Ok -> {
-            if (isApi) handleRegionCreateSuccess(player, creationResult, notify = false)
-            else handleRegionCreateSuccess(player, creationResult, notify = true)
-            creationResult.value
+            val saved = handleRegionCreateSuccess(player, creationResult, notify = !isApi)
+            creationResult.value.takeIf { saved }
         }
         is Result.Err -> {
             errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
@@ -75,8 +84,10 @@ fun onTryingScopeCreationWithReturn (
     shapeTypeName: String?,
     isApi: Boolean = true
 ): Pair<Region, GeoScope>? {
-    if (!selectionModeCheck(player)) return null
-    val shapeType = getShapeTypeCheck(player, shapeTypeName) ?: return null
+    RegionDatabase.requireCanonicalRegion(region)
+
+    val selectionState = getCreationSelectionOrNotify(player) ?: return null
+    val shapeType = getShapeTypeCheck(player, selectionState, shapeTypeName) ?: return null
 
     val scopeName = validateNameCommon(
         player,
@@ -86,11 +97,10 @@ fun onTryingScopeCreationWithReturn (
         regionForScope = region
     ) ?: return null
 
-    return when (val creationResult = tryScopeCreation(player, scopeName, shapeType)) {
+    return when (val creationResult = tryScopeCreation(player, scopeName, shapeType, selectionState.points)) {
         is Result.Ok -> {
-            if (isApi) handleScopeCreateSuccess(player, creationResult, region, notify = false)
-            else handleScopeCreateSuccess(player, creationResult, region, notify = true)
-            Pair(region, creationResult.value)
+            val saved = handleScopeCreateSuccess(player, creationResult, region, notify = !isApi)
+            Pair(region, creationResult.value).takeIf { saved }
         }
         is Result.Err -> {
             errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
@@ -99,21 +109,25 @@ fun onTryingScopeCreationWithReturn (
     }
 }
 
-private fun selectionModeCheck(player: ServerPlayer): Boolean {
-    val playerUUID = player.uuid
-    if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+private fun getCreationSelectionOrNotify(player: ServerPlayer): SelectionState? {
+    val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
+    if (state == null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
-        return false
+        return null
     }
-    return true
+    if (!isCreationSelection(state)) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.create_mode_required")!!)
+        return null
+    }
+    return state
 }
 
 private fun getShapeTypeCheck(
     player: ServerPlayer,
+    selectionState: SelectionState,
     shapeTypeName: String?,
 ): GeoShapeType? {
     if (shapeTypeName.isNullOrEmpty()) {
-        val selectionState = ImyvmWorldGeo.pointSelectingPlayers[player.uuid] ?: return null
         return selectionState.getEffectiveShapeType()
     }
     val shapeType = GeoShapeType.entries
@@ -130,25 +144,20 @@ private fun tryRegionCreation(
     player: ServerPlayer,
     regionName: String,
     shapeType: GeoShapeType,
-    idMark: Int
+    idMark: Int,
+    selectedPositions: MutableList<BlockPos>
 ): Result<Region, CreationError> {
-    val playerUUID = player.uuid
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points
     val newID = generateNewRegionId(idMark)
     val regionResult = RegionFactory.createRegion(
         name = regionName,
         numberID = newID,
         playerExecutor = player,
-        selectedPositions = selectedPositions ?: mutableListOf(),
+        selectedPositions = selectedPositions,
         shapeType = shapeType
     )
     if (regionResult is Result.Ok) {
-        val mainScope = regionResult.value.geometryScope.firstOrNull()
-        if (mainScope != null && mainScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
-            mainScope.scopeId = com.imyvm.iwg.domain.component.ScopeId(
-                com.imyvm.iwg.domain.component.generateNewScopeIdRaw(newID, idMark)
-            )
-        }
+        val mainScope = regionResult.value.scopes.firstOrNull()
+        check(mainScope != null && mainScope.assignedScopeIdOrNull != null)
     }
     return regionResult
 }
@@ -156,10 +165,10 @@ private fun tryRegionCreation(
 private fun tryScopeCreation(
     player: ServerPlayer,
     scopeName: String,
-    shapeType: GeoShapeType
+    shapeType: GeoShapeType,
+    selectedPositions: MutableList<BlockPos>
 ): Result<GeoScope, CreationError> {
-    val selectedPositions = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: mutableListOf()
-    return RegionFactory.createScope(
+    return RegionFactory.createScopeForPlayer(
         scopeName = scopeName,
         playerExecutor = player,
         selectedPositions = selectedPositions,
@@ -171,15 +180,20 @@ private fun handleRegionCreateSuccess(
     player: ServerPlayer,
     creationResult: Result.Ok<Region>,
     notify: Boolean
-) {
+): Boolean {
     val newRegion = creationResult.value
     RegionDatabase.addRegion(newRegion)
+    if (!saveRegionData(player)) {
+        RegionDatabase.removeRegion(newRegion)
+        return false
+    }
 
     if (notify) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.success", newRegion.name)!!)
     }
     clearSelectionDisplay(player)
-    ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
+    clearPlayerSelection(player.uuid)
+    return true
 }
 
 private fun handleScopeCreateSuccess(
@@ -187,12 +201,21 @@ private fun handleScopeCreateSuccess(
     creationResult: Result.Ok<GeoScope>,
     region: Region,
     notify: Boolean
-) {
+): Boolean {
     val newScope = creationResult.value
-    if (newScope.scopeId.raw == com.imyvm.iwg.domain.component.ScopeId.UNASSIGNED_RAW) {
-        newScope.scopeId = RegionDatabase.nextScopeIdForNewScope(region)
+    if (newScope.assignedScopeIdOrNull == null) {
+        try {
+            newScope.assignScopeId(RegionDatabase.nextScopeIdForNewScope(region))
+        } catch (_: ScopeIdCapacityExceededException) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.create.error.id_capacity")!!)
+            return false
+        }
     }
-    region.geometryScope.add(newScope)
+    region.addScope(newScope)
+    if (!saveRegionData(player)) {
+        region.removeScope(newScope)
+        return false
+    }
 
     if (notify) {
         player.sendSystemMessage(
@@ -200,7 +223,8 @@ private fun handleScopeCreateSuccess(
         )
     }
     clearSelectionDisplay(player)
-    ImyvmWorldGeo.pointSelectingPlayers.remove(player.uuid)
+    clearPlayerSelection(player.uuid)
+    return true
 }
 
 private fun validateNameCommon(
@@ -220,13 +244,13 @@ private fun validateNameCommon(
             }
         }
         else -> nameArgument
-    }
+    }.trim()
 
     if (!checkNameEmpty(name, player)) return null
     if (!checkNameFormat(name, player)) return null
-    if (!checkNameRepeat(newName = name, player = player)) return null
-    if (type == NameType.SCOPE && regionForScope != null) {
-        if (!checkScopeUnique(name, regionForScope, player)) return null
+    when (type) {
+        NameType.REGION -> if (!checkRegionNameUnique(newName = name, player = player)) return null
+        NameType.SCOPE -> if (regionForScope != null && !checkScopeUnique(name, regionForScope, player)) return null
     }
 
     return name
@@ -246,7 +270,7 @@ private fun generateAndNotifyAutoName(
 }
 
 fun checkScopeUnique(scopeName: String, region: Region, player: ServerPlayer): Boolean {
-    if (region.geometryScope.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
+    if (region.scopes.any { it.scopeName.equals(scopeName, ignoreCase = true) }) {
         NameValidationMessages.sendDuplicateScope(player)
         return false
     }

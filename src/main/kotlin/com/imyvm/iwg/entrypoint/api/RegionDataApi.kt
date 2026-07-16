@@ -1,16 +1,21 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
-import com.imyvm.iwg.application.interaction.onCertificatePermissionValue
+import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
+import com.imyvm.iwg.application.interaction.getDefaultValueForRule
+import com.imyvm.iwg.application.interaction.getRegionPermissionValue
+import com.imyvm.iwg.application.interaction.getScopePermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
-import com.imyvm.iwg.application.interaction.onCertificateRuleValue
 import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
-import com.imyvm.iwg.application.region.rule.helper.getEffectiveRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getEffectiveRegionRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getEffectiveScopeRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
-import com.imyvm.iwg.application.region.effect.helper.getActiveEffects
-import com.imyvm.iwg.application.region.effect.helper.getEffectValue
+import com.imyvm.iwg.application.region.effect.helper.getRegionActiveEffects as resolveRegionActiveEffects
+import com.imyvm.iwg.application.region.effect.helper.getRegionEffectValue as resolveRegionEffectValue
+import com.imyvm.iwg.application.region.effect.helper.getScopeActiveEffects as resolveScopeActiveEffects
+import com.imyvm.iwg.application.region.effect.helper.getScopeEffectValue as resolveScopeEffectValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
@@ -20,6 +25,12 @@ import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
 import java.util.*
+/**
+ * Supported read/query API for addons.
+ *
+ * Compatibility and deprecation policy: `docs/addon-api-compatibility.md`.
+ * Prefer explicit Region/Scope and global/player methods over nullable dispatchers.
+ */
 @Suppress("unused")
 object RegionDataApi {
     fun registerExtensionPermissionKey(key: String, defaultValue: Boolean = true) {
@@ -52,7 +63,7 @@ object RegionDataApi {
         }
     }
 
-    fun getRegionList(): List<Region> = RegionDatabase.getRegionList()
+    fun getRegionList(): List<Region> = RegionDatabase.getRegionList().toList()
 
     fun getRegionListFiltered(idMark: Int): List<Region> = filterRegionsByMark(idMark)
 
@@ -63,7 +74,7 @@ object RegionDataApi {
         System.currentTimeMillis() - parseFoundingTimeFromRegionId(region.numberID)
 
     fun getRegionScopes(region: Region): List<GeoScope> =
-        region.geometryScope
+        region.scopes.toList()
 
     fun getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?> =
         RegionDatabase.getRegionAndScope(region, scopeName)
@@ -122,29 +133,153 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
+    fun getDefaultPermissionValue(permissionKey: PermissionKey): Boolean =
+        getDefaultValueForPermission(permissionKey)
+
+    fun getRegionGlobalPermissionValue(region: Region, permissionKey: PermissionKey): Boolean =
+        getRegionPermissionValue(region, permissionKey)
+
+    fun getRegionPlayerPermissionValue(region: Region, playerUUID: UUID, permissionKey: PermissionKey): Boolean =
+        getRegionPermissionValue(region, playerUUID, permissionKey)
+
+    fun getScopeGlobalPermissionValue(region: Region, scope: GeoScope, permissionKey: PermissionKey): Boolean =
+        getScopePermissionValue(region, scope, permissionKey)
+
+    fun getScopePlayerPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        playerUUID: UUID,
+        permissionKey: PermissionKey
+    ): Boolean = getScopePermissionValue(region, scope, playerUUID, permissionKey)
+
+    /**
+     * Compatibility dispatcher for the former nullable permission API.
+     *
+     * @deprecated Since R9 (unreleased). Use the explicit default/Region/Scope and
+     * global/player methods. Eligible for removal only after two released versions
+     * and explicit maintainer approval.
+     */
+    @Deprecated("Use an explicit default, region, or scope permission query")
     fun getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean {
-        return onCertificatePermissionValue(region, scope, playerUUID, permissionKey)
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return getDefaultPermissionValue(permissionKey)
+        }
+        return when {
+            scope != null && playerUUID != null -> getScopePlayerPermissionValue(region, scope, playerUUID, permissionKey)
+            scope != null -> getScopeGlobalPermissionValue(region, scope, permissionKey)
+            playerUUID != null -> getRegionPlayerPermissionValue(region, playerUUID, permissionKey)
+            else -> getRegionGlobalPermissionValue(region, permissionKey)
+        }
     }
 
+    fun getDefaultExtensionPermissionValue(key: String): Boolean =
+        onCertificateExtensionPermissionValue(null, null, null, key)
+
+    fun getRegionGlobalExtensionPermissionValue(region: Region, key: String): Boolean =
+        onCertificateExtensionPermissionValue(region, null, null, key)
+
+    fun getRegionPlayerExtensionPermissionValue(region: Region, playerUUID: UUID, key: String): Boolean =
+        onCertificateExtensionPermissionValue(region, null, playerUUID, key)
+
+    fun getScopeGlobalExtensionPermissionValue(region: Region, scope: GeoScope, key: String): Boolean =
+        onCertificateExtensionPermissionValue(region, scope, null, key)
+
+    fun getScopePlayerExtensionPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        playerUUID: UUID,
+        key: String
+    ): Boolean = onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
+
+    /**
+     * Compatibility dispatcher for extension permissions.
+     *
+     * @deprecated Since R9 (unreleased). Use the explicit extension permission methods.
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
+    @Deprecated("Use an explicit default, region, or scope extension permission query")
     fun getExtensionPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, key: String): Boolean {
-        return onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return getDefaultExtensionPermissionValue(key)
+        }
+        return when {
+            scope != null && playerUUID != null -> getScopePlayerExtensionPermissionValue(region, scope, playerUUID, key)
+            scope != null -> getScopeGlobalExtensionPermissionValue(region, scope, key)
+            playerUUID != null -> getRegionPlayerExtensionPermissionValue(region, playerUUID, key)
+            else -> getRegionGlobalExtensionPermissionValue(region, key)
+        }
     }
 
+    fun getDefaultRuleValue(ruleKey: RuleKey): Boolean = getDefaultValueForRule(ruleKey)
+
+    fun getRegionRuleValue(region: Region, ruleKey: RuleKey): Boolean =
+        getEffectiveRegionRuleValue(region, ruleKey)
+
+    fun getScopeRuleValue(region: Region, scope: GeoScope, ruleKey: RuleKey): Boolean =
+        getEffectiveScopeRuleValue(region, scope, ruleKey)
+
+    /**
+     * Compatibility dispatcher for the former nullable rule API.
+     *
+     * @deprecated Since R9 (unreleased). Use [getDefaultRuleValue], [getRegionRuleValue],
+     * or [getScopeRuleValue]. Eligible for removal only after two released versions and
+     * explicit maintainer approval.
+     */
+    @Deprecated("Use an explicit default, region, or scope rule query")
     fun getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean {
-        return getEffectiveRuleValue(region, ruleKey, scope)
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return getDefaultRuleValue(ruleKey)
+        }
+        return if (scope == null) getRegionRuleValue(region, ruleKey) else getScopeRuleValue(region, scope, ruleKey)
     }
 
     fun getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String): Boolean {
         return getEffectiveExtensionRuleValue(region, scope, key)
     }
 
-    fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? =
-        getEffectValue(region, playerUUID, effectKey, scope)
+    fun getRegionEffectValue(region: Region, playerUUID: UUID, effectKey: EffectKey): Int? =
+        resolveRegionEffectValue(region, playerUUID, effectKey)
 
+    fun getScopeEffectValue(region: Region, scope: GeoScope, playerUUID: UUID, effectKey: EffectKey): Int? =
+        resolveScopeEffectValue(region, scope, playerUUID, effectKey)
+
+    fun getRegionActiveEffects(region: Region, playerUUID: UUID): Map<EffectKey, Int> =
+        resolveRegionActiveEffects(region, playerUUID)
+
+    fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Map<EffectKey, Int> =
+        resolveScopeActiveEffects(region, scope, playerUUID)
+
+    /**
+     * Compatibility dispatcher for one effect value.
+     *
+     * @deprecated Since R9 (unreleased). Use [getRegionEffectValue] or [getScopeEffectValue].
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
+    @Deprecated("Use an explicit region or scope effect query")
+    fun getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int? {
+        if (region == null) {
+            require(scope == null) { "scope requires region" }
+            return null
+        }
+        return if (scope == null) getRegionEffectValue(region, playerUUID, effectKey)
+        else getScopeEffectValue(region, scope, playerUUID, effectKey)
+    }
+
+    /**
+     * Compatibility dispatcher for active effects.
+     *
+     * @deprecated Since R9 (unreleased). Use [getRegionActiveEffects] or [getScopeActiveEffects].
+     * Eligible for removal only after two released versions and explicit maintainer approval.
+     */
+    @Deprecated("Use an explicit region or scope effect query")
     fun getActiveEffectsForRegion(region: Region, scope: GeoScope?, playerUUID: UUID): Map<EffectKey, Int> =
-        getActiveEffects(region, playerUUID, scope)
+        if (scope == null) getRegionActiveEffects(region, playerUUID)
+        else getScopeActiveEffects(region, scope, playerUUID)
 
-    fun getRegionScopeCount(region: Region): Int = region.geometryScope.size
+    fun getRegionScopeCount(region: Region): Int = region.scopes.size
 
     fun getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectRegionStats(server, region)
@@ -156,29 +291,45 @@ object RegionDataApi {
         RegionDatabase.getRegionPlayerStats(region)
 
     fun getRegionEntryExitToggle(region: Region): Boolean =
-        region.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
+        region.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
 
     fun getRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): String? =
-        region.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
+        region.settingStore.entryExitMessage(key)
 
     fun getScopeEntryExitToggle(scope: GeoScope): Boolean =
-        scope.settings.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED }?.value ?: true
+        scope.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
 
     fun getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String? =
-        scope.settings.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }?.value
+        scope.settingStore.entryExitMessage(key)
 
     // --- 1.5.1 additions ---
 
-    fun parseScopeId(s: String): ScopeId? = ScopeId.parse(s)
+    fun parseAssignedScopeId(s: String): AssignedScopeId? = AssignedScopeId.parse(s)
 
+    @Deprecated("Use parseAssignedScopeId")
+    fun parseScopeId(s: String): ScopeId? = parseAssignedScopeId(s)?.toLegacyScopeId()
+
+    fun getScopeByAssignedId(scopeId: AssignedScopeId): Pair<Region, GeoScope>? =
+        RegionDatabase.getScopeByAssignedId(scopeId)
+
+    @Deprecated("Use getScopeByAssignedId")
     fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? = RegionDatabase.getScopeById(scopeId)
 
+    fun getAssignedScopeIdOrNull(scope: GeoScope): AssignedScopeId? = scope.assignedScopeIdOrNull
+
+    @Deprecated("Use getAssignedScopeIdOrNull")
     fun getScopeId(scope: GeoScope): ScopeId = scope.scopeId
 
-    fun getScopeFoundingTimeOrNull(scope: GeoScope): Long? = scope.scopeId.creationTimeMillisOrNull()
+    fun getScopeFoundingTimeOrNull(scope: GeoScope): Long? =
+        scope.assignedScopeIdOrNull?.toLegacyScopeId()?.creationTimeMillisOrNull()
 
-    fun getScopeFoundedInRegionNumberId(scope: GeoScope): Int = scope.scopeId.foundedInRegionNumberId()
+    fun getScopeFoundedInRegionNumberId(scope: GeoScope): Int =
+        scope.requireAssignedScopeId().toLegacyScopeId().foundedInRegionNumberId()
 
+    fun getAssignedScopeOwnershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> =
+        RegionDatabase.getAssignedScopeOwnershipHistory(scopeId)
+
+    @Deprecated("Use getAssignedScopeOwnershipHistory")
     fun getScopeOwnershipHistory(scopeId: ScopeId): List<com.imyvm.iwg.domain.ScopeOwnershipEntry> =
         RegionDatabase.getScopeOwnershipHistory(scopeId)
 
@@ -189,12 +340,13 @@ object RegionDataApi {
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
 
     fun getEffectiveEffectsForScope(region: Region, scope: GeoScope): Map<EffectKey, Int> {
+        require(region.containsScope(scope)) { "scope does not belong to region" }
         val keys = mutableSetOf<EffectKey>()
-        scope.settings.filterIsInstance<EffectSetting>().filter { !it.isPersonal }.forEach { keys.add(it.key) }
-        region.settings.filterIsInstance<EffectSetting>().filter { !it.isPersonal }.forEach { keys.add(it.key) }
-        val overlay = if (scope.scopeId.raw != ScopeId.UNASSIGNED_RAW)
-            com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scope.scopeId)
-        else emptyMap()
+        keys.addAll(scope.settingStore.effectKeys())
+        keys.addAll(region.settingStore.effectKeys())
+        val overlay = scope.assignedScopeIdOrNull
+            ?.let(com.imyvm.iwg.application.region.effect.EffectOverlayService::queryOverlay)
+            ?: emptyMap()
         keys.addAll(overlay.keys)
 
         val result = mutableMapOf<EffectKey, Int>()
@@ -204,14 +356,12 @@ object RegionDataApi {
                 result[key] = overlayValue
                 continue
             }
-            val scopeValue = scope.settings.filterIsInstance<EffectSetting>()
-                .firstOrNull { !it.isPersonal && it.key == key }?.value
+            val scopeValue = scope.settingStore.globalEffect(key)
             if (scopeValue != null) {
                 result[key] = scopeValue
                 continue
             }
-            val regionValue = region.settings.filterIsInstance<EffectSetting>()
-                .firstOrNull { !it.isPersonal && it.key == key }?.value
+            val regionValue = region.settingStore.globalEffect(key)
             if (regionValue != null) result[key] = regionValue
         }
         return result
@@ -219,11 +369,11 @@ object RegionDataApi {
 
     fun getEffectiveRulesForScope(region: Region, scope: GeoScope): Map<RuleKey, Boolean> {
         val keys = mutableSetOf<RuleKey>()
-        scope.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
-        region.settings.filterIsInstance<RuleSetting>().forEach { keys.add(it.key) }
+        keys.addAll(scope.settingStore.builtInRuleKeys())
+        keys.addAll(region.settingStore.builtInRuleKeys())
         val result = mutableMapOf<RuleKey, Boolean>()
         for (key in keys) {
-            result[key] = getEffectiveRuleValue(region, key, scope)
+            result[key] = getEffectiveScopeRuleValue(region, scope, key)
         }
         return result
     }
@@ -231,12 +381,37 @@ object RegionDataApi {
     fun applyTimedEffectOverlay(overlay: com.imyvm.iwg.domain.TimedEffectOverlay): String =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.applyTimedEffectOverlay(overlay)
 
+    /** Creates a validated overlay with an immutable snapshot of [effects]. */
+    fun createTimedEffectOverlay(
+        overlayId: String,
+        scopeId: AssignedScopeId,
+        effects: List<TimedEffect>,
+        startMillis: Long,
+        endMillis: Long,
+        priority: Int,
+        source: String
+    ): TimedEffectOverlay = TimedEffectOverlay(
+        overlayId, scopeId.raw, effects, startMillis, endMillis, priority, source
+    ).immutableSnapshot()
+
+    fun clearTimedEffectOverlay(scopeId: AssignedScopeId, overlayId: String): Boolean =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
+
+    @Deprecated("Use the AssignedScopeId overload")
     fun clearTimedEffectOverlay(scopeId: ScopeId, overlayId: String): Boolean =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
 
+    fun queryOverlay(scopeId: AssignedScopeId): Map<EffectKey, Int> =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
+
+    @Deprecated("Use the AssignedScopeId overload")
     fun queryOverlay(scopeId: ScopeId): Map<EffectKey, Int> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
 
+    fun queryActiveOverlays(scopeId: AssignedScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
+        com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
+
+    @Deprecated("Use the AssignedScopeId overload")
     fun queryActiveOverlays(scopeId: ScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
 }

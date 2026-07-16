@@ -3,10 +3,10 @@ package com.imyvm.iwg.application.region
 import com.imyvm.iwg.domain.AreaEstimationResult
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
-import kotlin.math.sqrt
 
 object AreaEstimator {
 
@@ -28,7 +28,6 @@ object AreaEstimator {
             GeoShapeType.RECTANGLE -> estimateRectangleArea(positions)
             GeoShapeType.CIRCLE -> estimateCircleArea(positions)
             GeoShapeType.POLYGON -> estimatePolygonArea(positions)
-            else -> AreaEstimationResult.Error(CreationError.InsufficientPoints)
         }
     }
 
@@ -39,13 +38,13 @@ object AreaEstimator {
         if (pos1 == pos2) return AreaEstimationResult.Error(CreationError.DuplicatedPoints)
         if (pos1.x == pos2.x || pos1.z == pos2.z) return AreaEstimationResult.Error(CreationError.CoincidentPoints)
 
-        val width = abs(pos1.x - pos2.x)
-        val length = abs(pos1.z - pos2.z)
+        val width = abs(pos1.x.toLong() - pos2.x)
+        val length = abs(pos1.z.toLong() - pos2.z)
         
         val error = checkRectangleSize(width, length)
         if (error != null) return AreaEstimationResult.Error(error)
 
-        val area = (width * length).toDouble()
+        val area = width.toDouble() * length
         return AreaEstimationResult.Success(area)
     }
 
@@ -55,17 +54,21 @@ object AreaEstimator {
 
         if (center == circumference) return AreaEstimationResult.Error(CreationError.DuplicatedPoints)
 
-        val dx = circumference.x - center.x
-        val dz = circumference.z - center.z
-        val radius = sqrt((dx * dx + dz * dz).toDouble())
+        val dx = circumference.x.toDouble() - center.x
+        val dz = circumference.z.toDouble() - center.z
+        val radius = kotlin.math.hypot(dx, dz)
         
         if (!checkCircleSize(radius)) return AreaEstimationResult.Error(CreationError.UnderSizeLimit)
+        if (radius > Int.MAX_VALUE) return AreaEstimationResult.Error(CreationError.CoordinateRangeExceeded)
 
         val area = Math.PI * radius * radius
         return AreaEstimationResult.Success(area)
     }
 
     private fun estimatePolygonArea(positions: List<BlockPos>): AreaEstimationResult {
+        if (!isPolygonVertexCountSupported(positions.size)) {
+            return AreaEstimationResult.Error(CreationError.PolygonVertexLimitExceeded)
+        }
         val distinct = positions.distinct()
         if (distinct.size != positions.size) return AreaEstimationResult.Error(CreationError.DuplicatedPoints)
         

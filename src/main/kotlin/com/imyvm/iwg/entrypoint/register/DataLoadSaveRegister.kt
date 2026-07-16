@@ -2,29 +2,45 @@ package com.imyvm.iwg.entrypoint.register
 
 import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.region.effect.EffectOverlayService
+import com.imyvm.iwg.application.region.permission.clearFlySessionState
 import com.imyvm.iwg.infra.RegionDatabase
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
+import net.minecraft.world.level.storage.LevelResource
+import java.nio.file.Path
 
 fun registerDataLoadSave(){
-    dataLoad()
-    dataSave()
-}
-
-private fun dataLoad() {
-    try {
-        RegionDatabase.load()
-    } catch (e: Exception) {
-        ImyvmWorldGeo.logger.error("Failed to load region database: ${e.message}", e)
+    ServerLifecycleEvents.SERVER_STARTING.register { server ->
+        openRegionSession(server.getWorldPath(LevelResource.ROOT))
     }
-}
-
-private fun dataSave() {
     ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
         try {
             PlayerRegionEntryExitTracker.flushAllDurations()
-            RegionDatabase.save()
+            RegionDatabase.saveForShutdown()
         } catch (e: Exception) {
             ImyvmWorldGeo.logger.error("Failed to save region database: ${e.message}", e)
         }
     }
+    ServerLifecycleEvents.SERVER_STOPPED.register { _ ->
+        closeRegionSession()
+    }
+}
+
+internal fun openRegionSession(worldRoot: Path) {
+    EffectOverlayService.withScopeLifecycle {
+        check(!RegionDatabase.hasActiveSession()) { "Region database session is already active" }
+        EffectOverlayService.clearAll()
+        RegionDatabase.bindSession(worldRoot)
+    }
+}
+
+internal fun closeRegionSession() {
+    EffectOverlayService.withScopeLifecycle {
+        RegionDatabase.unbindSession()
+        EffectOverlayService.clearAll()
+    }
+    clearFlySessionState()
+    ImyvmWorldGeo.locationActionBarEnabledPlayers.clear()
+    // PlayerRegionEntryExitTracker.playerStates is not cleared here: Fabric disconnects every
+    // player before SERVER_STOPPED, and each disconnect already removes that player's state.
 }

@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
+import com.imyvm.iwg.application.region.permission.helper.buildScopePermissionDenialContext
+import com.imyvm.iwg.application.region.permission.helper.getScopePermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ANIMAL_KILLING
@@ -38,16 +38,8 @@ private fun isProtectedAnimal(entity: Entity): Boolean {
 fun playerAnimalKillingPermission() {
     AttackEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (!isProtectedAnimal(entity)) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ANIMAL_KILLING, scope, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
-            if (denial != null) {
-                if (hitResult == null) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.ANIMAL_KILLING,
+                PERMISSION_DEFAULT_ANIMAL_KILLING.value, "setting.permission.animal_killing")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 
@@ -56,9 +48,9 @@ fun playerAnimalKillingPermission() {
         val player = source.entity as? Player ?: return@register true
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(entity.level(), entity.blockPosition().x, entity.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ANIMAL_KILLING, scope, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
+            val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.ANIMAL_KILLING, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
             if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildPermissionDenialContext(region, scope, denial))!!)
+                player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildScopePermissionDenialContext(region, scope, denial))!!)
                 return@register false
             }
         }

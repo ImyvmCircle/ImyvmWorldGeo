@@ -6,10 +6,9 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.translator.getOnlinePlayers
 import net.minecraft.server.MinecraftServer
 import java.util.*
-import java.util.concurrent.ConcurrentHashMap
 
 object PlayerRegionChecker {
-    private val playerRegionScopeMap: MutableMap<UUID, Pair<Region?, GeoScope?>> = ConcurrentHashMap()
+    private val playerRegionScopeMap: MutableMap<UUID, Pair<Region?, GeoScope?>> = mutableMapOf()
 
     fun updatePlayerRegions(server: MinecraftServer) {
         val onlinePlayers = getOnlinePlayers(server)

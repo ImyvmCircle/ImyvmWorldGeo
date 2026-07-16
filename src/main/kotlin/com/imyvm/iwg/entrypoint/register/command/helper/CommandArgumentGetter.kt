@@ -2,6 +2,7 @@ package com.imyvm.iwg.entrypoint.register.command.helper
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.application.interaction.getScopeOrNotify
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.util.text.Translator
@@ -47,38 +48,37 @@ fun getPlayerRegionPair(context: CommandContext<CommandSourceStack>): Pair<Serve
     return player to regionIdentifier
 }
 
-fun getPlayerRegionScopeTriple(context: CommandContext<CommandSourceStack>): Triple<ServerPlayer, Region, GeoScope>? {
+fun getExplicitPlayerRegionScope(context: CommandContext<CommandSourceStack>): Triple<ServerPlayer, Region, GeoScope>? {
     val player = context.source.player ?: return null
 
-    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java) ?: return getPlayerRegionScopeTriple(player)
-    val scopeName = context.getArgument("scopeName", String::class.java) ?: return getPlayerRegionScopeTriple(player)
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
 
     val region = try {
-        if (regionIdentifier.matches("\\d+".toRegex())) {
-            val regionId = regionIdentifier.toInt()
-            RegionDatabase.getRegionByNumberId(regionId)
-        } else {
-            RegionDatabase.getRegionByName(regionIdentifier)
-        }
+        resolveRegionIdentifier(regionIdentifier)
     } catch (e: RegionNotFoundException) {
-        if (regionIdentifier.matches("\\d+".toRegex())) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.not_found_id", regionIdentifier)!!)
-        } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.not_found_name", regionIdentifier)!!)
-        }
-        null
-    } ?: return getPlayerRegionScopeTriple(player)
-
-    val scope = try {
-        region.getScopeByName(scopeName)
-    } catch (e: IllegalArgumentException) {
-        return getPlayerRegionScopeTriple(player)
+        notifyRegionNotFound(player, regionIdentifier)
+        return null
     }
 
+    val scope = getScopeOrNotify(player, region, scopeName) ?: return null
     return Triple(player, region, scope)
 }
 
-private fun getPlayerRegionScopeTriple(playerEntity: ServerPlayer): Triple<ServerPlayer, Region, GeoScope>? {
+/**
+ * Binary-compatible command-helper facade. Missing or invalid explicit arguments no longer fall back to the
+ * player's current Scope.
+ */
+@Deprecated("Use getExplicitPlayerRegionScope or getCurrentPlayerRegionScope")
+fun getPlayerRegionScopeTriple(context: CommandContext<CommandSourceStack>): Triple<ServerPlayer, Region, GeoScope>? =
+    getExplicitPlayerRegionScope(context)
+
+fun getCurrentPlayerRegionScope(context: CommandContext<CommandSourceStack>): Triple<ServerPlayer, Region, GeoScope>? {
+    val player = context.source.player ?: return null
+    return getCurrentPlayerRegionScope(player)
+}
+
+private fun getCurrentPlayerRegionScope(playerEntity: ServerPlayer): Triple<ServerPlayer, Region, GeoScope>? {
     val x = playerEntity.blockPosition().x
     val z = playerEntity.blockPosition().z
     val regionScopePair = RegionDatabase.getRegionAndScopeAt(playerEntity.level(), x, z)

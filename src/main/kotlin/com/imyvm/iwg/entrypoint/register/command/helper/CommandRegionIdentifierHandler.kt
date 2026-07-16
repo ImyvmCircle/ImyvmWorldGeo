@@ -11,21 +11,28 @@ fun identifierHandler(
     player: ServerPlayer,
     onRegionFound: (region: Region) -> Unit
 ): Int {
-    return try {
-        val region: Region = if (regionIdentifier.matches("\\d+".toRegex())) {
-            val regionId = regionIdentifier.toInt()
-            RegionDatabase.getRegionByNumberId(regionId)
-        } else {
-            RegionDatabase.getRegionByName(regionIdentifier)
-        }
-        onRegionFound(region)
-        1
+    val region = try {
+        resolveRegionIdentifier(regionIdentifier)
     } catch (e: RegionNotFoundException) {
-        if (regionIdentifier.matches("\\d+".toRegex())) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.not_found_id", regionIdentifier)!!)
-        } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.not_found_name", regionIdentifier)!!)
-        }
-        0
+        notifyRegionNotFound(player, regionIdentifier)
+        return 0
     }
+    onRegionFound(region)
+    return 1
+}
+
+internal fun resolveRegionIdentifier(regionIdentifier: String): Region {
+    if (!regionIdentifier.all(Char::isDigit)) return RegionDatabase.getRegionByName(regionIdentifier)
+    val regionId = regionIdentifier.toIntOrNull()
+        ?: throw RegionNotFoundException("Region ID '$regionIdentifier' is outside the supported range.")
+    return RegionDatabase.getRegionByNumberId(regionId)
+}
+
+internal fun notifyRegionNotFound(player: ServerPlayer, regionIdentifier: String) {
+    val key = if (regionIdentifier.all(Char::isDigit)) {
+        "interaction.meta.not_found_id"
+    } else {
+        "interaction.meta.not_found_name"
+    }
+    player.sendSystemMessage(requireNotNull(Translator.tr(key, regionIdentifier)))
 }

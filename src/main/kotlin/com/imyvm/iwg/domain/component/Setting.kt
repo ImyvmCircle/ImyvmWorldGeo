@@ -2,6 +2,13 @@ package com.imyvm.iwg.domain.component
 
 import java.util.UUID
 
+/**
+ * Legacy JVM compatibility model used by existing addons and database encoding.
+ *
+ * New addon logic should use the typed query and mutation methods in `RegionDataApi` and
+ * `PlayerInteractionApi`. Unknown subclasses cannot enter the internal setting store.
+ * This class currently has no scheduled removal.
+ */
 abstract class Setting(
     val playerUUID: UUID? = null
 ) {
@@ -35,7 +42,11 @@ class EffectSetting(
     override val key: EffectKey,
     override val value: Int,
     playerUUID: UUID? = null
-) : Setting(playerUUID)
+) : Setting(playerUUID) {
+    init {
+        require(value in 0..255) { "effect amplifier must be between 0 and 255" }
+    }
+}
 
 class RuleSetting(
     override val key: RuleKey,
@@ -47,17 +58,22 @@ class ExtensionRuleSetting(
     override val value: Boolean
 ) : Setting(null)
 
+/** Legacy common key type retained for binary compatibility. Prefer the typed key interfaces. */
 interface BaseKey
 
-data class ExtensionPermissionKey(val id: String) : BaseKey {
+sealed interface SettingKey : BaseKey
+sealed interface PermissionKeyLike : SettingKey
+sealed interface RuleKeyLike : SettingKey
+
+data class ExtensionPermissionKey(val id: String) : PermissionKeyLike {
     override fun toString(): String = id
 }
 
-data class ExtensionRuleKey(val id: String) : BaseKey {
+data class ExtensionRuleKey(val id: String) : RuleKeyLike {
     override fun toString(): String = id
 }
 
-enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
+enum class PermissionKey(val parent: PermissionKey? = null) : PermissionKeyLike {
     BUILD_BREAK,
     FLY,
     INTERACTION,
@@ -87,7 +103,7 @@ enum class PermissionKey(val parent: PermissionKey? = null) : BaseKey {
     RPG_FISHING
 }
 
-enum class EffectKey(val effectId: String) : BaseKey {
+enum class EffectKey(val effectId: String) : SettingKey {
     SPEED("speed"),
     JUMP("jump_boost"),
     DAMAGE_RESISTANCE("resistance"),
@@ -129,7 +145,7 @@ enum class EffectKey(val effectId: String) : BaseKey {
     INFESTED("infested")
 }
 
-enum class RuleKey : BaseKey {
+enum class RuleKey : RuleKeyLike {
     SPAWN_MONSTERS,
     SPAWN_PHANTOMS,
     TNT_BLOCK_PROTECTION,
@@ -154,11 +170,11 @@ class EntryExitMessageSetting(
     override val value: String
 ) : Setting(null)
 
-enum class EntryExitToggleKey : BaseKey {
+enum class EntryExitToggleKey : SettingKey {
     ENTRY_EXIT_MESSAGE_ENABLED
 }
 
-enum class EntryExitMessageKey : BaseKey {
+enum class EntryExitMessageKey : SettingKey {
     ENTER_MESSAGE,
     EXIT_MESSAGE
 }
@@ -201,6 +217,16 @@ object ExtensionSettingRegistry {
 
     fun getRuleDefaultValue(key: String): Boolean =
         ruleDefaults[key] ?: throw IllegalArgumentException("Extension rule key '$key' is not registered.")
+
+    fun permissionKey(key: String): ExtensionPermissionKey {
+        getPermissionDefaultValue(key)
+        return ExtensionPermissionKey(key)
+    }
+
+    fun ruleKey(key: String): ExtensionRuleKey {
+        getRuleDefaultValue(key)
+        return ExtensionRuleKey(key)
+    }
 
     fun getRegisteredPermissionKeys(): List<String> = permissionDefaults.keys.toList()
 

@@ -28,11 +28,7 @@ fun onEstimateScopeAreaChange(
     scopeName: String,
     customPositions: List<BlockPos>? = null
 ): AreaEstimationResult {
-    return try {
-        val existingScope = region.getScopeByName(scopeName)
-        val positions = customPositions ?: ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: emptyList()
-        ScopeAreaChangeEstimator.estimateScopeModificationAreaChange(existingScope, positions)
-    } catch (e: IllegalArgumentException) {
-        AreaEstimationResult.Error(com.imyvm.iwg.domain.CreationError.InsufficientPoints)
-    }
+    val existingScope = region.getScopeByName(scopeName)
+    val positions = customPositions ?: ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.points ?: emptyList()
+    return ScopeAreaChangeEstimator.estimateScopeModificationAreaChange(existingScope, positions)
 }

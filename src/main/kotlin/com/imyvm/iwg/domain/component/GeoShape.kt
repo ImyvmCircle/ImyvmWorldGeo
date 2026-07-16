@@ -1,6 +1,5 @@
 package com.imyvm.iwg.domain.component
 
-import com.imyvm.iwg.util.geo.*
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.world.phys.shapes.CollisionContext
 import net.minecraft.network.chat.Component
@@ -9,49 +8,81 @@ import net.minecraft.core.Direction
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.Level
 
+internal const val MAX_TELEPORT_FALLBACK_SEARCH_RADIUS = 8
+
+internal fun requireTeleportFallbackSearchRadius(searchRadius: Int): Int {
+    require(searchRadius in 0..MAX_TELEPORT_FALLBACK_SEARCH_RADIUS) {
+        "search radius must be between 0 and $MAX_TELEPORT_FALLBACK_SEARCH_RADIUS"
+    }
+    return searchRadius
+}
+
+internal fun findClosestMatchingBlockPos(
+    center: BlockPos,
+    searchRadius: Int,
+    matches: (BlockPos) -> Boolean
+): BlockPos? {
+    val radius = requireTeleportFallbackSearchRadius(searchRadius)
+    return BlockPos.findClosestMatch(center, radius, radius, matches).orElse(null)
+}
+
+/**
+ * Immutable validated shape value.
+ *
+ * The raw type/parameter constructor is retained for database and addon ABI compatibility.
+ * New code should use [circle], [rectangle], or [polygon].
+ */
 class GeoShape(
-    var geoShapeType: GeoShapeType,
-    var shapeParameter: MutableList<Int>
+    geoShapeType: GeoShapeType,
+    shapeParameter: MutableList<Int>
 ) {
+    private val geometry: ShapeGeometry = ShapeGeometry.from(geoShapeType, shapeParameter)
+
+    internal val typedGeometry: ShapeGeometry
+        get() = geometry
+
+    @set:Deprecated("GeoShape is immutable; construct a replacement with a named factory")
+    var geoShapeType: GeoShapeType
+        get() = geometry.type
+        set(value) {
+            require(value == geometry.type) {
+                "shape type cannot be changed without compatible parameters"
+            }
+        }
+
+    /** Legacy ABI and persistence view. New code should use the named factories. */
+    @set:Deprecated("GeoShape is immutable; construct a replacement with a named factory")
+    var shapeParameter: MutableList<Int>
+        get() = geometry.toLegacyParameters()
+        set(value) {
+            require(value == geometry.toLegacyParameters()) {
+                "shape parameters cannot be changed; construct a replacement GeoShape"
+            }
+        }
 
     fun getShapeInfo(): Component? {
         val area = "%.2f".format(calculateArea())
 
-        return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> getCircleInfo(area)
-            GeoShapeType.RECTANGLE -> getRectangleInfo(area)
-            GeoShapeType.POLYGON -> getPolygonInfo(area)
-            else -> Translator.tr("geo.shape.unknown.info", area)!!
+        return when (val current = geometry) {
+            is CircleGeometry -> getCircleInfo(current, area)
+            is RectangleGeometry -> getRectangleInfo(current, area)
+            is PolygonGeometry -> getPolygonInfo(current, area)
+            UnknownGeometry -> Translator.tr("geo.shape.unknown.info", area)!!
         }
     }
 
     fun containsPoint(x: Int, y: Int): Boolean {
-        return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> circleContainsPoint(x, y, shapeParameter)
-            GeoShapeType.RECTANGLE -> rectangleContainsPoint(x, y, shapeParameter)
-            GeoShapeType.POLYGON -> polygonContainsPoint(x, y, shapeParameter)
-            else -> false
-        }
+        return geometry.containsPoint(x, y)
     }
 
-    fun calculateArea(): Double {
-        return when (geoShapeType) {
-            GeoShapeType.CIRCLE -> calculateCircleArea(this.shapeParameter)
-            GeoShapeType.RECTANGLE -> calculateRectangleArea(this.shapeParameter)
-            GeoShapeType.POLYGON -> calculatePolygonArea(shapeParameter)
-            else -> 0.0
-        }
-    }
+    fun calculateArea(): Double = geometry.calculateArea()
 
+    /**
+     * Retained for JVM compatibility. Checks one deterministic representative surface position
+     * and returns null when that position is unsafe; it does not scan the complete shape.
+     */
     fun generateTeleportPoint(world: Level): BlockPos? {
-        val par = this.shapeParameter
-
-        return when (this.geoShapeType) {
-            GeoShapeType.CIRCLE -> generateTeleportPointByType(world, par, GeoShapeType.CIRCLE)
-            GeoShapeType.RECTANGLE -> generateTeleportPointByType(world, par, GeoShapeType.RECTANGLE)
-            GeoShapeType.POLYGON -> generateTeleportPointByType(world, par, GeoShapeType.POLYGON)
-            GeoShapeType.UNKNOWN -> null
-        }
+        return geometry.representativePoint()?.let { generateSurfacePoint(world, it) }
     }
 
     fun certificateTeleportPoint(world: Level, pointToTest: BlockPos): Boolean {
@@ -64,75 +95,44 @@ class GeoShape(
     }
 
     fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
-        val candidates = mutableListOf<BlockPos>()
-        for (dy in -searchRadius..searchRadius) {
-            for (dx in -searchRadius..searchRadius) {
-                for (dz in -searchRadius..searchRadius) {
-                    if (dx == 0 && dy == 0 && dz == 0) continue
-                    candidates.add(BlockPos(center.x + dx, center.y + dy, center.z + dz))
-                }
-            }
+        return findClosestMatchingBlockPos(center, searchRadius) { candidate ->
+            candidate != center && isValidTeleportPoint(world, candidate)
         }
-        candidates.sortWith(
-            compareBy<BlockPos> { Math.abs(it.y - center.y) }
-                .thenBy { (it.x - center.x) * (it.x - center.x) + (it.z - center.z) * (it.z - center.z) }
-        )
-        return candidates.firstOrNull { isValidTeleportPoint(world, it) }
     }
 
-    private fun getCircleInfo(area: String): Component? {
-        if (shapeParameter.size < 3) {
-            return Translator.tr("geo.shape.circle.invalid.info", area)!!
-        }
+    fun validateParameters() {
+        // Construction and the compatibility setter replace the complete validated geometry atomically.
+    }
+
+    private fun getCircleInfo(circle: CircleGeometry, area: String): Component? {
         return Translator.tr(
             "geo.shape.circle.info",
-            shapeParameter[0], // centerX
-            shapeParameter[1], // centerZ
-            shapeParameter[2], // radius
+            circle.centerX,
+            circle.centerZ,
+            circle.radius,
             area
         )!!
     }
 
-    private fun getRectangleInfo(area: String): Component? {
-        if (shapeParameter.size < 4) {
-            return Translator.tr("geo.shape.rectangle.invalid.info", area)!!
-        }
+    private fun getRectangleInfo(rectangle: RectangleGeometry, area: String): Component? {
         return Translator.tr(
             "geo.shape.rectangle.info",
-            shapeParameter[0], // west
-            shapeParameter[1], // north
-            shapeParameter[2], // east
-            shapeParameter[3], // south
+            rectangle.west,
+            rectangle.north,
+            rectangle.east,
+            rectangle.south,
             area
         )!!
     }
 
-    private fun getPolygonInfo(area: String): Component? {
-        if (shapeParameter.size < 6 || shapeParameter.size % 2 != 0) {
-            return Translator.tr("geo.shape.polygon.invalid.info", area)!!
+    private fun getPolygonInfo(polygon: PolygonGeometry, area: String): Component? {
+        val coords = buildString {
+            for (index in 0 until polygon.vertexCount) {
+                if (index > 0) append(", ")
+                append('(').append(polygon.x(index)).append(", ").append(polygon.z(index)).append(')')
+            }
         }
-        val coords = shapeParameter.chunked(2)
-            .joinToString(", ") { "(${it[0]}, ${it[1]})" }
         return Translator.tr("geo.shape.polygon.info", coords, area)!!
-    }
-
-    private fun generateTeleportPointByType(
-        world: Level,
-        shapeParameters: MutableList<Int>,
-        geoShapeType: GeoShapeType
-    ): BlockPos? {
-        val points = when (geoShapeType) {
-            GeoShapeType.CIRCLE -> iterateCirclePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2])
-            GeoShapeType.RECTANGLE -> iterateRectanglePoint(shapeParameters[0], shapeParameters[1], shapeParameters[2], shapeParameters[3])
-            GeoShapeType.POLYGON -> iteratePolygonPoint(shapeParameters)
-            GeoShapeType.UNKNOWN -> return null
-        }
-
-        for (point in points) {
-            val blockPos = generateSurfacePoint(world, point)
-            if (blockPos != null) return blockPos
-        }
-        return null
     }
 
     private fun generateSurfacePoint(world: Level, point: Pair<Int, Int>): BlockPos? {
@@ -148,11 +148,45 @@ class GeoShape(
     }
 
     private fun isValidTeleportPoint(world: Level, pos: BlockPos): Boolean {
-        if (!isPhysicalSafe(world, pos)) return false
-        return this.containsPoint(pos.x, pos.z)
+        return isValidTeleportPoint(pos, isPhysicalSafe(world, pos))
     }
 
+    internal fun isValidTeleportPoint(pos: BlockPos, physicallySafe: Boolean): Boolean =
+        physicallySafe && containsPoint(pos.x, pos.z)
+
     companion object {
+        /** Creates a structurally validated circle. Placement policy is checked by the owning Scope operation. */
+        @JvmStatic
+        fun circle(center: GeoPoint, radius: Int): GeoShape =
+            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius))
+
+        /** Creates a structurally validated rectangle from two order-independent opposite corners. */
+        @JvmStatic
+        fun rectangle(firstCorner: GeoPoint, oppositeCorner: GeoPoint): GeoShape = GeoShape(
+            GeoShapeType.RECTANGLE,
+            mutableListOf(
+                minOf(firstCorner.x, oppositeCorner.x),
+                minOf(firstCorner.z, oppositeCorner.z),
+                maxOf(firstCorner.x, oppositeCorner.x),
+                maxOf(firstCorner.z, oppositeCorner.z)
+            )
+        )
+
+        /** Creates a structurally validated polygon and snapshots the supplied vertices. */
+        @JvmStatic
+        fun polygon(vertices: List<GeoPoint>): GeoShape {
+            require(vertices.size >= 3) { "polygon requires at least three vertices" }
+            require(isPolygonVertexCountSupported(vertices.size)) {
+                "polygon must not exceed $MAX_POLYGON_VERTICES vertices"
+            }
+            val parameters = ArrayList<Int>(vertices.size * 2)
+            for (vertex in vertices) {
+                parameters.add(vertex.x)
+                parameters.add(vertex.z)
+            }
+            return GeoShape(GeoShapeType.POLYGON, parameters)
+        }
+
         fun isPhysicalSafe(world: Level, pos: BlockPos): Boolean {
             val feetState = world.getBlockState(pos)
             val headState = world.getBlockState(pos.above())

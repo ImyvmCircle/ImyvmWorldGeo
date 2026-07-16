@@ -2,58 +2,65 @@ package com.imyvm.iwg.application.region.effect.helper
 
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.domain.component.EffectKey
-import com.imyvm.iwg.domain.component.EffectSetting
-import com.imyvm.iwg.domain.component.GeoScope
-import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.*
 import java.util.UUID
 
-fun getEffectValue(region: Region?, playerUUID: UUID, key: EffectKey, scope: GeoScope? = null): Int? {
-    if (region == null) return null
-    return resolveEffectValue(region, playerUUID, key, scope)
+fun getRegionEffectValue(region: Region, playerUUID: UUID, key: EffectKey): Int? {
+    return region.settingStore.playerEffect(key, playerUUID)
+        ?: region.settingStore.globalEffect(key)
 }
 
-fun getActiveEffects(region: Region, playerUUID: UUID, scope: GeoScope? = null): Map<EffectKey, Int> {
-    val allKeys = mutableSetOf<EffectKey>()
-    scope?.settings?.filterIsInstance<EffectSetting>()?.forEach { allKeys.add(it.key) }
-    region.settings.filterIsInstance<EffectSetting>().forEach { allKeys.add(it.key) }
-    val overlayMap = if (scope != null && scope.scopeId.raw != ScopeId.UNASSIGNED_RAW) {
-        EffectOverlayService.queryOverlay(scope.scopeId)
-    } else emptyMap()
-    allKeys.addAll(overlayMap.keys)
+fun getScopeEffectValue(region: Region, scope: GeoScope, playerUUID: UUID, key: EffectKey): Int? {
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    return resolveScopeEffectValue(region, scope, playerUUID, key, scopeOverlay(scope))
+}
 
-    val result = mutableMapOf<EffectKey, Int>()
-    for (key in allKeys) {
-        val value = resolveEffectValue(region, playerUUID, key, scope, overlayMap)
-        if (value != null) result[key] = value
+fun getRegionActiveEffects(region: Region, playerUUID: UUID): Map<EffectKey, Int> =
+    region.settingStore.effectKeys().mapNotNull { key ->
+        getRegionEffectValue(region, playerUUID, key)?.let { key to it }
+    }.toMap()
+
+fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Map<EffectKey, Int> {
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    val overlay = scopeOverlay(scope)
+    val keys = buildSet {
+        addAll(scope.settingStore.effectKeys())
+        addAll(region.settingStore.effectKeys())
+        addAll(overlay.keys)
     }
-    return result
+    return keys.mapNotNull { key ->
+        resolveScopeEffectValue(region, scope, playerUUID, key, overlay)?.let { key to it }
+    }.toMap()
 }
 
-private fun resolveEffectValue(
+@Deprecated("Use getRegionEffectValue or getScopeEffectValue")
+fun getEffectValue(region: Region?, playerUUID: UUID, key: EffectKey, scope: GeoScope? = null): Int? {
+    if (region == null) {
+        require(scope == null) { "scope requires region" }
+        return null
+    }
+    return if (scope == null) getRegionEffectValue(region, playerUUID, key)
+    else getScopeEffectValue(region, scope, playerUUID, key)
+}
+
+@Deprecated("Use getRegionActiveEffects or getScopeActiveEffects")
+fun getActiveEffects(region: Region, playerUUID: UUID, scope: GeoScope? = null): Map<EffectKey, Int> =
+    if (scope == null) getRegionActiveEffects(region, playerUUID)
+    else getScopeActiveEffects(region, scope, playerUUID)
+
+private fun resolveScopeEffectValue(
     region: Region,
+    scope: GeoScope,
     playerUUID: UUID,
     key: EffectKey,
-    scope: GeoScope?,
-    overlayMap: Map<EffectKey, Int>? = null
+    overlay: Map<EffectKey, Int>
 ): Int? {
-    // Priority: personal > overlay > scope global > region global
-    scope?.settings?.filterIsInstance<EffectSetting>()?.let { settings ->
-        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let { return it.value }
-    }
-    region.settings.filterIsInstance<EffectSetting>().let { settings ->
-        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let { return it.value }
-    }
-    val resolvedOverlay = overlayMap
-        ?: if (scope != null && scope.scopeId.raw != ScopeId.UNASSIGNED_RAW) {
-            EffectOverlayService.queryOverlay(scope.scopeId)
-        } else emptyMap()
-    resolvedOverlay[key]?.let { return it }
-    scope?.settings?.filterIsInstance<EffectSetting>()?.let { settings ->
-        settings.firstOrNull { !it.isPersonal && it.key == key }?.let { return it.value }
-    }
-    region.settings.filterIsInstance<EffectSetting>().let { settings ->
-        settings.firstOrNull { !it.isPersonal && it.key == key }?.let { return it.value }
-    }
-    return null
+    return scope.settingStore.playerEffect(key, playerUUID)
+        ?: region.settingStore.playerEffect(key, playerUUID)
+        ?: overlay[key]
+        ?: scope.settingStore.globalEffect(key)
+        ?: region.settingStore.globalEffect(key)
 }
+
+private fun scopeOverlay(scope: GeoScope): Map<EffectKey, Int> =
+    scope.assignedScopeIdOrNull?.let(EffectOverlayService::queryOverlay) ?: emptyMap()

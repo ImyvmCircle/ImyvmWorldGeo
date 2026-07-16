@@ -1,8 +1,14 @@
 package com.imyvm.iwg.application.interaction
 
-import com.imyvm.iwg.application.region.rule.helper.getRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getRegionRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getScopeRuleValue
+import com.imyvm.iwg.application.region.permission.helper.resolveRegionGlobalPermission
+import com.imyvm.iwg.application.region.permission.helper.resolveRegionPlayerPermission
+import com.imyvm.iwg.application.region.permission.helper.resolveScopeGlobalPermission
+import com.imyvm.iwg.application.region.permission.helper.resolveScopePlayerPermission
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_BUILD_BREAK
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_CONTAINER
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FLY
@@ -43,72 +49,207 @@ import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_NATURAL_REGEN
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_FIRE_SPREAD
 import com.imyvm.iwg.infra.config.RuleConfig.RULE_DEFAULT_RPG_HUNGER
 import com.imyvm.iwg.util.translator.getUUIDFromPlayerName
-import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
-fun onHandleSetting(
+private sealed interface SettingTarget {
+    val store: SettingStore
+    val scopeName: String?
+
+    data class RegionTarget(val region: Region) : SettingTarget {
+        init {
+            RegionDatabase.requireCanonicalRegion(region)
+        }
+
+        override val store get() = region.settingStore
+        override val scopeName: String? = null
+    }
+
+    data class ScopeTarget(val region: Region, val scope: GeoScope) : SettingTarget {
+        init {
+            RegionDatabase.requireCanonicalScope(region, scope)
+        }
+
+        override val store get() = scope.settingStore
+        override val scopeName get() = scope.scopeName
+    }
+}
+
+fun addRegionSetting(
     player: ServerPlayer,
     region: Region,
-    scopeName: String?,
+    keyString: String,
+    valueString: String?,
+    targetPlayerStr: String?
+) = addSetting(player, SettingTarget.RegionTarget(region), keyString, valueString, targetPlayerStr)
+
+fun addScopeSetting(
+    player: ServerPlayer,
+    region: Region,
+    scope: GeoScope,
+    keyString: String,
+    valueString: String?,
+    targetPlayerStr: String?
+) = addSetting(player, SettingTarget.ScopeTarget(region, scope), keyString, valueString, targetPlayerStr)
+
+private fun addSetting(
+    player: ServerPlayer,
+    target: SettingTarget,
     keyString: String,
     valueString: String?,
     targetPlayerStr: String?
 ) {
-    if (!checkPlayer(player, region, scopeName, keyString, valueString, targetPlayerStr)) return
-
     try {
+        if (valueString == null) return
+        if (!validateTargetPlayer(player, keyString, targetPlayerStr)) return
         val key = parseKey(keyString)
-        if (valueString != null) {
-            val value = parseValue(player, key, valueString) ?: return
-            handleAddSetting(player, region, scopeName, key, value, targetPlayerStr)
-        } else {
-            handleRemoveSetting(player, region, scopeName, key, targetPlayerStr)
+        val targetPlayerUUID = if (targetPlayerStr != null) {
+            resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
+        } else null
+        val subject = targetPlayerUUID?.let(SettingSubject::Player) ?: SettingSubject.Global
+        if (target.store.contains(key, subject)) {
+            val msgKey = if (target.scopeName == null) {
+                if (targetPlayerStr == null) "interaction.meta.setting.error.region.duplicate_global"
+                else "interaction.meta.setting.error.region.duplicate_player"
+            } else {
+                if (targetPlayerStr == null) "interaction.meta.setting.error.scope.duplicate_global"
+                else "interaction.meta.setting.error.scope.duplicate_personal_player"
+            }
+            player.sendSystemMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", target.scopeName ?: "")!!)
+            return
         }
+
+        val setting = buildSetting(player, key, valueString, targetPlayerUUID) ?: return
+        val previous = target.store.toLegacyList()
+        target.store.put(setting)
+        if (!saveRegionData(player)) {
+            target.store.replaceAll(previous)
+            return
+        }
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), setting.value.toString())!!)
     } catch (e: IllegalArgumentException) {
         player.sendSystemMessage(Translator.tr(e.message)!!)
     }
 }
 
+fun removeRegionSetting(
+    player: ServerPlayer,
+    region: Region,
+    keyString: String,
+    targetPlayerStr: String?
+) = removeSetting(player, SettingTarget.RegionTarget(region), keyString, targetPlayerStr)
+
+fun removeScopeSetting(
+    player: ServerPlayer,
+    region: Region,
+    scope: GeoScope,
+    keyString: String,
+    targetPlayerStr: String?
+) = removeSetting(player, SettingTarget.ScopeTarget(region, scope), keyString, targetPlayerStr)
+
+private fun removeSetting(
+    player: ServerPlayer,
+    target: SettingTarget,
+    keyString: String,
+    targetPlayerStr: String?
+) {
+    try {
+        if (!validateTargetPlayer(player, keyString, targetPlayerStr)) return
+        val key = parseKey(keyString)
+        val targetPlayerUUID = if (targetPlayerStr != null) {
+            resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
+        } else null
+        val subject = targetPlayerUUID?.let(SettingSubject::Player) ?: SettingSubject.Global
+        val previous = target.store.toLegacyList()
+        val removed = target.store.remove(key, subject)
+        if (!removed) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString())!!)
+            return
+        }
+        if (!saveRegionData(player)) {
+            target.store.replaceAll(previous)
+            return
+        }
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString())!!)
+    } catch (e: IllegalArgumentException) {
+        player.sendSystemMessage(Translator.tr(e.message)!!)
+    }
+}
+
+private fun validateTargetPlayer(player: ServerPlayer, keyString: String, targetPlayerStr: String?): Boolean {
+    if ((isRuleKey(keyString) || isExtensionRuleKey(keyString)) && targetPlayerStr != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.rule_no_personal")!!)
+        return false
+    }
+    if ((isEntryExitToggleKey(keyString) || isEntryExitMessageKey(keyString)) && targetPlayerStr != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.entry_exit_no_personal")!!)
+        return false
+    }
+    return true
+}
+
 fun onCertificatePermissionValue(
     playerExecutor: ServerPlayer,
-    region: Region?,
-    scopeName: String?,
+    region: Region,
+    scope: GeoScope?,
     targetPlayerNameStr: String?,
     keyString: String,
 ): Boolean {
     val key = parseKey(keyString)
-    if (key !is PermissionKey && key !is ExtensionPermissionKey) {
-        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
-    }
-
-    val scope = if (scopeName != null) {
-        try {
-            region?.getScopeByName(scopeName)
-        } catch (e: IllegalArgumentException) {
-            return getDefaultValueForPermissionKey(key)
-        }
-    } else null
 
     val uuid = if (targetPlayerNameStr != null) {
-         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr) ?: return getDefaultValueForPermissionKey(key)
+         getUUIDFromPlayerName(playerExecutor.level().server, targetPlayerNameStr)
+             ?: throw IllegalArgumentException("interaction.meta.setting.error.invalid_target_player")
     } else null
-    return onCertificatePermissionValue(region, scope, uuid, key)
+
+    return when (key) {
+        is PermissionKey -> when {
+            scope != null && uuid != null -> getScopePermissionValue(region, scope, uuid, key)
+            scope != null -> getScopePermissionValue(region, scope, key)
+            uuid != null -> getRegionPermissionValue(region, uuid, key)
+            else -> getRegionPermissionValue(region, key)
+        }
+        is ExtensionPermissionKey -> when {
+            scope != null && uuid != null -> getScopePermissionValue(region, scope, uuid, key)
+            scope != null -> getScopePermissionValue(region, scope, key)
+            uuid != null -> getRegionPermissionValue(region, uuid, key)
+            else -> getRegionPermissionValue(region, key)
+        }
+        else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+    }
 }
 
-fun onCertificatePermissionValue(
-    region: Region?,
-    scope: GeoScope?,
-    playerUuid: UUID?,
-    key: BaseKey
-): Boolean {
-    if (key !is PermissionKey && key !is ExtensionPermissionKey) {
-        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
-    }
-    if (region == null) return getDefaultValueForPermissionKey(key)
-    return resolvePermissionSettingValue(region, scope, playerUuid, key) ?: getDefaultValueForPermissionKey(key)
+fun getRegionPermissionValue(region: Region, key: PermissionKey): Boolean =
+    resolveRegionGlobalPermission(region, key)?.value ?: getDefaultValueForPermission(key)
+
+fun getRegionPermissionValue(region: Region, playerUuid: UUID, key: PermissionKey): Boolean =
+    resolveRegionPlayerPermission(region, playerUuid, key)?.value ?: getDefaultValueForPermission(key)
+
+fun getScopePermissionValue(region: Region, scope: GeoScope, key: PermissionKey): Boolean =
+    resolveScopeGlobalPermission(region, scope, key)?.value ?: getDefaultValueForPermission(key)
+
+fun getScopePermissionValue(region: Region, scope: GeoScope, playerUuid: UUID, key: PermissionKey): Boolean =
+    resolveScopePlayerPermission(region, scope, playerUuid, key)?.value ?: getDefaultValueForPermission(key)
+
+fun getRegionPermissionValue(region: Region, key: ExtensionPermissionKey): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return resolveRegionGlobalPermission(region, key)?.value ?: default
+}
+
+fun getRegionPermissionValue(region: Region, playerUuid: UUID, key: ExtensionPermissionKey): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return resolveRegionPlayerPermission(region, playerUuid, key)?.value ?: default
+}
+
+fun getScopePermissionValue(region: Region, scope: GeoScope, key: ExtensionPermissionKey): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return resolveScopeGlobalPermission(region, scope, key)?.value ?: default
+}
+
+fun getScopePermissionValue(region: Region, scope: GeoScope, playerUuid: UUID, key: ExtensionPermissionKey): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return resolveScopePlayerPermission(region, scope, playerUuid, key)?.value ?: default
 }
 
 fun onCertificateExtensionPermissionValue(
@@ -117,59 +258,49 @@ fun onCertificateExtensionPermissionValue(
     playerUuid: UUID?,
     keyString: String
 ): Boolean {
-    val key = ExtensionPermissionKey(keyString)
     if (!ExtensionSettingRegistry.isRegisteredPermissionKey(keyString)) {
         throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
-    return onCertificatePermissionValue(region, scope, playerUuid, key)
+    val key = ExtensionSettingRegistry.permissionKey(keyString)
+    if (region == null) {
+        require(scope == null) { "scope requires region" }
+        return getDefaultValueForPermission(key)
+    }
+    return when {
+        scope != null && playerUuid != null -> getScopePermissionValue(region, scope, playerUuid, key)
+        scope != null -> getScopePermissionValue(region, scope, key)
+        playerUuid != null -> getRegionPermissionValue(region, playerUuid, key)
+        else -> getRegionPermissionValue(region, key)
+    }
 }
 
-private fun resolvePermissionSettingValue(
-    region: Region,
-    scope: GeoScope?,
-    playerUuid: UUID?,
-    key: BaseKey
-): Boolean? {
-    findPermissionSettingValue(scope?.settings, playerUuid, key)?.let { return it }
-    return findPermissionSettingValue(region.settings, playerUuid, key)
-}
-
-private fun findPermissionSettingValue(
-    settings: List<Setting>?,
-    playerUuid: UUID?,
-    key: BaseKey
-): Boolean? {
-    if (settings == null) return null
-    val setting = settings.firstOrNull { setting ->
-        if (setting.key != key) return@firstOrNull false
-        if (setting !is PermissionSetting && setting !is ExtensionPermissionSetting) return@firstOrNull false
-        if (playerUuid == null) !setting.isPersonal else setting.playerUUID == playerUuid
-    } ?: return null
-    return setting.value as Boolean
-}
-
-private fun parseKey(keyString: String): Any = when {
+private fun parseKey(keyString: String): SettingKey = when {
     isPermissionKey(keyString) -> PermissionKey.valueOf(keyString)
     isEffectKey(keyString) -> EffectKey.valueOf(keyString)
     isRuleKey(keyString) -> RuleKey.valueOf(keyString)
     isEntryExitToggleKey(keyString) -> EntryExitToggleKey.valueOf(keyString)
     isEntryExitMessageKey(keyString) -> EntryExitMessageKey.valueOf(keyString)
-    isExtensionPermissionKey(keyString) -> ExtensionPermissionKey(keyString)
-    isExtensionRuleKey(keyString) -> ExtensionRuleKey(keyString)
+    isExtensionPermissionKey(keyString) -> ExtensionSettingRegistry.permissionKey(keyString)
+    isExtensionRuleKey(keyString) -> ExtensionSettingRegistry.ruleKey(keyString)
     else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
-private fun parseValue(player: ServerPlayer, key: Any, valueString: String): Any? {
-    return try {
-        when (key) {
-            is PermissionKey, is ExtensionPermissionKey -> valueString.toBooleanStrict()
-            is EffectKey -> valueString.toInt()
-            is RuleKey, is ExtensionRuleKey -> valueString.toBooleanStrict()
-            is EntryExitToggleKey -> valueString.toBooleanStrict()
-            is EntryExitMessageKey -> valueString
-            else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
-        }
-    } catch (e: Exception) {
+private fun buildSetting(
+    player: ServerPlayer,
+    key: SettingKey,
+    valueString: String,
+    targetPlayerUUID: UUID?
+): Setting? = try {
+    when (key) {
+        is PermissionKey -> PermissionSetting(key, valueString.toBooleanStrict(), targetPlayerUUID)
+        is ExtensionPermissionKey -> ExtensionPermissionSetting(key, valueString.toBooleanStrict(), targetPlayerUUID)
+        is EffectKey -> EffectSetting(key, valueString.toInt(), targetPlayerUUID)
+        is RuleKey -> RuleSetting(key, valueString.toBooleanStrict())
+        is ExtensionRuleKey -> ExtensionRuleSetting(key, valueString.toBooleanStrict())
+        is EntryExitToggleKey -> EntryExitToggleSetting(key, valueString.toBooleanStrict())
+        is EntryExitMessageKey -> EntryExitMessageSetting(key, valueString)
+    }
+} catch (e: IllegalArgumentException) {
         val errorMsg = when (key) {
             is PermissionKey, is ExtensionPermissionKey, is RuleKey, is ExtensionRuleKey, is EntryExitToggleKey -> "interaction.meta.setting.error.invalid_value_boolean"
             is EffectKey -> "interaction.meta.setting.error.invalid_value_int"
@@ -177,60 +308,6 @@ private fun parseValue(player: ServerPlayer, key: Any, valueString: String): Any
         }
         player.sendSystemMessage(Translator.tr(errorMsg, key.toString(), valueString)!!)
         null
-    }
-}
-
-private fun handleAddSetting(
-    player: ServerPlayer,
-    region: Region,
-    scopeName: String?,
-    key: Any,
-    value: Any,
-    targetPlayerStr: String?
-) {
-    val targetPlayerUUID = if (targetPlayerStr != null) {
-        resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
-    } else {
-        null
-    }
-    val setting = buildSetting(key, value, targetPlayerUUID)
-
-    val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-    settingsContainer.add(setting)
-
-    player.sendSystemMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), value.toString())!!)
-}
-
-private fun handleRemoveSetting(
-    player: ServerPlayer,
-    region: Region,
-    scopeName: String?,
-    key: Any,
-    targetPlayerStr: String?
-) {
-    val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-    val removed = settingsContainer.removeIf { matchesSetting(it, key, targetPlayerStr, player.level().server) }
-
-    if (!removed) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString())!!)
-        return
-    }
-    player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString())!!)
-}
-
-private fun buildSetting(
-    key: Any,
-    value: Any,
-    targetPlayerUUID: UUID?
-): Setting = when (key) {
-    is PermissionKey -> PermissionSetting(key, value as Boolean, targetPlayerUUID)
-    is ExtensionPermissionKey -> ExtensionPermissionSetting(key, value as Boolean, targetPlayerUUID)
-    is EffectKey -> EffectSetting(key, value as Int, targetPlayerUUID)
-    is RuleKey -> RuleSetting(key, value as Boolean)
-    is ExtensionRuleKey -> ExtensionRuleSetting(key, value as Boolean)
-    is EntryExitToggleKey -> EntryExitToggleSetting(key, value as Boolean)
-    is EntryExitMessageKey -> EntryExitMessageSetting(key, value as String)
-    else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
 }
 
 private fun resolveTargetPlayerUUID(
@@ -248,91 +325,7 @@ private fun resolveTargetPlayerUUID(
     }
 }
 
-private fun matchesSetting(
-    setting: Setting,
-    key: Any,
-    targetPlayerStr: String?,
-    server: MinecraftServer
-): Boolean {
-    if (setting.key != key) return false
-    if (targetPlayerStr == null) {
-        return setting.playerUUID == null
-    }
-
-    val name = resolvePlayerName(server, setting.playerUUID)
-    return name.equals(targetPlayerStr, ignoreCase = true)
-}
-
-private fun checkPlayer(
-    player: ServerPlayer,
-    region: Region,
-    scopeName: String?,
-    keyString: String,
-    valueString: String?,
-    targetPlayerStr: String?
-): Boolean {
-    val server = player.level().server
-
-    if ((isRuleKey(keyString) || isExtensionRuleKey(keyString)) && targetPlayerStr != null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.rule_no_personal")!!)
-        return false
-    }
-
-    if (isEntryExitToggleKey(keyString) || isEntryExitMessageKey(keyString)) {
-        if (targetPlayerStr != null) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.setting.error.entry_exit_no_personal")!!)
-            return false
-        }
-    }
-
-    if (valueString != null) {
-        val container = try {
-            scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-        } catch (e: IllegalArgumentException) {
-            player.sendSystemMessage(Translator.tr(e.message)!!)
-            return false
-        }
-
-        if (isDuplicateSetting(server, container, keyString, targetPlayerStr)) {
-            val msgKey = if (scopeName == null) {
-                if (targetPlayerStr == null) {
-                    "interaction.meta.setting.error.region.duplicate_global"
-                } else {
-                    "interaction.meta.setting.error.region.duplicate_player"
-                }
-            } else {
-                if (targetPlayerStr == null) {
-                    "interaction.meta.setting.error.scope.duplicate_global"
-                } else {
-                    "interaction.meta.setting.error.scope.duplicate_personal_player"
-                }
-            }
-            player.sendSystemMessage(Translator.tr(msgKey, keyString, targetPlayerStr ?: "", scopeName ?: "")!!)
-            return false
-        }
-    }
-    return true
-}
-
-private fun isDuplicateSetting(
-    server: MinecraftServer,
-    settings: List<Setting>,
-    keyString: String,
-    targetPlayerStr: String?
-): Boolean {
-    return settings.any { setting ->
-        if (setting.key.toString() != keyString) return@any false
-
-        if (targetPlayerStr == null) {
-            return@any setting.playerUUID == null
-        } else {
-            val name = resolvePlayerName(server, setting.playerUUID)
-            return@any name.equals(targetPlayerStr, ignoreCase = true)
-        }
-    }
-}
-
-private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
+internal fun getDefaultValueForPermission(key: PermissionKey): Boolean {
     return when (key) {
         PermissionKey.BUILD_BREAK -> PERMISSION_DEFAULT_BUILD_BREAK.value
         PermissionKey.INTERACTION -> PERMISSION_DEFAULT_INTERACTION.value
@@ -364,16 +357,8 @@ private fun getDefaultValueForPermission(key: PermissionKey): Boolean {
     }
 }
 
-private fun getDefaultValueForPermission(key: ExtensionPermissionKey): Boolean {
+internal fun getDefaultValueForPermission(key: ExtensionPermissionKey): Boolean {
     return ExtensionSettingRegistry.getPermissionDefaultValue(key.id)
-}
-
-private fun getDefaultValueForPermissionKey(key: BaseKey): Boolean {
-    return when (key) {
-        is PermissionKey -> getDefaultValueForPermission(key)
-        is ExtensionPermissionKey -> getDefaultValueForPermission(key)
-        else -> throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
-    }
 }
 
 fun getDefaultValueForRule(key: RuleKey): Boolean {
@@ -402,12 +387,15 @@ fun getEffectiveExtensionRuleValue(
     scope: GeoScope?,
     keyString: String
 ): Boolean {
-    val key = ExtensionRuleKey(keyString)
     if (!ExtensionSettingRegistry.isRegisteredRuleKey(keyString)) {
         throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
     }
-    if (region != null) {
-        getRuleValue(region, key, scope)?.let { return it }
+    val key = ExtensionSettingRegistry.ruleKey(keyString)
+    if (region == null) {
+        require(scope == null) { "scope requires region" }
+    } else {
+        val value = if (scope == null) getRegionRuleValue(region, key) else getScopeRuleValue(region, scope, key)
+        value?.let { return it }
     }
     return getDefaultValueForRule(key)
 }
@@ -422,35 +410,35 @@ private fun isExtensionRuleKey(key: String) = ExtensionSettingRegistry.isRegiste
 
 fun onCertificateRuleValue(
     region: Region?,
-    scopeName: String?,
+    scope: GeoScope?,
     keyString: String,
 ): Boolean? {
     val key = parseKey(keyString)
     if (key !is RuleKey && key !is ExtensionRuleKey) throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
-    if (region == null) return null
-    val scope = scopeName?.let {
-        try { region.getScopeByName(it) } catch (e: IllegalArgumentException) { null }
+    if (region == null) {
+        require(scope == null) { "scope requires region" }
+        return null
     }
     return when (key) {
-        is RuleKey -> getRuleValue(region, key, scope)
-        is ExtensionRuleKey -> getRuleValue(region, key, scope)
-        else -> null
+        is RuleKey -> if (scope == null) getRegionRuleValue(region, key) else getScopeRuleValue(region, scope, key)
+        is ExtensionRuleKey -> if (scope == null) getRegionRuleValue(region, key) else getScopeRuleValue(region, scope, key)
     }
 }
 
 fun onQuerySettingValue(
     player: ServerPlayer,
     region: Region,
-    scopeName: String?,
+    scope: GeoScope?,
     keyString: String,
     targetPlayerStr: String?
 ) {
     try {
         val key = parseKey(keyString)
+        val scopeName = scope?.scopeName
         val displayTarget = if (scopeName != null) "Scope &b${scopeName}&r of Region &b${region.name}&r" else "Region &b${region.name}&r"
         when (key) {
             is RuleKey, is ExtensionRuleKey -> {
-                val value = onCertificateRuleValue(region, scopeName, keyString)
+                val value = onCertificateRuleValue(region, scope, keyString)
                 if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
@@ -458,38 +446,49 @@ fun onQuerySettingValue(
                 }
             }
             is PermissionKey, is ExtensionPermissionKey -> {
-                val value = onCertificatePermissionValue(player, region, scopeName, targetPlayerStr, keyString)
+                val value = onCertificatePermissionValue(player, region, scope, targetPlayerStr, keyString)
                 player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
             }
             is EntryExitToggleKey -> {
-                val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-                val setting = settingsContainer.filterIsInstance<EntryExitToggleSetting>().firstOrNull { it.key == key }
-                if (setting == null) {
+                val value = (scope?.settingStore ?: region.settingStore).entryExitToggle(key)
+                if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget)!!)
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
                 }
             }
             is EntryExitMessageKey -> {
-                val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-                val setting = settingsContainer.filterIsInstance<EntryExitMessageSetting>().firstOrNull { it.key == key }
-                if (setting == null) {
+                val value = (scope?.settingStore ?: region.settingStore).entryExitMessage(key)
+                if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget)!!)
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
                 }
             }
             is EffectKey -> {
-                val settingsContainer = scopeName?.let { region.getScopeByName(it).settings } ?: region.settings
-                val setting = settingsContainer.filterIsInstance<EffectSetting>().firstOrNull { it.key == key }
-                if (setting == null) {
+                val store = scope?.settingStore ?: region.settingStore
+                val subject = if (targetPlayerStr == null) SettingSubject.Global else {
+                    val uuid = resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
+                    SettingSubject.Player(uuid)
+                }
+                val value = when (subject) {
+                    SettingSubject.Global -> store.globalEffect(key)
+                    is SettingSubject.Player -> store.playerEffect(key, subject.uuid)
+                }
+                if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
-                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, setting.value, displayTarget)!!)
+                    player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
                 }
             }
         }
     } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
+        val scopeName = scope?.scopeName
+        val message = when (e.message) {
+            "interaction.meta.setting.error.invalid_target_player" -> Translator.tr(e.message, targetPlayerStr)
+            "region.error.no_scope" -> Translator.tr(e.message, scopeName, region.name)
+            else -> Translator.tr(e.message)
+        }
+        player.sendSystemMessage(message!!)
     }
 }

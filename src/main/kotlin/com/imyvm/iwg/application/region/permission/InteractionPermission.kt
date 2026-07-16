@@ -1,11 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
-import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_INTERACTION
-import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.world.level.block.AbstractCauldronBlock
 import net.minecraft.world.level.block.BeehiveBlock
@@ -44,16 +40,8 @@ fun playerInteractionPermission() {
         val block = blockState.block
         val stack = player.getItemInHand(hand)
         if (!isInteractiveBlock(block) && !isToolStateChangeInteraction(stack, block, blockState)) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.INTERACTION, scope, PERMISSION_DEFAULT_INTERACTION.value)
-            if (denial != null) {
-                if (hand == InteractionHand.MAIN_HAND) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.interaction", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, pos, PermissionKey.INTERACTION, PERMISSION_DEFAULT_INTERACTION.value,
+                "setting.permission.interaction")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

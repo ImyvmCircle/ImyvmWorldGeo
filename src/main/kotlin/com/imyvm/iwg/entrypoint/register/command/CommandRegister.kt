@@ -2,6 +2,8 @@ package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.NaturalStatsCategory
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.entrypoint.register.command.helper.*
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
@@ -125,7 +127,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(
                         literal("reset")
-                            .executes { runResetTeleportPoint(it) }
+                            .executes { runResetTeleportPointAtCurrentScope(it) }
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -138,7 +140,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(
                         literal("inquiry")
-                            .executes { runInquiryTeleportPoint(it) }
+                            .executes { runInquiryTeleportPointAtCurrentScope(it) }
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -157,7 +159,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runTeleportPlayer(it) }
+                                            .executes { runTeleportPlayerAsAdministrator(it) }
                                     )
                             )
                     )
@@ -535,12 +537,26 @@ private fun runSetTeleportPoint(context: CommandContext<CommandSourceStack>): In
 }
 
 private fun runResetTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
-    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return onResettingTeleportPoint(player, region, scope)
+}
+
+private fun runResetTeleportPointAtCurrentScope(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getCurrentPlayerRegionScope(context) ?: return 0
     return onResettingTeleportPoint(player, region, scope)
 }
 
 private fun runInquiryTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
-    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return inquireTeleportPoint(player, region, scope)
+}
+
+private fun runInquiryTeleportPointAtCurrentScope(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getCurrentPlayerRegionScope(context) ?: return 0
+    return inquireTeleportPoint(player, region, scope)
+}
+
+private fun inquireTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope): Int {
     val teleportPoint = onGettingTeleportPoint(scope)
     return if (teleportPoint != null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
@@ -560,32 +576,40 @@ private fun runTeleportPlayer(context: CommandContext<CommandSourceStack>): Int 
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
-        try {
-            val scope = regionToTeleport.getScopeByName(scopeName)
-            onTeleportingPlayer(player, regionToTeleport, scope)
-        } catch (e: IllegalArgumentException) {
-            player.sendSystemMessage(Translator.tr(e.message)!!)
-        }
+        val scope = getScopeOrNotify(player, regionToTeleport, scopeName) ?: return@identifierHandler
+        onTeleportingPlayer(player, regionToTeleport, scope)
+    }
+}
+
+private fun runTeleportPlayerAsAdministrator(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = getScopeOrNotify(player, region, scopeName) ?: return@identifierHandler
+        onTeleportingPlayerAsAdministrator(player, region, scope)
     }
 }
 
 private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToTeleport ->
-        val (region, scope) = RegionDatabase.getRegionAndScope(regionToTeleport, regionToTeleport.geometryScope.firstOrNull()?.scopeName ?: "")
+        val scope = findPublicTeleportScope(regionToTeleport)
         if (scope != null) {
-            onTeleportingPlayer(player, region, scope)
+            onTeleportingPlayer(player, regionToTeleport, scope)
         } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_scope", region.name)!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_public_scope", regionToTeleport.name)!!)
             0
         }
     }
 }
 
 private fun runToggleTeleportPointAccessibility(context: CommandContext<CommandSourceStack>): Int{
-    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
-    player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName)!!)
-    return onTogglingTeleportPointAccessibility(scope)
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    val result = onTogglingTeleportPointAccessibility(player, region, scope)
+    if (result == 1) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName)!!)
+    }
+    return result
 }
 
 private fun runModifyScope(context: CommandContext<CommandSourceStack>): Int {
@@ -600,8 +624,18 @@ private fun runAddDeleteSetting(context: CommandContext<CommandSourceStack>): In
     val keyString = context.getArgument("key", String::class.java)
     val valueString = getOptionalArgument(context, "value")
     val targetPlayer = getOptionalArgument(context, "playerName")
-    return identifierHandler(regionIdentifier, player) { regionToAddSetting ->
-        onHandleSetting(player, regionToAddSetting, scopeName, keyString, valueString, targetPlayer) }
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = scopeName?.let { getScopeOrNotify(player, region, it) ?: return@identifierHandler }
+        if (scope != null && valueString != null) {
+            addScopeSetting(player, region, scope, keyString, valueString, targetPlayer)
+        } else if (scope != null) {
+            removeScopeSetting(player, region, scope, keyString, targetPlayer)
+        } else if (valueString != null) {
+            addRegionSetting(player, region, keyString, valueString, targetPlayer)
+        } else {
+            removeRegionSetting(player, region, keyString, targetPlayer)
+        }
+    }
 }
 
 private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): Int {
@@ -609,8 +643,10 @@ private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): I
     val scopeName = getOptionalArgument(context, "scopeName")
     val keyString = context.getArgument("key", String::class.java)
     val targetPlayer = getOptionalArgument(context, "playerName")
-    return identifierHandler(regionIdentifier, player) { regionToQuery ->
-        onQuerySettingValue(player, regionToQuery, scopeName, keyString, targetPlayer) }
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = scopeName?.let { getScopeOrNotify(player, region, it) ?: return@identifierHandler }
+        onQuerySettingValue(player, region, scope, keyString, targetPlayer)
+    }
 }
 
 private fun runQueryRegion(context: CommandContext<CommandSourceStack>): Int {
@@ -656,13 +692,8 @@ private fun runStartSelectForModify(context: CommandContext<CommandSourceStack>)
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
     return identifierHandler(regionIdentifier, player) { region ->
-        try {
-            val scope = region.getScopeByName(scopeName)
-            onStartSelectionForModify(player, scope)
-        } catch (e: IllegalArgumentException) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.not_found_generic")!!)
-            0
-        }
+        val scope = getScopeOrNotify(player, region, scopeName) ?: return@identifierHandler
+        onStartSelectionForModify(player, scope)
     }
 }
 
@@ -672,6 +703,6 @@ private fun runToggleRegionDynmap(context: CommandContext<CommandSourceStack>): 
 }
 
 private fun runToggleScopeDynmap(context: CommandContext<CommandSourceStack>): Int {
-    val (player, region, scope) = getPlayerRegionScopeTriple(context) ?: return 0
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
     return onTogglingScopeDynmap(player, region, scope)
 }

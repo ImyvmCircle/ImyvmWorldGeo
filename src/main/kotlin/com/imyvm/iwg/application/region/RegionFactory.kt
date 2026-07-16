@@ -2,16 +2,23 @@ package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoShape
-import com.imyvm.iwg.domain.component.GeoShape.Companion.isPhysicalSafe
+import com.imyvm.iwg.domain.component.CircleGeometry
+import com.imyvm.iwg.domain.component.PolygonGeometry
+import com.imyvm.iwg.domain.component.RectangleGeometry
+import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.AssignedScopeId
+import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.generateNewScopeIdRaw
+import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.geo.*
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.resources.Identifier
 import net.minecraft.core.BlockPos
-import kotlin.math.abs
-import kotlin.math.sqrt
 
 object RegionFactory {
 
@@ -23,9 +30,9 @@ object RegionFactory {
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
 
-        val mainScopeResult = createScope(
+        val mainScopeResult = createScopeForPlayer(
             scopeName = "main_scope",
-            playerExecutor = playerExecutor,
+            playerExecutor = requireNotNull(playerExecutor) { "playerExecutor is required to create a region" },
             selectedPositions = selectedPositions,
             shapeType = shapeType
         )
@@ -33,6 +40,9 @@ object RegionFactory {
         if (mainScopeResult is Result.Err) return mainScopeResult
 
         val mainScope = (mainScopeResult as Result.Ok).value
+        mainScope.assignScopeId(
+            AssignedScopeId.require(ScopeId(generateNewScopeIdRaw(numberID, parseMarkFromRegionId(numberID))))
+        )
         val geometryScope = mutableListOf<GeoScope>()
         geometryScope.add(mainScope)
 
@@ -41,6 +51,44 @@ object RegionFactory {
         return Result.Ok(newRegion)
     }
 
+    fun createScopeForPlayer(
+        scopeName: String,
+        playerExecutor: ServerPlayer,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> {
+        val worldId = playerExecutor.level().dimension().identifier()
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
+        if (geoShapeResult is Result.Err) return geoShapeResult
+        val geoShape = (geoShapeResult as Result.Ok).value
+        return Result.Ok(GeoScope(scopeName, worldId, getTeleportPoint(playerExecutor, geoShape), false, geoShape))
+    }
+
+    fun recreateScope(
+        scopeName: String,
+        worldId: Identifier,
+        teleportPoint: BlockPos?,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> = createScopeFromData(
+        scopeName,
+        worldId,
+        teleportPoint,
+        selectedPositions,
+        shapeType
+    )
+
+    internal fun recreateScopeShape(
+        region: Region,
+        existingScope: GeoScope,
+        selectedPositions: List<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoShape, CreationError> {
+        require(region.containsScope(existingScope)) { "scope does not belong to region" }
+        return createGeoShape(selectedPositions, shapeType, existingScope.worldId, existingScope)
+    }
+
+    @Deprecated("Use createScopeForPlayer or recreateScope")
     fun createScope(
         scopeName: String,
         playerExecutor: ServerPlayer? = null,
@@ -49,36 +97,47 @@ object RegionFactory {
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
-        val worldId = existingWorld ?: playerExecutor!!.level().dimension().identifier()
-        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
-        if (geoShapeResult is Result.Err) {
-            return Result.Err(geoShapeResult.error)
+        return if (existingWorld == null) {
+            createScopeForPlayer(scopeName, requireNotNull(playerExecutor) { "playerExecutor or existingWorld is required" }, selectedPositions, shapeType)
+        } else {
+            createScopeFromData(scopeName, existingWorld, existingTeleportPoint, selectedPositions, shapeType)
         }
+    }
 
-        val geoShape = (geoShapeResult as Result.Ok).value
-        val teleportPoint = existingTeleportPoint ?: getTeleportPoint(playerExecutor, geoShape)
-
-        val geoScope = GeoScope(scopeName, worldId, teleportPoint, false, geoShape)
-
-        return Result.Ok(geoScope)
+    private fun createScopeFromData(
+        scopeName: String,
+        worldId: Identifier,
+        teleportPoint: BlockPos?,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoScope, CreationError> {
+        val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
+        if (geoShapeResult is Result.Err) return geoShapeResult
+        return Result.Ok(GeoScope(scopeName, worldId, teleportPoint, false, (geoShapeResult as Result.Ok).value))
     }
 
     private fun getTeleportPoint(
-        playerExecutor: ServerPlayer?,
+        playerExecutor: ServerPlayer,
         geoShape: GeoShape
     ): BlockPos? {
-        if (playerExecutor == null) return null
-
         val playerWorld = playerExecutor.level()
         val playerPosition = playerExecutor.blockPosition()
-        return if (isPhysicalSafe(playerWorld, playerPosition)) playerPosition
-        else geoShape.generateTeleportPoint(playerWorld)
+        return if (geoShape.certificateTeleportPoint(playerWorld, playerPosition)) {
+            playerPosition
+        } else {
+            geoShape.findNearestValidTeleportPoint(
+                playerWorld,
+                playerPosition,
+                TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
+            )
+        }
     }
 
     private fun createGeoShape(
         positions: List<BlockPos>,
         shapeType: GeoShapeType,
-        worldId: Identifier
+        worldId: Identifier,
+        excludedScope: GeoScope? = null
     ): Result<GeoShape, CreationError> {
         val requiredPoints = requiredPoints(shapeType)
         if (positions.size < requiredPoints) {
@@ -95,16 +154,41 @@ object RegionFactory {
         if (geoShapeResult is Result.Err) return geoShapeResult
 
         val geoShape = (geoShapeResult as Result.Ok).value
-
-        val existingScopes = RegionDatabase.getRegionList()
-            .flatMap { region -> region.geometryScope.filter { it.worldId == worldId }.map { Pair(it, region.name) } }
-        val intersections = checkIntersection(geoShape, existingScopes)
-        if (intersections.isNotEmpty()) {
-            return Result.Err(CreationError.IntersectionBetweenScopes(intersections))
-        }
+        val placementError = validateGeoShapePlacement(geoShape, worldId, excludedScope)
+        if (placementError != null) return Result.Err(placementError)
 
         return Result.Ok(geoShape)
     }
+
+    internal fun validateGeoShapePlacement(
+        geoShape: GeoShape,
+        worldId: Identifier,
+        excludedScope: GeoScope?,
+        currentRegions: List<Region> = RegionDatabase.getRegionList()
+    ): CreationError? {
+        validateGeoShapeSize(geoShape)?.let { return it }
+        val existingScopes = currentRegions
+            .flatMap { region ->
+                region.scopes
+                    .filter { it !== excludedScope && it.worldId == worldId }
+                    .map { Pair(it, region.name) }
+            }
+        val intersections = checkIntersection(geoShape, existingScopes)
+        return intersections.takeIf { it.isNotEmpty() }?.let(CreationError::IntersectionBetweenScopes)
+    }
+
+    internal fun validateGeoShapeSize(geoShape: GeoShape): CreationError? =
+        when (val geometry = geoShape.typedGeometry) {
+            is CircleGeometry -> if (checkCircleSize(geometry.radius.toDouble())) null else CreationError.UnderSizeLimit
+            is RectangleGeometry -> checkRectangleSize(
+                geometry.east.toLong() - geometry.west,
+                geometry.south.toLong() - geometry.north
+            )
+            is PolygonGeometry -> checkPolygonSize(
+                List(geometry.vertexCount) { BlockPos(geometry.x(it), 0, geometry.z(it)) }
+            )
+            UnknownGeometry -> CreationError.InsufficientPoints
+        }
 
     private fun requiredPoints(shapeType: GeoShapeType): Int =
         when (shapeType) {
@@ -121,50 +205,51 @@ object RegionFactory {
         if (pos1 == pos2) return Result.Err(CreationError.DuplicatedPoints)
         if (pos1.x == pos2.x || pos1.z == pos2.z) return Result.Err(CreationError.CoincidentPoints)
 
-        val width = abs(pos1.x - pos2.x)
-        val length = abs(pos1.z - pos2.z)
-        val error = checkRectangleSize(width, length)
-        if (error != null) return Result.Err(error)
-
         val west = minOf(pos1.x, pos2.x)
         val east = maxOf(pos1.x, pos2.x)
         val north = minOf(pos1.z, pos2.z)
         val south = maxOf(pos1.z, pos2.z)
 
-        return Result.Ok(
-            GeoShape(GeoShapeType.RECTANGLE, mutableListOf(west, north, east, south))
-        )
+        return Result.Ok(GeoShape.rectangle(GeoPoint(west, north), GeoPoint(east, south)))
     }
 
-    private fun createCircle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
+    internal fun createCircle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val center = positions[0]
         val circumference = positions[1]
 
         if (center == circumference) return Result.Err(CreationError.DuplicatedPoints)
 
-        val dx = circumference.x - center.x
-        val dz = circumference.z - center.z
-        val radius = sqrt((dx * dx + dz * dz).toDouble())
-        if (!checkCircleSize(radius)) return Result.Err(CreationError.UnderSizeLimit)
+        val radius = circleRadius(center, circumference)
+        if (radius > Int.MAX_VALUE) return Result.Err(CreationError.CoordinateRangeExceeded)
+        val intRadius = radius.toInt()
+        if (!circleExtentsFit(center.x, center.z, intRadius)) {
+            return Result.Err(CreationError.CoordinateRangeExceeded)
+        }
 
-        return Result.Ok(
-            GeoShape(GeoShapeType.CIRCLE, mutableListOf(center.x, center.z, radius.toInt()))
-        )
+        return Result.Ok(GeoShape.circle(GeoPoint(center.x, center.z), intRadius))
     }
 
+    private fun circleExtentsFit(centerX: Int, centerZ: Int, radius: Int): Boolean {
+        val min = Int.MIN_VALUE.toLong()
+        val max = Int.MAX_VALUE.toLong()
+        return centerX.toLong() - radius in min..max && centerX.toLong() + radius in min..max &&
+            centerZ.toLong() - radius in min..max && centerZ.toLong() + radius in min..max
+    }
+
+    private fun circleRadius(center: BlockPos, circumference: BlockPos): Double =
+        kotlin.math.hypot(
+            circumference.x.toDouble() - center.x,
+            circumference.z.toDouble() - center.z
+        )
+
     private fun createPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
-        val distinct = positions.distinct()
+        if (!isPolygonVertexCountSupported(positions.size)) {
+            return Result.Err(CreationError.PolygonVertexLimitExceeded)
+        }
+        val distinct = positions.distinctBy { it.x to it.z }
         if (distinct.size != positions.size) return Result.Err(CreationError.DuplicatedPoints)
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
-        val error = checkPolygonSize(positions)
-        if (error != null) return Result.Err(error)
-
-        return Result.Ok(
-            GeoShape(
-                geoShapeType = GeoShapeType.POLYGON,
-                positions.flatMap { listOf(it.x, it.z) }.toMutableList()
-            )
-        )
+        return Result.Ok(GeoShape.polygon(positions.map { GeoPoint(it.x, it.z) }))
     }
 }
 

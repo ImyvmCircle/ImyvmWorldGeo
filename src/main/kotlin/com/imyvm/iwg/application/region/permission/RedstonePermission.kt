@@ -1,11 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
-import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_REDSTONE
-import com.imyvm.iwg.util.text.Translator
 import net.fabricmc.fabric.api.event.player.UseBlockCallback
 import net.minecraft.world.level.block.DiodeBlock
 import net.minecraft.world.level.block.BellBlock
@@ -22,16 +18,8 @@ fun playerRedstonePermission() {
         val pos = hitResult.blockPos
         val block = world.getBlockState(pos).block
         if (!isRedstoneDevice(block)) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.REDSTONE, scope, PERMISSION_DEFAULT_REDSTONE.value)
-            if (denial != null) {
-                if (hand == InteractionHand.MAIN_HAND) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.redstone", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, pos, PermissionKey.REDSTONE, PERMISSION_DEFAULT_REDSTONE.value,
+                "setting.permission.redstone")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

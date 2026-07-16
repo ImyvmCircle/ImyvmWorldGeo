@@ -7,6 +7,8 @@
 		"rule.ExplosionBlockProtectionMixin",
 		"rule.EndermanBlockPickupMixin",
 		"rule.SculkSpreadMixin",
+		"rule.SculkGrowthMixin",
+		"rule.SculkSubstrateMixin",
 		"rule.SnowGolemTrailMixin",
 		"rule.DispenserMixin",
 		"rule.PressurePlateMixin",

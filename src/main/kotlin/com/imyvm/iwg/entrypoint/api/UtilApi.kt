@@ -10,6 +10,11 @@ import net.minecraft.server.level.ServerPlayer
 import java.util.*
 
 @Suppress("unused")
+/**
+ * Supported utility API for addons.
+ *
+ * Compatibility and deprecation policy: `docs/addon-api-compatibility.md`.
+ */
 object UtilApi {
     fun isSelectingPoints(playerExecutor: ServerPlayer): Boolean = ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerExecutor.uuid)
     fun isActionBarEnabled(playerExecutor: ServerPlayer): Boolean = ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(playerExecutor.uuid)

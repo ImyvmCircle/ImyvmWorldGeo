@@ -1,10 +1,8 @@
 package com.imyvm.iwg.application.region.permission.helper
 
-import com.imyvm.iwg.domain.component.GeoScope
-import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.domain.component.PermissionSetting
-import java.util.*
+import com.imyvm.iwg.domain.component.*
+import java.util.UUID
 
 sealed class PermissionDenialSource {
     data object AtScope : PermissionDenialSource()
@@ -12,89 +10,157 @@ sealed class PermissionDenialSource {
     data object ByDefault : PermissionDenialSource()
 }
 
+internal data class ResolvedPermission(
+    val value: Boolean,
+    val source: PermissionDenialSource
+)
+
+private sealed interface PermissionTarget {
+    val region: Region
+
+    data class RegionOnly(override val region: Region) : PermissionTarget
+    data class ScopeOverride(override val region: Region, val scope: GeoScope) : PermissionTarget {
+        init {
+            require(region.containsScope(scope)) { "scope does not belong to region" }
+        }
+    }
+}
+
+private sealed interface PermissionSubject {
+    data object Global : PermissionSubject
+    data class Player(val uuid: UUID) : PermissionSubject
+}
+
+fun hasRegionPermission(region: Region, playerUUID: UUID, key: PermissionKey, defaultValue: Boolean = true): Boolean =
+    getRegionPermissionDenialSource(region, playerUUID, key, defaultValue) == null
+
+fun hasScopePermission(
+    region: Region,
+    scope: GeoScope,
+    playerUUID: UUID,
+    key: PermissionKey,
+    defaultValue: Boolean = true
+): Boolean = getScopePermissionDenialSource(region, scope, playerUUID, key, defaultValue) == null
+
+fun getRegionPermissionDenialSource(
+    region: Region,
+    playerUUID: UUID,
+    key: PermissionKey,
+    defaultValue: Boolean = true
+): PermissionDenialSource? = denialSource(
+    resolvePermission(PermissionTarget.RegionOnly(region), PermissionSubject.Player(playerUUID), key),
+    defaultValue
+)
+
+fun getScopePermissionDenialSource(
+    region: Region,
+    scope: GeoScope,
+    playerUUID: UUID,
+    key: PermissionKey,
+    defaultValue: Boolean = true
+): PermissionDenialSource? = denialSource(
+    resolvePermission(PermissionTarget.ScopeOverride(region, scope), PermissionSubject.Player(playerUUID), key),
+    defaultValue
+)
+
+internal fun resolveRegionGlobalPermission(region: Region, key: PermissionKeyLike): ResolvedPermission? =
+    resolvePermission(PermissionTarget.RegionOnly(region), PermissionSubject.Global, key)
+
+internal fun resolveRegionPlayerPermission(region: Region, playerUUID: UUID, key: PermissionKeyLike): ResolvedPermission? =
+    resolvePermission(PermissionTarget.RegionOnly(region), PermissionSubject.Player(playerUUID), key)
+
+internal fun resolveScopeGlobalPermission(region: Region, scope: GeoScope, key: PermissionKeyLike): ResolvedPermission? =
+    resolvePermission(PermissionTarget.ScopeOverride(region, scope), PermissionSubject.Global, key)
+
+internal fun resolveScopePlayerPermission(
+    region: Region,
+    scope: GeoScope,
+    playerUUID: UUID,
+    key: PermissionKeyLike
+): ResolvedPermission? = resolvePermission(
+    PermissionTarget.ScopeOverride(region, scope),
+    PermissionSubject.Player(playerUUID),
+    key
+)
+
+@Deprecated("Use hasRegionPermission or hasScopePermission")
 fun hasPermission(
     region: Region,
     playerUUID: UUID,
     key: PermissionKey,
     scope: GeoScope? = null,
     defaultValue: Boolean = true
-): Boolean {
-    return checkPermission(region, playerUUID, key, scope) ?: defaultValue
+): Boolean = if (scope == null) {
+    hasRegionPermission(region, playerUUID, key, defaultValue)
+} else {
+    hasScopePermission(region, scope, playerUUID, key, defaultValue)
 }
 
+@Deprecated("Use getRegionPermissionDenialSource or getScopePermissionDenialSource")
 fun getPermissionDenialSource(
     region: Region,
     playerUUID: UUID,
     key: PermissionKey,
     scope: GeoScope? = null,
     defaultValue: Boolean = true
-): PermissionDenialSource? {
-    val result = checkPermissionWithSource(region, playerUUID, key, scope)
-    return when {
-        result == null -> if (defaultValue) null else PermissionDenialSource.ByDefault
-        result.first -> null
-        else -> result.second
-    }
+): PermissionDenialSource? = if (scope == null) {
+    getRegionPermissionDenialSource(region, playerUUID, key, defaultValue)
+} else {
+    getScopePermissionDenialSource(region, scope, playerUUID, key, defaultValue)
 }
 
-fun buildPermissionDenialContext(region: Region, scope: GeoScope?, source: PermissionDenialSource): String {
-    return if (source == PermissionDenialSource.AtScope && scope != null) {
+fun buildScopePermissionDenialContext(region: Region, scope: GeoScope, source: PermissionDenialSource): String {
+    return if (source == PermissionDenialSource.AtScope) {
         "Scope &b${scope.scopeName}&7 of Region &b${region.name}&7"
     } else {
         "Region &b${region.name}&7"
     }
 }
 
-private fun checkPermission(
-    region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope?
-): Boolean? = checkPermissionWithSource(region, playerUUID, key, scope)?.first
+@Deprecated("Use buildScopePermissionDenialContext or the region name directly")
+fun buildPermissionDenialContext(region: Region, scope: GeoScope?, source: PermissionDenialSource): String =
+    if (scope == null) "Region &b${region.name}&7" else buildScopePermissionDenialContext(region, scope, source)
 
-private fun checkPermissionWithSource(
-    region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope?
-): Pair<Boolean, PermissionDenialSource>? {
-    val explicit = checkExplicitPermissionWithSource(region, playerUUID, key, scope)
-    if (explicit != null) return explicit
-    val ancestors = buildList {
-        var current = key.parent
-        while (current != null) {
-            add(current)
-            current = current.parent
-        }
-    }
-    for (ancestor in ancestors) {
-        val result = checkExplicitPermissionWithSource(region, playerUUID, ancestor, scope)
-        if (result != null) return result
+private fun denialSource(result: ResolvedPermission?, defaultValue: Boolean): PermissionDenialSource? = when {
+    result == null -> if (defaultValue) null else PermissionDenialSource.ByDefault
+    result.value -> null
+    else -> result.source
+}
+
+private fun resolvePermission(
+    target: PermissionTarget,
+    subject: PermissionSubject,
+    key: PermissionKeyLike
+): ResolvedPermission? {
+    resolveExplicitPermission(target, subject, key)?.let { return it }
+    if (key !is PermissionKey) return null
+    var ancestor = key.parent
+    while (ancestor != null) {
+        resolveExplicitPermission(target, subject, ancestor)?.let { return it }
+        ancestor = ancestor.parent
     }
     return null
 }
 
-private fun checkExplicitPermissionWithSource(
-    region: Region,
-    playerUUID: UUID,
-    key: PermissionKey,
-    scope: GeoScope?
-): Pair<Boolean, PermissionDenialSource>? {
-    scope?.settings?.filterIsInstance<PermissionSetting>()?.let { settings ->
-        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
-            return it.value to PermissionDenialSource.AtScope
-        }
-        settings.firstOrNull { !it.isPersonal && it.key == key }?.let {
-            return it.value to PermissionDenialSource.AtScope
+private fun resolveExplicitPermission(
+    target: PermissionTarget,
+    subject: PermissionSubject,
+    key: PermissionKeyLike
+): ResolvedPermission? {
+    if (target is PermissionTarget.ScopeOverride) {
+        findPermission(target.scope.settingStore, subject, key)?.let {
+            return ResolvedPermission(it, PermissionDenialSource.AtScope)
         }
     }
-    region.settings.filterIsInstance<PermissionSetting>().let { settings ->
-        settings.firstOrNull { it.isPersonal && it.key == key && it.playerUUID == playerUUID }?.let {
-            return it.value to PermissionDenialSource.AtRegion
-        }
-        settings.firstOrNull { !it.isPersonal && it.key == key }?.let {
-            return it.value to PermissionDenialSource.AtRegion
-        }
+    findPermission(target.region.settingStore, subject, key)?.let {
+        return ResolvedPermission(it, PermissionDenialSource.AtRegion)
     }
     return null
+}
+
+private fun findPermission(store: SettingStore, subject: PermissionSubject, key: PermissionKeyLike): Boolean? {
+    if (subject is PermissionSubject.Player) {
+        store.playerPermission(key, subject.uuid)?.let { return it }
+    }
+    return store.globalPermission(key)
 }

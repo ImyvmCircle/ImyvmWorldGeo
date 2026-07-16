@@ -1,6 +1,7 @@
 package com.imyvm.iwg
 
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
+import com.imyvm.iwg.infra.config.initializeConfigValidation
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
@@ -25,6 +26,7 @@ class
 ImyvmWorldGeo : ModInitializer {
 
 	override fun onInitialize() {
+		initializeConfigValidation()
 		registerDataLoadSave()
 
 		registerLazyTicker()
@@ -33,11 +35,12 @@ ImyvmWorldGeo : ModInitializer {
 		registerRegionEntryExit()
 		registerPlayerStats()
 		registerLocationDisplay()
+		// UseBlockCallback stops at the first non-PASS result; active selection must run first.
+		registerPointSelection()
 		registerRegionPermissions()
 		registerRegionEffects()
 
 		CommandRegistrationCallback.EVENT.register { dispatcher, _, _ -> register(dispatcher) }
-		registerPointSelection()
 		registerSelectionDisplay()
 
 		if (FabricLoader.getInstance().isModLoaded("dynmap")) {

@@ -6,7 +6,7 @@ import com.typesafe.config.Config
 object EntryExitConfig {
     @JvmField
     val ENTRY_EXIT_REGION_DELAY_SECONDS = Option("core.entry_exit.region_delay_seconds", 5,
-        "the number of seconds a player must remain outside a region before the region entry or exit title is displayed.") { obj: Config, path: String? -> obj.getInt(path) }
+        "the number of seconds a player must remain outside a region before the region entry or exit title is displayed.") { obj: Config, path: String? -> nonNegativeInt(path, obj.getInt(path)) }
 
     @JvmField
     val REGION_ENTER_I18N_KEY = Option("core.entry_exit.region_enter_i18n_key", "notification.region.enter",

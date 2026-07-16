@@ -42,11 +42,16 @@ This mod is **server-side only** and requires the following environment:
 
 **Optional:**
 
-- **Dynmap Version:** 3.7-beta (Fabric 26.1) - enables region map rendering when present
+- **Dynmap Version:** a Fabric build compatible with the installed Minecraft version
 
-> Note: Dynmap integration is temporarily disabled pending a Dynmap release compatible with MC 26.1. Do not install Dynmap until a compatible version is available; Fabric Loader will reject server startup if an incompatible Dynmap version is present.
+> Note: Dynmap is optional. Install it only when a build compatible with the current Minecraft version is available; otherwise leave it absent.
 
 > Note: Client-side players do not need to install this mod, but the server must meet these requirements.
+
+Integer configuration values are validated when loaded and updated. Lazy ticker, effect duration,
+selection point limits, and selection display steps must be positive. Teleport search radius,
+entry/exit delay, fly countdown, and fall-immunity duration may be zero but not negative.
+`selection.min_points` cannot exceed `selection.max_points`, and effect duration must exceed the lazy ticker interval.
 
 ---
 
@@ -67,14 +72,17 @@ providing them with regional features via settings, and enabling teleportation t
 ### Scope
 
 A scope is a sub-area within a region, defined by a name unique to other scopes in the same region and a shape.
-A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type, and `shapeParameters` parsed by corresponding type.
+A shape can be of `RECTANGLE`, `CIRCLE` or `POLYGON` type. Addons should construct immutable shapes
+through `GeoShape.rectangle`, `GeoShape.circle`, or `GeoShape.polygon`; the legacy flat
+`shapeParameter` list is retained only for binary and persistence compatibility. Polygon shapes
+support at most 256 vertices.
 
 ### Setting
 
 Settings are key-value pairs associated with regions or scopes,
 which can be either global (applicable to all players) or personal (specific to individual players).
-When there is a conflict between regional and scope settings, scope settings take precedence,
-and personal settings are of higher priority when the corresponding global settings are added.
+For the same permission key, resolution order is scope personal, scope global, region personal,
+region global, then the configured default.
 For permission settings, a parent-child hierarchy applies: if the specific (child) key has an explicit
 setting that covers the current scope and subject, it takes full precedence over any ancestor keys.
 Only when no explicit setting exists for the child key will the system fall back to the immediate parent,
@@ -121,14 +129,14 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | SPAWN_MONSTERS | true | Controls whether hostile monsters (SpawnGroup MONSTER) spawn in the region. |
 | SPAWN_PHANTOMS | true | Controls whether phantoms spawn in the region (overrides SPAWN_MONSTERS for phantoms). |
 | TNT_BLOCK_PROTECTION | false | When set to true, explosions from TNT, TNT minecarts, end crystals, beds used in the End, respawn anchors used outside the Nether, wither spawning, and wither skulls do not destroy blocks inside the region. Blocks outside protected regions are still destroyed normally. Entity damage and knockback from the explosion are unaffected. |
-| ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. When set to false, the enderman PickUpBlockGoal is suppressed for the region. |
-| SCULK_SPREAD | true | Controls whether sculk can spread inside the region. When set to false, the sculk catalyst tick is suppressed, preventing all sculk spread within the region. |
+| ENDERMAN_BLOCK_PICKUP | true | Controls whether endermen can pick up blocks inside the region. The rule is checked against the actual selected block immediately before removal. |
+| SCULK_SPREAD | true | Controls whether sculk growth, substrate conversion, and sculk-vein placement may write to blocks inside the region. World-generation spreading is unchanged. |
 | SNOW_GOLEM_TRAIL | true | Controls whether snow golems leave snow trails inside the region. When set to false, the setBlockState call for snow placement is suppressed. |
 | DISPENSER | true | Controls whether dispensers can fire into the region. When set to false, any dispenser whose output face points into the region is blocked, including dispensers placed outside the region. |
 | PRESSURE_PLATE | true | Controls whether pressure plates inside the region can be activated. When set to false, entity collision with pressure plates in the region is suppressed. |
-| PISTON | true | Controls whether pistons can push or break blocks inside the region. When set to false, any piston move that would affect a block inside the region is cancelled, including pistons placed outside the region. |
+| PISTON | true | Controls whether pistons can move blocks from or into the region or destroy blocks inside it. A denied source, destination, or destroy target cancels the move, including for pistons outside the region. |
 | RPG_NATURAL_REGEN | true | (RPG) Controls whether players naturally regenerate health inside the region. When set to false, the saturation-based heal from food is suppressed. |
-| RPG_FIRE_SPREAD | true | (RPG) Controls whether fire spreads inside the region. When set to false, the fire block tick is suppressed, preventing spread and natural burn-out. |
+| RPG_FIRE_SPREAD | true | (RPG) Controls whether fire may burn or place fire at target blocks inside the region. Source fire still ages and extinguishes normally. |
 | RPG_HUNGER | true | (RPG) Controls whether hunger and exhaustion drain for players inside the region. When set to false, all food exhaustion calls are suppressed. |
 
 #### Namespaced Extension Boolean Keys
@@ -151,7 +159,7 @@ Extension settings are persisted by their string key, so addon-defined keys do n
 
 #### Effect Keys
 
-Effect settings apply Minecraft status effects to players inside a region or scope. The value is the effect amplifier (0-indexed: 0 = Level 1, 1 = Level 2, etc.). Effects are refreshed every lazy ticker interval and last for `effect.duration_seconds` (default 5 s) after each application. Effect settings can be global or personal. The effective value follows the priority: scope personal → scope global → region personal → region global.
+Effect settings apply Minecraft status effects to players inside a region or scope. The value is an effect amplifier from `0` to `255` (0-indexed: 0 = Level 1, 1 = Level 2, etc.). Effects are refreshed every lazy ticker interval and last for `effect.duration_seconds` (default 5 s) after each application. Effect settings can be global or personal. The effective value follows the priority: scope personal → scope global → region personal → region global.
 
 Effects are applied silently (ambient-style: icon shown, no particles).
 
@@ -229,24 +237,29 @@ The physical safety requirements are:
 4. Neither the feet block nor the head block may contain a liquid (water or lava), to prevent drowning or burning.
 
 These requirements allow indoor teleport points as long as the space is clear and the floor is solid.
+When a scope is created, the player's position is used only if it is inside the new scope and physically safe.
+Otherwise, the same bounded fallback search described below is performed around the player; if no valid
+position is found, the scope is created without a teleport point and one can be set later.
 When teleportation is requested, the safety of the stored teleport point is rechecked against the current world state.
-If the point is no longer safe (e.g., due to subsequent block changes), the system searches a 5x5x5 cube
-centered on the original point (with height priority, meaning positions at the same vertical distance are
-checked before moving further away) for the nearest safe alternative. If a safe alternative is found,
+If the point is no longer safe (e.g., due to subsequent block changes), the system searches a configurable,
+bounded cube centered on the original point (radius 0-8, with a 5x5x5 cube used by default). Candidates are
+checked in increasing Manhattan distance using Minecraft's native block-position traversal, and must remain
+inside the scope and satisfy the same physical safety requirements. If a safe alternative is found,
 the teleport point is automatically updated and the player is teleported there with a warning message.
 If no safe alternative is found within the search area, teleportation is cancelled and the player is informed.
 
 ### Dynmap Integration
 
-> Dynmap integration is temporarily disabled pending a Dynmap release compatible with MC 26.1. All integration code is retained and will be re-enabled once a compatible version is released.
-
-When Dynmap (3.7-beta or later, Fabric edition) is present on the server, all regions and their scopes are automatically rendered on the dynamic world map. If Dynmap is absent, this feature is silently skipped.
+When a Dynmap Fabric build compatible with the installed Minecraft version is present, all regions and their scopes are automatically rendered on the dynamic world map. If Dynmap is absent, this feature is silently skipped.
 
 Each scope is displayed as a labeled overlay in the format `RegionName:ScopeName`. The shape type determines the marker type: rectangle and polygon scopes use area overlays; circle scopes use circle overlays. Teleport points are shown as house-icon markers at their exact coordinates.
 
 All scopes belonging to the same region share one color. The color is derived from the first color keyword found in the region name, supporting both Chinese (e.g. 红, 蓝, 绿) and English (e.g. red, blue, green) color words. When no color keyword is present, a distinct color is selected from a fixed palette using the region's numeric ID.
 
 Markers are updated automatically whenever region data is saved.
+
+Region and Scope management operations save data before reporting success, and normal server shutdown
+performs a final save. Dynmap markers are synchronized after each successful save.
 
 Each region and each scope has a `showOnDynmap` flag (default: `true`). The region-level flag takes precedence: if a region's `showOnDynmap` is `false`, none of its scopes will appear on the map regardless of their individual flags. If the region flag is `true`, each scope is rendered only if its own `showOnDynmap` is also `true`.
 
@@ -260,6 +273,9 @@ Each region and each scope has a `showOnDynmap` flag (default: `true`). The regi
 > For detailed commands and API usage, see the `Command` and `API` sections in this README.
 
 ## API Documentation
+
+Addon compatibility guarantees, deprecated API migrations, and removal rules are tracked in
+[`docs/addon-api-compatibility.md`](docs/addon-api-compatibility.md).
 
 This API provides functionality for interacting with geographical regions in a Minecraft server world,
 which allows extension mods to enrich and build features based on defined regions.
@@ -285,7 +301,7 @@ Handles player-triggered actions related to regions and their scopes.
   Starts selection mode locked to scope-modification for the given scope.
 
 - `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
-  Creates a region with an optional name, shape, and ID marker. If shapeTypeName is null, shape is inferred from selection state.
+  Creates a region with an optional name, shape, and ID marker. `idMark` must be from `0` to `9`. If shapeTypeName is null, shape is inferred from selection state.
 
 - `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
   Creates a region and returns the created region.
@@ -314,26 +330,34 @@ Handles player-triggered actions related to regions and their scopes.
 - `mergeRegion(player: ServerPlayerEntity, sourceRegion: Region, targetRegion: Region)`  
   Merges one region into another: all scopes are moved to the target (with automatic renaming on conflict). The source region's overall settings are discarded. The source region is deleted afterward.
 
-- `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
+- `addTeleportPoint(player: ServerPlayer, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
   Adds a teleport point with a given location.
 
-- `addTeleportPoint(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
+- `addTeleportPoint(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
   Adds a teleport point at the player's current location.
 
-- `resetTeleportPoint(player: ServerPlayerEntity, region: Region, scope: GeoScope)`
+- `resetTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope)`
   Resets the teleport point of a scope.
 
 - `getTeleportPoint(scope: GeoScope)`
   Retrieves the teleport point of a scope.
 
-- `toggleTeleportPointAccessibility(scope: GeoScope)`
- Toggles the access permission of a scope's teleport point.
+- `toggleTeleportPointAccessibility(player: ServerPlayer, region: Region, scope: GeoScope)`
+  Toggles the access permission of a scope's teleport point and persists the change. The scope must belong to the supplied region.
 
-- `teleportPlayerToScope(player: ServerPlayerEntity, targetRegion: Region, scope: GeoScope)`
-  Teleports a player to the teleport point of a scope.
+- `teleportPlayerToScope(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
+  Teleports a player only when the scope's teleport point is publicly accessible.
+
+- `teleportPlayerToScopeAsAdministrator(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
+  Bypasses teleport-point accessibility for administrative use. Ownership, dimension, and physical safety checks still apply.
 
 - `modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
   Modifies the properties of a scope.
+
+- `replaceScopeShape(player: ServerPlayerEntity, region: Region, scope: GeoScope, newShape: GeoShape)`
+  Replaces a live scope's geometry with an immutable shape of the same type. The operation validates
+  ownership, configured size limits, and intersections, persists the change, and restores the old
+  shape if saving fails.
 
 - `addSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?)`  
   Adds a setting to a region.
@@ -378,7 +402,7 @@ Handles player-triggered actions related to regions and their scopes.
   Queries the same persistent aggregated player statistics as `queryRegionNaturalStats(..., "players")`.
 
 - `toggleActionBar(player: ServerPlayerEntity)`
-  Toggles the action bar display for regions for the player. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered using the scope boundary visual effect. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries are still shown.
+  Toggles the action bar display for regions for the player. When enabling, scopes with a shape in the player's current world have their boundaries immediately rendered using a bounded best-effort visual effect. Very large or numerous boundaries are sampled within one fixed per-player render budget. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries use any remaining budget.
 
 - `estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null)`  
   Estimates the area of a region to be created based on selected points and shape type.  
@@ -418,7 +442,7 @@ Provides access to region data and database operations for extension functions.
   Retrieves the list of all regions.
 
 - `getRegionListFiltered(idMark: Int): List<Region>`  
-  Retrieves a filtered list of regions based on ID mark.
+  Retrieves a filtered list of regions based on an ID mark from `0` to `9`. Other values fail fast.
 
 - `getRegionFoundingTime(region: Region): Long`  
   Gets the founding time of a region.
@@ -636,8 +660,11 @@ Provides utility functions for region data to improve usability for extension mo
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be displayed.
     - If player is not in any scope, an error message will be shown.
 
-- `/imyvmWorldGeo teleport <regionIdentifier> <scopeName>`  
-  Teleport the player to the teleport point of the specified region and scope.
+- `/imyvmWorldGeo teleport <regionIdentifier> [scopeName]`
+  Teleport the player to a publicly accessible teleport point. Omitting `scopeName` selects the first public scope with a teleport point.
+
+- `/imyvmWorldGeo teleportPoint teleport <regionIdentifier> <scopeName>`
+  Administrator-only teleport that bypasses teleport-point accessibility while retaining target safety checks.
 
 - `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`  
   Toggle the accessibility of the teleport point for the specified region and scope.
@@ -680,7 +707,7 @@ Provides utility functions for region data to improve usability for extension mo
   List all regions.
 
 - `/imyvmWorldGeo toggle`  
-  Toggle the action bar display for regions. When enabling, all scopes with a shape in the player's current world have their boundaries immediately rendered. Scope boundaries remain visible while in selection mode; the scope being modified is highlighted in orange.
+  Toggle the action bar display for regions. When enabling, current-world scope boundaries are rendered on a bounded best-effort basis. Very large or numerous boundaries are sampled within one fixed per-player render budget. Scope boundaries remain visible while in selection mode; the scope being modified is highlighted in orange and other scopes use any remaining budget.
 
 - `/imyvmWorldGeo help`  
   Show the help message.

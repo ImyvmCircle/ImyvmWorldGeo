@@ -2,7 +2,7 @@ package com.imyvm.iwg.infra.dynmap
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.infra.RegionDatabase
-import net.fabricmc.loader.api.FabricLoader
+import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import org.dynmap.DynmapCommonAPI
 import org.dynmap.DynmapCommonAPIListener
 import org.dynmap.markers.MarkerAPI
@@ -17,12 +17,10 @@ object DynmapIntegration : DynmapCommonAPIListener() {
     private var markerSet: MarkerSet? = null
 
     fun registerIfLoaded() {
-        return
-        if (FabricLoader.getInstance().isModLoaded("dynmap")) {
-            RegionDatabase.onSave = { syncRegions() }
-            DynmapCommonAPIListener.register(this)
-            ImyvmWorldGeo.logger.info("Dynmap detected, region map integration enabled.")
-        }
+        DynmapCommonAPIListener.register(this)
+        RegionDatabase.onSave = { syncRegions() }
+        ServerLifecycleEvents.SERVER_STARTED.register { syncRegions() }
+        ImyvmWorldGeo.logger.info("Dynmap detected, region map integration enabled.")
     }
 
     override fun apiEnabled(api: DynmapCommonAPI) {
@@ -47,7 +45,7 @@ object DynmapIntegration : DynmapCommonAPIListener() {
             for (region in RegionDatabase.getRegionList()) {
                 if (!region.showOnDynmap) continue
                 val color = DynmapColorResolver.resolveColor(region)
-                for (scope in region.geometryScope) {
+                for (scope in region.scopes) {
                     if (!scope.showOnDynmap) continue
                     DynmapRegionRenderer.renderScope(set, api, region, scope, color)
                 }

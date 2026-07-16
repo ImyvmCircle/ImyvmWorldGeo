@@ -5,6 +5,7 @@ import com.imyvm.iwg.util.geo.IntersectionDetail
 import com.imyvm.iwg.util.geo.VertexInsideInfo
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import net.minecraft.network.chat.Component
 
 fun errorMessage(
@@ -20,6 +21,10 @@ fun errorMessage(
         GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")!!
         else -> Translator.tr("error.generic_too_small")!!
     })
+    CreationError.CoordinateRangeExceeded -> listOfNotNull(Translator.tr("error.coordinate_range_exceeded"))
+    CreationError.PolygonVertexLimitExceeded -> listOfNotNull(
+        Translator.tr("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES)
+    )
     CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit")!!)
     CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid")!!)
     CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short")!!)
@@ -29,13 +34,13 @@ fun errorMessage(
 
 private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, shapeType: GeoShapeType): List<Component> {
     val lines = mutableListOf<Component>()
-    Translator.tr("error.intersection_between_scopes.header")!!?.let { lines.add(it) }
+    Translator.tr("error.intersection_between_scopes.header")?.let { lines.add(it) }
     for (detail in details) {
         val shapeDesc = getShapeParamDescription(detail.shape)
-        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)!!?.let { lines.add(it) }
+        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)?.let { lines.add(it) }
         if (detail.verticesInside.isNotEmpty() && shapeType in listOf(GeoShapeType.POLYGON, GeoShapeType.RECTANGLE)) {
             val vertexStr = formatVertexList(detail.verticesInside, shapeType)
-            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)!!?.let { lines.add(it) }
+            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)?.let { lines.add(it) }
         }
     }
     return lines

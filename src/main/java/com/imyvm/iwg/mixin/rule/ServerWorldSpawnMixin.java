@@ -1,11 +1,7 @@
 package com.imyvm.iwg.mixin.rule;
 
 import com.imyvm.iwg.application.region.rule.helper.RuleHelper;
-import com.imyvm.iwg.domain.Region;
-import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.RuleKey;
-import com.imyvm.iwg.infra.RegionDatabase;
-import kotlin.Pair;
 import net.minecraft.core.BlockPos;
 import net.minecraft.server.level.ServerLevel;
 import net.minecraft.world.entity.Entity;
@@ -28,12 +24,6 @@ public class ServerWorldSpawnMixin {
         ServerLevel world = (ServerLevel) (Object) this;
         BlockPos pos = entity.blockPosition();
 
-        Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(world, pos.getX(), pos.getZ());
-        if (regionAndScope == null) return;
-
-        Region region = regionAndScope.getFirst();
-        GeoScope scope = regionAndScope.getSecond();
-
         RuleKey key;
         if (entity instanceof Phantom) {
             key = RuleKey.SPAWN_PHANTOMS;
@@ -41,8 +31,8 @@ public class ServerWorldSpawnMixin {
             key = RuleKey.SPAWN_MONSTERS;
         }
 
-        Boolean value = RuleHelper.getRuleValue(region, key, scope);
-        if (value != null && !value) {
+        Boolean value = RuleHelper.getEffectiveRuleValueAt(world, pos, key);
+        if (Boolean.FALSE.equals(value)) {
             cir.setReturnValue(false);
         }
     }

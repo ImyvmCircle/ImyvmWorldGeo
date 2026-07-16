@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildPermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getPermissionDenialSource
+import com.imyvm.iwg.application.region.permission.helper.buildScopePermissionDenialContext
+import com.imyvm.iwg.application.region.permission.helper.getScopePermissionDenialSource
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ARMOR_STAND
@@ -19,16 +19,8 @@ import net.minecraft.world.InteractionHand
 fun playerArmorStandPermission() {
     AttackEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (entity !is ArmorStand) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ARMOR_STAND, scope, PERMISSION_DEFAULT_ARMOR_STAND.value)
-            if (denial != null) {
-                if (hitResult == null) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.ARMOR_STAND,
+                PERMISSION_DEFAULT_ARMOR_STAND.value, "setting.permission.armor_stand")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 
@@ -37,9 +29,9 @@ fun playerArmorStandPermission() {
         val player = source.entity as? Player ?: return@register true
         val regionAndScope = RegionDatabase.getRegionAndScopeAt(entity.level(), entity.blockPosition().x, entity.blockPosition().z)
         regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ARMOR_STAND, scope, PERMISSION_DEFAULT_ARMOR_STAND.value)
+            val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.ARMOR_STAND, PERMISSION_DEFAULT_ARMOR_STAND.value)
             if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildPermissionDenialContext(region, scope, denial))!!)
+                player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildScopePermissionDenialContext(region, scope, denial))!!)
                 return@register false
             }
         }
@@ -49,32 +41,16 @@ fun playerArmorStandPermission() {
     UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
         val stack = player.getItemInHand(hand)
         if (!stack.`is`(Items.ARMOR_STAND)) return@register InteractionResult.PASS
-        val placePos = hitResult.blockPos.relative(hitResult.direction)
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, placePos.x, placePos.z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ARMOR_STAND, scope, PERMISSION_DEFAULT_ARMOR_STAND.value)
-            if (denial != null) {
-                if (hand == InteractionHand.MAIN_HAND) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        val placePos = blockPlacementTarget(player, hand, stack, hitResult)
+        if (denyPermissionAt(player, world, placePos, PermissionKey.ARMOR_STAND,
+                PERMISSION_DEFAULT_ARMOR_STAND.value, "setting.permission.armor_stand")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 
     UseEntityCallback.EVENT.register { player, world, hand, entity, hitResult ->
         if (entity !is ArmorStand) return@register InteractionResult.PASS
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getPermissionDenialSource(region, player.uuid, PermissionKey.ARMOR_STAND, scope, PERMISSION_DEFAULT_ARMOR_STAND.value)
-            if (denial != null) {
-                if (hitResult == null) {
-                    player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildPermissionDenialContext(region, scope, denial))!!)
-                }
-                return@register InteractionResult.CONSUME
-            }
-        }
+        if (denyPermissionAt(player, world, entity.blockPosition(), PermissionKey.ARMOR_STAND,
+                PERMISSION_DEFAULT_ARMOR_STAND.value, "setting.permission.armor_stand")) return@register InteractionResult.CONSUME
         InteractionResult.PASS
     }
 }

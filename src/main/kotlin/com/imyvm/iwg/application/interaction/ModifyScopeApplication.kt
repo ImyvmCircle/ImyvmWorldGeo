@@ -14,34 +14,45 @@ fun onModifyScope(
     targetRegion: Region,
     scopeName: String
 ): Int {
-    try {
-        val existingScope = targetRegion.getScopeByName(scopeName)
-        val selectedPositions = checkAndGetPlayerPositions(player) ?: return 0
-        val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
-        if (shapeType == GeoShapeType.UNKNOWN) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type")!!)
-            return 0
-        }
-
-        return when (shapeType) {
-            GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
-            GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
-            GeoShapeType.RECTANGLE -> modifyRectangleScope(player, targetRegion, existingScope, selectedPositions)
-            else -> 0
-        }
-    } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
+    val existingScope = getScopeOrNotify(player, targetRegion, scopeName) ?: return 0
+    val selectedPositions = checkAndGetPlayerPositions(player, targetRegion, existingScope) ?: return 0
+    val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type")!!)
         return 0
     }
+
+    return when (shapeType) {
+        GeoShapeType.POLYGON -> modifyPolygonScope(player, targetRegion, existingScope, selectedPositions)
+        GeoShapeType.CIRCLE -> modifyCircleScope(player, targetRegion, existingScope, selectedPositions)
+        GeoShapeType.RECTANGLE -> modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
+    }.let { if (it) 1 else 0 }
 }
 
-private fun checkAndGetPlayerPositions(player: ServerPlayer): MutableList<BlockPos>? {
-    val playerUUID = player.uuid
-    if (!ImyvmWorldGeo.pointSelectingPlayers.containsKey(playerUUID)) {
+private fun checkAndGetPlayerPositions(
+    player: ServerPlayer,
+    targetRegion: Region,
+    existingScope: GeoScope
+): MutableList<BlockPos>? {
+    val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
+    if (state == null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
         return null
     }
-    return ImyvmWorldGeo.pointSelectingPlayers[playerUUID]?.points
+    if (!isModifySelectionFor(state, existingScope)) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.modify_target_mismatch")!!)
+        return null
+    }
+    val error = validateModifySelectionTarget(
+        targetRegion,
+        existingScope,
+        player.level().dimension().identifier()
+    )
+    if (error != null) {
+        sendModifySelectionTargetError(player, error)
+        return null
+    }
+    return state.points
 }
 
 private fun modifyPolygonScope(
@@ -49,12 +60,11 @@ private fun modifyPolygonScope(
     targetRegion: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
-): Int {
+): Boolean {
     return when (selectedPositions.size) {
-        0 -> { player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_insufficient_points")!!); 0}
-        1 -> { modifyScopePolygonMonoPoint(player, targetRegion, existingScope, selectedPositions); 1 }
-        2 -> { modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions); 1 }
-        else -> { modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions); 1 }
+        1 -> modifyScopePolygonMonoPoint(player, targetRegion, existingScope, selectedPositions)
+        2 -> modifyScopePolygonMove(player, targetRegion, existingScope, selectedPositions)
+        else -> modifyScopePolygonInsertPoint(player, targetRegion, existingScope, selectedPositions)
     }
 }
 
@@ -63,18 +73,10 @@ private fun modifyCircleScope(
     targetRegion: Region,
     existingScope: GeoScope,
     selectedPositions: MutableList<BlockPos>
-): Int {
-    if (selectedPositions.size == 1) modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
-    else modifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
-    return 1
-}
-
-private fun modifyRectangleScope(
-    player: ServerPlayer,
-    targetRegion: Region,
-    existingScope: GeoScope,
-    selectedPositions: MutableList<BlockPos>
-): Int {
-    modifyScopeRectangle(player, targetRegion, existingScope, selectedPositions)
-    return 1
+): Boolean {
+    return if (selectedPositions.size == 1) {
+        modifyScopeCircleRadius(player, targetRegion, existingScope, selectedPositions)
+    } else {
+        modifyScopeCircleCenter(player, targetRegion, existingScope, selectedPositions)
+    }
 }

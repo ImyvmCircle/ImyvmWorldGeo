@@ -1,11 +1,12 @@
 package com.imyvm.iwg.infra
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.infra.config.CoreConfig.LAZY_TICKER_SECONDS
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerTickEvents
 import net.minecraft.server.MinecraftServer
 
 object LazyTicker {
-    private var tickCounter: Int = 0
+    private var tickCounter: Long = 0
     private val tasks: MutableList<(MinecraftServer) -> Unit> = mutableListOf()
 
     fun registerLazyTicker(){
@@ -20,8 +21,20 @@ object LazyTicker {
 
     private fun onTick(server: MinecraftServer) {
         tickCounter++
-        if (tickCounter % (20 * LAZY_TICKER_SECONDS.value) != 0) return
+        if (tickCounter < lazyIntervalTicks(LAZY_TICKER_SECONDS.value)) return
+        tickCounter = 0
 
-        tasks.forEach { it(server) }
+        runIsolated(tasks, server) {
+            ImyvmWorldGeo.logger.error("Lazy ticker task failed: ${it.message}", it)
+        }
     }
+}
+
+internal fun lazyIntervalTicks(seconds: Int): Long {
+    require(seconds > 0) { "lazy ticker interval must be greater than 0" }
+    return seconds.toLong() * 20L
+}
+
+internal fun <T> runIsolated(tasks: Iterable<(T) -> Unit>, value: T, onFailure: (Throwable) -> Unit) {
+    tasks.forEach { task -> runCatching { task(value) }.onFailure(onFailure) }
 }

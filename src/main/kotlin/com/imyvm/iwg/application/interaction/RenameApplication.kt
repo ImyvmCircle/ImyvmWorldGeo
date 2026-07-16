@@ -2,24 +2,31 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.application.interaction.helper.checkNameEmpty
 import com.imyvm.iwg.application.interaction.helper.checkNameFormat
-import com.imyvm.iwg.application.interaction.helper.checkNameRepeat
+import com.imyvm.iwg.application.interaction.helper.checkRegionNameUnique
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
 fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
-    if (!checkNameEmpty(newName, player)) return 0
-    if (!checkNameFormat(newName, player)) return 0
+    RegionDatabase.requireCanonicalRegion(region)
+
+    val normalizedName = newName.trim()
+    if (!checkNameEmpty(normalizedName, player)) return 0
+    if (!checkNameFormat(normalizedName, player)) return 0
     val oldName = region.name
-    if(!checkNameRepeat(oldName, newName, player)) return 0
+    if(!checkRegionNameUnique(oldName, normalizedName, player)) return 0
 
     return try {
-        RegionDatabase.renameRegion(region, newName)
-        player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, newName)!!)
+        RegionDatabase.renameRegion(region, normalizedName)
+        if (!saveRegionData(player)) {
+            region.name = oldName
+            return 0
+        }
+        player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, normalizedName)!!)
         1
     } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.name.duplicate_name", newName)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.name.duplicate_name", normalizedName)!!)
         0
     }
 }
@@ -30,30 +37,32 @@ fun onScopeRename(
     scopeName: String,
     newName: String
 ): Int {
-    try {
-        val existingScope = targetRegion.getScopeByName(scopeName)
+    RegionDatabase.requireCanonicalRegion(targetRegion)
 
-        if (!checkNameEmpty(newName, player)) return 0
-        if (!checkNameFormat(newName, player)) return 0
+    val existingScope = getScopeOrNotify(player, targetRegion, scopeName) ?: return 0
+    val oldName = existingScope.scopeName
+    val normalizedName = newName.trim()
 
-        if (existingScope.scopeName.equals(newName, ignoreCase = true)) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.repeated_same_name")!!)
-            return 0
-        }
+    if (!checkNameEmpty(normalizedName, player)) return 0
+    if (!checkNameFormat(normalizedName, player)) return 0
 
-        for (scope in targetRegion.geometryScope) {
-            if (scope !== existingScope && scope.scopeName.equals(newName, ignoreCase = true)) {
-                player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.duplicate_scope_name")!!)
-                return 0
-            }
-        }
-
-        existingScope.scopeName = newName
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, newName, targetRegion.name)!!)
-        return 1
-
-    } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr(e.message)!!)
+    if (existingScope.scopeName.equals(normalizedName, ignoreCase = true)) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.repeated_same_name")!!)
         return 0
     }
+
+    for (scope in targetRegion.scopes) {
+        if (scope !== existingScope && scope.scopeName.equals(normalizedName, ignoreCase = true)) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.duplicate_scope_name")!!)
+            return 0
+        }
+    }
+
+    targetRegion.renameScope(existingScope, normalizedName)
+    if (!saveRegionData(player)) {
+        targetRegion.renameScope(existingScope, oldName)
+        return 0
+    }
+    player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, normalizedName, targetRegion.name)!!)
+    return 1
 }

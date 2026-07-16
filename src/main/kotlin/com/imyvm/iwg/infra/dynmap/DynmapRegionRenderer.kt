@@ -15,7 +15,7 @@ object DynmapRegionRenderer {
         val shape = scope.geoShape ?: return
         val worldName = worldName(scope.worldId)
         val label = "${region.name}:${scope.scopeName}"
-        val id = markerId(region, scope)
+        val id = dynmapScopeMarkerId(scope)
         when (shape.geoShapeType) {
             GeoShapeType.CIRCLE -> renderCircle(markerSet, id, label, worldName, shape, color)
             GeoShapeType.RECTANGLE -> renderRectangle(markerSet, id, label, worldName, shape, color)
@@ -64,20 +64,11 @@ object DynmapRegionRenderer {
     }
 
     private fun renderTeleportPoint(markerSet: MarkerSet, markerAPI: MarkerAPI, region: Region, scope: GeoScope, tp: BlockPos, world: String) {
-        val tpId = teleportMarkerId(region, scope)
+        val tpId = dynmapTeleportMarkerId(scope)
         val tpLabel = "${region.name}:${scope.scopeName}"
         val icon = markerAPI.getMarkerIcon("house") ?: markerAPI.getMarkerIcon("default") ?: return
         markerSet.createMarker(tpId, tpLabel, false, world, tp.x.toDouble(), tp.y.toDouble(), tp.z.toDouble(), icon, false)
     }
-
-    private fun markerId(region: Region, scope: GeoScope): String =
-        "iwg_${region.numberID}_${sanitize(scope.scopeName)}"
-
-    private fun teleportMarkerId(region: Region, scope: GeoScope): String =
-        "iwgtp_${region.numberID}_${sanitize(scope.scopeName)}"
-
-    private fun sanitize(str: String): String =
-        str.replace(Regex("[^a-zA-Z0-9_]"), "_")
 
     private fun worldName(worldId: Identifier): String = when (worldId.toString()) {
         "minecraft:overworld" -> "world"
@@ -86,3 +77,9 @@ object DynmapRegionRenderer {
         else -> worldId.path
     }
 }
+
+internal fun dynmapScopeMarkerId(scope: GeoScope): String =
+    "iwg_${scope.requireAssignedScopeId().toIdString()}"
+
+internal fun dynmapTeleportMarkerId(scope: GeoScope): String =
+    "iwgtp_${scope.requireAssignedScopeId().toIdString()}"
