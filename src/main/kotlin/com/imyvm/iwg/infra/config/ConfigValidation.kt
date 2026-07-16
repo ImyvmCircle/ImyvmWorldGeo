@@ -23,6 +23,7 @@ private val positiveOptions by lazy { listOf(
     SelectionConfig.SELECTION_DISPLAY_LINE_STEP,
     SelectionConfig.SELECTION_DISPLAY_PILLAR_STEP
 ) }
+@Suppress("DEPRECATION")
 private val nonNegativeOptions by lazy { listOf(
     EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS,
     PermissionConfig.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS,

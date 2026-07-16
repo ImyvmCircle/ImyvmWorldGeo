@@ -52,9 +52,17 @@ object PermissionConfig {
     val PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS = Option("core.permission.fly.disable_countdown_seconds", 5,
         "the countdown time in seconds before disabling fly when the player leaves a region that allows flying.") { obj: Config, path: String? -> nonNegativeInt(path, obj.getInt(path)) }
 
+    /**
+     * Legacy compatibility option. Landing protection now lasts until the player safely lands, so
+     * this value is still loaded and validated for existing configurations but no longer controls
+     * runtime behavior.
+     */
+    @Deprecated(
+        "Landing protection now lasts until safe landing; this option is retained only for configuration compatibility."
+    )
     @JvmField
     val PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS = Option("core.permission.fly.disable_fall_immunity_seconds", 5,
-        "the duration in seconds of fall damage immunity after fly is disabled.") { obj: Config, path: String? -> nonNegativeInt(path, obj.getInt(path)) }
+        "legacy compatibility option; landing protection now lasts until the player safely lands.") { obj: Config, path: String? -> nonNegativeInt(path, obj.getInt(path)) }
 
     @JvmField
     val PERMISSION_DEFAULT_ANIMAL_KILLING = Option("core.permission.animal_killing.default", true,
