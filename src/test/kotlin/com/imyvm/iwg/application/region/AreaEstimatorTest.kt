@@ -14,6 +14,20 @@ import kotlin.test.assertEquals
 
 class AreaEstimatorTest {
     @Test
+    fun `circle estimation area equals stored shape area for fractional radius`() {
+        val center = BlockPos(0, 0, 0)
+        val circumference = BlockPos(45, 0, 7)
+        val positions = listOf(center, circumference)
+
+        val estimateResult = AreaEstimator.estimateShapeArea(positions, GeoShapeType.CIRCLE)
+        val createResult = RegionFactory.createCircle(positions)
+
+        val estimatedArea = (estimateResult as AreaEstimationResult.Success).area
+        val storedArea = (createResult as Result.Ok).value.calculateArea()
+        assertEquals(storedArea, estimatedArea)
+    }
+
+    @Test
     fun `circle creation reports unsupported int range`() {
         val positions = listOf(
             BlockPos(Int.MIN_VALUE, 0, Int.MIN_VALUE),

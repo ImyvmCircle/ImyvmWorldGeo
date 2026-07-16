@@ -139,21 +139,10 @@ object RegionFactory {
         worldId: Identifier,
         excludedScope: GeoScope? = null
     ): Result<GeoShape, CreationError> {
-        val requiredPoints = requiredPoints(shapeType)
-        if (positions.size < requiredPoints) {
-            return Result.Err(CreationError.InsufficientPoints)
-        }
+        val shapeResult = constructShape(positions, shapeType)
+        if (shapeResult is Result.Err) return shapeResult
 
-        val geoShapeResult = when (shapeType) {
-            GeoShapeType.RECTANGLE -> createRectangle(positions)
-            GeoShapeType.CIRCLE -> createCircle(positions)
-            GeoShapeType.POLYGON -> createPolygon(positions)
-            else -> Result.Err(CreationError.InsufficientPoints)
-        }
-
-        if (geoShapeResult is Result.Err) return geoShapeResult
-
-        val geoShape = (geoShapeResult as Result.Ok).value
+        val geoShape = (shapeResult as Result.Ok).value
         val placementError = validateGeoShapePlacement(geoShape, worldId, excludedScope)
         if (placementError != null) return Result.Err(placementError)
 
@@ -190,15 +179,8 @@ object RegionFactory {
             UnknownGeometry -> CreationError.InsufficientPoints
         }
 
-    private fun requiredPoints(shapeType: GeoShapeType): Int =
-        when (shapeType) {
-            GeoShapeType.CIRCLE,
-            GeoShapeType.RECTANGLE -> 2
-            GeoShapeType.POLYGON -> 3
-            else -> 0
-        }
 
-    private fun createRectangle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
+    internal fun constructRectangle(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         val pos1 = positions[0]
         val pos2 = positions[1]
 
@@ -242,7 +224,7 @@ object RegionFactory {
             circumference.z.toDouble() - center.z
         )
 
-    private fun createPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
+    internal fun constructPolygon(positions: List<BlockPos>): Result<GeoShape, CreationError> {
         if (!isPolygonVertexCountSupported(positions.size)) {
             return Result.Err(CreationError.PolygonVertexLimitExceeded)
         }
@@ -251,6 +233,30 @@ object RegionFactory {
         if (!isConvex(positions)) return Result.Err(CreationError.NotConvex)
         return Result.Ok(GeoShape.polygon(positions.map { GeoPoint(it.x, it.z) }))
     }
+}
+
+internal fun constructShape(
+    positions: List<BlockPos>,
+    shapeType: GeoShapeType
+): Result<GeoShape, CreationError> {
+    val requiredPoints = when (shapeType) {
+        GeoShapeType.CIRCLE, GeoShapeType.RECTANGLE -> 2
+        GeoShapeType.POLYGON -> 3
+        else -> return Result.Err(CreationError.InsufficientPoints)
+    }
+    if (positions.size < requiredPoints) return Result.Err(CreationError.InsufficientPoints)
+
+    val shapeResult = when (shapeType) {
+        GeoShapeType.RECTANGLE -> RegionFactory.constructRectangle(positions)
+        GeoShapeType.CIRCLE -> RegionFactory.createCircle(positions)
+        GeoShapeType.POLYGON -> RegionFactory.constructPolygon(positions)
+    }
+    if (shapeResult is Result.Err) return shapeResult
+
+    val shape = (shapeResult as Result.Ok).value
+    val sizeError = RegionFactory.validateGeoShapeSize(shape)
+    if (sizeError != null) return Result.Err(sizeError)
+    return Result.Ok(shape)
 }
 
 sealed class Result<out T, out E> {
