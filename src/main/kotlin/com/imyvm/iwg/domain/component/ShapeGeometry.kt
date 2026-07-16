@@ -10,6 +10,17 @@ internal const val MAX_POLYGON_VERTICES = 256
 internal fun isPolygonVertexCountSupported(vertexCount: Int): Boolean =
     vertexCount <= MAX_POLYGON_VERTICES
 
+internal data class ShapeBounds(
+    val minX: Int,
+    val minZ: Int,
+    val maxX: Int,
+    val maxZ: Int
+) {
+    init {
+        require(minX <= maxX && minZ <= maxZ) { "shape bounds are inverted" }
+    }
+}
+
 internal sealed interface ShapeGeometry {
     val type: GeoShapeType
 
@@ -45,12 +56,19 @@ internal sealed interface ShapeGeometry {
     }
 }
 
+internal sealed interface BoundedShapeGeometry : ShapeGeometry {
+    val containmentWorkUnits: Int
+
+    fun bounds(): ShapeBounds
+}
+
 internal data class CircleGeometry(
     val centerX: Int,
     val centerZ: Int,
     val radius: Int
-) : ShapeGeometry {
+) : BoundedShapeGeometry {
     override val type: GeoShapeType = GeoShapeType.CIRCLE
+    override val containmentWorkUnits: Int = 1
 
     init {
         require(radius >= 0) { "circle radius must not be negative" }
@@ -68,6 +86,13 @@ internal data class CircleGeometry(
     override fun calculateArea(): Double = Math.PI * radius.toDouble() * radius
 
     override fun representativePoint(): Pair<Int, Int> = centerX to centerZ
+
+    override fun bounds(): ShapeBounds = ShapeBounds(
+        Math.subtractExact(centerX, radius),
+        Math.subtractExact(centerZ, radius),
+        Math.addExact(centerX, radius),
+        Math.addExact(centerZ, radius)
+    )
 }
 
 internal data class RectangleGeometry(
@@ -75,8 +100,9 @@ internal data class RectangleGeometry(
     val north: Int,
     val east: Int,
     val south: Int
-) : ShapeGeometry {
+) : BoundedShapeGeometry {
     override val type: GeoShapeType = GeoShapeType.RECTANGLE
+    override val containmentWorkUnits: Int = 1
 
     init {
         require(west <= east && north <= south) { "rectangle bounds are inverted" }
@@ -91,14 +117,19 @@ internal data class RectangleGeometry(
     override fun representativePoint(): Pair<Int, Int> =
         (west.toLong() + (east.toLong() - west) / 2).toInt() to
             (north.toLong() + (south.toLong() - north) / 2).toInt()
+
+    override fun bounds(): ShapeBounds = ShapeBounds(west, north, east, south)
 }
 
-internal class PolygonGeometry(parameters: IntArray) : ShapeGeometry {
+internal class PolygonGeometry(parameters: IntArray) : BoundedShapeGeometry {
     override val type: GeoShapeType = GeoShapeType.POLYGON
     private val coordinates: IntArray = parameters.copyOf()
 
     val vertexCount: Int
         get() = coordinates.size / 2
+
+    override val containmentWorkUnits: Int
+        get() = vertexCount
 
     init {
         require(coordinates.size >= 6 && coordinates.size % 2 == 0) {
@@ -124,6 +155,22 @@ internal class PolygonGeometry(parameters: IntArray) : ShapeGeometry {
     override fun calculateArea(): Double = polygonTwiceArea(vertexCount, ::x, ::z).toDouble() / 2.0
 
     override fun representativePoint(): Pair<Int, Int> = x(0) to z(0)
+
+    override fun bounds(): ShapeBounds {
+        var minX = x(0)
+        var minZ = z(0)
+        var maxX = minX
+        var maxZ = minZ
+        for (index in 1 until vertexCount) {
+            val currentX = x(index)
+            val currentZ = z(index)
+            minX = minOf(minX, currentX)
+            minZ = minOf(minZ, currentZ)
+            maxX = maxOf(maxX, currentX)
+            maxZ = maxOf(maxZ, currentZ)
+        }
+        return ShapeBounds(minX, minZ, maxX, maxZ)
+    }
 
     private fun hasDistinctVertices(): Boolean {
         val seen = HashSet<Long>(vertexCount)

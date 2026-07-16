@@ -52,6 +52,18 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, category: Na
             0
         }
 
+        is RegionNaturalStatsResult.WorkLimitExceeded -> {
+            player.sendSystemMessage(
+                Translator.tr(
+                    "interaction.meta.stats.error.work_limit",
+                    result.dimensionId,
+                    result.requestedWorkUnits,
+                    result.limit
+                )!!
+            )
+            0
+        }
+
         is RegionNaturalStatsResult.DimensionUnavailable -> {
             player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId)!!)
             0
