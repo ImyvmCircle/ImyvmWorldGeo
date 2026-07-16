@@ -140,10 +140,11 @@ private fun displayCircleSelection(
     session: SelectionDisplaySession
 ) {
     if (points.size < 2) return
-    val params = evaluateCircleShape(points[0], points[1]) ?: return
+    val shape = evaluateCircleShape(points[0], points[1]) ?: return
+    val circle = shape.typedGeometry as CircleGeometry
     val lineSamples = maxOf(1, session.surfaceUnits / 4)
     emitLineSurface(player, points[0], points[1], session, lineSamples)
-    drawCircleOutline(player, params[0], params[1], params[2], session)
+    drawCircleOutline(player, circle.centerX, circle.centerZ, circle.radius, session)
 }
 
 private fun displayRectangleSelection(
@@ -152,16 +153,13 @@ private fun displayRectangleSelection(
     session: SelectionDisplaySession
 ) {
     if (points.size < 2) return
-    val params = evaluateRectangleShape(points[0], points[1]) ?: return
-    val west = params[0]
-    val north = params[1]
-    val east = params[2]
-    val south = params[3]
+    val shape = evaluateRectangleShape(points[0], points[1]) ?: return
+    val rect = shape.typedGeometry as RectangleGeometry
     val corners = arrayOf(
-        BlockPos(west, 0, north),
-        BlockPos(east, 0, north),
-        BlockPos(east, 0, south),
-        BlockPos(west, 0, south)
+        BlockPos(rect.west, 0, rect.north),
+        BlockPos(rect.east, 0, rect.north),
+        BlockPos(rect.east, 0, rect.south),
+        BlockPos(rect.west, 0, rect.south)
     )
     corners.forEach { emitPillar(player, it.x, it.z, session) }
     emitClosedBoundary(player, corners.size, { corners[it].x }, { corners[it].z }, BoundaryStyle.SELECTION, session)
@@ -188,18 +186,8 @@ private fun displayForModifyExisting(
 ) {
     displayModifyingScope(player, scope, session)
     when (val geometry = scope.geoShape?.typedGeometry ?: return) {
-        is RectangleGeometry -> displayModifyRectanglePreview(
-            player,
-            newPoints,
-            listOf(geometry.west, geometry.north, geometry.east, geometry.south),
-            session
-        )
-        is CircleGeometry -> displayModifyCirclePreview(
-            player,
-            newPoints,
-            listOf(geometry.centerX, geometry.centerZ, geometry.radius),
-            session
-        )
+        is RectangleGeometry -> displayModifyRectanglePreview(player, newPoints, geometry, session)
+        is CircleGeometry -> displayModifyCirclePreview(player, newPoints, geometry, session)
         is PolygonGeometry -> displayModifyPolygonPreview(player, newPoints, geometry, session)
         UnknownGeometry -> Unit
     }
@@ -334,13 +322,14 @@ internal fun evenlySpacedIndex(sample: Int, sampleCount: Int, totalCount: Int): 
 private fun displayModifyRectanglePreview(
     player: ServerPlayer,
     newPoints: List<BlockPos>,
-    existingParams: List<Int>,
+    geometry: RectangleGeometry,
     session: SelectionDisplaySession
 ) {
     if (newPoints.size != 1) return
-    val newParams = evaluateModifyRectangle(newPoints[0], existingParams) ?: return
-    val x = intArrayOf(newParams[0], newParams[2], newParams[2], newParams[0])
-    val z = intArrayOf(newParams[1], newParams[1], newParams[3], newParams[3])
+    val shape = evaluateModifyRectangle(newPoints[0], geometry) ?: return
+    val rect = shape.typedGeometry as RectangleGeometry
+    val x = intArrayOf(rect.west, rect.east, rect.east, rect.west)
+    val z = intArrayOf(rect.north, rect.north, rect.south, rect.south)
     for (index in x.indices) emitPillar(player, x[index], z[index], session)
     emitClosedBoundary(player, x.size, x::get, z::get, BoundaryStyle.SELECTION, session)
 }
@@ -348,24 +337,24 @@ private fun displayModifyRectanglePreview(
 private fun displayModifyCirclePreview(
     player: ServerPlayer,
     newPoints: List<BlockPos>,
-    existingParams: List<Int>,
+    geometry: CircleGeometry,
     session: SelectionDisplaySession
 ) {
-    val centerX = existingParams[0]
-    val centerZ = existingParams[1]
     when (newPoints.size) {
         1 -> {
             val point = newPoints[0]
-            if (point.x == centerX && point.z == centerZ) return
-            val params = evaluateModifyCircleRadius(point, existingParams) ?: return
-            drawCircleOutline(player, params[0], params[1], params[2], session)
+            if (point.x == geometry.centerX && point.z == geometry.centerZ) return
+            val shape = evaluateModifyCircleRadius(point, geometry) ?: return
+            val circle = shape.typedGeometry as CircleGeometry
+            drawCircleOutline(player, circle.centerX, circle.centerZ, circle.radius, session)
         }
         2 -> {
             val oldCenter = newPoints[0]
             val newCenter = newPoints[1]
-            val params = evaluateModifyCircleCenter(oldCenter, newCenter, existingParams) ?: return
+            val shape = evaluateModifyCircleCenter(oldCenter, newCenter, geometry) ?: return
+            val circle = shape.typedGeometry as CircleGeometry
             val circleSamples = maxOf(1, session.surfaceUnits * 3 / 4)
-            drawCircleOutline(player, params[0], params[1], params[2], session, circleSamples)
+            drawCircleOutline(player, circle.centerX, circle.centerZ, circle.radius, session, circleSamples)
             emitLineSurface(player, oldCenter, newCenter, session)
         }
     }
@@ -378,34 +367,36 @@ private fun displayModifyPolygonPreview(
     session: SelectionDisplaySession
 ) {
     if (!session.tryUseSurface(geometry.vertexCount)) return
-    val existingVertices = List(geometry.vertexCount) { index ->
-        BlockPos(geometry.x(index), 0, geometry.z(index))
-    }
+    val existingVertices = com.imyvm.iwg.application.region.geometryToBlockPosList(geometry)
     when (newPoints.size) {
         1 -> {
             val point = newPoints[0]
             if (existingVertices.any { it.x == point.x && it.z == point.z }) return
-            val polygon = evaluateModifyPolygonInsert(point, existingVertices) ?: return
-            val index = polygon.indexOfFirst { it.x == point.x && it.z == point.z }
+            val shape = evaluateModifyPolygonInsert(point, geometry) ?: return
+            val polygon = shape.typedGeometry as PolygonGeometry
+            val vertices = com.imyvm.iwg.application.region.geometryToBlockPosList(polygon)
+            val index = vertices.indexOfFirst { it.x == point.x && it.z == point.z }
             if (index == -1) return
-            emitLineSurface(player, polygon[(index - 1 + polygon.size) % polygon.size], point, session)
-            emitLineSurface(player, point, polygon[(index + 1) % polygon.size], session)
+            emitLineSurface(player, vertices[(index - 1 + vertices.size) % vertices.size], point, session)
+            emitLineSurface(player, point, vertices[(index + 1) % vertices.size], session)
         }
         2 -> {
             val oldVertex = newPoints[0]
             val newVertex = newPoints[1]
-            val polygon = evaluateModifyPolygonReplace(oldVertex, newVertex, existingVertices) ?: return
-            emitClosedBoundary(player, polygon.size, { polygon[it].x }, { polygon[it].z }, BoundaryStyle.SELECTION, session)
+            val shape = evaluateModifyPolygonReplace(oldVertex, newVertex, geometry) ?: return
+            val polygon = shape.typedGeometry as PolygonGeometry
+            emitClosedBoundary(player, polygon.vertexCount, polygon::x, polygon::z, BoundaryStyle.SELECTION, session)
             emitLineSurface(player, oldVertex, newVertex, session)
         }
         3 -> {
-            val polygon = evaluateModifyPolygonExplicitInsert(
+            val shape = evaluateModifyPolygonExplicitInsert(
                 newPoints[0],
                 newPoints[1],
                 newPoints[2],
-                existingVertices
+                geometry
             ) ?: return
-            emitClosedBoundary(player, polygon.size, { polygon[it].x }, { polygon[it].z }, BoundaryStyle.SELECTION, session)
+            val polygon = shape.typedGeometry as PolygonGeometry
+            emitClosedBoundary(player, polygon.vertexCount, polygon::x, polygon::z, BoundaryStyle.SELECTION, session)
         }
     }
 }

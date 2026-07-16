@@ -1,9 +1,14 @@
 package com.imyvm.iwg.application.interaction.helper
 
+import com.imyvm.iwg.domain.component.CircleGeometry
+import com.imyvm.iwg.domain.component.PolygonGeometry
+import com.imyvm.iwg.domain.component.RectangleGeometry
+import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.util.geo.IntersectionDetail
 import com.imyvm.iwg.util.geo.VertexInsideInfo
 import com.imyvm.iwg.domain.CreationError
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import net.minecraft.network.chat.Component
@@ -46,22 +51,26 @@ private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, sh
     return lines
 }
 
-private fun getShapeParamDescription(shape: com.imyvm.iwg.domain.component.GeoShape): String {
-    return when (shape.geoShapeType) {
-        GeoShapeType.RECTANGLE -> Translator.raw(
+private fun getShapeParamDescription(shape: GeoShape): String {
+    return when (val geometry = shape.typedGeometry) {
+        is RectangleGeometry -> Translator.raw(
             "error.intersection.shape.rectangle",
-            shape.shapeParameter[0], shape.shapeParameter[1],
-            shape.shapeParameter[2], shape.shapeParameter[3]
+            geometry.west, geometry.north, geometry.east, geometry.south
         ) ?: ""
-        GeoShapeType.CIRCLE -> Translator.raw(
+        is CircleGeometry -> Translator.raw(
             "error.intersection.shape.circle",
-            shape.shapeParameter[0], shape.shapeParameter[1], shape.shapeParameter[2]
+            geometry.centerX, geometry.centerZ, geometry.radius
         ) ?: ""
-        GeoShapeType.POLYGON -> {
-            val coords = shape.shapeParameter.chunked(2).joinToString(" ") { "(${it[0]},${it[1]})" }
+        is PolygonGeometry -> {
+            val coords = buildString {
+                for (i in 0 until geometry.vertexCount) {
+                    if (i > 0) append(' ')
+                    append('(').append(geometry.x(i)).append(',').append(geometry.z(i)).append(')')
+                }
+            }
             Translator.raw("error.intersection.shape.polygon", coords) ?: ""
         }
-        else -> ""
+        UnknownGeometry -> ""
     }
 }
 

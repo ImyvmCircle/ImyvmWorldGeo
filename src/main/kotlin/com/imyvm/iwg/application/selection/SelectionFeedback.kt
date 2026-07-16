@@ -214,9 +214,9 @@ private fun validateRectanglePoints(points: List<BlockPos>): String {
                 aspect < minAspect || aspect > 1.0 / minAspect ->
                     Translator.raw(
                         "selection.feedback.warn.rect.aspect_ratio",
-                        String.format("%.2f", aspect),
-                        String.format("%.2f", minAspect),
-                        String.format("%.2f", 1.0 / minAspect)
+                        String.format(java.util.Locale.ROOT, "%.2f", aspect),
+                        String.format(java.util.Locale.ROOT, "%.2f", minAspect),
+                        String.format(java.util.Locale.ROOT, "%.2f", 1.0 / minAspect)
                     ) ?: ""
                 else -> ""
             }
@@ -233,7 +233,7 @@ private fun validateCirclePoints(points: List<BlockPos>): String {
     return if (radius < minRadius)
         Translator.raw(
             "selection.feedback.warn.circle.too_small",
-            String.format("%.1f", radius),
+            String.format(java.util.Locale.ROOT, "%.1f", radius),
             minRadius.toInt()
         ) ?: ""
     else ""
@@ -256,8 +256,8 @@ private fun validatePolygonPoints(points: List<BlockPos>): String {
         CreationError.AspectRatioInvalid ->
             Translator.raw(
                 "selection.feedback.warn.polygon.aspect_ratio",
-                String.format("%.2f", GeoConfig.MIN_ASPECT_RATIO.value),
-                String.format("%.2f", 1.0 / GeoConfig.MIN_ASPECT_RATIO.value)
+                String.format(java.util.Locale.ROOT, "%.2f", GeoConfig.MIN_ASPECT_RATIO.value),
+                String.format(java.util.Locale.ROOT, "%.2f", 1.0 / GeoConfig.MIN_ASPECT_RATIO.value)
             ) ?: ""
         CreationError.PolygonVertexLimitExceeded ->
             Translator.raw("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES) ?: ""
@@ -556,7 +556,7 @@ private fun appendModifyGuidance(
                         !areAdjacent(adj1, adj2) ->
                             Translator.raw("selection.feedback.modify.guidance.polygon.3pts_not_adjacent", adj1.x, adj1.z, adj2.x, adj2.z) ?: ""
                         else -> {
-                            val newPoly = evaluateModifyPolygonExplicitInsert(adj1, adj2, ins, oldPoints)
+                            val newPoly = evaluateModifyPolygonExplicitInsert(adj1, adj2, ins, geometry)
                             if (newPoly != null)
                                 Translator.raw(
                                     "selection.feedback.modify.guidance.polygon.3plus",
@@ -598,7 +598,7 @@ private fun buildModifyValidationWarning(geometry: ShapeGeometry, newPoints: Lis
                     newRadius < GeoConfig.MIN_CIRCLE_RADIUS.value ->
                         Translator.raw(
                             "selection.feedback.warn.circle.too_small",
-                            String.format("%.1f", newRadius),
+                            String.format(java.util.Locale.ROOT, "%.1f", newRadius),
                             GeoConfig.MIN_CIRCLE_RADIUS.value.toInt()
                         ) ?: ""
                     else -> ""
