@@ -78,4 +78,18 @@ class SelectionFeedbackTest {
             rejectionText
         )
     }
+
+    @Test
+    fun `decimal formatting uses dot separator regardless of default locale`() {
+        val savedLocale = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.GERMANY)
+            val points = mutableListOf(BlockPos.ZERO, BlockPos(1, 0, 0))
+            val state = SelectionState(points, HypotheticalShape.Normal(GeoShapeType.CIRCLE))
+            val text = buildPointAddedMessage(state, points.last()).string
+            assertTrue(text.contains("1.0"), "Radius should use dot decimal '1.0' but got: $text")
+        } finally {
+            java.util.Locale.setDefault(savedLocale)
+        }
+    }
 }

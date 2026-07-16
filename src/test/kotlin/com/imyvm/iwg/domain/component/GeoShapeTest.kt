@@ -205,6 +205,20 @@ class GeoShapeTest {
         assertEquals(supported, shape.shapeParameter)
     }
 
+    @Test
+    fun `area formatting uses dot decimal separator regardless of default locale`() {
+        val savedLocale = java.util.Locale.getDefault()
+        try {
+            java.util.Locale.setDefault(java.util.Locale.GERMANY)
+            val circle = GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, 7))
+            val info = circle.getShapeInfo()?.string ?: error("getShapeInfo returned null")
+            assertTrue(Regex("""\d+\.\d+""").containsMatchIn(info), "Area should contain dot decimal: $info")
+            assertFalse(Regex("""\d+,\d+""").containsMatchIn(info), "Area should not use comma decimal: $info")
+        } finally {
+            java.util.Locale.setDefault(savedLocale)
+        }
+    }
+
     private fun squarePolygonParameters(): MutableList<Int> = buildList {
         for (x in 0 until 128 step 2) addAll(listOf(x, 0))
         for (z in 0 until 128 step 2) addAll(listOf(128, z))

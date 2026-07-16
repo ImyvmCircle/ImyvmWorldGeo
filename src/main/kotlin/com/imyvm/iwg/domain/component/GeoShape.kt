@@ -61,7 +61,7 @@ class GeoShape(
         }
 
     fun getShapeInfo(): Component? {
-        val area = "%.2f".format(calculateArea())
+        val area = String.format(java.util.Locale.ROOT, "%.2f", calculateArea())
 
         return when (val current = geometry) {
             is CircleGeometry -> getCircleInfo(current, area)
