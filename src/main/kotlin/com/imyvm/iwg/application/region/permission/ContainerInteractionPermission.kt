@@ -9,14 +9,11 @@ import net.minecraft.world.InteractionResult
 import net.minecraft.world.phys.BlockHitResult
 import net.minecraft.world.level.Level
 
-fun playerContainerInteraction(
-    player: Player?,
-    world: Level?,
-    hand: InteractionHand?,
-    hitResult: BlockHitResult?
+internal fun containerInteraction(
+    player: Player,
+    world: Level,
+    hitResult: BlockHitResult
 ): InteractionResult {
-    if (player == null || world == null || hitResult == null) return InteractionResult.PASS
-
     val pos = hitResult.blockPos
     val blockEntity = world.getBlockEntity(pos)
     if (blockEntity !is MenuProvider) return InteractionResult.PASS
@@ -24,4 +21,15 @@ fun playerContainerInteraction(
     if (denyPermissionAt(player, world, pos, PermissionKey.CONTAINER, PERMISSION_DEFAULT_CONTAINER.value,
             "setting.permission.container")) return InteractionResult.CONSUME
     return InteractionResult.PASS
+}
+
+@Deprecated("Use containerInteraction(Player, Level, BlockHitResult) instead")
+fun playerContainerInteraction(
+    player: Player?,
+    world: Level?,
+    hand: InteractionHand?,
+    hitResult: BlockHitResult?
+): InteractionResult {
+    if (player == null || world == null || hitResult == null) return InteractionResult.PASS
+    return containerInteraction(player, world, hitResult)
 }

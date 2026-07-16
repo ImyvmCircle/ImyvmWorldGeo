@@ -15,14 +15,12 @@ import net.minecraft.core.BlockPos
 import net.minecraft.world.level.Level
 
 fun handPointSelection(
-    player: Player?,
-    world: Level?,
-    hand: InteractionHand?,
-    hitResult: BlockHitResult?
+    player: Player,
+    world: Level,
+    hand: InteractionHand,
+    hitResult: BlockHitResult
 ): InteractionResult {
-    if (player == null || world == null || hand == null || hitResult == null || world.isClientSide) {
-        return InteractionResult.PASS
-    }
+    if (world.isClientSide) return InteractionResult.PASS
 
     val itemStack = player.getItemInHand(hand)
     if (itemStack.item != Items.NETHER_STAR) return InteractionResult.PASS

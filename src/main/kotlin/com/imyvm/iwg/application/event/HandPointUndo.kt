@@ -11,13 +11,11 @@ import net.minecraft.world.InteractionHand
 import net.minecraft.world.level.Level
 
 fun handPointUndo(
-    player: Player?,
-    world: Level?,
-    hand: InteractionHand?
+    player: Player,
+    world: Level,
+    hand: InteractionHand
 ): InteractionResult {
-    if (player == null || world == null || hand == null || world.isClientSide) {
-        return InteractionResult.PASS
-    }
+    if (world.isClientSide) return InteractionResult.PASS
     if (hand != InteractionHand.MAIN_HAND) return InteractionResult.PASS
 
     val itemStack = player.getItemInHand(hand)

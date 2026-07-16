@@ -13,8 +13,8 @@ fun registerRegionPermissions() {
     playerBreakPermission()
     playerBucketUsePermission()
     playerBucketScoopEntityPermission()
-    UseBlockCallback.EVENT.register { player, world, hand, hitResult ->
-        playerContainerInteraction(player, world, hand, hitResult)
+    UseBlockCallback.EVENT.register { player, world, _, hitResult ->
+        containerInteraction(player, world, hitResult)
     }
     LazyTicker.registerTask { server ->
         managePlayersFly(server)
