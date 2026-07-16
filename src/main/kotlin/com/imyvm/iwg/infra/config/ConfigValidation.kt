@@ -13,6 +13,18 @@ internal fun nonNegativeInt(path: String?, value: Int): Int {
     return value
 }
 
+internal fun finiteNonNegativeDouble(path: String?, value: Double): Double {
+    require(value.isFinite() && value >= 0.0) { "$path must be finite and non-negative" }
+    return value
+}
+
+internal fun finiteAspectRatio(path: String?, value: Double): Double {
+    require(value.isFinite() && value > 0.0 && value <= 1.0) {
+        "$path must be finite and in (0.0, 1.0]"
+    }
+    return value
+}
+
 private var validationInitialized = false
 private var revertingInvalidUpdate = false
 private val positiveOptions by lazy { listOf(
@@ -28,6 +40,14 @@ private val nonNegativeOptions by lazy { listOf(
     PermissionConfig.PERMISSION_FLY_DISABLE_COUNTDOWN_SECONDS,
     PermissionConfig.PERMISSION_FLY_DISABLE_FALL_IMMUNITY_SECONDS
 ) }
+private val nonNegativeDoubleOptions by lazy { listOf(
+    GeoConfig.MIN_RECTANGLE_AREA,
+    GeoConfig.MIN_SIDE_LENGTH,
+    GeoConfig.MIN_CIRCLE_RADIUS,
+    GeoConfig.MIN_POLYGON_AREA,
+    GeoConfig.MIN_POLYGON_SPAN,
+    GeoConfig.MIN_EDGE_LENGTH
+) }
 
 fun initializeConfigValidation() {
     if (validationInitialized) return
@@ -35,6 +55,8 @@ fun initializeConfigValidation() {
 
     positiveOptions.forEach { validateOnChange(it, ::positiveInt) }
     nonNegativeOptions.forEach { validateOnChange(it, ::nonNegativeInt) }
+    nonNegativeDoubleOptions.forEach { validateDoubleOnChange(it, ::finiteNonNegativeDouble) }
+    validateDoubleOnChange(GeoConfig.MIN_ASPECT_RATIO, ::finiteAspectRatio)
     validateOnChange(EffectConfig.EFFECT_DURATION_SECONDS) { _, seconds ->
         effectDurationTicks(seconds)
         seconds
@@ -56,6 +78,8 @@ fun initializeConfigValidation() {
 private fun validateCurrentConfig() {
     positiveOptions.forEach { positiveInt(it.key, it.value) }
     nonNegativeOptions.forEach { nonNegativeInt(it.key, it.value) }
+    nonNegativeDoubleOptions.forEach { finiteNonNegativeDouble(it.key, it.value) }
+    finiteAspectRatio(GeoConfig.MIN_ASPECT_RATIO.key, GeoConfig.MIN_ASPECT_RATIO.value)
     effectDurationTicks(EffectConfig.EFFECT_DURATION_SECONDS.value)
     requireTeleportFallbackSearchRadius(
         TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
@@ -69,6 +93,12 @@ private fun validateOnChange(option: Option<Int>, validator: (String?, Int) -> I
     }
 }
 
+private fun validateDoubleOnChange(option: Option<Double>, validator: (String?, Double) -> Double) {
+    option.changeEvents.register { changed, oldValue, _ ->
+        rollbackInvalidDoubleUpdate(changed, oldValue) { validator(changed.key, changed.value) }
+    }
+}
+
 private fun validateRelationsOnChange(option: Option<Int>) {
     option.changeEvents.register { changed, oldValue, _ ->
         rollbackInvalidUpdate(changed, oldValue) { validateCurrentRelations() }
@@ -76,6 +106,21 @@ private fun validateRelationsOnChange(option: Option<Int>) {
 }
 
 private fun rollbackInvalidUpdate(option: Option<Int>, oldValue: Int?, validate: () -> Unit) {
+    if (revertingInvalidUpdate) return
+    try {
+        validate()
+    } catch (error: IllegalArgumentException) {
+        revertingInvalidUpdate = true
+        try {
+            option.setValue(oldValue)
+        } finally {
+            revertingInvalidUpdate = false
+        }
+        throw error
+    }
+}
+
+private fun rollbackInvalidDoubleUpdate(option: Option<Double>, oldValue: Double?, validate: () -> Unit) {
     if (revertingInvalidUpdate) return
     try {
         validate()
