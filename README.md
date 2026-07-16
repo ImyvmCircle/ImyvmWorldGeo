@@ -534,13 +534,16 @@ Provides access to region data and database operations for extension functions.
 - `getRegionPlayerStats(region: Region): RegionPlayerStats`  
   Retrieves the region's persistent aggregated player statistics, including tracked player count, entry count, stay duration, death count, block place count, and block break count.
 
-`RegionNaturalStatsResult` has three variants:
+`RegionNaturalStatsResult` has four variants:
 
 1. `Success(stats: RegionNaturalStats)` for a completed scan.
-2. `ChunkLimitExceeded(dimensionId, candidateChunkCount, limit)` when the region's candidate chunk window exceeds the current hard limit.
-3. `DimensionUnavailable(dimensionId)` when the target dimension cannot be resolved from the running server.
+2. `ChunkLimitExceeded(dimensionId, candidateChunkCount, limit)` when the Region-wide dimension/chunk candidate count exceeds the hard limit. `dimensionId` identifies the dimension being planned when the total crossed the limit.
+3. `WorkLimitExceeded(dimensionId, requestedWorkUnits: Long, limit: Long)` when the Region-wide geometry work required by the candidate index exceeds the hard limit.
+4. `DimensionUnavailable(dimensionId)` when the target dimension cannot be resolved from the running server.
 
-`RegionNaturalStats` reports loaded chunk count, candidate chunk count, sampled surface-column count, aggregate structure counts, aggregate surface block counts, aggregate biome counts, area-weighted average local difficulty, and per-dimension `DimensionNaturalStats` entries. Surface block counting samples the top non-air block of each in-region column. Average local difficulty is weighted by sampled column count, and each chunk now samples an actual in-region column so edge-only coverage does not pull difficulty from outside the region.
+Natural-stat queries use fixed Region-wide limits of 2,048 dimension/chunk candidates and 524,288 conservative geometry-work units. Planning completes before world data is read, and each loaded chunk checks only the Scope geometries whose bounds intersect that chunk. Unloaded chunks remain candidates but are not loaded by the query.
+
+`RegionNaturalStats` reports loaded chunk count, candidate chunk count, sampled surface-column count, aggregate structure counts, aggregate surface block counts, aggregate biome counts, area-weighted average local difficulty, and per-dimension `DimensionNaturalStats` entries. Surface block counting samples the top non-air block of each in-region column. Average local difficulty is weighted by sampled column count, and each chunk samples an actual in-region column so edge-only coverage does not pull difficulty from outside the region.
 
 `RegionPlayerStats` reports persistent cumulative player activity per region. Entry counting is driven by confirmed region transitions, stay duration is accumulated over time and flushed on disconnect/server stop, deaths are counted at the player's death position, and block place/break counts only record successful actions inside the region.
 

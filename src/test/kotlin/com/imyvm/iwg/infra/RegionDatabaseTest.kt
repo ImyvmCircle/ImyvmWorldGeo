@@ -84,6 +84,29 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `player stats snapshot reports whether persistence succeeded`() = withTempDirectory { directory ->
+        var saveCalls = 0
+        assertFalse(RegionDatabase.trySavePlayerStatsSnapshot { saveCalls++ })
+        assertEquals(0, saveCalls)
+
+        RegionDatabase.bindSession(directory)
+        val region = sessionRegion()
+        RegionDatabase.addRegion(region)
+        RegionDatabase.incrementRegionEntryStat(region, UUID.randomUUID())
+        assertTrue(RegionDatabase.trySavePlayerStatsSnapshot())
+        assertTrue(Files.exists(directory.resolve("iwg_player_stats.json")))
+
+        assertTrue(RegionDatabase.trySavePlayerStatsSnapshot { saveCalls++ })
+        assertEquals(1, saveCalls)
+
+        assertFalse(RegionDatabase.trySavePlayerStatsSnapshot {
+            saveCalls++
+            throw IOException("simulated snapshot failure")
+        })
+        assertEquals(2, saveCalls)
+    }
+
+    @Test
     fun `shutdown save persists without invoking projections`() = withTempDirectory { directory ->
         RegionDatabase.bindSession(directory)
         RegionDatabase.addRegion(sessionRegion())

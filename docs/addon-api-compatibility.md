@@ -183,3 +183,60 @@ Detached copies, orphaned or unassigned Scopes, cross-dimension targets, and att
 selection to another Scope fail without mutation. Disconnecting, changing dimension, or stopping the
 server clears transient selection state; deleting a Region or Scope clears selections that reference
 it only after the deletion is successfully persisted.
+
+## B4 natural-stat result migration
+
+`RegionDataApi.getRegionNaturalStats` and `getScopeNaturalStats` retain their existing JVM method
+descriptors and still return `RegionNaturalStatsResult`. Natural-stat planning now enforces one
+Region-wide limit across dimensions: at most 2,048 dimension/chunk candidates and 524,288
+conservative geometry-work units. The query rejects over-budget input before reading registry,
+chunk, height, biome, or block data.
+
+`RegionNaturalStatsResult.WorkLimitExceeded(dimensionId, requestedWorkUnits, limit)` is a new truthful
+result subtype. Existing Kotlin source with an exhaustive `when` must add the new branch:
+
+```kotlin
+when (val result = RegionDataApi.getRegionNaturalStats(server, region)) {
+    is RegionNaturalStatsResult.Success -> handle(result.stats)
+    is RegionNaturalStatsResult.ChunkLimitExceeded -> handleChunkLimit(result)
+    is RegionNaturalStatsResult.WorkLimitExceeded -> handleWorkLimit(result)
+    is RegionNaturalStatsResult.DimensionUnavailable -> handleUnavailable(result)
+}
+```
+
+Addons that want forward compatibility with future additive result variants should keep a fallback:
+
+```kotlin
+when (val result = RegionDataApi.getRegionNaturalStats(server, region)) {
+    is RegionNaturalStatsResult.Success -> handle(result.stats)
+    is RegionNaturalStatsResult.ChunkLimitExceeded -> handleChunkLimit(result)
+    is RegionNaturalStatsResult.WorkLimitExceeded -> handleWorkLimit(result)
+    is RegionNaturalStatsResult.DimensionUnavailable -> handleUnavailable(result)
+    else -> handleUnsupportedResult(result)
+}
+```
+
+Java addons should add the corresponding `instanceof` branch and retain a final fallback:
+
+```java
+RegionNaturalStatsResult result = RegionDataApi.INSTANCE.getRegionNaturalStats(server, region);
+if (result instanceof RegionNaturalStatsResult.Success success) {
+    handle(success.getStats());
+} else if (result instanceof RegionNaturalStatsResult.ChunkLimitExceeded exceeded) {
+    handleChunkLimit(exceeded);
+} else if (result instanceof RegionNaturalStatsResult.WorkLimitExceeded exceeded) {
+    handleWorkLimit(exceeded);
+} else if (result instanceof RegionNaturalStatsResult.DimensionUnavailable unavailable) {
+    handleUnavailable(unavailable);
+} else {
+    handleUnsupportedResult(result);
+}
+```
+
+An already compiled Kotlin addon whose exhaustive `when` has no fallback remains linkable, but can
+throw `NoWhenBranchMatchedException` when an over-budget query returns the new subtype. Recompile it
+with an explicit work-limit or fallback branch before relying on extreme natural-stat queries.
+
+For `ChunkLimitExceeded`, `candidateChunkCount` now reports the attempted Region-wide
+dimension/chunk total. `dimensionId` identifies the dimension whose candidate crossed that total;
+it is not a claim that every reported candidate belongs to that one dimension.

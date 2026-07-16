@@ -4,6 +4,7 @@ import kotlin.test.Test
 import kotlin.test.assertFails
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
+import kotlin.test.assertIs
 import kotlin.test.assertTrue
 import kotlin.test.assertFailsWith
 
@@ -21,6 +22,25 @@ class GeoShapeTest {
         assertEquals(listOf(3, 4, 5), circle.shapeParameter)
         assertEquals(listOf(-10, -20, 10, 20), rectangle.shapeParameter)
         assertEquals(listOf(0, 0, 10, 0, 0, 10), polygon.shapeParameter)
+    }
+
+    @Test
+    fun `bounded geometries expose inclusive bounds and containment work`() {
+        val circle = assertIs<BoundedShapeGeometry>(GeoShape.circle(GeoPoint(3, 4), 5).typedGeometry)
+        val rectangle = assertIs<BoundedShapeGeometry>(
+            GeoShape.rectangle(GeoPoint(10, 20), GeoPoint(-10, -20)).typedGeometry
+        )
+        val polygon = assertIs<BoundedShapeGeometry>(
+            GeoShape.polygon(listOf(GeoPoint(-4, 2), GeoPoint(8, -3), GeoPoint(5, 9))).typedGeometry
+        )
+
+        assertEquals(ShapeBounds(-2, -1, 8, 9), circle.bounds())
+        assertEquals(1, circle.containmentWorkUnits)
+        assertEquals(ShapeBounds(-10, -20, 10, 20), rectangle.bounds())
+        assertEquals(1, rectangle.containmentWorkUnits)
+        assertEquals(ShapeBounds(-4, -3, 8, 9), polygon.bounds())
+        assertEquals(3, polygon.containmentWorkUnits)
+        assertFalse(GeoShape(GeoShapeType.UNKNOWN, mutableListOf()).typedGeometry is BoundedShapeGeometry)
     }
 
     @Test
@@ -173,6 +193,7 @@ class GeoShapeTest {
 
         assertEquals(256, supported.size / 2)
         val shape = GeoShape(GeoShapeType.POLYGON, supported)
+        assertEquals(256, assertIs<BoundedShapeGeometry>(shape.typedGeometry).containmentWorkUnits)
         assertEquals(supported, GeoShape.polygon(vertices).shapeParameter)
         assertFailsWith<IllegalArgumentException> {
             GeoShape(GeoShapeType.POLYGON, MutableList(514) { it })

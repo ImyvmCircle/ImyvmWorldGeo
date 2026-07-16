@@ -4,10 +4,25 @@ import net.minecraft.resources.Identifier
 
 sealed class RegionNaturalStatsResult {
     data class Success(val stats: RegionNaturalStats) : RegionNaturalStatsResult()
+
+    /**
+     * Rejected before world reads when the Region-wide dimension/chunk candidate total is too large.
+     * [dimensionId] identifies the dimension being planned when [candidateChunkCount] crossed [limit].
+     */
     data class ChunkLimitExceeded(
         val dimensionId: Identifier,
         val candidateChunkCount: Int,
         val limit: Int
+    ) : RegionNaturalStatsResult()
+
+    /**
+     * Rejected before world reads when conservative Region-wide containment work is too large.
+     * Work units are 256 columns multiplied by each candidate geometry's containment weight.
+     */
+    data class WorkLimitExceeded(
+        val dimensionId: Identifier,
+        val requestedWorkUnits: Long,
+        val limit: Long
     ) : RegionNaturalStatsResult()
 
     data class DimensionUnavailable(

@@ -1,5 +1,6 @@
 package com.imyvm.iwg.application.interaction
 
+import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.ScopeOwnershipEntry
 import com.imyvm.iwg.infra.RegionDatabase
@@ -70,6 +71,7 @@ fun onRegionMerge(
         return 0
     }
 
+    PlayerRegionEntryExitTracker.onRegionMerged(sourceRegion, targetRegion)
     player.sendSystemMessage(
         Translator.tr(
             "interaction.meta.region.merge.success",
