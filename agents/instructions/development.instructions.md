@@ -14,8 +14,6 @@ applyTo: "**"
 ## 专项规则
 
 - `worldgeo-core.instructions.md`：Core、Region、GeoScope、API、几何工具和项目协作。
-- `kotlin-domain-style.instructions.md`：Kotlin/Java mixin、领域建模、空值、性能和线程规则。
-- `addon-compatibility.instructions.md`：addon API、JVM 签名、弃用和兼容文档规则。
 - `minecraft-i18n.instructions.md`：玩家可见文本、语言文件和 MessageFormat。
 - `configuration-persistence.instructions.md`：配置类、具体数值和 `RegionDatabase`。
 - `commands-suggestions.instructions.md`：命令注册和非 ASCII 名称建议。

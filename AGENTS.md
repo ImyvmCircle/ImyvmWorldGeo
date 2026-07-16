@@ -1,6 +1,6 @@
 # Agents 规则
 
-本文件是本仓库的 Agents 通用入口，面向所有自动化编码代理和协作代理。用户指令优先于本文件；本文件优先于 `agents/` 下的专项规则。不要为了缩小 diff 弱化正确性、持久化安全或 addon 兼容性。
+本文件是本仓库的 Agents 通用入口，面向所有自动化编码代理和协作代理。用户指令优先于本文件；本文件优先于 `agents/` 下的专项规则。不要为了缩小 diff 弱化正确性、持久化安全或兼容性。
 
 ## 基础准则
 
@@ -25,7 +25,7 @@
 3. 修改 Kotlin、Java mixin、领域模型、热路径或线程相关代码时读取 `agents/instructions/kotlin-domain-style.instructions.md`。
 4. 修改 addon API、公开 JVM 签名或兼容文档时读取 `agents/instructions/addon-compatibility.instructions.md`。
 5. `agents/instructions/development.instructions.md` 只作为索引，具体规则以相关专项 instruction 为准。
-6. `agents/archive/` 只作为历史任务参考，不自动作为当前规则。
+6. `agents/archive/` 和 `agents/prompts/archive/` 只作为历史任务参考，不自动作为当前规则。
 
 ## Git 与发布操作
 
@@ -41,14 +41,14 @@
 
 ## 执行流程
 
-1. 实现前先给出完整、可审查的工作路线，覆盖范围、阶段、预期文件、兼容或回滚风险、验证方式和明确排除项。
-2. 用户未明确要求执行路线前，只做只读调查；为支持方案审查，可只修改 `docs/plan/` 下的本地笔记。
-3. 编辑前读完整调用链：构造或 API 边界、application 逻辑、resolver、持久化和测试。
-4. 修改共享函数前搜索所有调用方，在最窄的共享边界修根因。
-5. 保持纵向完整；领域不变量变化必须同步 resolver、mutation path、codec、公开 API、兼容层和测试。
-6. 优先做最小正确修改；先复用现有代码和标准库，再考虑抽象或依赖。
-7. 不添加 speculative interface、factory、repository、DSL、cache 或配置。
-8. 原则上不新建 class，不添加 comments，除非 prompt 要求；新增功能先沿既有模块平行扩展，不补丁式旁挂。
+1. 原则上不新建 class，不添加 comments，除非 prompt 要求；新增功能先沿既有模块平行扩展，不补丁式旁挂。
+2. 实现前先给出完整、可审查的工作路线，覆盖范围、阶段、预期文件、兼容或回滚风险、验证方式和明确排除项。
+3. 用户未明确要求执行路线前，只做只读调查；为支持方案审查，可只修改 `docs/plan/` 下的本地笔记。
+4. 编辑前读完整调用链：构造或 API 边界、application 逻辑、resolver、持久化和测试。
+5. 修改共享函数前搜索所有调用方，在最窄的共享边界修根因。
+6. 保持纵向完整；领域不变量变化必须同步 resolver、mutation path、codec、公开 API、兼容层和测试。
+7. 优先做最小正确修改；先复用现有代码和标准库，再考虑抽象或依赖。
+8. 不添加 speculative interface、factory、repository、DSL、cache 或配置。
 
 ## 验证与交付
 
