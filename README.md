@@ -307,7 +307,10 @@ Handles player-triggered actions related to regions and their scopes.
   Creates a region and returns the created region.
 
 - `deleteRegion(player: ServerPlayerEntity, region: Region)`  
-  Deletes a specified region.
+  Deprecated compatibility entry point. Deletes a specified region but cannot expose persistence failure.
+
+- `deleteRegionWithResult(player: ServerPlayerEntity, region: Region)`
+  Deletes an exact live region and returns `RegionDeleteResult`.
 
 - `renameRegion(player: ServerPlayerEntity, region: Region, newName: String)`  
   Renames a region.
@@ -319,7 +322,10 @@ Handles player-triggered actions related to regions and their scopes.
   Creates a scope for a region and returns the region-scope pair.
 
 - `deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
-  Deletes a scope from a region.
+  Deprecated compatibility entry point that resolves the scope name before deletion.
+
+- `deleteScopeWithResult(player: ServerPlayerEntity, region: Region, scope: GeoScope)`
+  Deletes an exact live scope and returns `ScopeDeleteResult`, including `LAST_SCOPE` when applicable.
 
 - `renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String)`  
   Renames a scope within a region.

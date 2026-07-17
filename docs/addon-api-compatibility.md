@@ -34,6 +34,8 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `RegionDataApi.getActiveEffectsForRegion` | R9 (unreleased) | `getRegionActiveEffects` or `getScopeActiveEffects` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `PlayerInteractionApi.getPermissionValueRegion` | R9 (unreleased) | Explicit default/Region/Scope and global/player methods | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `PlayerInteractionApi.toggleTeleportPointAccessibility(GeoScope)` | R11 (unreleased) | `toggleTeleportPointAccessibility(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | JVM method delegates after resolving the canonical database owner; detached/orphan/unassigned scopes are rejected |
+| `PlayerInteractionApi.deleteRegion(ServerPlayer, Region)` | B6 (unreleased) | `deleteRegionWithResult(ServerPlayer, Region)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains and delegates; the legacy call cannot observe the result |
+| `PlayerInteractionApi.deleteScope(ServerPlayer, Region, String)` | B6 (unreleased) | `deleteScopeWithResult(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains, resolves the name at the adapter boundary, and delegates to the exact target operation |
 | `Region.settings` / `GeoScope.settings` | Not scheduled | `RegionDataApi` for reads; `PlayerInteractionApi` setting operations for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getter returns a detached snapshot |
 | `Region.geometryScope` / `Region.ownershipHistoryByScope` | R10 (unreleased) | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots |
 | `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | R11 (unreleased) | Use the named `GeoShape` factories and `PlayerInteractionApi.replaceScopeShape` | Compatibility surface | No removal scheduled | Raw constructor, getter, and setter descriptors remain; the getter returns a detached snapshot and state-changing setter calls fail fast |
@@ -73,7 +75,7 @@ Use the explicit rule query matching the intended target:
 // Built-in rules
 val defaultRule = RegionDataApi.getDefaultRuleValue(RuleKey.SPAWN_MONSTERS)
 val regionRule = RegionDataApi.getRegionRuleValue(region, RuleKey.TNT_BLOCK_PROTECTION)
-val scopeRule = RegionDataApi.getScopeRuleValue(region, scope, RuleKey.PVP)
+val scopeRule = RegionDataApi.getScopeRuleValue(region, scope, RuleKey.SPAWN_MONSTERS)
 
 // Extension rules
 val extDefault = RegionDataApi.getDefaultExtensionRuleValue("myaddon:custom.rule")
@@ -82,6 +84,38 @@ val extScope = RegionDataApi.getScopeExtensionRuleValue(region, scope, "myaddon:
 ```
 
 `getEffectiveRulesForScope` now returns all `RuleKey` entries with their effective values (scope → region → default fallback), regardless of whether the store contains explicit overrides.
+
+## B6 deletion migration
+
+The v26.1-1.5.1 deletion methods remain callable but return `Unit`, so they cannot report persistence failure to an addon. New code should use the observable exact-target operations:
+
+```kotlin
+when (PlayerInteractionApi.deleteRegionWithResult(player, region)) {
+    RegionDeleteResult.SUCCESS -> handleDeletedRegion()
+    RegionDeleteResult.PERSISTENCE_FAILED -> handlePersistenceFailure()
+}
+
+when (PlayerInteractionApi.deleteScopeWithResult(player, region, scope)) {
+    ScopeDeleteResult.SUCCESS -> handleDeletedScope()
+    ScopeDeleteResult.LAST_SCOPE -> handleLastScope()
+    ScopeDeleteResult.PERSISTENCE_FAILED -> handlePersistenceFailure()
+}
+```
+
+Both replacements require canonical database objects. Scope deletion accepts the exact `GeoScope` instead of a name, rejects a foreign or detached Scope before mutation, and reports `LAST_SCOPE` without attempting persistence.
+
+Java addons receive the same result enums:
+
+```java
+ScopeDeleteResult result = PlayerInteractionApi.INSTANCE.deleteScopeWithResult(player, region, scope);
+if (result == ScopeDeleteResult.SUCCESS) {
+    handleDeletedScope();
+} else if (result == ScopeDeleteResult.LAST_SCOPE) {
+    handleLastScope();
+} else {
+    handlePersistenceFailure();
+}
+```
 
 ## R10 Region collection migration
 

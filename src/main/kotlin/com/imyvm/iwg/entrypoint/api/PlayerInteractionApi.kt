@@ -10,9 +10,9 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
-import com.imyvm.iwg.inter.api.DeleteResult
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
+import com.imyvm.iwg.util.text.Translator
 
 /**
  * Supported player-driven mutation API for addons.
@@ -38,11 +38,55 @@ object PlayerInteractionApi {
     fun startSelectionForModify(player: ServerPlayer, scope: GeoScope) = onStartSelectionForModify(player, scope)
     fun createRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onRegionCreation(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
     fun createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
-    fun deleteRegion(player: ServerPlayer, region: Region): DeleteResult = onRegionDelete(player, region)
+    /**
+     * Compatibility entry point retained for addons compiled against v26.1-1.5.1.
+     *
+     * The operation remains persistence-safe, but this legacy signature cannot expose its result.
+     *
+     * @deprecated Use [deleteRegionWithResult].
+     */
+    @Deprecated("Use deleteRegionWithResult(player, region)")
+    fun deleteRegion(player: ServerPlayer, region: Region) {
+        deleteRegionWithResult(player, region)
+    }
+
+    /** Deletes an exact canonical Region and reports whether persistence succeeded. */
+    fun deleteRegionWithResult(player: ServerPlayer, region: Region): RegionDeleteResult =
+        onRegionDelete(player, region)
     fun renameRegion(player: ServerPlayer, region: Region, newName: String) = onRegionRename(player, region, newName)
     fun addScope(player: ServerPlayer, region: Region, name: String) = onScopeCreation(player, region, name, null, autoFillName = false, notifyPlayer = false)
     fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String) = onTryingScopeCreationWithReturn(player, region, name, null, autoFillName = false, notifyPlayer = false)
-    fun deleteScope(player: ServerPlayer, region: Region, scope: GeoScope): DeleteResult = onScopeDelete(player, region, scope)
+    /**
+     * Compatibility entry point retained for addons compiled against v26.1-1.5.1.
+     *
+     * The Scope name is resolved at the adapter boundary before delegating to the exact-target API.
+     *
+     * @deprecated Use [deleteScopeWithResult].
+     */
+    @Deprecated("Use deleteScopeWithResult(player, region, scope)")
+    fun deleteScope(player: ServerPlayer, region: Region, scopeName: String) {
+        val scope = getScopeOrNotify(player, region, scopeName) ?: return
+        when (deleteScopeWithResult(player, region, scope)) {
+            ScopeDeleteResult.SUCCESS -> player.sendSystemMessage(
+                requireNotNull(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name))
+            )
+            ScopeDeleteResult.LAST_SCOPE -> player.sendSystemMessage(
+                requireNotNull(Translator.tr("interaction.meta.scope.delete.error.last_scope"))
+            )
+            ScopeDeleteResult.PERSISTENCE_FAILED -> Unit
+        }
+    }
+
+    /**
+     * Deletes an exact canonical Scope.
+     *
+     * [ScopeDeleteResult.LAST_SCOPE] leaves the Region unchanged and does not attempt persistence.
+     */
+    fun deleteScopeWithResult(
+        player: ServerPlayer,
+        region: Region,
+        scope: GeoScope
+    ): ScopeDeleteResult = onScopeDelete(player, region, scope)
     fun renameScope(player: ServerPlayer, region: Region, oldName: String, newName: String) = onScopeRename(player, region, oldName, newName)
     fun transferScope(player: ServerPlayer, sourceRegion: Region, scopeName: String, targetRegion: Region) = onScopeTransfer(player, sourceRegion, scopeName, targetRegion)
     fun mergeRegion(player: ServerPlayer, sourceRegion: Region, targetRegion: Region) = onRegionMerge(player, sourceRegion, targetRegion)
