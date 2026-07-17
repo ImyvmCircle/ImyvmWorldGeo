@@ -10,6 +10,7 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
+import com.imyvm.iwg.inter.api.DeleteResult
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 
@@ -37,11 +38,11 @@ object PlayerInteractionApi {
     fun startSelectionForModify(player: ServerPlayer, scope: GeoScope) = onStartSelectionForModify(player, scope)
     fun createRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onRegionCreation(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
     fun createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
-    fun deleteRegion(player: ServerPlayer, region: Region) = onRegionDelete(player, region, isApi = true)
+    fun deleteRegion(player: ServerPlayer, region: Region): DeleteResult = onRegionDelete(player, region)
     fun renameRegion(player: ServerPlayer, region: Region, newName: String) = onRegionRename(player, region, newName)
     fun addScope(player: ServerPlayer, region: Region, name: String) = onScopeCreation(player, region, name, null, autoFillName = false, notifyPlayer = false)
     fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String) = onTryingScopeCreationWithReturn(player, region, name, null, autoFillName = false, notifyPlayer = false)
-    fun deleteScope(player: ServerPlayer, region: Region, scopeName: String) = onScopeDelete(player, region, scopeName)
+    fun deleteScope(player: ServerPlayer, region: Region, scope: GeoScope): DeleteResult = onScopeDelete(player, region, scope)
     fun renameScope(player: ServerPlayer, region: Region, oldName: String, newName: String) = onScopeRename(player, region, oldName, newName)
     fun transferScope(player: ServerPlayer, sourceRegion: Region, scopeName: String, targetRegion: Region) = onScopeTransfer(player, sourceRegion, scopeName, targetRegion)
     fun mergeRegion(player: ServerPlayer, sourceRegion: Region, targetRegion: Region) = onRegionMerge(player, sourceRegion, targetRegion)

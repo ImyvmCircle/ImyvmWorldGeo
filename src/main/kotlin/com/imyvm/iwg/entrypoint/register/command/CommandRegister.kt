@@ -7,6 +7,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.entrypoint.register.command.helper.*
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.inter.api.DeleteResult
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.commands.Commands as MinecraftCommands
@@ -466,7 +467,14 @@ private fun runCreateRegion(context: CommandContext<CommandSourceStack>): Int {
 
 private fun runDeleteRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    return identifierHandler(regionIdentifier, player) { regionToDelete -> onRegionDelete(player, regionToDelete) }
+    return identifierHandler(regionIdentifier, player) { regionToDelete ->
+        val regionName = regionToDelete.name
+        val regionId = regionToDelete.numberID
+        val result = onRegionDelete(player, regionToDelete)
+        if (result == DeleteResult.SUCCESS) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
+        }
+    }
 }
 
 private fun runRenameRegion(context: CommandContext<CommandSourceStack>): Int {
@@ -484,7 +492,17 @@ private fun runAddScope(context: CommandContext<CommandSourceStack>): Int {
 private fun runDeleteScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeName = context.getArgument("scopeName", String::class.java)
-    return identifierHandler(regionIdentifier, player) { regionToDeleteScope -> onScopeDelete(player, regionToDeleteScope, scopeName)}
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scope = getScopeOrNotify(player, region, scopeName) ?: return@identifierHandler
+        if (region.scopes.size < 2) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.error.last_scope")!!)
+            return@identifierHandler
+        }
+        val result = onScopeDelete(player, region, scope)
+        if (result == DeleteResult.SUCCESS) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
+        }
+    }
 }
 
 private fun runRenameScope(context: CommandContext<CommandSourceStack>): Int {

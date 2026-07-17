@@ -3,13 +3,12 @@ package com.imyvm.iwg.application.interaction
 import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.util.text.Translator
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.inter.api.DeleteResult
 import net.minecraft.server.level.ServerPlayer
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 
-fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false){
-    val regionName = region.name
-    val regionId = region.numberID
+fun onRegionDelete(player: ServerPlayer, region: Region): DeleteResult {
     val deletedScopes = region.scopes
     val deleted = EffectOverlayService.withScopeLifecycle {
         val rollback = RegionDatabase.removeRegionReversibly(region)
@@ -22,39 +21,27 @@ fun onRegionDelete(player: ServerPlayer, region: Region, isApi: Boolean = false)
             true
         }
     }
-    if (!deleted) return
+    if (!deleted) return DeleteResult.PERSISTENCE_FAILED
 
     clearSelectionsReferencing(deletedScopes)
-    if (isApi.not()) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
-    }
+    return DeleteResult.SUCCESS
 }
 
-fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
+fun onScopeDelete(player: ServerPlayer, region: Region, scope: GeoScope): DeleteResult {
     RegionDatabase.requireCanonicalRegion(region)
 
-    val existingScope = getScopeOrNotify(player, region, scopeName) ?: return
-    if (!checkScopeSize(player, region)) return
     val deleted = EffectOverlayService.withScopeLifecycle {
-        val index = region.removeScope(existingScope)
+        val index = region.removeScope(scope)
         if (!saveRegionData(player)) {
-            region.restoreScope(index, existingScope)
+            region.restoreScope(index, scope)
             false
         } else {
-            EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())
+            EffectOverlayService.clearScope(scope.requireAssignedScopeId())
             true
         }
     }
-    if (!deleted) return
+    if (!deleted) return DeleteResult.PERSISTENCE_FAILED
 
-    clearSelectionsReferencing(listOf(existingScope))
-    player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!)
-}
-
-private fun checkScopeSize(player: ServerPlayer, region: Region): Boolean{
-    if (region.scopes.size < 2) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.delete.error.last_scope")!!)
-        return false
-    }
-    return true
+    clearSelectionsReferencing(listOf(scope))
+    return DeleteResult.SUCCESS
 }
