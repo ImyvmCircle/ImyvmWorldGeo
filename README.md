@@ -300,11 +300,11 @@ Handles player-triggered actions related to regions and their scopes.
 - `startSelectionForModify(player: ServerPlayerEntity, scope: GeoScope)`  
   Starts selection mode locked to scope-modification for the given scope.
 
-- `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
-  Creates a region with an optional name, shape, and ID marker. `idMark` must be from `0` to `9`. If shapeTypeName is null, shape is inferred from selection state.
+- `createRegion(player: ServerPlayerEntity, name: String, idMark: Int = 0)`
+  Creates a region from the player's current creation selection. The name is required, and `idMark` must be from `0` to `9`. The selection's fixed shape is used when present; otherwise rectangle or polygon geometry is inferred from its points.
 
-- `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
-  Creates a region and returns the created region.
+- `createAndGetRegion(player: ServerPlayerEntity, name: String, idMark: Int = 0)`
+  Creates a region from the current creation selection and returns it after persistence succeeds.
 
 - `deleteRegion(player: ServerPlayerEntity, region: Region)`  
   Deprecated compatibility entry point. Deletes a specified region but cannot expose persistence failure.
@@ -315,11 +315,11 @@ Handles player-triggered actions related to regions and their scopes.
 - `renameRegion(player: ServerPlayerEntity, region: Region, newName: String)`  
   Renames a region.
 
-- `addScope(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?)`  
-  Adds a scope to a region with an optional name and shape.
+- `addScope(player: ServerPlayerEntity, region: Region, name: String)`
+  Adds a scope from the player's current creation selection to the exact live region. The name is required.
 
-- `createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?)`  
-  Creates a scope for a region and returns the region-scope pair.
+- `createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String)`
+  Creates and persists a scope from the current creation selection, then returns the region-scope pair.
 
 - `deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
   Deprecated compatibility entry point that resolves the scope name before deletion.

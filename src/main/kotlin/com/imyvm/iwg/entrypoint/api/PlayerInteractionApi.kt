@@ -43,8 +43,10 @@ object PlayerInteractionApi {
      * dimension. Detached copies, orphaned Scopes, and later attempts to modify another Scope fail.
      */
     fun startSelectionForModify(player: ServerPlayer, scope: GeoScope) = onStartSelectionForModify(player, scope)
-    fun createRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onRegionCreation(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
-    fun createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
+    fun createRegion(player: ServerPlayer, name: String, idMark: Int = 0) =
+        if (createRegionFromSelection(player, name, idMark) != null) 1 else 0
+    fun createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0) =
+        createRegionFromSelection(player, name, idMark)
     /**
      * Compatibility entry point retained for addons compiled against v26.1-1.5.1.
      *
@@ -61,8 +63,10 @@ object PlayerInteractionApi {
     fun deleteRegionWithResult(player: ServerPlayer, region: Region): RegionDeleteResult =
         onRegionDelete(player, region)
     fun renameRegion(player: ServerPlayer, region: Region, newName: String) = onRegionRename(player, region, newName)
-    fun addScope(player: ServerPlayer, region: Region, name: String) = onScopeCreation(player, region, name, null, autoFillName = false, notifyPlayer = false)
-    fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String) = onTryingScopeCreationWithReturn(player, region, name, null, autoFillName = false, notifyPlayer = false)
+    fun addScope(player: ServerPlayer, region: Region, name: String) =
+        if (createScopeFromSelection(player, region, name) != null) 1 else 0
+    fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String) =
+        createScopeFromSelection(player, region, name)?.let { region to it }
     /**
      * Compatibility entry point retained for addons compiled against v26.1-1.5.1.
      *

@@ -4,20 +4,36 @@ import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
 object NameValidationMessages {
-    fun sendAutoFilled(player: ServerPlayer, type: NameType, name: String) {
-        val key = when (type) {
-            NameType.REGION -> "interaction.meta.name_auto_filled"
-            NameType.SCOPE -> "interaction.meta.add.name_auto_filled"
-        }
-        player.sendSystemMessage(Translator.tr(key, name)!!)
+    fun sendRegionAutoFilled(player: ServerPlayer, name: String) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.name_auto_filled", name)!!)
     }
 
-    fun sendNameRequired(player: ServerPlayer, type: NameType) {
-        val key = when (type) {
-            NameType.REGION -> "interaction.meta.create.name_invalid"
-            NameType.SCOPE -> "interaction.meta.scope.add.name_invalid"
+    fun sendScopeAutoFilled(player: ServerPlayer, name: String) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.add.name_auto_filled", name)!!)
+    }
+
+    fun sendRegionNameRequired(player: ServerPlayer) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.name_invalid")!!)
+    }
+
+    fun sendScopeNameRequired(player: ServerPlayer) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.name_invalid")!!)
+    }
+
+    @Deprecated("Use sendRegionAutoFilled or sendScopeAutoFilled")
+    fun sendAutoFilled(player: ServerPlayer, type: NameType, name: String) {
+        when (type) {
+            NameType.REGION -> sendRegionAutoFilled(player, name)
+            NameType.SCOPE -> sendScopeAutoFilled(player, name)
         }
-        player.sendSystemMessage(Translator.tr(key)!!)
+    }
+
+    @Deprecated("Use sendRegionNameRequired or sendScopeNameRequired")
+    fun sendNameRequired(player: ServerPlayer, type: NameType) {
+        when (type) {
+            NameType.REGION -> sendRegionNameRequired(player)
+            NameType.SCOPE -> sendScopeNameRequired(player)
+        }
     }
 
     fun sendDuplicateScope(player: ServerPlayer) {

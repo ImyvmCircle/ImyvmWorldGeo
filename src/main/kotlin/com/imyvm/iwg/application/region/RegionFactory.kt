@@ -25,8 +25,8 @@ object RegionFactory {
     fun createRegion(
         name: String,
         numberID: Int,
-        playerExecutor: ServerPlayer,
-        selectedPositions: MutableList<BlockPos>,
+        playerExecutor: ServerPlayer = missingCreateRegionPlayer(),
+        selectedPositions: List<BlockPos>,
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
 
@@ -54,7 +54,7 @@ object RegionFactory {
     fun createScopeForPlayer(
         scopeName: String,
         playerExecutor: ServerPlayer,
-        selectedPositions: MutableList<BlockPos>,
+        selectedPositions: List<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
         val worldId = playerExecutor.level().dimension().identifier()
@@ -68,7 +68,7 @@ object RegionFactory {
         scopeName: String,
         worldId: Identifier,
         teleportPoint: BlockPos?,
-        selectedPositions: MutableList<BlockPos>,
+        selectedPositions: List<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> = createScopeFromData(
         scopeName,
@@ -94,13 +94,21 @@ object RegionFactory {
         playerExecutor: ServerPlayer? = null,
         existingWorld: Identifier? = null,
         existingTeleportPoint: BlockPos? = null,
-        selectedPositions: MutableList<BlockPos>,
+        selectedPositions: List<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
-        return if (existingWorld == null) {
-            createScopeForPlayer(scopeName, requireNotNull(playerExecutor) { "playerExecutor or existingWorld is required" }, selectedPositions, shapeType)
-        } else {
-            createScopeFromData(scopeName, existingWorld, existingTeleportPoint, selectedPositions, shapeType)
+        return when {
+            playerExecutor != null && existingWorld == null -> {
+                require(existingTeleportPoint == null) {
+                    "existingTeleportPoint is only valid for world reconstruction"
+                }
+                createScopeForPlayer(scopeName, playerExecutor, selectedPositions, shapeType)
+            }
+            playerExecutor == null && existingWorld != null ->
+                createScopeFromData(scopeName, existingWorld, existingTeleportPoint, selectedPositions, shapeType)
+            else -> throw IllegalArgumentException(
+                "exactly one scope source is required: playerExecutor or existingWorld"
+            )
         }
     }
 
@@ -108,13 +116,16 @@ object RegionFactory {
         scopeName: String,
         worldId: Identifier,
         teleportPoint: BlockPos?,
-        selectedPositions: MutableList<BlockPos>,
+        selectedPositions: List<BlockPos>,
         shapeType: GeoShapeType
     ): Result<GeoScope, CreationError> {
         val geoShapeResult = createGeoShape(selectedPositions, shapeType, worldId)
         if (geoShapeResult is Result.Err) return geoShapeResult
         return Result.Ok(GeoScope(scopeName, worldId, teleportPoint, false, (geoShapeResult as Result.Ok).value))
     }
+
+    private fun missingCreateRegionPlayer(): ServerPlayer =
+        error("playerExecutor is required for Region creation")
 
     private fun getTeleportPoint(
         playerExecutor: ServerPlayer,

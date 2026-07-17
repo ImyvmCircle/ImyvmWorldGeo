@@ -38,6 +38,8 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `PlayerInteractionApi.toggleTeleportPointAccessibility(GeoScope)` | R11 (unreleased) | `toggleTeleportPointAccessibility(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | JVM method delegates after resolving the canonical database owner; detached/orphan/unassigned scopes are rejected |
 | `PlayerInteractionApi.deleteRegion(ServerPlayer, Region)` | B6 (unreleased) | `deleteRegionWithResult(ServerPlayer, Region)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains and delegates; the legacy call cannot observe the result |
 | `PlayerInteractionApi.deleteScope(ServerPlayer, Region, String)` | B6 (unreleased) | `deleteScopeWithResult(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains, resolves the name at the adapter boundary, and delegates to the exact target operation |
+| Top-level `onRegionCreation` / `onScopeCreation` helpers | B6 (unreleased) | `PlayerInteractionApi.createRegion` / `addScope` | Deprecated implementation surface | Two released versions, then maintainer review | Both historical single-flag and later two-flag JVM descriptors and default bridges remain; nullable names, shape strings, and mode flags are narrowed inside the compatibility facade |
+| `RegionFactory.createScope` nullable source dispatcher | B6 (unreleased) | `createScopeForPlayer` or `recreateScope` | Deprecated implementation surface | Two released versions, then maintainer review | The JVM descriptor and default bridge remain; calls must provide exactly one source and no ignored player-path teleport value |
 | `Region.settings` / `GeoScope.settings` | B6 (unreleased) | `RegionDataApi` for reads; `PlayerInteractionApi` setting operations for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots and state-changing setter calls fail fast |
 | `Region.geometryScope` / `Region.ownershipHistoryByScope` | R10 (unreleased) | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots and setter calls fail fast |
 | Mutable `Region` state and Scope ownership methods | B6 (unreleased) | Owner-explicit operations on `PlayerInteractionApi` | Compatibility surface | No removal scheduled | Existing property and method descriptors remain; same-value scalar setter calls are no-ops and uncontrolled state changes fail fast |
@@ -150,6 +152,29 @@ if (result == ScopeDeleteResult.SUCCESS) {
     handlePersistenceFailure();
 }
 ```
+
+## B6 creation migration
+
+Supported creation operations require a non-null name and use the player's current creation
+selection. A fixed selection shape is respected; otherwise the shape is inferred from the selected
+points. Addons should set the selection shape before creation instead of passing a nullable shape
+string:
+
+```kotlin
+PlayerInteractionApi.startSelection(player, GeoShapeType.CIRCLE)
+// Add the required selection points through the normal interaction flow.
+val created = PlayerInteractionApi.createAndGetRegion(player, "Market", idMark = 0)
+```
+
+`createRegion` and `addScope` return `1` only after the object is persisted. The object-returning
+variants return `null` on validation, geometry, capacity, or persistence failure. Scope creation
+requires the exact live Region instance. Successful creation clears the player's selection; a
+persistence failure restores the aggregate and keeps the selection available for retry.
+
+The top-level functions in `application.interaction` and the nullable-source
+`RegionFactory.createScope` function remain linkage-compatible implementation helpers. They are not
+supported addon API. New code should call `PlayerInteractionApi`; persistence reconstruction code
+should call `RegionFactory.recreateScope` with an explicit world.
 
 ## R10 Region collection migration
 

@@ -1,5 +1,10 @@
 package com.imyvm.iwg.application.interaction.helper
 
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
+import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertFalse
 import kotlin.test.assertTrue
@@ -8,10 +13,11 @@ class RegionNameCheckTest {
     @Test
     fun `generated region and scope names satisfy the production validator`() {
         val regionName = CreationNameGenerator.generateRegionName()
-        val scopeName = CreationNameGenerator.generateScopeName(null)
+        val scopeName = CreationNameGenerator.generateScopeName(region("Owner"))
 
         assertTrue(isValidName(regionName))
         assertTrue(isValidName(scopeName))
+        assertTrue(scopeName.startsWith("Owner NewScope "))
     }
 
     @Test
@@ -21,4 +27,18 @@ class RegionNameCheckTest {
         listOf("1Region", "_Region", "Region_", "Region--1", "Region - 1", "123", " Region")
             .forEach { assertFalse(isValidName(it), it) }
     }
+
+    private fun region(name: String): Region = Region(
+        name,
+        7,
+        mutableListOf(
+            GeoScope(
+                "main",
+                Identifier.parse("minecraft:overworld"),
+                null,
+                geoShape = null,
+                scopeId = ScopeId(generateCompatScopeIdRaw(7, 0))
+            )
+        )
+    )
 }

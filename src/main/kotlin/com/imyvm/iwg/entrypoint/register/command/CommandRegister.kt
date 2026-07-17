@@ -1,6 +1,8 @@
 package com.imyvm.iwg.inter.register.command
 
 import com.imyvm.iwg.application.interaction.*
+import com.imyvm.iwg.application.interaction.helper.CreationNameGenerator
+import com.imyvm.iwg.application.interaction.helper.NameValidationMessages
 import com.imyvm.iwg.domain.NaturalStatsCategory
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
@@ -462,8 +464,12 @@ private fun parseShapeType(shapeTypeStr: String, player: ServerPlayer): GeoShape
 
 private fun runCreateRegion(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    val nameArg = getOptionalArgument(context, "name")
-    return onRegionCreation(player, nameArg, null, idMark = 0)
+    val name = getOptionalArgument(context, "name") ?: CreationNameGenerator.generateRegionName().also {
+        NameValidationMessages.sendRegionAutoFilled(player, it)
+    }
+    val region = createRegionFromSelection(player, name, idMark = 0) ?: return 0
+    player.sendSystemMessage(Translator.tr("interaction.meta.create.success", region.name)!!)
+    return 1
 }
 
 private fun runDeleteRegion(context: CommandContext<CommandSourceStack>): Int {
@@ -486,8 +492,16 @@ private fun runRenameRegion(context: CommandContext<CommandSourceStack>): Int {
 
 private fun runAddScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
-    val scopeNameArg = getOptionalArgument(context, "scopeName")
-    return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, null)}
+    return identifierHandler(regionIdentifier, player) { region ->
+        val scopeName = getOptionalArgument(context, "scopeName")
+            ?: CreationNameGenerator.generateScopeName(region).also {
+                NameValidationMessages.sendScopeAutoFilled(player, it)
+            }
+        val scope = createScopeFromSelection(player, region, scopeName) ?: return@identifierHandler
+        player.sendSystemMessage(
+            Translator.tr("interaction.meta.scope.add.success", scope.scopeName, region.name)!!
+        )
+    }
 }
 
 private fun runDeleteScope(context: CommandContext<CommandSourceStack>): Int {
