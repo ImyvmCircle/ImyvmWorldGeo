@@ -111,6 +111,70 @@ class SettingMutationApplicationTest {
     }
 
     @Test
+    fun `rule add and remove restore the exact identity after failed save`() {
+        val (region, _) = bindTarget()
+        val target = SettingMutationTarget.RegionTarget(region)
+
+        assertEquals(
+            SettingAddResult.PERSISTENCE_FAILED,
+            addRuleSetting(target, RuleKey.PISTON, false) { false }
+        )
+        assertEquals(null, region.settingStore.rule(RuleKey.PISTON))
+
+        region.settingStore.putRuleIfAbsent(RuleKey.PISTON, false)
+        region.settingStore.putRuleIfAbsent(RuleKey.DISPENSER, true)
+        assertEquals(
+            SettingRemoveResult.PERSISTENCE_FAILED,
+            removeRuleSetting(target, RuleKey.PISTON) { false }
+        )
+        assertEquals(false, region.settingStore.rule(RuleKey.PISTON))
+        assertEquals(true, region.settingStore.rule(RuleKey.DISPENSER))
+    }
+
+    @Test
+    fun `entry exit toggle add and remove restore the exact identity after failed save`() {
+        val (region, _) = bindTarget()
+        val target = SettingMutationTarget.RegionTarget(region)
+        val key = EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED
+
+        assertEquals(
+            SettingAddResult.PERSISTENCE_FAILED,
+            addEntryExitToggleSetting(target, key, false) { false }
+        )
+        assertEquals(null, region.settingStore.entryExitToggle(key))
+
+        region.settingStore.putEntryExitToggleIfAbsent(key, true)
+        region.settingStore.putRuleIfAbsent(RuleKey.DISPENSER, false)
+        assertEquals(
+            SettingRemoveResult.PERSISTENCE_FAILED,
+            removeEntryExitToggleSetting(target, key) { false }
+        )
+        assertEquals(true, region.settingStore.entryExitToggle(key))
+        assertEquals(false, region.settingStore.rule(RuleKey.DISPENSER))
+    }
+
+    @Test
+    fun `entry exit message add and remove restore the exact identity after failed save`() {
+        val (region, _) = bindTarget()
+        val target = SettingMutationTarget.RegionTarget(region)
+
+        assertEquals(
+            SettingAddResult.PERSISTENCE_FAILED,
+            addEntryExitMessageSetting(target, EntryExitMessageKey.ENTER_MESSAGE, "new") { false }
+        )
+        assertEquals(null, region.settingStore.entryExitMessage(EntryExitMessageKey.ENTER_MESSAGE))
+
+        region.settingStore.putEntryExitMessageIfAbsent(EntryExitMessageKey.ENTER_MESSAGE, "original")
+        region.settingStore.putEntryExitMessageIfAbsent(EntryExitMessageKey.EXIT_MESSAGE, "other")
+        assertEquals(
+            SettingRemoveResult.PERSISTENCE_FAILED,
+            removeEntryExitMessageSetting(target, EntryExitMessageKey.ENTER_MESSAGE) { false }
+        )
+        assertEquals("original", region.settingStore.entryExitMessage(EntryExitMessageKey.ENTER_MESSAGE))
+        assertEquals("other", region.settingStore.entryExitMessage(EntryExitMessageKey.EXIT_MESSAGE))
+    }
+
+    @Test
     fun `effect validates range and restores personal amplifier after failed remove`() {
         val (region, scope) = bindTarget()
         val regionTarget = SettingMutationTarget.RegionTarget(region)
