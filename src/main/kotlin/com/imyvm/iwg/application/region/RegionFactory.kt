@@ -25,14 +25,14 @@ object RegionFactory {
     fun createRegion(
         name: String,
         numberID: Int,
-        playerExecutor: ServerPlayer? = null,
+        playerExecutor: ServerPlayer,
         selectedPositions: MutableList<BlockPos>,
         shapeType: GeoShapeType
     ): Result<Region, CreationError> {
 
         val mainScopeResult = createScopeForPlayer(
             scopeName = "main_scope",
-            playerExecutor = requireNotNull(playerExecutor) { "playerExecutor is required to create a region" },
+            playerExecutor = playerExecutor,
             selectedPositions = selectedPositions,
             shapeType = shapeType
         )

@@ -7,6 +7,7 @@ import com.imyvm.iwg.application.interaction.getRegionPermissionValue
 import com.imyvm.iwg.application.interaction.getScopePermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
 import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
+import com.imyvm.iwg.application.interaction.saveRegionData
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveRegionRuleValue
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveScopeRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
@@ -21,6 +22,7 @@ import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
+import java.util.UUID
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
@@ -431,4 +433,145 @@ object RegionDataApi {
     @Deprecated("Use the AssignedScopeId overload")
     fun queryActiveOverlays(scopeId: ScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
+
+    // --- Typed setting mutations ---
+
+    fun addRegionPermission(region: Region, key: PermissionKeyLike, value: Boolean): SettingAddResult =
+        addSettingInternal(region.settingStore, region, permissionSetting(key, value, null))
+
+    fun addRegionPermission(region: Region, key: PermissionKeyLike, value: Boolean, targetPlayer: UUID): SettingAddResult =
+        addSettingInternal(region.settingStore, region, permissionSetting(key, value, targetPlayer))
+
+    fun addScopePermission(region: Region, scope: GeoScope, key: PermissionKeyLike, value: Boolean): SettingAddResult =
+        addScopeSettingInternal(region, scope, permissionSetting(key, value, null))
+
+    fun addScopePermission(region: Region, scope: GeoScope, key: PermissionKeyLike, value: Boolean, targetPlayer: UUID): SettingAddResult =
+        addScopeSettingInternal(region, scope, permissionSetting(key, value, targetPlayer))
+
+    fun removeRegionPermission(region: Region, key: PermissionKeyLike): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Global)
+
+    fun removeRegionPermission(region: Region, key: PermissionKeyLike, targetPlayer: UUID): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Player(targetPlayer))
+
+    fun removeScopePermission(region: Region, scope: GeoScope, key: PermissionKeyLike): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Global)
+
+    fun removeScopePermission(region: Region, scope: GeoScope, key: PermissionKeyLike, targetPlayer: UUID): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Player(targetPlayer))
+
+    fun addRegionEffect(region: Region, key: EffectKey, amplifier: Int): SettingAddResult =
+        addSettingInternal(region.settingStore, region, EffectSetting(key, amplifier))
+
+    fun addRegionEffect(region: Region, key: EffectKey, amplifier: Int, targetPlayer: UUID): SettingAddResult =
+        addSettingInternal(region.settingStore, region, EffectSetting(key, amplifier, targetPlayer))
+
+    fun addScopeEffect(region: Region, scope: GeoScope, key: EffectKey, amplifier: Int): SettingAddResult =
+        addScopeSettingInternal(region, scope, EffectSetting(key, amplifier))
+
+    fun addScopeEffect(region: Region, scope: GeoScope, key: EffectKey, amplifier: Int, targetPlayer: UUID): SettingAddResult =
+        addScopeSettingInternal(region, scope, EffectSetting(key, amplifier, targetPlayer))
+
+    fun removeRegionEffect(region: Region, key: EffectKey): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Global)
+
+    fun removeRegionEffect(region: Region, key: EffectKey, targetPlayer: UUID): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Player(targetPlayer))
+
+    fun removeScopeEffect(region: Region, scope: GeoScope, key: EffectKey): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Global)
+
+    fun removeScopeEffect(region: Region, scope: GeoScope, key: EffectKey, targetPlayer: UUID): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Player(targetPlayer))
+
+    fun addRegionRule(region: Region, key: RuleKeyLike, value: Boolean): SettingAddResult =
+        addSettingInternal(region.settingStore, region, ruleSetting(key, value))
+
+    fun addScopeRule(region: Region, scope: GeoScope, key: RuleKeyLike, value: Boolean): SettingAddResult =
+        addScopeSettingInternal(region, scope, ruleSetting(key, value))
+
+    fun removeRegionRule(region: Region, key: RuleKeyLike): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Global)
+
+    fun removeScopeRule(region: Region, scope: GeoScope, key: RuleKeyLike): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Global)
+
+    fun addRegionEntryExitToggle(region: Region, key: EntryExitToggleKey, value: Boolean): SettingAddResult =
+        addSettingInternal(region.settingStore, region, EntryExitToggleSetting(key, value))
+
+    fun addScopeEntryExitToggle(region: Region, scope: GeoScope, key: EntryExitToggleKey, value: Boolean): SettingAddResult =
+        addScopeSettingInternal(region, scope, EntryExitToggleSetting(key, value))
+
+    fun removeRegionEntryExitToggle(region: Region, key: EntryExitToggleKey): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Global)
+
+    fun removeScopeEntryExitToggle(region: Region, scope: GeoScope, key: EntryExitToggleKey): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Global)
+
+    fun addRegionEntryExitMessage(region: Region, key: EntryExitMessageKey, message: String): SettingAddResult =
+        addSettingInternal(region.settingStore, region, EntryExitMessageSetting(key, message))
+
+    fun addScopeEntryExitMessage(region: Region, scope: GeoScope, key: EntryExitMessageKey, message: String): SettingAddResult =
+        addScopeSettingInternal(region, scope, EntryExitMessageSetting(key, message))
+
+    fun removeRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): SettingRemoveResult =
+        removeSettingInternal(region.settingStore, region, key, SettingSubject.Global)
+
+    fun removeScopeEntryExitMessage(region: Region, scope: GeoScope, key: EntryExitMessageKey): SettingRemoveResult =
+        removeScopeSettingInternal(region, scope, key, SettingSubject.Global)
+
+    private fun addScopeSettingInternal(region: Region, scope: GeoScope, setting: Setting): SettingAddResult {
+        RegionDatabase.requireCanonicalScope(region, scope)
+        return addSettingInternal(scope.settingStore, region, setting)
+    }
+
+    private fun addSettingInternal(store: SettingStore, region: Region, setting: Setting): SettingAddResult {
+        RegionDatabase.requireCanonicalRegion(region)
+        val key = settingKeyOf(setting)
+        val subject = setting.playerUUID?.let(SettingSubject::Player) ?: SettingSubject.Global
+        if (store.contains(key, subject)) return SettingAddResult.ALREADY_EXISTS
+        store.put(setting)
+        if (!saveRegionData()) {
+            store.remove(key, subject)
+            return SettingAddResult.PERSISTENCE_FAILED
+        }
+        return SettingAddResult.SUCCESS
+    }
+
+    private fun removeScopeSettingInternal(region: Region, scope: GeoScope, key: SettingKey, subject: SettingSubject): SettingRemoveResult {
+        RegionDatabase.requireCanonicalScope(region, scope)
+        return removeSettingInternal(scope.settingStore, region, key, subject)
+    }
+
+    private fun removeSettingInternal(store: SettingStore, region: Region, key: SettingKey, subject: SettingSubject): SettingRemoveResult {
+        RegionDatabase.requireCanonicalRegion(region)
+        val previous = store.toLegacyList()
+        if (!store.remove(key, subject)) return SettingRemoveResult.NOT_FOUND
+        if (!saveRegionData()) {
+            store.replaceAll(previous)
+            return SettingRemoveResult.PERSISTENCE_FAILED
+        }
+        return SettingRemoveResult.SUCCESS
+    }
+
+    private fun settingKeyOf(setting: Setting): SettingKey = when (setting) {
+        is PermissionSetting -> setting.key
+        is ExtensionPermissionSetting -> setting.key
+        is EffectSetting -> setting.key
+        is RuleSetting -> setting.key
+        is ExtensionRuleSetting -> setting.key
+        is EntryExitToggleSetting -> setting.key
+        is EntryExitMessageSetting -> setting.key
+        else -> throw IllegalArgumentException("Unsupported setting type: ${setting.javaClass.name}")
+    }
+
+    private fun ruleSetting(key: RuleKeyLike, value: Boolean): Setting = when (key) {
+        is RuleKey -> RuleSetting(key, value)
+        is ExtensionRuleKey -> ExtensionRuleSetting(key, value)
+    }
+
+    private fun permissionSetting(key: PermissionKeyLike, value: Boolean, playerUUID: UUID?): Setting = when (key) {
+        is PermissionKey -> PermissionSetting(key, value, playerUUID)
+        is ExtensionPermissionKey -> ExtensionPermissionSetting(key, value, playerUUID)
+    }
 }

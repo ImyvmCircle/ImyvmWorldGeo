@@ -23,10 +23,11 @@ fun onRegionCreation(
     player: ServerPlayer,
     regionNameArg: String?,
     shapeTypeName: String?,
-    isApi: Boolean = false,
+    autoFillName: Boolean = true,
+    notifyPlayer: Boolean = true,
     idMark: Int
 ): Int {
-    val region = onTryingRegionCreationWithReturn(player, regionNameArg, shapeTypeName, isApi, idMark)
+    val region = onTryingRegionCreationWithReturn(player, regionNameArg, shapeTypeName, autoFillName, notifyPlayer, idMark)
     return if (region != null) 1 else 0
 }
 
@@ -34,7 +35,8 @@ fun onTryingRegionCreationWithReturn(
     player: ServerPlayer,
     regionNameArg: String?,
     shapeTypeName: String?,
-    isApi: Boolean = true,
+    autoFillName: Boolean = false,
+    notifyPlayer: Boolean = false,
     idMark: Int
 ): Region? {
     val selectionState = getCreationSelectionOrNotify(player) ?: return null
@@ -43,7 +45,7 @@ fun onTryingRegionCreationWithReturn(
         player,
         regionNameArg,
         type = NameType.REGION,
-        autoFill = !isApi
+        autoFill = autoFillName
     ) ?: return null
 
     val shapeType = getShapeTypeCheck(player, selectionState, shapeTypeName) ?: return null
@@ -56,7 +58,7 @@ fun onTryingRegionCreationWithReturn(
     }
     return when (creationResult) {
         is Result.Ok -> {
-            val saved = handleRegionCreateSuccess(player, creationResult, notify = !isApi)
+            val saved = handleRegionCreateSuccess(player, creationResult, notify = notifyPlayer)
             creationResult.value.takeIf { saved }
         }
         is Result.Err -> {
@@ -71,18 +73,20 @@ fun onScopeCreation(
     region: Region,
     scopeNameArg: String?,
     shapeTypeName: String?,
-    isApi: Boolean = false
+    autoFillName: Boolean = true,
+    notifyPlayer: Boolean = true
 ): Int {
-    val resultPair = onTryingScopeCreationWithReturn(player, region, scopeNameArg, shapeTypeName, isApi)
+    val resultPair = onTryingScopeCreationWithReturn(player, region, scopeNameArg, shapeTypeName, autoFillName, notifyPlayer)
     return if (resultPair != null) 1 else 0
 }
 
-fun onTryingScopeCreationWithReturn (
+fun onTryingScopeCreationWithReturn(
     player: ServerPlayer,
     region: Region,
     scopeNameArg: String?,
     shapeTypeName: String?,
-    isApi: Boolean = true
+    autoFillName: Boolean = false,
+    notifyPlayer: Boolean = false
 ): Pair<Region, GeoScope>? {
     RegionDatabase.requireCanonicalRegion(region)
 
@@ -93,13 +97,13 @@ fun onTryingScopeCreationWithReturn (
         player,
         scopeNameArg,
         type = NameType.SCOPE,
-        autoFill = !isApi,
+        autoFill = autoFillName,
         regionForScope = region
     ) ?: return null
 
     return when (val creationResult = tryScopeCreation(player, scopeName, shapeType, selectionState.points)) {
         is Result.Ok -> {
-            val saved = handleScopeCreateSuccess(player, creationResult, region, notify = !isApi)
+            val saved = handleScopeCreateSuccess(player, creationResult, region, notify = notifyPlayer)
             Pair(region, creationResult.value).takeIf { saved }
         }
         is Result.Err -> {

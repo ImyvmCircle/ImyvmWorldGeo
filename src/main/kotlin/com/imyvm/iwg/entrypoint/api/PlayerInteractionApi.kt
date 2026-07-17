@@ -35,12 +35,12 @@ object PlayerInteractionApi {
      * dimension. Detached copies, orphaned Scopes, and later attempts to modify another Scope fail.
      */
     fun startSelectionForModify(player: ServerPlayer, scope: GeoScope) = onStartSelectionForModify(player, scope)
-    fun createRegion(player: ServerPlayer, name: String?, idMark: Int = 0) = onRegionCreation(player, name, null, isApi = true, idMark)
-    fun createAndGetRegion(player: ServerPlayer, name: String?, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, null, isApi = true, idMark)
+    fun createRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onRegionCreation(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
+    fun createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0) = onTryingRegionCreationWithReturn(player, name, null, autoFillName = false, notifyPlayer = false, idMark = idMark)
     fun deleteRegion(player: ServerPlayer, region: Region) = onRegionDelete(player, region, isApi = true)
     fun renameRegion(player: ServerPlayer, region: Region, newName: String) = onRegionRename(player, region, newName)
-    fun addScope(player: ServerPlayer, region: Region, name: String?) = onScopeCreation(player, region, name, null, isApi = true)
-    fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String?) = onTryingScopeCreationWithReturn(player, region, name, null, isApi = true)
+    fun addScope(player: ServerPlayer, region: Region, name: String) = onScopeCreation(player, region, name, null, autoFillName = false, notifyPlayer = false)
+    fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String) = onTryingScopeCreationWithReturn(player, region, name, null, autoFillName = false, notifyPlayer = false)
     fun deleteScope(player: ServerPlayer, region: Region, scopeName: String) = onScopeDelete(player, region, scopeName)
     fun renameScope(player: ServerPlayer, region: Region, oldName: String, newName: String) = onScopeRename(player, region, oldName, newName)
     fun transferScope(player: ServerPlayer, sourceRegion: Region, scopeName: String, targetRegion: Region) = onScopeTransfer(player, sourceRegion, scopeName, targetRegion)
@@ -82,9 +82,13 @@ object PlayerInteractionApi {
      */
     fun replaceScopeShape(player: ServerPlayer, region: Region, scope: GeoScope, newShape: GeoShape) =
         onReplacingScopeShape(player, region, scope, newShape)
+    @Deprecated("Use RegionDataApi typed setting mutations (e.g. addRegionPermission, addScopeEffect)")
     fun addSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?) = addRegionSetting(player, region, keyString, valueString, targetPlayerStr)
+    @Deprecated("Use RegionDataApi typed setting mutations (e.g. addScopePermission, addScopeRule)")
     fun addSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?) = addScopeSetting(player, region, region.getScopeByName(scopeName), keyString, valueString, targetPlayerStr)
+    @Deprecated("Use RegionDataApi typed setting mutations (e.g. removeRegionPermission, removeRegionEffect)")
     fun removeSettingRegion(player: ServerPlayer, region: Region, keyString: String, targetPlayerStr: String?) = removeRegionSetting(player, region, keyString, targetPlayerStr)
+    @Deprecated("Use RegionDataApi typed setting mutations (e.g. removeScopePermission, removeScopeRule)")
     fun removeSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?) = removeScopeSetting(player, region, region.getScopeByName(scopeName), keyString, targetPlayerStr)
     fun getDefaultPermissionValue(keyString: String): Boolean {
         val key = PermissionKey.entries.firstOrNull { it.name == keyString }
@@ -155,11 +159,15 @@ object PlayerInteractionApi {
     fun estimateRegionArea(player: ServerPlayer, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)
     fun estimateScopeAreaChange(player: ServerPlayer, region: Region, scopeName: String, customPositions: List<BlockPos>? = null) = onEstimateScopeAreaChange(player, region, scopeName, customPositions)
 
+    @Deprecated("Use RegionDataApi.addRegionEntryExitToggle or addRegionEntryExitMessage")
     fun addEntryExitSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?) = addRegionSetting(player, region, keyString, valueString, null)
 
+    @Deprecated("Use RegionDataApi.addScopeEntryExitToggle or addScopeEntryExitMessage")
     fun addEntryExitSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, valueString: String?) = addScopeSetting(player, region, region.getScopeByName(scopeName), keyString, valueString, null)
 
+    @Deprecated("Use RegionDataApi.removeRegionEntryExitToggle or removeRegionEntryExitMessage")
     fun removeEntryExitSettingRegion(player: ServerPlayer, region: Region, keyString: String) = removeRegionSetting(player, region, keyString, null)
 
+    @Deprecated("Use RegionDataApi.removeScopeEntryExitToggle or removeScopeEntryExitMessage")
     fun removeEntryExitSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String) = removeScopeSetting(player, region, region.getScopeByName(scopeName), keyString, null)
 }
