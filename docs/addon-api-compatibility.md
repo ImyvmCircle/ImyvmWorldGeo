@@ -46,7 +46,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | R11 (unreleased) | Use the named `GeoShape` factories and `PlayerInteractionApi.replaceScopeShape` | Compatibility surface | No removal scheduled | Raw constructor, getter, and setter descriptors remain; the getter returns a detached snapshot and state-changing setter calls fail fast |
 | Mutable `GeoScope` state properties | R11 (unreleased) | `RegionDataApi` for reads; supported Region and interaction operations for writes | Compatibility surface | No removal scheduled | Constructor and property accessor descriptors remain; uncontrolled state changes through legacy setters are rejected |
 | `ScopeId` compatibility encoding | R10 (unreleased) | `RegionDataApi.parseScopeId` and ScopeId query methods | Compatible encoding fix | No removal scheduled | Existing raw IDs remain parseable; newly migrated legacy scopes use a marker bit and full local index without changing the persisted `Long` field |
-| `ScopeId` query and overlay methods | R11 (unreleased) | `AssignedScopeId` and the corresponding `RegionDataApi` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; `GeoScope` constructor and scopeId getter/setter descriptors remain |
+| `ScopeId` query and overlay methods | R11 (unreleased) | Kotlin: typed `AssignedScopeId` methods; Java: corresponding `RegionDataApi` `...Raw` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; typed value-class methods keep their JVM descriptors but are hidden from Java source with `@JvmSynthetic`; `GeoScope` constructor and scopeId getter/setter descriptors remain |
 | `Setting` / `BaseKey` | Not scheduled | Typed permission/rule/effect keys through supported APIs | Compatibility surface | No removal scheduled | Existing classes and JVM methods remain; unknown setting subclasses are rejected by persistence |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
@@ -206,11 +206,31 @@ database. A detached copy with matching names or IDs is rejected before mutation
 
 Use `AssignedScopeId` whenever an operation requires a persisted Scope. `ScopeId(0)` remains only as the legacy representation of a not-yet-added Scope; positive raw values are invalid.
 
+Kotlin addons should use the typed `AssignedScopeId` methods. Their JVM methods are marked
+`@JvmSynthetic` because Kotlin value-class name mangling does not provide a stable, callable Java
+source name. Java addons should use the ordinary `...Raw` methods instead. These methods accept or
+return primitive/boxed `long` values only at the addon boundary and validate them before delegation.
+
 ```kotlin
 val scopeId = RegionDataApi.getAssignedScopeIdOrNull(scope) ?: return
 val resolved = RegionDataApi.getScopeByAssignedId(scopeId)
 val parsed = RegionDataApi.parseAssignedScopeId(scopeId.toIdString())
 ```
+
+```java
+Long scopeIdRaw = RegionDataApi.INSTANCE.parseAssignedScopeIdRaw(scopeIdText);
+if (scopeIdRaw == null) return;
+
+Pair<Region, GeoScope> resolved =
+    RegionDataApi.INSTANCE.getScopeByAssignedIdRaw(scopeIdRaw.longValue());
+String persistedText =
+    RegionDataApi.INSTANCE.formatAssignedScopeIdRaw(scopeIdRaw.longValue());
+```
+
+Java overlay integrations should likewise use `createTimedEffectOverlayRaw`,
+`clearTimedEffectOverlayRaw`, `queryOverlayRaw`, and `queryActiveOverlaysRaw`. Passing an unassigned
+or invalid raw ID throws `IllegalArgumentException`; a valid ID that is not currently present keeps
+the ordinary query result (`null`, an empty collection, or `false`, depending on the operation).
 
 Supported `PlayerInteractionApi` mutations require the exact live `Region` and `GeoScope` objects
 currently owned by the database. Equal IDs, names, or copied fields do not make a detached or stale

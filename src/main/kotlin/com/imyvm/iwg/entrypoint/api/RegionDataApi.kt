@@ -25,7 +25,6 @@ import java.util.UUID
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
 import net.minecraft.world.level.Level
-import java.util.*
 /**
  * Supported read/query API for addons.
  *
@@ -324,18 +323,38 @@ object RegionDataApi {
 
     // --- 1.5.1 additions ---
 
+    /** Kotlin API. Java callers should use [parseAssignedScopeIdRaw]. */
+    @JvmSynthetic
     fun parseAssignedScopeId(s: String): AssignedScopeId? = AssignedScopeId.parse(s)
+
+    /** Java API for parsing an assigned Scope ID into its raw `long` representation. */
+    fun parseAssignedScopeIdRaw(value: String): Long? = AssignedScopeId.parse(value)?.raw
+
+    /** Java API for formatting a validated raw assigned Scope ID. */
+    fun formatAssignedScopeIdRaw(scopeIdRaw: Long): String =
+        requireAssignedScopeIdRaw(scopeIdRaw).toIdString()
 
     @Deprecated("Use parseAssignedScopeId")
     fun parseScopeId(s: String): ScopeId? = parseAssignedScopeId(s)?.toLegacyScopeId()
 
+    /** Kotlin API. Java callers should use [getScopeByAssignedIdRaw]. */
+    @JvmSynthetic
     fun getScopeByAssignedId(scopeId: AssignedScopeId): Pair<Region, GeoScope>? =
         RegionDatabase.getScopeByAssignedId(scopeId)
+
+    /** Java API for resolving a Scope from a validated raw assigned Scope ID. */
+    fun getScopeByAssignedIdRaw(scopeIdRaw: Long): Pair<Region, GeoScope>? =
+        getScopeByAssignedId(requireAssignedScopeIdRaw(scopeIdRaw))
 
     @Deprecated("Use getScopeByAssignedId")
     fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? = RegionDatabase.getScopeById(scopeId)
 
+    /** Kotlin API. Java callers should use [getAssignedScopeIdRawOrNull]. */
+    @JvmSynthetic
     fun getAssignedScopeIdOrNull(scope: GeoScope): AssignedScopeId? = scope.assignedScopeIdOrNull
+
+    /** Java API returning the raw assigned Scope ID, or `null` for an unassigned Scope. */
+    fun getAssignedScopeIdRawOrNull(scope: GeoScope): Long? = scope.assignedScopeIdOrNull?.raw
 
     @Deprecated("Use getAssignedScopeIdOrNull")
     fun getScopeId(scope: GeoScope): ScopeId = scope.scopeId
@@ -346,11 +365,17 @@ object RegionDataApi {
     fun getScopeFoundedInRegionNumberId(scope: GeoScope): Int =
         scope.requireAssignedScopeId().toLegacyScopeId().foundedInRegionNumberId()
 
+    /** Kotlin API. Java callers should use [getAssignedScopeOwnershipHistoryRaw]. */
+    @JvmSynthetic
     fun getAssignedScopeOwnershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> =
         RegionDatabase.getAssignedScopeOwnershipHistory(scopeId)
 
+    /** Java API for querying ownership history by validated raw assigned Scope ID. */
+    fun getAssignedScopeOwnershipHistoryRaw(scopeIdRaw: Long): List<ScopeOwnershipEntry> =
+        getAssignedScopeOwnershipHistory(requireAssignedScopeIdRaw(scopeIdRaw))
+
     @Deprecated("Use getAssignedScopeOwnershipHistory")
-    fun getScopeOwnershipHistory(scopeId: ScopeId): List<com.imyvm.iwg.domain.ScopeOwnershipEntry> =
+    fun getScopeOwnershipHistory(scopeId: ScopeId): List<ScopeOwnershipEntry> =
         RegionDatabase.getScopeOwnershipHistory(scopeId)
 
     fun resolveScopeAtEntity(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? =
@@ -396,10 +421,11 @@ object RegionDataApi {
         return result
     }
 
-    fun applyTimedEffectOverlay(overlay: com.imyvm.iwg.domain.TimedEffectOverlay): String =
+    fun applyTimedEffectOverlay(overlay: TimedEffectOverlay): String =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.applyTimedEffectOverlay(overlay)
 
-    /** Creates a validated overlay with an immutable snapshot of [effects]. */
+    /** Kotlin API creating a validated overlay. Java callers should use [createTimedEffectOverlayRaw]. */
+    @JvmSynthetic
     fun createTimedEffectOverlay(
         overlayId: String,
         scopeId: AssignedScopeId,
@@ -412,25 +438,65 @@ object RegionDataApi {
         overlayId, scopeId.raw, effects, startMillis, endMillis, priority, source
     ).immutableSnapshot()
 
+    /** Java API creating a validated overlay with an immutable snapshot of [effects]. */
+    fun createTimedEffectOverlayRaw(
+        overlayId: String,
+        scopeIdRaw: Long,
+        effects: List<TimedEffect>,
+        startMillis: Long,
+        endMillis: Long,
+        priority: Int,
+        source: String
+    ): TimedEffectOverlay = createTimedEffectOverlay(
+        overlayId,
+        requireAssignedScopeIdRaw(scopeIdRaw),
+        effects,
+        startMillis,
+        endMillis,
+        priority,
+        source
+    )
+
+    /** Kotlin API. Java callers should use [clearTimedEffectOverlayRaw]. */
+    @JvmSynthetic
     fun clearTimedEffectOverlay(scopeId: AssignedScopeId, overlayId: String): Boolean =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
+
+    /** Java API for clearing an overlay by validated raw assigned Scope ID. */
+    fun clearTimedEffectOverlayRaw(scopeIdRaw: Long, overlayId: String): Boolean =
+        clearTimedEffectOverlay(requireAssignedScopeIdRaw(scopeIdRaw), overlayId)
 
     @Deprecated("Use the AssignedScopeId overload")
     fun clearTimedEffectOverlay(scopeId: ScopeId, overlayId: String): Boolean =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.clearTimedEffectOverlay(scopeId, overlayId)
 
+    /** Kotlin API. Java callers should use [queryOverlayRaw]. */
+    @JvmSynthetic
     fun queryOverlay(scopeId: AssignedScopeId): Map<EffectKey, Int> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
+
+    /** Java API for querying effective overlays by validated raw assigned Scope ID. */
+    fun queryOverlayRaw(scopeIdRaw: Long): Map<EffectKey, Int> =
+        queryOverlay(requireAssignedScopeIdRaw(scopeIdRaw))
 
     @Deprecated("Use the AssignedScopeId overload")
     fun queryOverlay(scopeId: ScopeId): Map<EffectKey, Int> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryOverlay(scopeId)
 
-    fun queryActiveOverlays(scopeId: AssignedScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
+    /** Kotlin API. Java callers should use [queryActiveOverlaysRaw]. */
+    @JvmSynthetic
+    fun queryActiveOverlays(scopeId: AssignedScopeId): List<TimedEffectOverlay> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
 
+    /** Java API for querying active overlays by validated raw assigned Scope ID. */
+    fun queryActiveOverlaysRaw(scopeIdRaw: Long): List<TimedEffectOverlay> =
+        queryActiveOverlays(requireAssignedScopeIdRaw(scopeIdRaw))
+
     @Deprecated("Use the AssignedScopeId overload")
-    fun queryActiveOverlays(scopeId: ScopeId): List<com.imyvm.iwg.domain.TimedEffectOverlay> =
+    fun queryActiveOverlays(scopeId: ScopeId): List<TimedEffectOverlay> =
         com.imyvm.iwg.application.region.effect.EffectOverlayService.queryActiveOverlays(scopeId)
+
+    private fun requireAssignedScopeIdRaw(scopeIdRaw: Long): AssignedScopeId =
+        AssignedScopeId.fromRaw(scopeIdRaw) ?: throw IllegalArgumentException("scope id is not assigned")
 
 }

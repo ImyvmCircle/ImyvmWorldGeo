@@ -7,6 +7,7 @@ import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RegionDataApiTest {
@@ -33,6 +34,68 @@ class RegionDataApiTest {
 
         assertEquals(listOf(TimedEffect(EffectKey.SPEED, 1)), overlay.effects)
         assertFailsWith<UnsupportedOperationException> { (overlay.effects as MutableList).clear() }
+    }
+
+    @Test
+    fun `raw assigned scope id API validates and round trips at the boundary`() {
+        val raw = generateCompatScopeIdRaw(1, 42)
+        val formatted = RegionDataApi.formatAssignedScopeIdRaw(raw)
+
+        assertEquals(raw, RegionDataApi.parseAssignedScopeIdRaw(formatted))
+        assertNull(RegionDataApi.parseAssignedScopeIdRaw("not-a-scope-id"))
+        assertFailsWith<IllegalArgumentException> { RegionDataApi.formatAssignedScopeIdRaw(0) }
+        assertFailsWith<IllegalArgumentException> { RegionDataApi.getScopeByAssignedIdRaw(0) }
+        assertFailsWith<IllegalArgumentException> { RegionDataApi.getAssignedScopeOwnershipHistoryRaw(0) }
+    }
+
+    @Test
+    fun `raw assigned scope id API distinguishes unassigned and absent scopes`() {
+        val assigned = scope("assigned", 43)
+        val unassigned = GeoScope(
+            "unassigned",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = null
+        )
+        val raw = requireNotNull(assigned.assignedScopeIdOrNull).raw
+
+        assertEquals(raw, RegionDataApi.getAssignedScopeIdRawOrNull(assigned))
+        assertNull(RegionDataApi.getAssignedScopeIdRawOrNull(unassigned))
+        assertNull(RegionDataApi.getScopeByAssignedIdRaw(raw))
+        assertTrue(RegionDataApi.getAssignedScopeOwnershipHistoryRaw(raw).isEmpty())
+    }
+
+    @Test
+    fun `raw timed overlay API validates ids and preserves empty service results`() {
+        val raw = generateCompatScopeIdRaw(1, 44)
+        val overlay = RegionDataApi.createTimedEffectOverlayRaw(
+            "raw-overlay",
+            raw,
+            listOf(TimedEffect(EffectKey.SPEED, 1)),
+            0,
+            1,
+            0,
+            "test"
+        )
+
+        assertEquals(raw, overlay.scopeIdRaw)
+        assertEquals(false, RegionDataApi.clearTimedEffectOverlayRaw(raw, "missing"))
+        assertTrue(RegionDataApi.queryOverlayRaw(raw).isEmpty())
+        assertTrue(RegionDataApi.queryActiveOverlaysRaw(raw).isEmpty())
+        assertFailsWith<IllegalArgumentException> {
+            RegionDataApi.createTimedEffectOverlayRaw(
+                "invalid",
+                0,
+                listOf(TimedEffect(EffectKey.SPEED, 1)),
+                0,
+                1,
+                0,
+                "test"
+            )
+        }
+        assertFailsWith<IllegalArgumentException> { RegionDataApi.clearTimedEffectOverlayRaw(0, "missing") }
+        assertFailsWith<IllegalArgumentException> { RegionDataApi.queryOverlayRaw(0) }
+        assertFailsWith<IllegalArgumentException> { RegionDataApi.queryActiveOverlaysRaw(0) }
     }
 
     @Test
