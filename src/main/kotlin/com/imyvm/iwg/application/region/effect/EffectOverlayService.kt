@@ -61,15 +61,17 @@ object EffectOverlayService {
         return removed
     }
 
+    /** [nowMillis] is Unix epoch milliseconds. */
     fun queryOverlay(scopeId: ScopeId, nowMillis: Long = System.currentTimeMillis()): Map<EffectKey, Int> {
         val assignedScopeId = AssignedScopeId.from(scopeId) ?: return emptyMap()
         return queryOverlay(assignedScopeId, nowMillis)
     }
 
+    /** [nowMillis] is Unix epoch milliseconds. */
     fun queryOverlay(scopeId: AssignedScopeId, nowMillis: Long = System.currentTimeMillis()): Map<EffectKey, Int> {
         val list = overlaysByScope[scopeId] ?: return emptyMap()
         val snapshot = synchronized(list) { list.toList() }
-        val active = snapshot.filter { it.startTickMillis <= nowMillis && nowMillis < it.endTickMillis }
+        val active = snapshot.filter { it.startEpochMillis <= nowMillis && nowMillis < it.endEpochMillis }
         if (active.isEmpty()) return emptyMap()
         val byPriority = active.sortedByDescending { it.priority }
         val result = mutableMapOf<EffectKey, Int>()
@@ -81,17 +83,20 @@ object EffectOverlayService {
         return result
     }
 
+    /** [nowMillis] is Unix epoch milliseconds. */
     fun queryActiveOverlays(scopeId: ScopeId, nowMillis: Long = System.currentTimeMillis()): List<TimedEffectOverlay> {
         val assignedScopeId = AssignedScopeId.from(scopeId) ?: return emptyList()
         return queryActiveOverlays(assignedScopeId, nowMillis)
     }
 
+    /** [nowMillis] is Unix epoch milliseconds. */
     fun queryActiveOverlays(scopeId: AssignedScopeId, nowMillis: Long = System.currentTimeMillis()): List<TimedEffectOverlay> {
         val list = overlaysByScope[scopeId] ?: return emptyList()
         val snapshot = synchronized(list) { list.toList() }
-        return snapshot.filter { it.startTickMillis <= nowMillis && nowMillis < it.endTickMillis }
+        return snapshot.filter { it.startEpochMillis <= nowMillis && nowMillis < it.endEpochMillis }
     }
 
+    /** [nowMillis] is Unix epoch milliseconds. */
     @Suppress("UNUSED_PARAMETER")
     fun queryOverlayForPlayer(scopeId: ScopeId, playerUUID: UUID, nowMillis: Long = System.currentTimeMillis()): Map<EffectKey, Int> {
         // Overlay is scope-global; per-player overlays would be added here when needed.
@@ -110,7 +115,7 @@ object EffectOverlayService {
         for (scopeId in overlaysByScope.keys) {
             overlaysByScope.computeIfPresent(scopeId) { _, list ->
                 synchronized(list) {
-                    list.removeAll { it.endTickMillis <= nowMillis }
+                    list.removeAll { it.endEpochMillis <= nowMillis }
                     list.takeIf { it.isNotEmpty() }
                 }
             }

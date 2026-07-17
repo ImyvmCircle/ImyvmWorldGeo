@@ -78,6 +78,17 @@ class EffectOverlayServiceTest {
     }
 
     @Test
+    fun `overlay active interval is start inclusive and end exclusive in epoch milliseconds`() {
+        store(overlay(start = 10, end = 20))
+
+        assertTrue(EffectOverlayService.queryActiveOverlays(scopeId, 9).isEmpty())
+        assertEquals(1, EffectOverlayService.queryActiveOverlays(scopeId, 10).size)
+        assertEquals(1, EffectOverlayService.queryActiveOverlays(scopeId, 19).size)
+        assertTrue(EffectOverlayService.queryActiveOverlays(scopeId, 20).isEmpty())
+        assertTrue(EffectOverlayService.queryOverlay(scopeId, 20).isEmpty())
+    }
+
+    @Test
     fun `scope deletion is atomic with a concurrent addon apply`() {
         val existenceChecked = CountDownLatch(1)
         val continueApply = CountDownLatch(1)

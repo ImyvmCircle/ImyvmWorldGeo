@@ -47,6 +47,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | Mutable `GeoScope` state properties | R11 (unreleased) | `RegionDataApi` for reads; supported Region and interaction operations for writes | Compatibility surface | No removal scheduled | Constructor and property accessor descriptors remain; uncontrolled state changes through legacy setters are rejected |
 | `ScopeId` compatibility encoding | R10 (unreleased) | `RegionDataApi.parseScopeId` and ScopeId query methods | Compatible encoding fix | No removal scheduled | Existing raw IDs remain parseable; newly migrated legacy scopes use a marker bit and full local index without changing the persisted `Long` field |
 | `ScopeId` query and overlay methods | R11 (unreleased) | Kotlin: typed `AssignedScopeId` methods; Java: corresponding `RegionDataApi` `...Raw` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; typed value-class methods keep their JVM descriptors but are hidden from Java source with `@JvmSynthetic`; `GeoScope` constructor and scopeId getter/setter descriptors remain |
+| `TimedEffectOverlay.startTickMillis` / `endTickMillis` getters | B6-R5 (unreleased) | `startEpochMillis` / `endEpochMillis` | Deprecated | Two released versions, then maintainer review | Values have always been Unix epoch milliseconds; constructor, component, copy, and old getter descriptors remain |
 | `Setting` / `BaseKey` | Not scheduled | Typed permission/rule/effect keys through supported APIs | Compatibility surface | No removal scheduled | Existing classes and JVM methods remain; unknown setting subclasses are rejected by persistence |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
@@ -249,7 +250,27 @@ PlayerInteractionApi.resetTeleportPoint(player, liveRegion, liveScope)
 Detached targets now fail before mutation or persistence. Existing method descriptors remain unchanged;
 unsafe mutation through copied or stale domain objects is not retained as compatibility behavior.
 
-Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Raw `scopeIdRaw` constructors remain binary compatible, but invalid assigned IDs, blank overlay/source IDs, empty or duplicate effect lists, amplifiers outside `0..255`, and non-positive durations (`startMillis >= endMillis`) are rejected. The API and overlay service defensively snapshot effect lists, so later mutation of an addon-owned list cannot change an active overlay.
+Construct timed overlays through `RegionDataApi.createTimedEffectOverlay`. Overlay start and end values
+are Unix epoch milliseconds and use the half-open interval `[startEpochMillis, endEpochMillis)`.
+`TimedEffectOverlay.startTickMillis` and `endTickMillis` are compatibility names only; they have never
+represented Minecraft game ticks. Kotlin and Java addons should read `startEpochMillis` and
+`endEpochMillis`. The original constructor parameter names, getters, components, and copy methods
+remain available for source and binary compatibility.
+
+```kotlin
+val startsAt = overlay.startEpochMillis
+val expiresAt = overlay.endEpochMillis
+```
+
+```java
+long startsAt = overlay.getStartEpochMillis();
+long expiresAt = overlay.getEndEpochMillis();
+```
+
+Raw `scopeIdRaw` constructors remain binary compatible, but invalid assigned IDs, blank overlay/source
+IDs, empty or duplicate effect lists, amplifiers outside `0..255`, and non-positive durations
+(`startMillis >= endMillis`) are rejected. The API and overlay service defensively snapshot effect
+lists, so later mutation of an addon-owned list cannot change an active overlay.
 
 Overlay APIs remain safe for synchronous calls from arbitrary addon threads. Applying an overlay is serialized with Region and Scope deletion: a successful deletion clears the Scope's transient overlays before another apply can complete, while a failed save restores the Scope without clearing its overlays. Queries and clearing an individual overlay remain thread-safe and do not wait for Region persistence.
 
