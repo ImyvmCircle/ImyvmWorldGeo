@@ -179,15 +179,9 @@ This checklist supplements, not replaces, the verification steps in "Tests and v
 - `docs/plan/` is local working state and must not be staged or committed.
 - `logs/` is runtime output and must not be staged or committed.
 - Formal user/addon documentation belongs elsewhere under `docs/` and may be committed.
+- Write technical documentation for clarity, accuracy, and reviewability. Do not apply academic-paper style rules, AIGC detection, or prose statistics unless the user explicitly requests them.
 - Keep `README.md` focused on released behavior and public usage. Use third-person perspective only (no "I", "we", "you"); name specific actors ("player", "visitor", "owner", "admin"). Do not add contexts, caveats, or disclaimers not present in the task prompt.
 - Before staging, inspect the exact file list. Exclude `docs/plan/`, `logs/`, build output, IDE files, and unrelated user changes.
-
-## Supplementary rule files
-
-The following files under `agents/` contain domain-specific rules that apply when their stated scope is active. They are not repeated here; read the relevant file when its scope applies.
-
-- `agents/WRITING_STYLE.md` — formal prose production and AIGC detection. Read and execute its full post-write chain when producing or rewriting formal text.
-- `agents/instructions/analysis-iteration.instructions.md` — five-round iterative analysis for design evaluation, critique, and direction comparison.
 
 ## Review priorities
 
