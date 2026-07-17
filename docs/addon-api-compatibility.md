@@ -38,8 +38,9 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `PlayerInteractionApi.toggleTeleportPointAccessibility(GeoScope)` | R11 (unreleased) | `toggleTeleportPointAccessibility(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | JVM method delegates after resolving the canonical database owner; detached/orphan/unassigned scopes are rejected |
 | `PlayerInteractionApi.deleteRegion(ServerPlayer, Region)` | B6 (unreleased) | `deleteRegionWithResult(ServerPlayer, Region)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains and delegates; the legacy call cannot observe the result |
 | `PlayerInteractionApi.deleteScope(ServerPlayer, Region, String)` | B6 (unreleased) | `deleteScopeWithResult(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains, resolves the name at the adapter boundary, and delegates to the exact target operation |
-| `Region.settings` / `GeoScope.settings` | Not scheduled | `RegionDataApi` for reads; `PlayerInteractionApi` setting operations for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getter returns a detached snapshot |
-| `Region.geometryScope` / `Region.ownershipHistoryByScope` | R10 (unreleased) | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots |
+| `Region.settings` / `GeoScope.settings` | B6 (unreleased) | `RegionDataApi` for reads; `PlayerInteractionApi` setting operations for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots and state-changing setter calls fail fast |
+| `Region.geometryScope` / `Region.ownershipHistoryByScope` | R10 (unreleased) | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots and setter calls fail fast |
+| Mutable `Region` state and Scope ownership methods | B6 (unreleased) | Owner-explicit operations on `PlayerInteractionApi` | Compatibility surface | No removal scheduled | Existing property and method descriptors remain; same-value scalar setter calls are no-ops and uncontrolled state changes fail fast |
 | `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | R11 (unreleased) | Use the named `GeoShape` factories and `PlayerInteractionApi.replaceScopeShape` | Compatibility surface | No removal scheduled | Raw constructor, getter, and setter descriptors remain; the getter returns a detached snapshot and state-changing setter calls fail fast |
 | Mutable `GeoScope` state properties | R11 (unreleased) | `RegionDataApi` for reads; supported Region and interaction operations for writes | Compatibility surface | No removal scheduled | Constructor and property accessor descriptors remain; uncontrolled state changes through legacy setters are rejected |
 | `ScopeId` compatibility encoding | R10 (unreleased) | `RegionDataApi.parseScopeId` and ScopeId query methods | Compatible encoding fix | No removal scheduled | Existing raw IDs remain parseable; newly migrated legacy scopes use a marker bit and full local index without changing the persisted `Long` field |
@@ -153,6 +154,28 @@ if (result == ScopeDeleteResult.SUCCESS) {
 ## R10 Region collection migration
 
 Do not mutate `Region.geometryScope` or `Region.ownershipHistoryByScope` directly. Their getters now return detached compatibility snapshots, so collection mutations do not change the Region. Read scopes through `RegionDataApi.getRegionScopes(region)` and perform supported mutations through `PlayerInteractionApi`.
+
+## B6 Region and Scope mutation boundary
+
+`RegionDataApi` continues to return live Region and Scope read handles. A returned object does not
+grant direct write access. Region name, Dynmap visibility, Scope membership, Scope names, ownership
+history, and settings are persisted state and must be changed through an owner-explicit
+`PlayerInteractionApi` operation.
+
+Legacy Region setters and the `addScope`, `removeScope`, `restoreScope`, `renameScope`, and
+`recordScopeOwnership` methods remain JVM-linkable. Same-value scalar setter calls are accepted as
+no-ops. Calls that would change state fail fast instead of bypassing canonical ownership checks,
+save failure rollback, and player-visible failure reporting. Collection setters always fail fast;
+their getters continue to return detached snapshots.
+
+Normal Scope deletion and transfer cannot remove the last Scope from a Region. Region merge is a
+separate operation: it removes the source Region from the canonical database before retiring its
+Scopes, and restores complete source and target state if persistence fails. Addons should not infer
+write capability from implementation-package methods on `RegionDatabase`; those methods are not a
+supported API.
+
+All supported mutations require the exact Region and Scope instances currently owned by the active
+database. A detached copy with matching names or IDs is rejected before mutation and persistence.
 
 ## R11 Scope identity migration
 

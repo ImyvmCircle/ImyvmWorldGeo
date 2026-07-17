@@ -5,6 +5,7 @@ import com.imyvm.iwg.application.interaction.helper.checkNameFormat
 import com.imyvm.iwg.application.interaction.helper.checkRegionNameUnique
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
@@ -18,11 +19,7 @@ fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
     if(!checkRegionNameUnique(oldName, normalizedName, player)) return 0
 
     return try {
-        RegionDatabase.renameRegion(region, normalizedName)
-        if (!saveRegionData(player)) {
-            region.name = oldName
-            return 0
-        }
+        if (!renameRegion(region, normalizedName) { saveRegionData(player) }) return 0
         player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, normalizedName)!!)
         1
     } catch (e: IllegalArgumentException) {
@@ -58,11 +55,34 @@ fun onScopeRename(
         }
     }
 
-    targetRegion.renameScope(existingScope, normalizedName)
-    if (!saveRegionData(player)) {
-        targetRegion.renameScope(existingScope, oldName)
-        return 0
-    }
+    if (!renameScope(targetRegion, existingScope, normalizedName) { saveRegionData(player) }) return 0
     player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, normalizedName, targetRegion.name)!!)
     return 1
+}
+
+internal fun renameRegion(region: Region, newName: String, save: () -> Boolean): Boolean {
+    RegionDatabase.requireCanonicalRegion(region)
+    val oldName = region.name
+    RegionDatabase.renameCanonicalRegion(region, newName)
+    if (!save()) {
+        RegionDatabase.renameCanonicalRegion(region, oldName)
+        return false
+    }
+    return true
+}
+
+internal fun renameScope(
+    region: Region,
+    scope: GeoScope,
+    newName: String,
+    save: () -> Boolean
+): Boolean {
+    RegionDatabase.requireCanonicalScope(region, scope)
+    val oldName = scope.scopeName
+    region.renameOwnedScope(scope, newName)
+    if (!save()) {
+        region.renameOwnedScope(scope, oldName)
+        return false
+    }
+    return true
 }

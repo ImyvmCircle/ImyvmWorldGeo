@@ -18,6 +18,35 @@ fun onRegionMerge(
         player.sendSystemMessage(Translator.tr("interaction.meta.region.merge.error.same_region")!!)
         return 0
     }
+    val result = mergeRegions(sourceRegion, targetRegion, System.currentTimeMillis()) { saveRegionData(player) }
+    val success = when (result) {
+        is RegionMergeResult.Success -> result
+        RegionMergeResult.PersistenceFailed -> return 0
+    }
+
+    PlayerRegionEntryExitTracker.onRegionMerged(sourceRegion, targetRegion)
+    player.sendSystemMessage(
+        Translator.tr(
+            "interaction.meta.region.merge.success",
+            sourceRegion.name, targetRegion.name, success.scopeCount, success.renamedCount
+        )!!
+    )
+    return 1
+}
+
+internal sealed interface RegionMergeResult {
+    data class Success(val scopeCount: Int, val renamedCount: Int) : RegionMergeResult
+    data object PersistenceFailed : RegionMergeResult
+}
+
+internal fun mergeRegions(
+    sourceRegion: Region,
+    targetRegion: Region,
+    changedAtMillis: Long,
+    save: () -> Boolean
+): RegionMergeResult {
+    RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
+    require(sourceRegion !== targetRegion) { "source and target regions must differ" }
     RegionDatabase.requireMergeableRegionPlayerStats(sourceRegion, targetRegion)
 
     val sourceScopes = sourceRegion.scopes.toList()
@@ -27,20 +56,21 @@ fun onRegionMerge(
     val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
     val scopeCount = sourceScopes.size
     var renamedCount = 0
-    val rollbackDatabase = try {
-        for (scope in sourceScopes) {
+    val rollbackDatabase = RegionDatabase.mergeAndRemoveRegionReversibly(sourceRegion, targetRegion)
+    try {
+        val retiredScopes = sourceRegion.retireOwnedScopesForMerge()
+        check(retiredScopes == sourceScopes) { "retired scopes differ from the validated source snapshot" }
+        for (scope in retiredScopes) {
             val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
             if (!resolvedName.equals(scope.scopeName, ignoreCase = false)) renamedCount++
-            sourceRegion.removeScope(scope)
             scope.renameTo(resolvedName)
-            targetRegion.addScope(scope)
+            targetRegion.addOwnedScope(scope)
         }
 
         val mergedHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
         sourceHistory.forEach { (scopeId, entries) ->
             mergedHistory.getOrPut(scopeId) { mutableListOf() }.addAll(entries)
         }
-        val transferTime = System.currentTimeMillis()
         sourceScopes.forEach { scope ->
             val scopeId = scope.requireAssignedScopeId()
             mergedHistory.getOrPut(scopeId) { mutableListOf() }.add(
@@ -48,35 +78,27 @@ fun onRegionMerge(
                     scopeId.raw,
                     sourceRegion.numberID,
                     targetRegion.numberID,
-                    transferTime
+                    changedAtMillis
                 )
             )
         }
         targetRegion.replaceOwnershipHistory(mergedHistory)
-        RegionDatabase.mergeAndRemoveRegionReversibly(sourceRegion, targetRegion)
     } catch (error: RuntimeException) {
         originalNames.forEach { (scope, name) -> scope.renameTo(name) }
-        sourceRegion.restoreScopes(sourceScopes)
-        targetRegion.restoreScopes(targetScopes)
+        sourceRegion.restoreOwnedScopes(sourceScopes)
+        targetRegion.restoreOwnedScopes(targetScopes)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        rollbackDatabase()
         throw error
     }
 
-    if (!saveRegionData(player)) {
-        rollbackDatabase()
+    if (!save()) {
         originalNames.forEach { (scope, name) -> scope.renameTo(name) }
-        sourceRegion.restoreScopes(sourceScopes)
-        targetRegion.restoreScopes(targetScopes)
+        sourceRegion.restoreOwnedScopes(sourceScopes)
+        targetRegion.restoreOwnedScopes(targetScopes)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)
-        return 0
+        rollbackDatabase()
+        return RegionMergeResult.PersistenceFailed
     }
-
-    PlayerRegionEntryExitTracker.onRegionMerged(sourceRegion, targetRegion)
-    player.sendSystemMessage(
-        Translator.tr(
-            "interaction.meta.region.merge.success",
-            sourceRegion.name, targetRegion.name, scopeCount, renamedCount
-        )!!
-    )
-    return 1
+    return RegionMergeResult.Success(scopeCount, renamedCount)
 }

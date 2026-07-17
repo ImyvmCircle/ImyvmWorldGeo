@@ -24,14 +24,14 @@ class RegionDatabaseTest {
         val firstRoot = directory.resolve("first")
         val secondRoot = directory.resolve("second")
         val region = sessionRegion().apply {
-            showOnDynmap = false
+            setDynmapVisibility(false)
             scopes.single().setDynmapVisibility(false)
         }
         val player = UUID.randomUUID()
 
         RegionDatabase.bindSession(firstRoot)
-        RegionDatabase.addRegion(region)
-        RegionDatabase.incrementRegionEntryStat(region, player)
+        RegionDatabase.insertRegion(region)
+        RegionDatabase.recordRegionEntry(region, player)
         RegionDatabase.saveForShutdown()
         RegionDatabase.unbindSession()
 
@@ -70,7 +70,7 @@ class RegionDatabaseTest {
         val firstRoot = directory.resolve("first")
         val secondRoot = directory.resolve("second")
         RegionDatabase.bindSession(firstRoot)
-        RegionDatabase.addRegion(sessionRegion())
+        RegionDatabase.insertRegion(sessionRegion())
 
         assertFailsWith<IllegalStateException> { RegionDatabase.bindSession(secondRoot) }
         assertEquals("region", RegionDatabase.getRegionList().single().name)
@@ -91,8 +91,8 @@ class RegionDatabaseTest {
 
         RegionDatabase.bindSession(directory)
         val region = sessionRegion()
-        RegionDatabase.addRegion(region)
-        RegionDatabase.incrementRegionEntryStat(region, UUID.randomUUID())
+        RegionDatabase.insertRegion(region)
+        RegionDatabase.recordRegionEntry(region, UUID.randomUUID())
         assertTrue(RegionDatabase.trySavePlayerStatsSnapshot())
         assertTrue(Files.exists(directory.resolve("iwg_player_stats.json")))
 
@@ -109,7 +109,7 @@ class RegionDatabaseTest {
     @Test
     fun `shutdown save persists without invoking projections`() = withTempDirectory { directory ->
         RegionDatabase.bindSession(directory)
-        RegionDatabase.addRegion(sessionRegion())
+        RegionDatabase.insertRegion(sessionRegion())
         var projectionCalls = 0
         RegionDatabase.onSave = { projectionCalls++ }
 
@@ -205,6 +205,52 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `region list is a detached registry snapshot`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        val first = regionWithScope("first", 7)
+        val second = regionWithScope("second", 8)
+        RegionDatabase.insertRegion(first)
+        RegionDatabase.insertRegion(second)
+
+        val snapshot = RegionDatabase.getRegionList()
+        (snapshot as MutableList).clear()
+
+        assertEquals(listOf(first, second), RegionDatabase.getRegionList())
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `legacy database mutations remain callable but cannot change live state`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        val region = regionWithScope("region", 7)
+        RegionDatabase.insertRegion(region)
+
+        assertFailsWith<IllegalStateException> { RegionDatabase.addRegion(regionWithScope("other", 8)) }
+        assertFailsWith<IllegalStateException> { RegionDatabase.removeRegion(region) }
+        assertFailsWith<IllegalStateException> { RegionDatabase.renameRegion(region, "renamed") }
+        assertFailsWith<IllegalStateException> {
+            RegionDatabase.incrementRegionEntryStat(region, UUID.randomUUID())
+        }
+
+        assertEquals(listOf(region), RegionDatabase.getRegionList())
+        assertEquals("region", region.name)
+        assertEquals(0L, RegionDatabase.getRegionPlayerStats(region).entryCount)
+    }
+
+    @Test
+    fun `player stat mutation rejects detached region`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        val canonical = regionWithScope("region", 7)
+        RegionDatabase.insertRegion(canonical)
+
+        assertFailsWith<IllegalArgumentException> {
+            RegionDatabase.recordRegionEntry(regionWithScope("region", 7), UUID.randomUUID())
+        }
+
+        assertEquals(0L, RegionDatabase.getRegionPlayerStats(canonical).entryCount)
+    }
+
+    @Test
     fun `round trips current database format`() = withTempDirectory { directory ->
         val path = directory.resolve("regions.db")
         val player = UUID.randomUUID()
@@ -220,7 +266,7 @@ class RegionDatabaseTest {
         )
         val region = Region("region", 7, mutableListOf(scope))
         region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
-        region.recordScopeOwnership(ScopeOwnershipEntry(scopeId.raw, 6, 7, 1234))
+        region.recordOwnedScopeOwnership(ScopeOwnershipEntry(scopeId.raw, 6, 7, 1234))
 
         RegionDatabase.writeRegions(path, listOf(region))
         val loaded = RegionDatabase.readRegions(path).single()
@@ -565,10 +611,10 @@ class RegionDatabaseTest {
         val path = directory.resolve("duplicate-history-owner.db")
         val historyScopeId = generateCompatScopeIdRaw(9, 0)
         val first = regionWithScope("first", 7).apply {
-            recordScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 7, 10))
+            recordOwnedScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 7, 10))
         }
         val second = regionWithScope("second", 8).apply {
-            recordScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 8, 10))
+            recordOwnedScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 8, 10))
         }
 
         assertFailsWith<IllegalArgumentException> { RegionDatabase.writeRegions(path, listOf(first, second)) }

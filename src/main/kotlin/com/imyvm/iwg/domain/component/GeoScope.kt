@@ -138,9 +138,14 @@ class GeoScope(
      * Use `RegionDataApi` for reads and `PlayerInteractionApi` setting operations for writes.
      * The JVM getter, setter, and constructor parameter are retained with no scheduled removal.
      */
+    @set:Deprecated("Change Scope settings through PlayerInteractionApi")
     var settings: MutableList<Setting>
         get() = settingStore.toLegacyList().toMutableList()
-        set(value) = settingStore.replaceAll(value)
+        set(@Suppress("UNUSED_PARAMETER") value) {
+            error("settings must be changed through the application boundary")
+        }
+
+    internal fun settingsSnapshot(): List<Setting> = settingStore.toLegacyList()
 
     fun getScopeInfo(index: Int): Component? {
         val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""

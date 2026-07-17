@@ -30,7 +30,7 @@ class DataLoadSaveRegisterTest {
         storeOverlayWithoutDatabaseCheck()
 
         openRegionSession(directory)
-        RegionDatabase.addRegion(regionWithScope())
+        RegionDatabase.insertRegion(regionWithScope())
 
         assertTrue(EffectOverlayService.queryOverlay(scopeId, 1).isEmpty())
         ImyvmWorldGeo.locationActionBarEnabledPlayers.add(UUID.randomUUID())
@@ -44,7 +44,7 @@ class DataLoadSaveRegisterTest {
     @Test
     fun `closing a session is atomic with concurrent addon overlay apply`() = withTempDirectory { directory ->
         openRegionSession(directory)
-        RegionDatabase.addRegion(regionWithScope())
+        RegionDatabase.insertRegion(regionWithScope())
         val existenceChecked = CountDownLatch(1)
         val continueApply = CountDownLatch(1)
         val closeCompleted = CountDownLatch(1)

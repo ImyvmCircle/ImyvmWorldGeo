@@ -26,13 +26,13 @@ class RegionTest {
 
         val region = Region("region", 7, mutableListOf(scope("main", 1)))
         assertFailsWith<IllegalArgumentException> { region.name = "region_" }
-        assertFailsWith<IllegalArgumentException> { region.geometryScope = mutableListOf() }
+        assertFailsWith<IllegalStateException> { region.geometryScope = mutableListOf() }
         assertEquals("region", region.name)
         assertEquals(1, region.scopes.size)
     }
 
     @Test
-    fun `legacy settings replacement rejects duplicates without changing canonical state`() {
+    fun `legacy settings replacement is rejected without changing canonical state`() {
         val region = Region(
             "region",
             7,
@@ -40,7 +40,7 @@ class RegionTest {
             mutableListOf(PermissionSetting(PermissionKey.BUILD, true))
         )
 
-        assertFailsWith<IllegalArgumentException> {
+        assertFailsWith<IllegalStateException> {
             region.settings = mutableListOf(
                 PermissionSetting(PermissionKey.PVP, true),
                 PermissionSetting(PermissionKey.PVP, false)
@@ -98,7 +98,7 @@ class RegionTest {
     fun `legacy scope and ownership collections are detached snapshots`() {
         val scope = scope("main", 1)
         val region = Region("region", 7, mutableListOf(scope))
-        region.recordScopeOwnership(ScopeOwnershipEntry(scope.scopeId.raw, 6, 7, 10))
+        region.recordOwnedScopeOwnership(ScopeOwnershipEntry(scope.scopeId.raw, 6, 7, 10))
 
         region.geometryScope.clear()
         region.ownershipHistoryByScope.getValue(scope.scopeId.raw).clear()
@@ -108,11 +108,21 @@ class RegionTest {
     }
 
     @Test
+    fun `internal scope view cannot be cast into a mutation path`() {
+        val scope = scope("main", 1)
+        val region = Region("region", 7, mutableListOf(scope))
+
+        assertFailsWith<UnsupportedOperationException> { (region.scopes as MutableList).clear() }
+
+        assertEquals(listOf(scope), region.scopes)
+    }
+
+    @Test
     fun `region rejects duplicate scope names and assigned ids`() {
         val region = Region("region", 7, mutableListOf(scope("main", 1)))
 
-        assertFailsWith<IllegalArgumentException> { region.addScope(scope("MAIN", 2)) }
-        assertFailsWith<IllegalArgumentException> { region.addScope(scope("other", 1)) }
+        assertFailsWith<IllegalArgumentException> { region.addOwnedScope(scope("MAIN", 2)) }
+        assertFailsWith<IllegalArgumentException> { region.addOwnedScope(scope("other", 1)) }
     }
 
     @Test
@@ -141,10 +151,41 @@ class RegionTest {
         val second = scope("second", 2)
         val region = Region("region", 7, mutableListOf(first, second))
 
-        val index = region.removeScope(first)
-        region.restoreScope(index, first)
+        val receipt = region.removeOwnedScope(first)
+        region.restoreOwnedScope(receipt)
 
         assertEquals(listOf(first, second), region.scopes)
+    }
+
+    @Test
+    fun `ordinary removal cannot empty a region`() {
+        val only = scope("only", 1)
+        val region = Region("region", 7, mutableListOf(only))
+
+        assertFailsWith<IllegalArgumentException> { region.removeOwnedScope(only) }
+
+        assertEquals(listOf(only), region.scopes)
+    }
+
+    @Test
+    @Suppress("DEPRECATION")
+    fun `legacy mutators remain callable but cannot change aggregate state`() {
+        val first = scope("first", 1)
+        val second = scope("second", 2)
+        val region = Region("region", 7, mutableListOf(first, second))
+
+        region.name = "region"
+        region.showOnDynmap = true
+        assertFailsWith<IllegalStateException> { region.addScope(scope("third", 3)) }
+        assertFailsWith<IllegalStateException> { region.removeScope(first) }
+        assertFailsWith<IllegalStateException> { region.restoreScope(0, scope("third", 3)) }
+        assertFailsWith<IllegalStateException> { region.renameScope(first, "renamed") }
+        assertFailsWith<IllegalStateException> {
+            region.recordScopeOwnership(ScopeOwnershipEntry(first.scopeId.raw, 6, 7, 10))
+        }
+
+        assertEquals(listOf(first, second), region.scopes)
+        assertEquals("first", first.scopeName)
     }
 
     private fun scope(name: String, id: Long) = GeoScope(

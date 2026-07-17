@@ -21,16 +21,16 @@ fun registerPlayerStatsEvents() {
 
 fun recordSuccessfulBlockPlacement(player: ServerPlayer, world: Level, pos: BlockPos) {
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return
-    RegionDatabase.incrementRegionBlockPlaceStat(regionAndScope.first, player.uuid)
+    RegionDatabase.recordRegionBlockPlace(regionAndScope.first, player.uuid)
 }
 
 private fun recordSuccessfulBlockBreak(player: ServerPlayer, world: Level, pos: BlockPos) {
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return
-    RegionDatabase.incrementRegionBlockBreakStat(regionAndScope.first, player.uuid)
+    RegionDatabase.recordRegionBlockBreak(regionAndScope.first, player.uuid)
 }
 
 private fun recordPlayerDeath(player: ServerPlayer) {
     val pos = player.blockPosition()
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level(), pos.x, pos.z) ?: return
-    RegionDatabase.incrementRegionDeathStat(regionAndScope.first, player.uuid)
+    RegionDatabase.recordRegionDeath(regionAndScope.first, player.uuid)
 }

@@ -202,7 +202,7 @@ class DeleteApplicationTest {
         val directory = Files.createTempDirectory("iwg-delete-test")
         tempDirectories.add(directory)
         RegionDatabase.bindSession(directory)
-        RegionDatabase.addRegion(region)
+        RegionDatabase.insertRegion(region)
         return region
     }
 

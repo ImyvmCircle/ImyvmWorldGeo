@@ -46,9 +46,9 @@ internal fun deleteScope(
     val result = EffectOverlayService.withScopeLifecycle {
         RegionDatabase.requireCanonicalScope(region, scope)
         if (region.scopes.size == 1) return@withScopeLifecycle ScopeDeleteResult.LAST_SCOPE
-        val index = region.removeScope(scope)
+        val receipt = region.removeOwnedScope(scope)
         if (!save()) {
-            region.restoreScope(index, scope)
+            region.restoreOwnedScope(receipt)
             ScopeDeleteResult.PERSISTENCE_FAILED
         } else {
             EffectOverlayService.clearScope(scope.requireAssignedScopeId())

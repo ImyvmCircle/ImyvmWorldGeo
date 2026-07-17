@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.ScopeOwnershipEntry
+import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -26,49 +27,17 @@ fun onScopeTransfer(
 
     val scope = getScopeOrNotify(player, sourceRegion, scopeName) ?: return 0
 
-    val originalName = scope.scopeName
-    val resolvedName = resolveTransferScopeName(originalName, targetRegion)
-    val nameChanged = !resolvedName.equals(originalName, ignoreCase = false)
-    val sourceIndex = sourceRegion.removeScope(scope)
-    val originalSourceHistory = sourceRegion.ownershipHistorySnapshot()
-    val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
+    val result = transferScope(sourceRegion, scope, targetRegion, System.currentTimeMillis()) {
+        saveRegionData(player)
+    }
+    val success = when (result) {
+        is ScopeTransferResult.Success -> result
+        ScopeTransferResult.PersistenceFailed -> return 0
+    }
 
-    val transferTime = System.currentTimeMillis()
-    try {
-        val scopeId = scope.requireAssignedScopeId()
-        scope.renameTo(resolvedName)
-        targetRegion.addScope(scope)
-        val newSourceHistory = originalSourceHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
-        val newTargetHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
-        newSourceHistory.remove(scopeId)?.let { previousEntries ->
-            newTargetHistory.getOrPut(scopeId) { mutableListOf() }.addAll(previousEntries)
-        }
-        newTargetHistory.getOrPut(scopeId) { mutableListOf() }.add(
-            ScopeOwnershipEntry(
-                scopeId.raw,
-                sourceRegion.numberID,
-                targetRegion.numberID,
-                transferTime
-            )
-        )
-        sourceRegion.replaceOwnershipHistory(newSourceHistory)
-        targetRegion.replaceOwnershipHistory(newTargetHistory)
-    } catch (error: IllegalArgumentException) {
-        if (targetRegion.containsScope(scope)) targetRegion.removeScope(scope)
-        scope.renameTo(originalName)
-        sourceRegion.restoreScope(sourceIndex, scope)
-        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
-        targetRegion.replaceOwnershipHistory(originalTargetHistory)
-        throw error
-    }
-    if (!saveRegionData(player)) {
-        targetRegion.removeScope(scope)
-        scope.renameTo(originalName)
-        sourceRegion.restoreScope(sourceIndex, scope)
-        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
-        targetRegion.replaceOwnershipHistory(originalTargetHistory)
-        return 0
-    }
+    val originalName = success.originalName
+    val resolvedName = success.resolvedName
+    val nameChanged = resolvedName != originalName
 
     if (nameChanged) {
         player.sendSystemMessage(
@@ -86,6 +55,66 @@ fun onScopeTransfer(
         )
     }
     return 1
+}
+
+internal sealed interface ScopeTransferResult {
+    data class Success(val originalName: String, val resolvedName: String) : ScopeTransferResult
+    data object PersistenceFailed : ScopeTransferResult
+}
+
+internal fun transferScope(
+    sourceRegion: Region,
+    scope: GeoScope,
+    targetRegion: Region,
+    changedAtMillis: Long,
+    save: () -> Boolean
+): ScopeTransferResult {
+    RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
+    require(sourceRegion !== targetRegion) { "source and target regions must differ" }
+    RegionDatabase.requireCanonicalScope(sourceRegion, scope)
+
+    val originalName = scope.scopeName
+    val resolvedName = resolveTransferScopeName(originalName, targetRegion)
+    val sourceReceipt = sourceRegion.removeOwnedScope(scope)
+    val originalSourceHistory = sourceRegion.ownershipHistorySnapshot()
+    val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
+
+    try {
+        val scopeId = scope.requireAssignedScopeId()
+        scope.renameTo(resolvedName)
+        targetRegion.addOwnedScope(scope)
+        val newSourceHistory = originalSourceHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        val newTargetHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
+        newSourceHistory.remove(scopeId)?.let { previousEntries ->
+            newTargetHistory.getOrPut(scopeId) { mutableListOf() }.addAll(previousEntries)
+        }
+        newTargetHistory.getOrPut(scopeId) { mutableListOf() }.add(
+            ScopeOwnershipEntry(
+                scopeId.raw,
+                sourceRegion.numberID,
+                targetRegion.numberID,
+                changedAtMillis
+            )
+        )
+        sourceRegion.replaceOwnershipHistory(newSourceHistory)
+        targetRegion.replaceOwnershipHistory(newTargetHistory)
+    } catch (error: RuntimeException) {
+        if (targetRegion.containsScope(scope)) targetRegion.removeOwnedScope(scope)
+        scope.renameTo(originalName)
+        sourceRegion.restoreOwnedScope(sourceReceipt)
+        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        throw error
+    }
+    if (!save()) {
+        targetRegion.removeOwnedScope(scope)
+        scope.renameTo(originalName)
+        sourceRegion.restoreOwnedScope(sourceReceipt)
+        sourceRegion.replaceOwnershipHistory(originalSourceHistory)
+        targetRegion.replaceOwnershipHistory(originalTargetHistory)
+        return ScopeTransferResult.PersistenceFailed
+    }
+    return ScopeTransferResult.Success(originalName, resolvedName)
 }
 
 internal fun resolveTransferScopeName(originalName: String, targetRegion: Region): String {

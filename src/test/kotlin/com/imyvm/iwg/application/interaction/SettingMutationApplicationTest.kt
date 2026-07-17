@@ -193,7 +193,7 @@ class SettingMutationApplicationTest {
         val directory = Files.createTempDirectory("iwg-setting-mutation-test")
         tempDirectories.add(directory)
         RegionDatabase.bindSession(directory)
-        RegionDatabase.addRegion(region)
+        RegionDatabase.insertRegion(region)
         return region to scope
     }
 

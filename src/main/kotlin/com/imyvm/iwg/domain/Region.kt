@@ -15,6 +15,7 @@ import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.network.chat.Component
+import java.util.Collections
 import kotlin.math.round
 
 class ScopeNotFoundException(
@@ -22,22 +23,43 @@ class ScopeNotFoundException(
     val regionName: String
 ) : IllegalArgumentException("region.error.no_scope")
 
+internal data class ScopeRemovalReceipt(
+    val scope: GeoScope,
+    val index: Int
+)
+
 class Region(
     name: String,
     numberID: Int,
     geometryScope: MutableList<GeoScope>,
     settings: MutableList<Setting> = mutableListOf(),
-    var showOnDynmap: Boolean = true,
+    showOnDynmap: Boolean = true,
     ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
-    var name: String = name
+    private var currentName: String = name
+    private var currentShowOnDynmap: Boolean = showOnDynmap
+
+    /** Binary-compatible facade. Rename through the application boundary. */
+    @set:Deprecated("Rename Regions through PlayerInteractionApi")
+    var name: String
+        get() = currentName
         set(value) {
-            require(isValidGeoName(value)) { "invalid region name" }
-            field = value
+            require(value == currentName) { "region name must be changed through the application boundary" }
+        }
+
+    /** Binary-compatible facade. Change visibility through the application boundary. */
+    @set:Deprecated("Change Region Dynmap visibility through PlayerInteractionApi")
+    var showOnDynmap: Boolean
+        get() = currentShowOnDynmap
+        set(value) {
+            require(value == currentShowOnDynmap) {
+                "Dynmap visibility must be changed through the application boundary"
+            }
         }
 
     private val stableNumberId = numberID.also { require(it > 0) { "region id must be positive" } }
     private val mutableScopes = mutableListOf<GeoScope>()
+    private val scopeView: List<GeoScope> = Collections.unmodifiableList(mutableScopes)
     private val mutableOwnershipHistory = mutableMapOf<AssignedScopeId, MutableList<ScopeOwnershipEntry>>()
     internal val settingStore = com.imyvm.iwg.domain.component.SettingStore(settings)
 
@@ -53,27 +75,33 @@ class Region(
         set(value) = require(value == stableNumberId) { "region id cannot be changed" }
 
     internal val scopes: List<GeoScope>
-        get() = mutableScopes
+        get() = scopeView
 
     /**
      * Binary-compatible snapshot for existing addons.
      *
      * Mutating the returned list does not change this Region. Use the addon API for writes.
      */
+    @set:Deprecated("Change Region Scopes through PlayerInteractionApi")
     var geometryScope: MutableList<GeoScope>
         get() = mutableScopes.toMutableList()
-        set(value) = replaceScopes(value)
+        set(@Suppress("UNUSED_PARAMETER") value) {
+            error("region scopes must be changed through the application boundary")
+        }
 
     /**
      * Binary-compatible snapshot for existing addons.
      *
      * The map and its entry lists are detached from this Region.
      */
+    @set:Deprecated("Ownership history is maintained by Scope transfer and merge operations")
     var ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>>
         get() = mutableOwnershipHistory.entries.associateTo(mutableMapOf()) { (scopeId, entries) ->
             scopeId.raw to entries.toMutableList()
         }
-        set(value) = replaceLegacyOwnershipHistory(value)
+        set(@Suppress("UNUSED_PARAMETER") value) {
+            error("ownership history must be changed through the application boundary")
+        }
 
     /**
      * Binary-compatible view for existing addons.
@@ -82,9 +110,12 @@ class Region(
      * Use `RegionDataApi` for reads and `PlayerInteractionApi` setting operations for writes.
      * The JVM getter, setter, and constructor parameter are retained with no scheduled removal.
      */
+    @set:Deprecated("Change Region settings through PlayerInteractionApi")
     var settings: MutableList<Setting>
         get() = settingStore.toLegacyList().toMutableList()
-        set(value) = settingStore.replaceAll(value)
+        set(@Suppress("UNUSED_PARAMETER") value) {
+            error("settings must be changed through the application boundary")
+        }
 
     fun getScopeByName(scopeName: String): GeoScope {
         return mutableScopes.find { it.scopeName.equals(scopeName, ignoreCase = true) }
@@ -93,26 +124,54 @@ class Region(
 
     fun containsScope(scope: GeoScope): Boolean = mutableScopes.any { it === scope }
 
-    fun addScope(scope: GeoScope) {
+    @Deprecated("Use PlayerInteractionApi scope creation operations")
+    fun addScope(@Suppress("UNUSED_PARAMETER") scope: GeoScope) {
+        error("region scopes must be changed through the application boundary")
+    }
+
+    internal fun addOwnedScope(scope: GeoScope) {
         validateScope(scope, mutableScopes)
         mutableScopes.add(scope)
     }
 
-    fun removeScope(scope: GeoScope): Int {
+    @Deprecated("Use PlayerInteractionApi scope deletion or transfer operations")
+    fun removeScope(@Suppress("UNUSED_PARAMETER") scope: GeoScope): Int {
+        error("region scopes must be changed through the application boundary")
+    }
+
+    internal fun removeOwnedScope(scope: GeoScope): ScopeRemovalReceipt {
         val index = mutableScopes.indexOfFirst { it === scope }
         require(index >= 0) { "scope does not belong to region" }
+        require(mutableScopes.size > 1) { "region must contain at least one scope" }
         mutableScopes.removeAt(index)
-        return index
+        return ScopeRemovalReceipt(scope, index)
     }
 
-    fun restoreScope(index: Int, scope: GeoScope) {
-        validateScope(scope, mutableScopes)
-        mutableScopes.add(index.coerceIn(0, mutableScopes.size), scope)
+    @Deprecated("Use PlayerInteractionApi scope deletion or transfer operations")
+    fun restoreScope(@Suppress("UNUSED_PARAMETER") index: Int, @Suppress("UNUSED_PARAMETER") scope: GeoScope) {
+        error("region scopes must be changed through the application boundary")
     }
 
-    internal fun restoreScopes(scopes: List<GeoScope>) = replaceScopes(scopes)
+    internal fun restoreOwnedScope(receipt: ScopeRemovalReceipt) {
+        validateScope(receipt.scope, mutableScopes)
+        require(receipt.index in 0..mutableScopes.size) { "scope removal receipt index is invalid" }
+        mutableScopes.add(receipt.index, receipt.scope)
+    }
 
-    fun renameScope(scope: GeoScope, newName: String) {
+    internal fun retireOwnedScopesForMerge(): List<GeoScope> {
+        val retired = mutableScopes.toList()
+        mutableScopes.clear()
+        return retired
+    }
+
+    internal fun restoreOwnedScopes(scopes: List<GeoScope>) = replaceScopes(scopes)
+
+    @Deprecated("Use PlayerInteractionApi scope rename operations")
+    fun renameScope(@Suppress("UNUSED_PARAMETER") scope: GeoScope, @Suppress("UNUSED_PARAMETER") newName: String) {
+        error("scope names must be changed through the application boundary")
+    }
+
+    internal fun renameOwnedScope(scope: GeoScope, newName: String) {
         require(containsScope(scope)) { "scope does not belong to region" }
         require(mutableScopes.none { it !== scope && it.scopeName.equals(newName, ignoreCase = true) }) {
             "duplicate scope name"
@@ -120,7 +179,12 @@ class Region(
         scope.renameTo(newName)
     }
 
-    fun recordScopeOwnership(entry: ScopeOwnershipEntry) {
+    @Deprecated("Ownership history is maintained by scope transfer and merge operations")
+    fun recordScopeOwnership(@Suppress("UNUSED_PARAMETER") entry: ScopeOwnershipEntry) {
+        error("ownership history must be changed through the application boundary")
+    }
+
+    internal fun recordOwnedScopeOwnership(entry: ScopeOwnershipEntry) {
         require(entry.toRegionNumberId == numberID) { "ownership entry targets another region" }
         val updated = mutableOwnershipHistory[entry.scopeId].orEmpty() + entry
         validateOwnershipChain(entry.scopeId, updated)
@@ -138,6 +202,17 @@ class Region(
         mutableOwnershipHistory.clear()
         value.forEach { (scopeId, entries) -> mutableOwnershipHistory[scopeId] = entries.toMutableList() }
     }
+
+    internal fun renameTo(value: String) {
+        require(isValidGeoName(value)) { "invalid region name" }
+        currentName = value
+    }
+
+    internal fun setDynmapVisibility(value: Boolean) {
+        currentShowOnDynmap = value
+    }
+
+    internal fun settingsSnapshot(): List<Setting> = settingStore.toLegacyList()
 
     private fun replaceLegacyOwnershipHistory(value: Map<Long, List<ScopeOwnershipEntry>>) {
         val typed = value.entries.associate { (raw, entries) ->

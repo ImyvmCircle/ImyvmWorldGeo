@@ -170,8 +170,8 @@ object RegionDatabase {
                 stream.writeUTF(region.name)
                 stream.writeInt(region.numberID)
                 saveGeoScopes(stream, region.scopes)
-                saveSettings(stream, region.settings)
-                saveOwnershipHistory(stream, region.ownershipHistoryByScope)
+                saveSettings(stream, region.settingsSnapshot())
+                saveOwnershipHistory(stream, region.ownershipHistorySnapshot())
             }
         }
     }
@@ -234,10 +234,8 @@ object RegionDatabase {
                     val geometryScopes = loadGeoScopes(stream, isV1, numberID)
                     val settings = loadSettings(stream)
 
-                    val region = Region(name, numberID, geometryScopes, settings)
-                    if (isV1) {
-                        region.ownershipHistoryByScope = loadOwnershipHistory(stream)
-                    }
+                    val ownershipHistory = if (isV1) loadOwnershipHistory(stream) else mutableMapOf()
+                    val region = Region(name, numberID, geometryScopes, settings, ownershipHistoryByScope = ownershipHistory)
                     loadedRegions.add(region)
                 }
                 validateDatabaseIdentities(loadedRegions)
@@ -248,7 +246,12 @@ object RegionDatabase {
         }
     }
 
-    fun addRegion(region: Region) {
+    @Deprecated("Regions are created through PlayerInteractionApi")
+    fun addRegion(@Suppress("UNUSED_PARAMETER") region: Region) {
+        error("regions must be changed through the application boundary")
+    }
+
+    internal fun insertRegion(region: Region) {
         require(regions.none { it.numberID == region.numberID }) { "duplicate region id" }
         require(regions.none { it.name.equals(region.name, ignoreCase = true) }) { "duplicate region name" }
         val existingScopeIds = regions.flatMapTo(hashSetOf()) { existing ->
@@ -258,9 +261,19 @@ object RegionDatabase {
         regions.add(region)
     }
 
-    fun removeRegion(regionToDelete: Region) {
-        regions.removeIf { it.name == regionToDelete.name && it.numberID == regionToDelete.numberID }
-        regionPlayerStats.remove(regionToDelete.numberID)
+    internal fun insertRegionReversibly(region: Region): () -> Unit {
+        insertRegion(region)
+        return {
+            val index = regions.indexOfFirst { it === region }
+            check(index >= 0) { "inserted region is no longer canonical" }
+            regions.removeAt(index)
+            regionPlayerStats.remove(region.numberID)
+        }
+    }
+
+    @Deprecated("Regions are deleted through PlayerInteractionApi")
+    fun removeRegion(@Suppress("UNUSED_PARAMETER") regionToDelete: Region) {
+        error("regions must be changed through the application boundary")
     }
 
     internal fun requireCanonicalRegions(
@@ -314,51 +327,91 @@ object RegionDatabase {
         }
     }
 
-    fun renameRegion(region: Region, newName: String) {
+    @Deprecated("Regions are renamed through PlayerInteractionApi")
+    fun renameRegion(@Suppress("UNUSED_PARAMETER") region: Region, @Suppress("UNUSED_PARAMETER") newName: String) {
+        error("regions must be changed through the application boundary")
+    }
+
+    internal fun renameCanonicalRegion(region: Region, newName: String) {
+        requireCanonicalRegion(region)
         val isDuplicate = regions.any { otherRegion ->
-            otherRegion.name.equals(newName, ignoreCase = true) && otherRegion.numberID != region.numberID
+            otherRegion !== region && otherRegion.name.equals(newName, ignoreCase = true)
         }
         if (isDuplicate) {
             throw IllegalArgumentException("A region with the name '$newName' already exists.")
         }
-        region.name = newName
+        region.renameTo(newName)
     }
 
     fun getRegionList(): List<Region> {
-        return regions
+        return regions.toList()
     }
 
     fun getRegionPlayerStats(region: Region): RegionPlayerStats =
         regionPlayerStats[region.numberID]?.aggregate()
             ?: RegionPlayerStats(0, 0, 0, 0, 0, 0)
 
-    fun incrementRegionEntryStat(region: Region, playerUUID: UUID) {
+    @Deprecated("Player statistics are maintained by gameplay event handlers")
+    fun incrementRegionEntryStat(@Suppress("UNUSED_PARAMETER") region: Region, @Suppress("UNUSED_PARAMETER") playerUUID: UUID) {
+        error("player statistics must be changed through the application boundary")
+    }
+
+    internal fun recordRegionEntry(region: Region, playerUUID: UUID) {
+        requireCanonicalRegion(region)
         incrementPlayerStat(region.numberID, playerUUID) { entryCounts }
     }
 
-    fun addRegionStayDuration(region: Region, playerUUID: UUID, millis: Long) {
+    @Deprecated("Player statistics are maintained by gameplay event handlers")
+    fun addRegionStayDuration(
+        @Suppress("UNUSED_PARAMETER") region: Region,
+        @Suppress("UNUSED_PARAMETER") playerUUID: UUID,
+        @Suppress("UNUSED_PARAMETER") millis: Long
+    ) {
+        error("player statistics must be changed through the application boundary")
+    }
+
+    internal fun recordRegionStayDuration(region: Region, playerUUID: UUID, millis: Long) {
+        requireCanonicalRegion(region)
         if (millis <= 0L) return
         incrementPlayerStat(region.numberID, playerUUID, millis) { stayMillis }
     }
 
-    fun incrementRegionDeathStat(region: Region, playerUUID: UUID) {
+    @Deprecated("Player statistics are maintained by gameplay event handlers")
+    fun incrementRegionDeathStat(@Suppress("UNUSED_PARAMETER") region: Region, @Suppress("UNUSED_PARAMETER") playerUUID: UUID) {
+        error("player statistics must be changed through the application boundary")
+    }
+
+    internal fun recordRegionDeath(region: Region, playerUUID: UUID) {
+        requireCanonicalRegion(region)
         incrementPlayerStat(region.numberID, playerUUID) { deathCounts }
     }
 
-    fun incrementRegionBlockPlaceStat(region: Region, playerUUID: UUID) {
+    @Deprecated("Player statistics are maintained by gameplay event handlers")
+    fun incrementRegionBlockPlaceStat(@Suppress("UNUSED_PARAMETER") region: Region, @Suppress("UNUSED_PARAMETER") playerUUID: UUID) {
+        error("player statistics must be changed through the application boundary")
+    }
+
+    internal fun recordRegionBlockPlace(region: Region, playerUUID: UUID) {
+        requireCanonicalRegion(region)
         incrementPlayerStat(region.numberID, playerUUID) { blockPlaceCounts }
     }
 
-    fun incrementRegionBlockBreakStat(region: Region, playerUUID: UUID) {
+    @Deprecated("Player statistics are maintained by gameplay event handlers")
+    fun incrementRegionBlockBreakStat(@Suppress("UNUSED_PARAMETER") region: Region, @Suppress("UNUSED_PARAMETER") playerUUID: UUID) {
+        error("player statistics must be changed through the application boundary")
+    }
+
+    internal fun recordRegionBlockBreak(region: Region, playerUUID: UUID) {
+        requireCanonicalRegion(region)
         incrementPlayerStat(region.numberID, playerUUID) { blockBreakCounts }
     }
 
-    fun mergeRegionPlayerStats(sourceRegion: Region, targetRegion: Region) {
-        require(sourceRegion.numberID != targetRegion.numberID) { "source and target regions must differ" }
-        val source = regionPlayerStats[sourceRegion.numberID] ?: return
-        val merged = (regionPlayerStats[targetRegion.numberID] ?: RegionPlayerStatsLedger()).mergedWith(source)
-        regionPlayerStats[targetRegion.numberID] = merged
-        regionPlayerStats.remove(sourceRegion.numberID)
+    @Deprecated("Player statistics are maintained by Region merge operations")
+    fun mergeRegionPlayerStats(
+        @Suppress("UNUSED_PARAMETER") sourceRegion: Region,
+        @Suppress("UNUSED_PARAMETER") targetRegion: Region
+    ) {
+        error("player statistics must be changed through the application boundary")
     }
 
     internal fun requireMergeableRegionPlayerStats(sourceRegion: Region, targetRegion: Region) {
@@ -436,6 +489,7 @@ object RegionDatabase {
     }
 
     fun nextScopeIdForNewScope(region: Region): AssignedScopeId {
+        requireCanonicalRegion(region)
         return nextScopeIdForNewScope(
             region,
             regions,
@@ -464,21 +518,24 @@ object RegionDatabase {
         throw ScopeIdCapacityExceededException()
     }
 
+    @Deprecated("Ownership history is maintained by scope transfer and merge operations")
     fun recordScopeOwnership(
-        scopeId: ScopeId,
-        fromRegion: Region,
-        toRegion: Region,
-        changedAtMillis: Long
-    ) = recordAssignedScopeOwnership(AssignedScopeId.require(scopeId), fromRegion, toRegion, changedAtMillis)
-
-    fun recordAssignedScopeOwnership(
-        scopeId: AssignedScopeId,
-        fromRegion: Region,
-        toRegion: Region,
-        changedAtMillis: Long
+        @Suppress("UNUSED_PARAMETER") scopeId: ScopeId,
+        @Suppress("UNUSED_PARAMETER") fromRegion: Region,
+        @Suppress("UNUSED_PARAMETER") toRegion: Region,
+        @Suppress("UNUSED_PARAMETER") changedAtMillis: Long
     ) {
-        val entry = ScopeOwnershipEntry(scopeId.raw, fromRegion.numberID, toRegion.numberID, changedAtMillis)
-        toRegion.recordScopeOwnership(entry)
+        error("ownership history is maintained by scope transfer and merge operations")
+    }
+
+    @Deprecated("Ownership history is maintained by scope transfer and merge operations")
+    fun recordAssignedScopeOwnership(
+        @Suppress("UNUSED_PARAMETER") scopeId: AssignedScopeId,
+        @Suppress("UNUSED_PARAMETER") fromRegion: Region,
+        @Suppress("UNUSED_PARAMETER") toRegion: Region,
+        @Suppress("UNUSED_PARAMETER") changedAtMillis: Long
+    ) {
+        error("ownership history is maintained by scope transfer and merge operations")
     }
 
     fun getScopeOwnershipHistory(scopeId: ScopeId): List<ScopeOwnershipEntry> {
@@ -502,7 +559,7 @@ object RegionDatabase {
             saveTeleportPoint(stream, scope.teleportPoint)
             stream.writeBoolean(scope.isTeleportPointPublic)
             saveGeoShape(stream, scope.geoShape)
-            saveSettings(stream, scope.settings)
+            saveSettings(stream, scope.settingsSnapshot())
             stream.writeLong(scope.requireAssignedScopeId().raw)
         }
     }
@@ -556,11 +613,11 @@ object RegionDatabase {
 
     private fun saveOwnershipHistory(
         stream: DataOutputStream,
-        history: Map<Long, MutableList<ScopeOwnershipEntry>>
+        history: Map<AssignedScopeId, List<ScopeOwnershipEntry>>
     ) {
         stream.writeInt(checkedCount(history.size, "ownership history"))
-        for ((scopeIdRaw, entries) in history) {
-            stream.writeLong(scopeIdRaw)
+        for ((scopeId, entries) in history) {
+            stream.writeLong(scopeId.raw)
             stream.writeInt(checkedCount(entries.size, "ownership entries"))
             for (entry in entries) {
                 stream.writeLong(entry.scopeIdRaw)
@@ -879,7 +936,7 @@ object RegionDatabase {
         val loaded = if (Files.exists(path)) readDynmapVisibility(path) else emptyMap()
         for (region in loadedRegions) {
             val visibility = loaded[region.numberID]
-            region.showOnDynmap = visibility?.showOnDynmap ?: true
+            region.setDynmapVisibility(visibility?.showOnDynmap ?: true)
             for (scope in region.scopes) {
                 scope.setDynmapVisibility(visibility?.scopes?.get(scope.scopeName) ?: true)
             }

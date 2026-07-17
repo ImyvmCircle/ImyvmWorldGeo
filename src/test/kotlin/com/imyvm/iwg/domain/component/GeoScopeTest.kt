@@ -6,6 +6,8 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFails
 import kotlin.test.assertSame
+import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.PermissionSetting
 
 class GeoScopeTest {
     @Test
@@ -80,5 +82,14 @@ class GeoScopeTest {
         assertEquals(true, scope.isTeleportPointPublic)
         assertSame(shape, scope.geoShape)
         assertEquals(false, scope.showOnDynmap)
+    }
+
+    @Test
+    fun `legacy settings setter cannot replace canonical store`() {
+        val scope = GeoScope("scope", Identifier.parse("minecraft:overworld"), null, geoShape = null)
+
+        assertFails { scope.settings = mutableListOf(PermissionSetting(PermissionKey.BUILD, true)) }
+
+        assertEquals(emptyList(), scope.settings)
     }
 }

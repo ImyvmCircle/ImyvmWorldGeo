@@ -186,11 +186,7 @@ private fun handleRegionCreateSuccess(
     notify: Boolean
 ): Boolean {
     val newRegion = creationResult.value
-    RegionDatabase.addRegion(newRegion)
-    if (!saveRegionData(player)) {
-        RegionDatabase.removeRegion(newRegion)
-        return false
-    }
+    if (!persistCreatedRegion(newRegion) { saveRegionData(player) }) return false
 
     if (notify) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.success", newRegion.name)!!)
@@ -215,11 +211,7 @@ private fun handleScopeCreateSuccess(
             return false
         }
     }
-    region.addScope(newScope)
-    if (!saveRegionData(player)) {
-        region.removeScope(newScope)
-        return false
-    }
+    if (!persistCreatedScope(region, newScope) { saveRegionData(player) }) return false
 
     if (notify) {
         player.sendSystemMessage(
@@ -228,6 +220,26 @@ private fun handleScopeCreateSuccess(
     }
     clearSelectionDisplay(player)
     clearPlayerSelection(player.uuid)
+    return true
+}
+
+internal fun persistCreatedRegion(region: Region, save: () -> Boolean): Boolean {
+    val rollback = RegionDatabase.insertRegionReversibly(region)
+    if (!save()) {
+        rollback()
+        return false
+    }
+    return true
+}
+
+internal fun persistCreatedScope(region: Region, scope: GeoScope, save: () -> Boolean): Boolean {
+    RegionDatabase.requireCanonicalRegion(region)
+    scope.requireAssignedScopeId()
+    region.addOwnedScope(scope)
+    if (!save()) {
+        region.removeOwnedScope(scope)
+        return false
+    }
     return true
 }
 

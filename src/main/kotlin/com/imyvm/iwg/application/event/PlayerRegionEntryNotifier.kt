@@ -95,7 +95,7 @@ object PlayerRegionEntryExitTracker {
         transition.scopeExit?.let { sendScopeExitMessage(player, it.region, it.scope) }
         transition.scopeEntry?.let { sendScopeEntryMessage(player, it.region, it.scope) }
         transition.completedStay?.let { addStayDuration(it.region, uuid, it.startedAt, it.endedAt) }
-        transition.incrementEntry?.let { RegionDatabase.incrementRegionEntryStat(it, uuid) }
+        transition.incrementEntry?.let { RegionDatabase.recordRegionEntry(it, uuid) }
         transition.regionEvent?.let { (from, to) ->
             RegionTransitionEvent.EVENT.invoker().onTransition(player, from, to, now)
         }
@@ -124,7 +124,7 @@ object PlayerRegionEntryExitTracker {
     private fun addStayDuration(region: Region, uuid: UUID, startedAt: Long, endedAt: Long) {
         val delta = endedAt - startedAt
         if (delta > 0L) {
-            RegionDatabase.addRegionStayDuration(region, uuid, delta)
+            RegionDatabase.recordRegionStayDuration(region, uuid, delta)
         }
     }
 
