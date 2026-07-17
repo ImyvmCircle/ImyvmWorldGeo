@@ -9,10 +9,17 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.PermissionKeyLike
+import com.imyvm.iwg.domain.component.RuleKeyLike
+import com.imyvm.iwg.domain.component.EffectKey
+import com.imyvm.iwg.domain.component.EntryExitToggleKey
+import com.imyvm.iwg.domain.component.EntryExitMessageKey
+import com.imyvm.iwg.domain.component.SettingSubject
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 import com.imyvm.iwg.util.text.Translator
+import java.util.UUID
 
 /**
  * Supported player-driven mutation API for addons.
@@ -127,13 +134,106 @@ object PlayerInteractionApi {
      */
     fun replaceScopeShape(player: ServerPlayer, region: Region, scope: GeoScope, newShape: GeoShape) =
         onReplacingScopeShape(player, region, scope, newShape)
-    @Deprecated("Use RegionDataApi typed setting mutations (e.g. addRegionPermission, addScopeEffect)")
+
+    /**
+     * Adds typed settings to an exact live target and reports persistence outcome.
+     *
+     * Permission and effect methods use overloads: omitting `targetPlayer` selects the global
+     * subject, while supplying a non-null UUID selects that player. Extension keys must already
+     * be registered. Call these mutations on the Minecraft server thread. A persistence failure
+     * restores the exact previous setting identity.
+     */
+    fun addRegionPermission(player: ServerPlayer, region: Region, key: PermissionKeyLike, value: Boolean): SettingAddResult =
+        addPermissionSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Global, value) { saveRegionData(player) }
+
+    fun addRegionPermission(player: ServerPlayer, region: Region, key: PermissionKeyLike, value: Boolean, targetPlayer: UUID): SettingAddResult =
+        addPermissionSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Player(targetPlayer), value) { saveRegionData(player) }
+
+    fun addScopePermission(player: ServerPlayer, region: Region, scope: GeoScope, key: PermissionKeyLike, value: Boolean): SettingAddResult =
+        addPermissionSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Global, value) { saveRegionData(player) }
+
+    fun addScopePermission(player: ServerPlayer, region: Region, scope: GeoScope, key: PermissionKeyLike, value: Boolean, targetPlayer: UUID): SettingAddResult =
+        addPermissionSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Player(targetPlayer), value) { saveRegionData(player) }
+
+    fun removeRegionPermission(player: ServerPlayer, region: Region, key: PermissionKeyLike): SettingRemoveResult =
+        removePermissionSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Global) { saveRegionData(player) }
+
+    fun removeRegionPermission(player: ServerPlayer, region: Region, key: PermissionKeyLike, targetPlayer: UUID): SettingRemoveResult =
+        removePermissionSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Player(targetPlayer)) { saveRegionData(player) }
+
+    fun removeScopePermission(player: ServerPlayer, region: Region, scope: GeoScope, key: PermissionKeyLike): SettingRemoveResult =
+        removePermissionSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Global) { saveRegionData(player) }
+
+    fun removeScopePermission(player: ServerPlayer, region: Region, scope: GeoScope, key: PermissionKeyLike, targetPlayer: UUID): SettingRemoveResult =
+        removePermissionSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Player(targetPlayer)) { saveRegionData(player) }
+
+    fun addRegionEffect(player: ServerPlayer, region: Region, key: EffectKey, amplifier: Int): SettingAddResult =
+        addEffectSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Global, amplifier) { saveRegionData(player) }
+
+    fun addRegionEffect(player: ServerPlayer, region: Region, key: EffectKey, amplifier: Int, targetPlayer: UUID): SettingAddResult =
+        addEffectSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Player(targetPlayer), amplifier) { saveRegionData(player) }
+
+    fun addScopeEffect(player: ServerPlayer, region: Region, scope: GeoScope, key: EffectKey, amplifier: Int): SettingAddResult =
+        addEffectSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Global, amplifier) { saveRegionData(player) }
+
+    fun addScopeEffect(player: ServerPlayer, region: Region, scope: GeoScope, key: EffectKey, amplifier: Int, targetPlayer: UUID): SettingAddResult =
+        addEffectSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Player(targetPlayer), amplifier) { saveRegionData(player) }
+
+    fun removeRegionEffect(player: ServerPlayer, region: Region, key: EffectKey): SettingRemoveResult =
+        removeEffectSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Global) { saveRegionData(player) }
+
+    fun removeRegionEffect(player: ServerPlayer, region: Region, key: EffectKey, targetPlayer: UUID): SettingRemoveResult =
+        removeEffectSetting(SettingMutationTarget.RegionTarget(region), key, SettingSubject.Player(targetPlayer)) { saveRegionData(player) }
+
+    fun removeScopeEffect(player: ServerPlayer, region: Region, scope: GeoScope, key: EffectKey): SettingRemoveResult =
+        removeEffectSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Global) { saveRegionData(player) }
+
+    fun removeScopeEffect(player: ServerPlayer, region: Region, scope: GeoScope, key: EffectKey, targetPlayer: UUID): SettingRemoveResult =
+        removeEffectSetting(SettingMutationTarget.ScopeTarget(region, scope), key, SettingSubject.Player(targetPlayer)) { saveRegionData(player) }
+
+    fun addRegionRule(player: ServerPlayer, region: Region, key: RuleKeyLike, value: Boolean): SettingAddResult =
+        addRuleSetting(SettingMutationTarget.RegionTarget(region), key, value) { saveRegionData(player) }
+
+    fun addScopeRule(player: ServerPlayer, region: Region, scope: GeoScope, key: RuleKeyLike, value: Boolean): SettingAddResult =
+        addRuleSetting(SettingMutationTarget.ScopeTarget(region, scope), key, value) { saveRegionData(player) }
+
+    fun removeRegionRule(player: ServerPlayer, region: Region, key: RuleKeyLike): SettingRemoveResult =
+        removeRuleSetting(SettingMutationTarget.RegionTarget(region), key) { saveRegionData(player) }
+
+    fun removeScopeRule(player: ServerPlayer, region: Region, scope: GeoScope, key: RuleKeyLike): SettingRemoveResult =
+        removeRuleSetting(SettingMutationTarget.ScopeTarget(region, scope), key) { saveRegionData(player) }
+
+    fun addRegionEntryExitToggle(player: ServerPlayer, region: Region, key: EntryExitToggleKey, value: Boolean): SettingAddResult =
+        addEntryExitToggleSetting(SettingMutationTarget.RegionTarget(region), key, value) { saveRegionData(player) }
+
+    fun addScopeEntryExitToggle(player: ServerPlayer, region: Region, scope: GeoScope, key: EntryExitToggleKey, value: Boolean): SettingAddResult =
+        addEntryExitToggleSetting(SettingMutationTarget.ScopeTarget(region, scope), key, value) { saveRegionData(player) }
+
+    fun removeRegionEntryExitToggle(player: ServerPlayer, region: Region, key: EntryExitToggleKey): SettingRemoveResult =
+        removeEntryExitToggleSetting(SettingMutationTarget.RegionTarget(region), key) { saveRegionData(player) }
+
+    fun removeScopeEntryExitToggle(player: ServerPlayer, region: Region, scope: GeoScope, key: EntryExitToggleKey): SettingRemoveResult =
+        removeEntryExitToggleSetting(SettingMutationTarget.ScopeTarget(region, scope), key) { saveRegionData(player) }
+
+    fun addRegionEntryExitMessage(player: ServerPlayer, region: Region, key: EntryExitMessageKey, message: String): SettingAddResult =
+        addEntryExitMessageSetting(SettingMutationTarget.RegionTarget(region), key, message) { saveRegionData(player) }
+
+    fun addScopeEntryExitMessage(player: ServerPlayer, region: Region, scope: GeoScope, key: EntryExitMessageKey, message: String): SettingAddResult =
+        addEntryExitMessageSetting(SettingMutationTarget.ScopeTarget(region, scope), key, message) { saveRegionData(player) }
+
+    fun removeRegionEntryExitMessage(player: ServerPlayer, region: Region, key: EntryExitMessageKey): SettingRemoveResult =
+        removeEntryExitMessageSetting(SettingMutationTarget.RegionTarget(region), key) { saveRegionData(player) }
+
+    fun removeScopeEntryExitMessage(player: ServerPlayer, region: Region, scope: GeoScope, key: EntryExitMessageKey): SettingRemoveResult =
+        removeEntryExitMessageSetting(SettingMutationTarget.ScopeTarget(region, scope), key) { saveRegionData(player) }
+
+    @Deprecated("Use PlayerInteractionApi typed setting mutations (e.g. addRegionPermission, addScopeEffect)")
     fun addSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?) = addRegionSetting(player, region, keyString, valueString, targetPlayerStr)
-    @Deprecated("Use RegionDataApi typed setting mutations (e.g. addScopePermission, addScopeRule)")
+    @Deprecated("Use PlayerInteractionApi typed setting mutations (e.g. addScopePermission, addScopeRule)")
     fun addSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?) = addScopeSetting(player, region, region.getScopeByName(scopeName), keyString, valueString, targetPlayerStr)
-    @Deprecated("Use RegionDataApi typed setting mutations (e.g. removeRegionPermission, removeRegionEffect)")
+    @Deprecated("Use PlayerInteractionApi typed setting mutations (e.g. removeRegionPermission, removeRegionEffect)")
     fun removeSettingRegion(player: ServerPlayer, region: Region, keyString: String, targetPlayerStr: String?) = removeRegionSetting(player, region, keyString, targetPlayerStr)
-    @Deprecated("Use RegionDataApi typed setting mutations (e.g. removeScopePermission, removeScopeRule)")
+    @Deprecated("Use PlayerInteractionApi typed setting mutations (e.g. removeScopePermission, removeScopeRule)")
     fun removeSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?) = removeScopeSetting(player, region, region.getScopeByName(scopeName), keyString, targetPlayerStr)
     fun getDefaultPermissionValue(keyString: String): Boolean {
         val key = PermissionKey.entries.firstOrNull { it.name == keyString }
@@ -204,15 +304,15 @@ object PlayerInteractionApi {
     fun estimateRegionArea(player: ServerPlayer, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)
     fun estimateScopeAreaChange(player: ServerPlayer, region: Region, scopeName: String, customPositions: List<BlockPos>? = null) = onEstimateScopeAreaChange(player, region, scopeName, customPositions)
 
-    @Deprecated("Use RegionDataApi.addRegionEntryExitToggle or addRegionEntryExitMessage")
+    @Deprecated("Use addRegionEntryExitToggle or addRegionEntryExitMessage")
     fun addEntryExitSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?) = addRegionSetting(player, region, keyString, valueString, null)
 
-    @Deprecated("Use RegionDataApi.addScopeEntryExitToggle or addScopeEntryExitMessage")
+    @Deprecated("Use addScopeEntryExitToggle or addScopeEntryExitMessage")
     fun addEntryExitSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, valueString: String?) = addScopeSetting(player, region, region.getScopeByName(scopeName), keyString, valueString, null)
 
-    @Deprecated("Use RegionDataApi.removeRegionEntryExitToggle or removeRegionEntryExitMessage")
+    @Deprecated("Use removeRegionEntryExitToggle or removeRegionEntryExitMessage")
     fun removeEntryExitSettingRegion(player: ServerPlayer, region: Region, keyString: String) = removeRegionSetting(player, region, keyString, null)
 
-    @Deprecated("Use RegionDataApi.removeScopeEntryExitToggle or removeScopeEntryExitMessage")
+    @Deprecated("Use removeScopeEntryExitToggle or removeScopeEntryExitMessage")
     fun removeEntryExitSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String) = removeScopeSetting(player, region, region.getScopeByName(scopeName), keyString, null)
 }

@@ -33,6 +33,8 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `RegionDataApi.getEffectValueForRegion` | R9 (unreleased) | `getRegionEffectValue` or `getScopeEffectValue` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `RegionDataApi.getActiveEffectsForRegion` | R9 (unreleased) | `getRegionActiveEffects` or `getScopeActiveEffects` | Deprecated | Two released versions, then maintainer review | JVM method delegates |
 | `PlayerInteractionApi.getPermissionValueRegion` | R9 (unreleased) | Explicit default/Region/Scope and global/player methods | Deprecated | Two released versions, then maintainer review | JVM method delegates |
+| `PlayerInteractionApi.addSettingRegion` / `addSettingScope` | B6 (unreleased) | Typed `addRegion*` / `addScope*` overloads on `PlayerInteractionApi` | Deprecated | Two released versions, then maintainer review | Existing string-based JVM methods remain and delegate through the typed mutation core |
+| `PlayerInteractionApi.removeSettingRegion` / `removeSettingScope` | B6 (unreleased) | Typed `removeRegion*` / `removeScope*` overloads on `PlayerInteractionApi` | Deprecated | Two released versions, then maintainer review | Existing string-based JVM methods remain and delegate through the typed mutation core |
 | `PlayerInteractionApi.toggleTeleportPointAccessibility(GeoScope)` | R11 (unreleased) | `toggleTeleportPointAccessibility(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | JVM method delegates after resolving the canonical database owner; detached/orphan/unassigned scopes are rejected |
 | `PlayerInteractionApi.deleteRegion(ServerPlayer, Region)` | B6 (unreleased) | `deleteRegionWithResult(ServerPlayer, Region)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains and delegates; the legacy call cannot observe the result |
 | `PlayerInteractionApi.deleteScope(ServerPlayer, Region, String)` | B6 (unreleased) | `deleteScopeWithResult(ServerPlayer, Region, GeoScope)` | Deprecated | Two released versions, then maintainer review | The v26.1-1.5.1 void descriptor remains, resolves the name at the adapter boundary, and delegates to the exact target operation |
@@ -54,9 +56,39 @@ Do not mutate `region.settings` or `scope.settings` directly:
 // Legacy: modifies only a detached compatibility snapshot.
 region.settings.add(PermissionSetting(PermissionKey.PVP, false))
 
-// Supported mutation boundary.
-PlayerInteractionApi.addSettingRegion(player, region, "PVP", "false", null)
+// Supported typed mutation boundary.
+val result = PlayerInteractionApi.addRegionPermission(
+    player,
+    region,
+    PermissionKey.PVP,
+    false
+)
 ```
+
+Permission and effect operations use overloads for their two supported subjects. The overload
+without a UUID changes the global value; the overload with a required UUID changes that player's
+value. Rule and entry/exit settings support only the global subject. Addons must call these
+player-driven mutations on the Minecraft server thread.
+
+```kotlin
+val globalResult = PlayerInteractionApi.addScopeEffect(
+    player, region, scope, EffectKey.SPEED, 1
+)
+val playerResult = PlayerInteractionApi.addScopeEffect(
+    player, region, scope, EffectKey.SPEED, 1, playerUuid
+)
+
+when (playerResult) {
+    SettingAddResult.SUCCESS -> handleSavedSetting()
+    SettingAddResult.ALREADY_EXISTS -> handleDuplicateSetting()
+    SettingAddResult.PERSISTENCE_FAILED -> handlePersistenceFailure()
+}
+```
+
+Removal returns `SettingRemoveResult.SUCCESS`, `NOT_FOUND`, or `PERSISTENCE_FAILED`. Persistence
+failure restores only the affected setting identity. Scope operations require the exact live
+Region/Scope pair. Effect amplifiers outside `0..255`, detached targets, and unregistered extension
+keys fail before mutation.
 
 Use the explicit query matching the intended target instead of nullable parameter combinations:
 
@@ -65,7 +97,8 @@ val global = RegionDataApi.getRegionGlobalPermissionValue(region, PermissionKey.
 val playerValue = RegionDataApi.getScopePlayerPermissionValue(region, scope, playerUuid, PermissionKey.PVP)
 ```
 
-Extension permission and rule keys must be registered through `RegionDataApi` before commands or queries use them.
+Extension permission and rule keys must be registered through `RegionDataApi` before commands,
+queries, or typed mutations use them.
 
 ## R9 rule query migration
 

@@ -5,7 +5,7 @@ import java.util.UUID
 /**
  * Legacy JVM compatibility model used by existing addons and database encoding.
  *
- * New addon logic should use the typed query and mutation methods in `RegionDataApi` and
+ * New addon logic should use typed queries in `RegionDataApi` and typed mutations in
  * `PlayerInteractionApi`. Unknown subclasses cannot enter the internal setting store.
  * This class currently has no scheduled removal.
  */

@@ -34,6 +34,54 @@ internal class SettingStore(settings: Iterable<Setting> = emptyList()) {
     fun effectKeys(): Set<EffectKey> = effects.keys
     fun builtInRuleKeys(): Set<RuleKey> = rules.keys.filterIsInstanceTo(linkedSetOf())
 
+    fun putPermissionIfAbsent(key: PermissionKeyLike, subject: SettingSubject, value: Boolean): Boolean =
+        putSubjectValueIfAbsent(permissions, key, subject, value)
+
+    fun removePermission(key: PermissionKeyLike, subject: SettingSubject): Boolean? =
+        removeSubjectValueAndReturn(permissions, key, subject)
+
+    fun restorePermission(key: PermissionKeyLike, subject: SettingSubject, value: Boolean) =
+        restoreSubjectValue(permissions, key, subject, value)
+
+    fun putEffectIfAbsent(key: EffectKey, subject: SettingSubject, amplifier: Int): Boolean {
+        require(amplifier in 0..255) { "effect amplifier must be between 0 and 255" }
+        return putSubjectValueIfAbsent(effects, key, subject, amplifier)
+    }
+
+    fun removeEffect(key: EffectKey, subject: SettingSubject): Int? =
+        removeSubjectValueAndReturn(effects, key, subject)
+
+    fun restoreEffect(key: EffectKey, subject: SettingSubject, amplifier: Int) {
+        require(amplifier in 0..255) { "effect amplifier must be between 0 and 255" }
+        restoreSubjectValue(effects, key, subject, amplifier)
+    }
+
+    fun putRuleIfAbsent(key: RuleKeyLike, value: Boolean): Boolean = rules.putIfAbsent(key, value) == null
+
+    fun removeRule(key: RuleKeyLike): Boolean? = rules.remove(key)
+
+    fun restoreRule(key: RuleKeyLike, value: Boolean) {
+        check(rules.putIfAbsent(key, value) == null) { "setting identity already exists" }
+    }
+
+    fun putEntryExitToggleIfAbsent(key: EntryExitToggleKey, value: Boolean): Boolean =
+        entryExitToggles.putIfAbsent(key, value) == null
+
+    fun removeEntryExitToggle(key: EntryExitToggleKey): Boolean? = entryExitToggles.remove(key)
+
+    fun restoreEntryExitToggle(key: EntryExitToggleKey, value: Boolean) {
+        check(entryExitToggles.putIfAbsent(key, value) == null) { "setting identity already exists" }
+    }
+
+    fun putEntryExitMessageIfAbsent(key: EntryExitMessageKey, value: String): Boolean =
+        entryExitMessages.putIfAbsent(key, value) == null
+
+    fun removeEntryExitMessage(key: EntryExitMessageKey): String? = entryExitMessages.remove(key)
+
+    fun restoreEntryExitMessage(key: EntryExitMessageKey, value: String) {
+        check(entryExitMessages.putIfAbsent(key, value) == null) { "setting identity already exists" }
+    }
+
     fun put(setting: Setting) {
         val subject = setting.playerUUID?.let(SettingSubject::Player) ?: SettingSubject.Global
         when (setting) {
@@ -143,6 +191,49 @@ internal class SettingStore(settings: Iterable<Setting> = emptyList()) {
         }
         if (values.isEmpty()) map.remove(key)
         return removed
+    }
+
+    private fun <K, V> putSubjectValueIfAbsent(
+        map: MutableMap<K, SubjectValues<V>>,
+        key: K,
+        subject: SettingSubject,
+        value: V
+    ): Boolean {
+        val values = map.getOrPut(key) { SubjectValues() }
+        val added = when (subject) {
+            SettingSubject.Global -> {
+                if (values.global != null) false else {
+                    values.global = value
+                    true
+                }
+            }
+            is SettingSubject.Player -> values.players.putIfAbsent(subject.uuid, value) == null
+        }
+        if (!added && values.isEmpty()) map.remove(key)
+        return added
+    }
+
+    private fun <K, V> removeSubjectValueAndReturn(
+        map: MutableMap<K, SubjectValues<V>>,
+        key: K,
+        subject: SettingSubject
+    ): V? {
+        val values = map[key] ?: return null
+        val removed = when (subject) {
+            SettingSubject.Global -> values.global.also { values.global = null }
+            is SettingSubject.Player -> values.players.remove(subject.uuid)
+        }
+        if (values.isEmpty()) map.remove(key)
+        return removed
+    }
+
+    private fun <K, V> restoreSubjectValue(
+        map: MutableMap<K, SubjectValues<V>>,
+        key: K,
+        subject: SettingSubject,
+        value: V
+    ) {
+        check(putSubjectValueIfAbsent(map, key, subject, value)) { "setting identity already exists" }
     }
 
     private fun <V> containsSubjectValue(values: SubjectValues<V>?, subject: SettingSubject): Boolean = when (subject) {
