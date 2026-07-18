@@ -7,6 +7,28 @@ internal data class PlayerLocation(val region: Region?, val scope: GeoScope?)
 
 internal data class ScopedPlayerLocation(val region: Region, val scope: GeoScope)
 
+internal sealed interface EntryPermissionTarget {
+    val region: Region
+    val locationName: String
+
+    data class RegionTarget(override val region: Region) : EntryPermissionTarget {
+        override val locationName: String
+            get() = region.name
+    }
+
+    data class ScopeTarget(
+        override val region: Region,
+        val scope: GeoScope
+    ) : EntryPermissionTarget {
+        init {
+            require(region.containsScope(scope)) { "scope does not belong to region" }
+        }
+
+        override val locationName: String
+            get() = scope.scopeName
+    }
+}
+
 internal data class ScheduledEntryTitle(val region: Region, val scheduledAt: Long)
 
 internal data class PendingWildernessExit(val fromRegion: Region, val startedAt: Long)
@@ -157,6 +179,10 @@ internal fun calculateLocationTransition(
         scopeEvent = (previousScoped to currentScoped).takeIf { scopeChanged }
     )
 }
+
+internal fun LocationTransition.entryPermissionTarget(): EntryPermissionTarget? =
+    scopeEntry?.let { EntryPermissionTarget.ScopeTarget(it.region, it.scope) }
+        ?: incrementEntry?.let { EntryPermissionTarget.RegionTarget(it) }
 
 private fun sameRegion(left: Region?, right: Region?): Boolean = left?.numberID == right?.numberID
 

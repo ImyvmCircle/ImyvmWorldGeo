@@ -5,6 +5,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertIs
 import kotlin.test.assertNull
 import kotlin.test.assertSame
 
@@ -38,6 +39,9 @@ class PlayerLocationTransitionTest {
         assertSame(scopeB, transition.scopeEntry?.scope)
         assertEquals(regionA to regionB, transition.regionEvent)
         assertEquals(StayPeriod(regionA, 10, 30), transition.completedStay)
+        val target = assertIs<EntryPermissionTarget.ScopeTarget>(transition.entryPermissionTarget())
+        assertSame(regionB, target.region)
+        assertSame(scopeB, target.scope)
     }
 
     @Test
@@ -94,6 +98,8 @@ class PlayerLocationTransitionTest {
         assertSame(scopeA, transition.scopeExit?.scope)
         assertSame(scopeA2, transition.scopeEntry?.scope)
         assertEquals(10, transition.state.stayStartedAt)
+        val target = assertIs<EntryPermissionTarget.ScopeTarget>(transition.entryPermissionTarget())
+        assertSame(scopeA2, target.scope)
     }
 
     @Test
@@ -105,6 +111,21 @@ class PlayerLocationTransitionTest {
         assertSame(regionA, entered.incrementEntry)
         assertEquals(null to regionA, entered.regionEvent)
         assertEquals(20, entered.state.stayStartedAt)
+        val target = assertIs<EntryPermissionTarget.ScopeTarget>(entered.entryPermissionTarget())
+        assertSame(scopeA, target.scope)
+    }
+
+    @Test
+    fun `region-only entry selects region and delayed title alone selects no permission target`() {
+        val state = PlayerLocationState(PlayerLocation(regionA, null))
+        val regionEntry = LocationTransition(state, incrementEntry = regionA)
+        val target = assertIs<EntryPermissionTarget.RegionTarget>(regionEntry.entryPermissionTarget())
+        assertSame(regionA, target.region)
+
+        val delayedTitle = LocationTransition(
+            state.copy(scheduledEntryTitle = ScheduledEntryTitle(regionA, 10))
+        )
+        assertNull(delayedTitle.entryPermissionTarget())
     }
 
     @Test

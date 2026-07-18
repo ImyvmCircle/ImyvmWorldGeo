@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.application.region.PlayerRegionChecker
+import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.application.region.permission.helper.hasRegionPermission
 import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
 import com.imyvm.iwg.domain.Region
@@ -9,6 +10,8 @@ import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
+import com.imyvm.iwg.domain.component.PermissionCategory
+import com.imyvm.iwg.domain.component.PermissionEntryNotification
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS
@@ -16,7 +19,6 @@ import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_ENTER_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_EXIT_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_ENTER_I18N_KEY
 import com.imyvm.iwg.infra.config.EntryExitConfig.SCOPE_EXIT_I18N_KEY
-import com.imyvm.iwg.infra.config.PermissionConfig
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.protocol.game.ClientboundSetTitlesAnimationPacket
@@ -25,6 +27,29 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import java.util.UUID
+
+internal data class RpgEntryPermission(
+    val key: PermissionKey,
+    val notification: PermissionEntryNotification.Restricted
+)
+
+internal val RPG_ENTRY_PERMISSIONS: List<RpgEntryPermission> = buildList {
+    for (key in PermissionKey.entries) {
+        when (val notification = key.entryNotification) {
+            PermissionEntryNotification.None -> {
+                check(key.category == PermissionCategory.GENERAL) {
+                    "RPG permission ${key.name} must declare a restricted entry notification"
+                }
+            }
+            is PermissionEntryNotification.Restricted -> {
+                check(key.category == PermissionCategory.RPG) {
+                    "Only RPG permissions may declare a restricted entry notification: ${key.name}"
+                }
+                add(RpgEntryPermission(key, notification))
+            }
+        }
+    }
+}
 
 object PlayerRegionEntryExitTracker {
 
@@ -94,6 +119,7 @@ object PlayerRegionEntryExitTracker {
         transition.regionEntry?.let { sendRegionEntryTitle(player, it) }
         transition.scopeExit?.let { sendScopeExitMessage(player, it.region, it.scope) }
         transition.scopeEntry?.let { sendScopeEntryMessage(player, it.region, it.scope) }
+        transition.entryPermissionTarget()?.let { sendRpgEntryNotifications(player, it) }
         transition.completedStay?.let { addStayDuration(it.region, uuid, it.startedAt, it.endedAt) }
         transition.incrementEntry?.let { RegionDatabase.recordRegionEntry(it, uuid) }
         transition.regionEvent?.let { (from, to) ->
@@ -146,7 +172,6 @@ object PlayerRegionEntryExitTracker {
                 player.connection.send(ClientboundSetTitleTextPacket(text))
             }
         }
-        sendRpgEntryNotifications(player, region, null, region.name)
     }
 
     private fun sendScopeExitMessage(player: ServerPlayer, region: Region, scope: GeoScope) {
@@ -163,7 +188,6 @@ object PlayerRegionEntryExitTracker {
                 ?: translateConfigured(SCOPE_ENTER_I18N_KEY.value, region.name, scope.scopeName)
             if (text != null) player.sendSystemMessage(text)
         }
-        sendRpgEntryNotifications(player, region, scope, scope.scopeName)
     }
 
     private fun isRegionNotificationEnabled(region: Region): Boolean {
@@ -184,30 +208,28 @@ object PlayerRegionEntryExitTracker {
         return TextParser.parse(raw.replace("{0}", regionName).replace("{1}", scopeName))
     }
 
-    private fun sendRpgEntryNotifications(player: ServerPlayer, region: Region, scope: GeoScope?, locationName: String) {
-        val rpgKeys = listOf(
-            PermissionKey.RPG_ITEM_PICKUP to PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP,
-            PermissionKey.RPG_BOW_SHOOT to PermissionConfig.PERMISSION_DEFAULT_RPG_BOW_SHOOT,
-            PermissionKey.RPG_VEHICLE_USE to PermissionConfig.PERMISSION_DEFAULT_RPG_VEHICLE_USE,
-            PermissionKey.RPG_EATING to PermissionConfig.PERMISSION_DEFAULT_RPG_EATING,
-            PermissionKey.RPG_FISHING to PermissionConfig.PERMISSION_DEFAULT_RPG_FISHING
-        )
-        for ((key, configDefault) in rpgKeys) {
-            val default = configDefault.getValue()
-            val effective = if (scope == null) {
-                hasRegionPermission(region, player.uuid, key, default)
-            } else {
-                hasScopePermission(region, scope, player.uuid, key, default)
-            }
-            if (!effective) {
-                val i18nKey = "notification.rpg.${key.name.lowercase().removePrefix("rpg_")}_restricted"
-                val msg = Translator.tr(i18nKey, locationName)
-                player.sendSystemMessage(msg)
+    private fun sendRpgEntryNotifications(player: ServerPlayer, target: EntryPermissionTarget) {
+        for (entry in RPG_ENTRY_PERMISSIONS) {
+            if (!hasEntryPermission(target, player.uuid, entry.key)) {
+                player.sendSystemMessage(Translator.tr(entry.notification.translationKey, target.locationName))
             }
         }
     }
 
     private fun translateConfigured(key: String, vararg args: Any?): Component? {
         return if (Translator.hasTranslation(key)) Translator.tr(key, *args) else null
+    }
+}
+
+internal fun hasEntryPermission(
+    target: EntryPermissionTarget,
+    playerUuid: UUID,
+    key: PermissionKey
+): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return when (target) {
+        is EntryPermissionTarget.RegionTarget -> hasRegionPermission(target.region, playerUuid, key, default)
+        is EntryPermissionTarget.ScopeTarget ->
+            hasScopePermission(target.region, target.scope, playerUuid, key, default)
     }
 }

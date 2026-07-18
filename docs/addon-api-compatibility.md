@@ -52,6 +52,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `Region.Companion.formatSettings` | B7-R4 (unreleased) | `Region.getSettingInfos` or `GeoScope.getSettingInfos` | Deprecated domain presentation surface | Two released versions, then maintainer review | Existing JVM method/default bridge remain; the compatibility facade accepts only the historical Region and Scope key/name combinations |
 | `NaturalStatsCategory.translationSuffix` | B7-R4 (unreleased) | `NaturalStatsCategory.translationKey` | Deprecated | Two released versions, then maintainer review | Existing `getTranslationSuffix()` descriptor remains; complete required translation keys are now available directly |
 | `CommandArgumentGetterKt.getPosArgument` | B7-R2 (unreleased) | Minecraft `BlockPosArgument` | Deprecated implementation helper | Two released versions, then maintainer review | Existing JVM descriptor remains; production commands now use vanilla absolute, world-relative, and local-relative coordinate parsing |
+| `PermissionKey` presentation metadata | B7-R3 (unreleased) | `category`, `displayTranslationKey`, and `entryNotification` getters | Additive | Retained | Existing enum constants, order, parent getter, and persistence encoding remain; extension permission keys do not inherit built-in presentation or entry-notification metadata |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
 
@@ -131,6 +132,12 @@ The compatibility facade continues to accept `region.setting` without a Scope na
 The `teleportPoint set` command uses Minecraft's `BlockPosArgument`. Explicit coordinates therefore follow vanilla syntax for absolute positions, `~` world-relative positions, and `^` local-relative positions. Omitting the entire position continues to use the player's current block position. Partial, malformed, or trailing coordinate input is rejected by Brigadier and no longer falls back to the player's position.
 
 The implementation helper `CommandArgumentGetterKt.getPosArgument(CommandContext, String)` remains linkable but is deprecated. Addons defining commands should register `BlockPosArgument.blockPos()` and resolve it with `BlockPosArgument.getBlockPos(context, name)` instead of calling the legacy helper.
+
+## B7 permission presentation metadata
+
+Built-in `PermissionKey` values expose separate metadata for grouping, general display, and entry restriction notifications. Addon presentation code may translate `displayTranslationKey`; it must not derive translation keys from enum names. `entryNotification` is exhaustive: `None` means the permission has no entry restriction message, while `Restricted` carries the complete required translation key.
+
+These getters do not change permission inheritance or configured defaults. `PermissionKey` retains its existing constants, order, and `parent` getter. Extension permission keys remain exact-match registered identifiers and intentionally do not receive built-in categories, display resources, or RPG entry notifications. Supporting extension notifications requires a future explicit registration API rather than enum-name conventions.
 
 ## R9 rule query migration
 

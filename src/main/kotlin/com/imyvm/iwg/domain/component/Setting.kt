@@ -73,36 +73,6 @@ data class ExtensionRuleKey(val id: String) : RuleKeyLike {
     override fun toString(): String = id
 }
 
-enum class PermissionKey(val parent: PermissionKey? = null) : PermissionKeyLike {
-    BUILD_BREAK,
-    FLY,
-    INTERACTION,
-    CONTAINER(INTERACTION),
-    BUILD(BUILD_BREAK),
-    BREAK(BUILD_BREAK),
-    REDSTONE(INTERACTION),
-    TRADE,
-    PVP,
-    BUCKET_BUILD(BUILD),
-    BUCKET_SCOOP(BREAK),
-    ANIMAL_KILLING,
-    VILLAGER_KILLING,
-    THROWABLE,
-    EGG_USE(THROWABLE),
-    SNOWBALL_USE(THROWABLE),
-    POTION_USE(THROWABLE),
-    FARMING,
-    IGNITE,
-    ARMOR_STAND,
-    ITEM_FRAME,
-    WIND_CHARGE_USE(THROWABLE),
-    RPG_ITEM_PICKUP,
-    RPG_BOW_SHOOT,
-    RPG_VEHICLE_USE,
-    RPG_EATING,
-    RPG_FISHING
-}
-
 enum class EffectKey(val effectId: String) : SettingKey {
     SPEED("speed"),
     JUMP("jump_boost"),

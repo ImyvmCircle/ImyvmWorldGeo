@@ -1,6 +1,10 @@
 package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.util.text.Translator
+import com.imyvm.iwg.domain.component.ExtensionPermissionKey
+import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
+import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.PermissionSetting
 import net.minecraft.server.MinecraftServer
 import kotlin.test.Test
 import kotlin.test.assertContains
@@ -11,6 +15,15 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class SettingPresentationTargetTest {
+    @Test
+    fun `built-in permissions use translated names while extensions retain their id`() {
+        val builtIn = PermissionSetting(PermissionKey.BUILD, true)
+        val extension = ExtensionPermissionSetting(ExtensionPermissionKey("addon:custom"), true)
+
+        assertEquals(Translator.raw(PermissionKey.BUILD.displayTranslationKey), permissionSettingDisplayName(builtIn))
+        assertEquals("addon:custom", permissionSettingDisplayName(extension))
+    }
+
     @Test
     fun `region and scope targets expose complete required translation keys`() {
         val region = SettingPresentationTarget.RegionSettings

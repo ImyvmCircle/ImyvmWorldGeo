@@ -90,6 +90,11 @@ internal fun legacySettingPresentationTarget(key: String, scopeName: String?): S
         else -> throw IllegalArgumentException("unsupported setting presentation key: $key")
     }
 
+internal fun permissionSettingDisplayName(setting: PermissionSetting): String =
+    Translator.raw(setting.key.displayTranslationKey)
+
+internal fun permissionSettingDisplayName(setting: ExtensionPermissionSetting): String = setting.key.id
+
 class Region(
     name: String,
     numberID: Int,
@@ -384,10 +389,16 @@ class Region(
             settings: List<Setting>,
             keys: SettingPresentationKeys
         ) {
-            val permissions = settings.filter { it is PermissionSetting || it is ExtensionPermissionSetting }
-            if (permissions.isNotEmpty()) {
+            val builtInPermissions = settings.filterIsInstance<PermissionSetting>()
+            val extensionPermissions = settings.filterIsInstance<ExtensionPermissionSetting>()
+            if (builtInPermissions.isNotEmpty() || extensionPermissions.isNotEmpty()) {
                 result.add(Translator.tr(keys.permissionHeader))
-                permissions.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
+                builtInPermissions.forEach { setting ->
+                    result.add(Translator.tr(keys.item, permissionSettingDisplayName(setting), setting.value))
+                }
+                extensionPermissions.forEach { setting ->
+                    result.add(Translator.tr(keys.item, permissionSettingDisplayName(setting), setting.value))
+                }
             }
 
             val effects = settings.filterIsInstance<EffectSetting>()
