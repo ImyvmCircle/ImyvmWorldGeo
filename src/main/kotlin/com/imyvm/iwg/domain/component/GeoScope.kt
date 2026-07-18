@@ -1,6 +1,7 @@
 package com.imyvm.iwg.domain.component
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.SettingPresentationTarget
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.resources.ResourceKey
 import net.minecraft.core.registries.Registries
@@ -183,7 +184,7 @@ class GeoScope(
     }
 
     fun getSettingInfos(server: MinecraftServer): List<Component> {
-        return Region.formatSettings(server, settings, "geo.scope.setting", scopeName)
+        return Region.formatSettingInfos(server, settings, SettingPresentationTarget.ScopeSettings(scopeName))
     }
 
     fun certificateTeleportPoint(world: Level, pointToTest: BlockPos?): Boolean {

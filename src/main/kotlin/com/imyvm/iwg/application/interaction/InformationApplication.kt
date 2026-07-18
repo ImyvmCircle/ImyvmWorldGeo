@@ -7,6 +7,53 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
+internal val HELP_TRANSLATION_KEYS = listOf(
+    "interaction.meta.command.help.header",
+
+    // Selection
+    "interaction.meta.command.help.selection.start",
+    "interaction.meta.command.help.selection.stop",
+    "interaction.meta.command.help.selection.reset",
+
+    // Region
+    "interaction.meta.command.help.region.create",
+    "interaction.meta.command.help.region.delete",
+    "interaction.meta.command.help.region.rename",
+    "interaction.meta.command.help.region.merge",
+
+    // Scopes
+    "interaction.meta.command.help.scope.add",
+    "interaction.meta.command.help.scope.modify",
+    "interaction.meta.command.help.scope.delete",
+    "interaction.meta.command.help.scope.transfer",
+
+    // Teleportation
+    "interaction.meta.command.help.tp.set",
+    "interaction.meta.command.help.tp.reset",
+    "interaction.meta.command.help.tp.inquiry",
+    "interaction.meta.command.help.tp.teleport",
+    "interaction.meta.command.help.tp.toggle",
+
+    // Settings
+    "interaction.meta.command.help.setting.add",
+    "interaction.meta.command.help.setting.remove",
+    "interaction.meta.command.help.setting.query",
+    "interaction.meta.command.help.setting_scope.add",
+    "interaction.meta.command.help.setting_scope.remove",
+    "interaction.meta.command.help.setting_scope.query",
+
+    // Info & General
+    "interaction.meta.command.help.info.query",
+    "interaction.meta.command.help.info.stats",
+    "interaction.meta.command.help.info.list",
+    "interaction.meta.command.help.info.toggle",
+    "interaction.meta.command.help.info.help",
+
+    // Dynmap
+    "interaction.meta.command.help.dynmap.toggle",
+    "interaction.meta.command.help.dynmap.toggle_scope"
+)
+
 fun onQueryRegion(player: ServerPlayer, region: Region, isApi: Boolean) : Int{
     val messageKey = if (isApi) {
         "interaction.meta.api.query.result"
@@ -54,54 +101,7 @@ fun onToggleActionBar(player: ServerPlayer): Int {
 }
 
 fun onHelp(player: ServerPlayer): Int {
-    val helpOrder = listOf(
-        "header",
-
-        // Selection
-        "selection.start",
-        "selection.stop",
-        "selection.reset",
-
-        // Region
-        "region.create",
-        "region.delete",
-        "region.rename",
-        "region.merge",
-
-        // Scopes
-        "scope.add",
-        "scope.modify",
-        "scope.delete",
-        "scope.transfer",
-
-        // Teleportation
-        "tp.set",
-        "tp.reset",
-        "tp.inquiry",
-        "tp.teleport",
-        "tp.toggle",
-
-        // Settings
-        "setting.add",
-        "setting.remove",
-        "setting.query",
-        "setting_scope.add",
-        "setting_scope.remove",
-        "setting_scope.query",
-
-        // Info & General
-        "info.query",
-        "info.stats",
-        "info.list",
-        "info.toggle",
-        "info.help",
-
-        // Dynmap
-        "dynmap.toggle",
-        "dynmap.toggle_scope"
-    )
-
-    Translator.trAll(helpOrder.map { "interaction.meta.command.help.$it" }).forEach { line ->
+    Translator.trAll(HELP_TRANSLATION_KEYS).forEach { line ->
         player.sendSystemMessage(line)
     }
 

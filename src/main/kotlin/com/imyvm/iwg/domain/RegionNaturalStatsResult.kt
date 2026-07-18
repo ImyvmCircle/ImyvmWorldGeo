@@ -58,14 +58,18 @@ data class DimensionNaturalStats(
 
 enum class NaturalStatsCategory(
     val commandName: String,
-    val translationSuffix: String
+    val translationKey: String
 ) {
-    ALL("all", "all"),
-    STRUCTURES("structures", "structures"),
-    DIFFICULTY("difficulty", "difficulty"),
-    SURFACE("surface", "surface"),
-    BIOMES("biomes", "biomes"),
-    PLAYERS("players", "players");
+    ALL("all", "interaction.meta.stats.category.all"),
+    STRUCTURES("structures", "interaction.meta.stats.category.structures"),
+    DIFFICULTY("difficulty", "interaction.meta.stats.category.difficulty"),
+    SURFACE("surface", "interaction.meta.stats.category.surface"),
+    BIOMES("biomes", "interaction.meta.stats.category.biomes"),
+    PLAYERS("players", "interaction.meta.stats.category.players");
+
+    @Deprecated("Use translationKey")
+    val translationSuffix: String
+        get() = commandName
 
     companion object {
         fun fromName(name: String?): NaturalStatsCategory? {

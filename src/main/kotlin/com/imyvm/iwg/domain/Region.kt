@@ -28,6 +28,68 @@ internal data class ScopeRemovalReceipt(
     val index: Int
 )
 
+internal data class SettingPresentationKeys(
+    val header: String,
+    val globalHeader: String,
+    val personalHeader: String,
+    val permissionHeader: String,
+    val effectHeader: String,
+    val ruleHeader: String,
+    val entryExitHeader: String,
+    val item: String
+)
+
+private val REGION_SETTING_PRESENTATION_KEYS = SettingPresentationKeys(
+    header = "region.setting.header",
+    globalHeader = "region.setting.global.header",
+    personalHeader = "region.setting.personal.header",
+    permissionHeader = "region.setting.permission.header",
+    effectHeader = "region.setting.effect.header",
+    ruleHeader = "region.setting.rule.header",
+    entryExitHeader = "region.setting.entry_exit.header",
+    item = "region.setting.item"
+)
+
+private val SCOPE_SETTING_PRESENTATION_KEYS = SettingPresentationKeys(
+    header = "geo.scope.setting.header",
+    globalHeader = "geo.scope.setting.global.header",
+    personalHeader = "geo.scope.setting.personal.header",
+    permissionHeader = "geo.scope.setting.permission.header",
+    effectHeader = "geo.scope.setting.effect.header",
+    ruleHeader = "geo.scope.setting.rule.header",
+    entryExitHeader = "geo.scope.setting.entry_exit.header",
+    item = "geo.scope.setting.item"
+)
+
+internal sealed interface SettingPresentationTarget {
+    val keys: SettingPresentationKeys
+    fun translateHeader(): Component
+
+    data object RegionSettings : SettingPresentationTarget {
+        override val keys = REGION_SETTING_PRESENTATION_KEYS
+
+        override fun translateHeader(): Component = Translator.tr(keys.header)
+    }
+
+    data class ScopeSettings(val scopeName: String) : SettingPresentationTarget {
+        override val keys = SCOPE_SETTING_PRESENTATION_KEYS
+
+        override fun translateHeader(): Component = Translator.tr(keys.header, scopeName)
+    }
+}
+
+internal fun legacySettingPresentationTarget(key: String, scopeName: String?): SettingPresentationTarget =
+    when (key) {
+        "region.setting" -> {
+            require(scopeName == null) { "region setting presentation does not accept a scope name" }
+            SettingPresentationTarget.RegionSettings
+        }
+        "geo.scope.setting" -> SettingPresentationTarget.ScopeSettings(
+            requireNotNull(scopeName) { "scope setting presentation requires a scope name" }
+        )
+        else -> throw IllegalArgumentException("unsupported setting presentation key: $key")
+    }
+
 class Region(
     name: String,
     numberID: Int,
@@ -264,7 +326,7 @@ class Region(
     }
 
     fun getSettingInfos(server: MinecraftServer): List<Component> {
-        return formatSettings(server, settings, "region.setting")
+        return formatSettingInfos(server, settings, SettingPresentationTarget.RegionSettings)
     }
 
     fun calculateTotalArea(): Double {
@@ -278,62 +340,76 @@ class Region(
     }
 
     companion object {
+        @Deprecated("Use the Region/GeoScope setting presentation entry points")
         fun formatSettings(
             server: MinecraftServer,
             settings: List<Setting>,
             key: String,
             scopeName: String? = null
         ): List<Component> {
+            return formatSettingInfos(server, settings, legacySettingPresentationTarget(key, scopeName))
+        }
+
+        internal fun formatSettingInfos(
+            server: MinecraftServer,
+            settings: List<Setting>,
+            target: SettingPresentationTarget
+        ): List<Component> {
             if (settings.isEmpty()) return emptyList()
 
             val result = mutableListOf<Component>()
+            val keys = target.keys
 
-            val headerText = if (scopeName == null) Translator.tr("$key.header")
-                             else Translator.tr("$key.header", scopeName)
-            headerText.let { result.add(it) }
+            result.add(target.translateHeader())
 
             val globalSettings = settings.filter { !it.isPersonal }
             if (globalSettings.isNotEmpty()) {
-                Translator.tr("$key.global.header").let { result.add(it) }
-                appendTypeGroups(result, globalSettings, key)
+                result.add(Translator.tr(keys.globalHeader))
+                appendTypeGroups(result, globalSettings, keys)
             }
 
             settings.filter { it.isPersonal }
                 .groupBy { it.playerUUID }
                 .forEach { (uuid, playerSettings) ->
                     val playerName = resolvePlayerName(server, uuid)
-                    Translator.tr("$key.personal.header", playerName).let { result.add(it) }
-                    appendTypeGroups(result, playerSettings, key)
+                    result.add(Translator.tr(keys.personalHeader, playerName))
+                    appendTypeGroups(result, playerSettings, keys)
                 }
 
             return result
         }
 
-        private fun appendTypeGroups(result: MutableList<Component>, settings: List<Setting>, key: String) {
+        private fun appendTypeGroups(
+            result: MutableList<Component>,
+            settings: List<Setting>,
+            keys: SettingPresentationKeys
+        ) {
             val permissions = settings.filter { it is PermissionSetting || it is ExtensionPermissionSetting }
             if (permissions.isNotEmpty()) {
-                Translator.tr("$key.permission.header").let { result.add(it) }
-                permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
+                result.add(Translator.tr(keys.permissionHeader))
+                permissions.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
             }
 
             val effects = settings.filterIsInstance<EffectSetting>()
             if (effects.isNotEmpty()) {
-                Translator.tr("$key.effect.header").let { result.add(it) }
-                effects.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
+                result.add(Translator.tr(keys.effectHeader))
+                effects.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
             }
 
             val rules = settings.filter { it is RuleSetting || it is ExtensionRuleSetting }
             if (rules.isNotEmpty()) {
-                Translator.tr("$key.rule.header").let { result.add(it) }
-                rules.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
+                result.add(Translator.tr(keys.ruleHeader))
+                rules.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
             }
 
             val notifToggles = settings.filterIsInstance<EntryExitToggleSetting>()
             val notifMessages = settings.filterIsInstance<EntryExitMessageSetting>()
             if (notifToggles.isNotEmpty() || notifMessages.isNotEmpty()) {
-                Translator.tr("$key.entry_exit.header").let { result.add(it) }
-                notifToggles.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
-                notifMessages.forEach { s -> Translator.tr("$key.item", s.key, "&r\"${s.value}\"").let { result.add(it) } }
+                result.add(Translator.tr(keys.entryExitHeader))
+                notifToggles.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
+                notifMessages.forEach { setting ->
+                    result.add(Translator.tr(keys.item, setting.key, "&r\"${setting.value}\""))
+                }
             }
         }
     }

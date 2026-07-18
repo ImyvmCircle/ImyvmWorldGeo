@@ -251,7 +251,7 @@ private fun sendPlayerStatsMessages(
 }
 
 private fun categoryLabel(category: NaturalStatsCategory): String =
-    Translator.raw("interaction.meta.stats.category.${category.translationSuffix}")
+    Translator.raw(category.translationKey)
 
 private fun formatDifficulty(value: Double?): String =
     value?.let { String.format(Locale.ROOT, "%.3f", it) }

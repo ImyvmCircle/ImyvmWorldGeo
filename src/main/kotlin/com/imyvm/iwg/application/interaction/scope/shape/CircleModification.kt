@@ -18,7 +18,11 @@ fun modifyScopeCircleRadius(
     existingScope: GeoScope,
     selectedPositions: List<BlockPos>
 ): Boolean {
-    val circle = circleGeometry(player, existingScope, "circle_radius.invalid_circle") ?: return false
+    val circle = circleGeometry(
+        player,
+        existingScope,
+        "interaction.meta.scope.modify.circle_radius.invalid_circle"
+    ) ?: return false
     val point = selectedPositions.singleOrNull() ?: return invalidPointCount(player, selectedPositions.size)
     val oldRadius = circle.radius
     if (point.x == circle.centerX && point.z == circle.centerZ) {
@@ -50,7 +54,11 @@ fun modifyScopeCircleCenter(
     existingScope: GeoScope,
     selectedPositions: List<BlockPos>
 ): Boolean {
-    val circle = circleGeometry(player, existingScope, "circle_center.invalid_circle") ?: return false
+    val circle = circleGeometry(
+        player,
+        existingScope,
+        "interaction.meta.scope.modify.circle_center.invalid_circle"
+    ) ?: return false
     if (selectedPositions.size != 2) return invalidPointCount(player, selectedPositions.size)
     val oldCenter = selectedPositions[0]
     val centerX = circle.centerX
@@ -85,7 +93,7 @@ fun modifyScopeCircleCenter(
 private fun circleGeometry(player: ServerPlayer, scope: GeoScope, messageKey: String): CircleGeometry? {
     val geometry = scope.geoShape?.typedGeometry as? CircleGeometry
     if (geometry == null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.$messageKey"))
+        player.sendSystemMessage(Translator.tr(messageKey))
     }
     return geometry
 }
@@ -93,6 +101,6 @@ private fun circleGeometry(player: ServerPlayer, scope: GeoScope, messageKey: St
 private fun invalidPointCount(player: ServerPlayer, count: Int): Boolean {
     val key = if (count == 0) "error.insufficient_points" else "selection.feedback.modify.guidance.circle.excess"
     val message = if (count == 0) Translator.tr(key, "circle") else Translator.tr(key)
-    player.sendSystemMessage(requireNotNull(message))
+    player.sendSystemMessage(message)
     return false
 }
