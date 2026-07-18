@@ -27,7 +27,7 @@ fun playerPvpPermission() {
                     attackerDenial != null -> "setting.permission.pvp.attacker_only"
                     else -> "setting.permission.pvp.defender_only"
                 }
-                player.sendSystemMessage(Translator.tr(messageKey, ctx)!!)
+                player.sendSystemMessage(Translator.tr(messageKey, ctx))
                 return@register InteractionResult.CONSUME
             }
         }
@@ -49,7 +49,7 @@ fun playerPvpPermission() {
                     attackerDenial != null -> "setting.permission.pvp.attacker_only"
                     else -> "setting.permission.pvp.defender_only"
                 }
-                attacker.sendSystemMessage(Translator.tr(messageKey, ctx)!!)
+                attacker.sendSystemMessage(Translator.tr(messageKey, ctx))
                 return@register false
             }
         }

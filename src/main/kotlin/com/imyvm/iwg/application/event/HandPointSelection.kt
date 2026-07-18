@@ -36,7 +36,7 @@ fun handPointSelection(
                 "interaction.game.point.selection.max_reached",
                 maxPoints,
                 formatSimpleXZList(selectedPositions)
-            )!!
+            )
         )
         return InteractionResult.SUCCESS
     }
@@ -57,6 +57,6 @@ internal fun formatSimpleXZList(positions: List<BlockPos>): String =
         val omitted = positions.size - MAX_DISPLAYED_SELECTION_POINTS
         if (omitted > 0) {
             append("\n")
-            append(Translator.raw("selection.feedback.points_omitted", omitted) ?: "")
+            append(Translator.raw("selection.feedback.points_omitted", omitted))
         }
     }

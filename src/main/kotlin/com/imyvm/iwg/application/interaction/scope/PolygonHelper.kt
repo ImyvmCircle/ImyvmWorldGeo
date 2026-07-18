@@ -11,7 +11,7 @@ import net.minecraft.server.level.ServerPlayer
 fun validatePolygon(player: ServerPlayer, existingScope: GeoScope): Boolean {
     val geometry = existingScope.geoShape?.typedGeometry as? PolygonGeometry
     if (geometry == null) {
-        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.scope.modify.invalid_polygon")))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.invalid_polygon"))
         return false
     }
     return true

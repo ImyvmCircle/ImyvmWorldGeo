@@ -290,11 +290,11 @@ class Region(
 
             val headerText = if (scopeName == null) Translator.tr("$key.header")
                              else Translator.tr("$key.header", scopeName)
-            headerText?.let { result.add(it) }
+            headerText.let { result.add(it) }
 
             val globalSettings = settings.filter { !it.isPersonal }
             if (globalSettings.isNotEmpty()) {
-                Translator.tr("$key.global.header")?.let { result.add(it) }
+                Translator.tr("$key.global.header").let { result.add(it) }
                 appendTypeGroups(result, globalSettings, key)
             }
 
@@ -302,7 +302,7 @@ class Region(
                 .groupBy { it.playerUUID }
                 .forEach { (uuid, playerSettings) ->
                     val playerName = resolvePlayerName(server, uuid)
-                    Translator.tr("$key.personal.header", playerName)?.let { result.add(it) }
+                    Translator.tr("$key.personal.header", playerName).let { result.add(it) }
                     appendTypeGroups(result, playerSettings, key)
                 }
 
@@ -312,28 +312,28 @@ class Region(
         private fun appendTypeGroups(result: MutableList<Component>, settings: List<Setting>, key: String) {
             val permissions = settings.filter { it is PermissionSetting || it is ExtensionPermissionSetting }
             if (permissions.isNotEmpty()) {
-                Translator.tr("$key.permission.header")?.let { result.add(it) }
-                permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                Translator.tr("$key.permission.header").let { result.add(it) }
+                permissions.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
             }
 
             val effects = settings.filterIsInstance<EffectSetting>()
             if (effects.isNotEmpty()) {
-                Translator.tr("$key.effect.header")?.let { result.add(it) }
-                effects.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                Translator.tr("$key.effect.header").let { result.add(it) }
+                effects.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
             }
 
             val rules = settings.filter { it is RuleSetting || it is ExtensionRuleSetting }
             if (rules.isNotEmpty()) {
-                Translator.tr("$key.rule.header")?.let { result.add(it) }
-                rules.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
+                Translator.tr("$key.rule.header").let { result.add(it) }
+                rules.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
             }
 
             val notifToggles = settings.filterIsInstance<EntryExitToggleSetting>()
             val notifMessages = settings.filterIsInstance<EntryExitMessageSetting>()
             if (notifToggles.isNotEmpty() || notifMessages.isNotEmpty()) {
-                Translator.tr("$key.entry_exit.header")?.let { result.add(it) }
-                notifToggles.forEach { s -> Translator.tr("$key.item", s.key, s.value)?.let { result.add(it) } }
-                notifMessages.forEach { s -> Translator.tr("$key.item", s.key, "&r\"${s.value}\"")?.let { result.add(it) } }
+                Translator.tr("$key.entry_exit.header").let { result.add(it) }
+                notifToggles.forEach { s -> Translator.tr("$key.item", s.key, s.value).let { result.add(it) } }
+                notifMessages.forEach { s -> Translator.tr("$key.item", s.key, "&r\"${s.value}\"").let { result.add(it) } }
             }
         }
     }

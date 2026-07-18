@@ -32,7 +32,7 @@ fun handPointUndo(
                 "interaction.game.point.selection.min_reached",
                 minPoints,
                 formatSimpleXZList(selectedPositions)
-            )!!
+            )
         )
         return InteractionResult.SUCCESS
     }

@@ -31,7 +31,7 @@ fun playerArmorStandPermission() {
         regionAndScope?.let { (region, scope) ->
             val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.ARMOR_STAND, PERMISSION_DEFAULT_ARMOR_STAND.value)
             if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildScopePermissionDenialContext(region, scope, denial))!!)
+                player.sendSystemMessage(Translator.tr("setting.permission.armor_stand", buildScopePermissionDenialContext(region, scope, denial)))
                 return@register false
             }
         }

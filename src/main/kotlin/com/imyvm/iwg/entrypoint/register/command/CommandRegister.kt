@@ -456,7 +456,7 @@ private fun runSetSelectionShape(context: CommandContext<CommandSourceStack>): I
 private fun parseShapeType(shapeTypeStr: String, player: ServerPlayer): GeoShapeType? {
     val shapeType = GeoShapeType.entries.find { it.name == shapeTypeStr } ?: GeoShapeType.UNKNOWN
     if (shapeType == GeoShapeType.UNKNOWN) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeStr)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeStr))
         return null
     }
     return shapeType
@@ -468,7 +468,7 @@ private fun runCreateRegion(context: CommandContext<CommandSourceStack>): Int {
         NameValidationMessages.sendRegionAutoFilled(player, it)
     }
     val region = createRegionFromSelection(player, name, idMark = 0) ?: return 0
-    player.sendSystemMessage(Translator.tr("interaction.meta.create.success", region.name)!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.create.success", region.name))
     return 1
 }
 
@@ -479,7 +479,7 @@ private fun runDeleteRegion(context: CommandContext<CommandSourceStack>): Int {
         val regionId = regionToDelete.numberID
         val result = onRegionDelete(player, regionToDelete)
         if (result == RegionDeleteResult.SUCCESS) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId)!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.delete.success", regionName, regionId))
         }
     }
 }
@@ -499,7 +499,7 @@ private fun runAddScope(context: CommandContext<CommandSourceStack>): Int {
             }
         val scope = createScopeFromSelection(player, region, scopeName) ?: return@identifierHandler
         player.sendSystemMessage(
-            Translator.tr("interaction.meta.scope.add.success", scope.scopeName, region.name)!!
+            Translator.tr("interaction.meta.scope.add.success", scope.scopeName, region.name)
         )
     }
 }
@@ -512,10 +512,10 @@ private fun runDeleteScope(context: CommandContext<CommandSourceStack>): Int {
         val result = onScopeDelete(player, region, scope)
         when (result) {
             ScopeDeleteResult.SUCCESS -> player.sendSystemMessage(
-                Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)!!
+                Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)
             )
             ScopeDeleteResult.LAST_SCOPE -> player.sendSystemMessage(
-                Translator.tr("interaction.meta.scope.delete.error.last_scope")!!
+                Translator.tr("interaction.meta.scope.delete.error.last_scope")
             )
             ScopeDeleteResult.PERSISTENCE_FAILED -> Unit
         }
@@ -564,7 +564,7 @@ private fun runSetTeleportPoint(context: CommandContext<CommandSourceStack>): In
 
     val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.level(),x,z)
     if (regionScopePair == null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
         return 0
     }
 
@@ -597,12 +597,12 @@ private fun inquireTeleportPoint(player: ServerPlayer, region: Region, scope: Ge
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
             scope.scopeName,
-            region)!!)
+            region))
         1
     } else {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
             scope.scopeName,
-            region)!!)
+            region))
         0
     }
 }
@@ -632,7 +632,7 @@ private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack
         if (scope != null) {
             onTeleportingPlayer(player, regionToTeleport, scope)
         } else {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_public_scope", regionToTeleport.name)!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_public_scope", regionToTeleport.name))
             0
         }
     }
@@ -642,7 +642,7 @@ private fun runToggleTeleportPointAccessibility(context: CommandContext<CommandS
     val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
     val result = onTogglingTeleportPointAccessibility(player, region, scope)
     if (result == 1) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.toggle", region.name, scope.scopeName))
     }
     return result
 }
@@ -699,7 +699,7 @@ private fun runQueryRegionStats(context: CommandContext<CommandSourceStack>): In
                 "interaction.meta.stats.error.invalid_category",
                 categoryName,
                 NaturalStatsCategory.entries.joinToString(", ") { it.commandName }
-            )!!
+            )
         )
         return 0
     }

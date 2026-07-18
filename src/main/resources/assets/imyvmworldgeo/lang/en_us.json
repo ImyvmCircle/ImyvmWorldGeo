@@ -359,7 +359,7 @@
   "selection.feedback.modify.guidance.rect.start": "&7Modifying rectangle scope &b{0}&7. Existing bounds: W=&e{1}&7 N=&e{2}&7 E=&e{3}&7 S=&e{4}&7. Select a point to snap the nearest edge to that position.",
   "selection.feedback.modify.guidance.rect.1point": "&7Point (&e{0},{1}&7) selected. Confirm to snap the nearest rectangle edge to this position.",
   "selection.feedback.modify.guidance.polygon.start": "&7Modifying polygon scope &b{0}&7 ({1} existing vertices). Modes:\n&e1 point&7: matches vertex=delete it; else=auto-insert near closest edge\n&e2 points&7: pt1=existing vertex to move, pt2=new position\n&e3 points&7: pt1+pt2=adjacent existing vertices, pt3=new vertex to insert",
-  "selection.feedback.modify.guidance.polygon.1point_delete": "&7Selected existing vertex (&e{0},{1}&7). Options:\n- Confirm to &cdelete&7 this vertex.\n- Or select a &a2nd point&7 to &amove&7 this vertex to a new position.",
+  "selection.feedback.modify.guidance.polygon.1point_delete": "&7Selected existing vertex (&e{0},{1}&7). The polygon has &e{2}&7 vertices. Options:\n- Confirm to &cdelete&7 this vertex.\n- Or select a &a2nd point&7 to &amove&7 this vertex to a new position.",
   "selection.feedback.modify.guidance.polygon.1point_insert": "&7Point (&e{0},{1}&7) does not match any existing vertex. Confirm to &ainsert&7 new vertex between (&e{2},{3}&7) and (&e{4},{5}&7).",
   "selection.feedback.modify.guidance.polygon.2points": "&aMove vertex (&e{0},{1}&a) to (&e{2},{3}&a). Confirm to apply modification.",
   "selection.feedback.modify.guidance.polygon.3plus": "&aInsert new vertex (&e{4},{5}&a) between (&e{0},{1}&a) and (&e{2},{3}&a). Confirm to apply modification.",

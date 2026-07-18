@@ -5,19 +5,19 @@ import net.minecraft.server.level.ServerPlayer
 
 object NameValidationMessages {
     fun sendRegionAutoFilled(player: ServerPlayer, name: String) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.name_auto_filled", name)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.name_auto_filled", name))
     }
 
     fun sendScopeAutoFilled(player: ServerPlayer, name: String) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.add.name_auto_filled", name)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.add.name_auto_filled", name))
     }
 
     fun sendRegionNameRequired(player: ServerPlayer) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.create.name_invalid")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.name_invalid"))
     }
 
     fun sendScopeNameRequired(player: ServerPlayer) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.name_invalid")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.name_invalid"))
     }
 
     @Deprecated("Use sendRegionAutoFilled or sendScopeAutoFilled")
@@ -37,7 +37,7 @@ object NameValidationMessages {
     }
 
     fun sendDuplicateScope(player: ServerPlayer) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.duplicate_scope_name")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.add.duplicate_scope_name"))
     }
 }
 

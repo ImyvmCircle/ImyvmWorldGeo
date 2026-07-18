@@ -50,13 +50,13 @@ fun modifyScopePolygonMove(
     val shapeResult = when (val modification = modifyPolygonMove(geometry, oldPoint, newPoint)) {
         is PolygonModificationResult.Shape -> {
             if (modification.result == Result.Err(CreationError.DuplicatedPoints)) {
-                player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_duplicate_points")!!)
+                player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_duplicate_points"))
                 return false
             }
             modification.result
         }
         PolygonModificationResult.PointNotFound -> {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found"))
             return false
         }
         PolygonModificationResult.MinimumPoints,
@@ -65,9 +65,9 @@ fun modifyScopePolygonMove(
 
     val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.POLYGON)
     if (changed) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.polygon_move_success", existingScope.scopeName, region.name
-        )))
+        ))
     }
     return changed
 }
@@ -94,11 +94,11 @@ private fun modifyScopePolygonInsertPoint(
     val shapeResult = when (val modification = modifyPolygonInsert(geometry, pointA, pointB, newPoint)) {
         is PolygonModificationResult.Shape -> modification.result
         PolygonModificationResult.PointNotFound -> {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_found")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_found"))
             return false
         }
         PolygonModificationResult.PointsNotAdjacent -> {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_adjacent")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_points_not_adjacent"))
             return false
         }
         PolygonModificationResult.MinimumPoints -> error("unexpected polygon insert result")
@@ -106,9 +106,9 @@ private fun modifyScopePolygonInsertPoint(
 
     val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.POLYGON)
     if (changed) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.polygon_insert_success", existingScope.scopeName, region.name
-        )))
+        ))
     }
     return changed
 }
@@ -123,11 +123,11 @@ private fun modifyScopePolygonDeletePoint(
     val shapeResult = when (val modification = modifyPolygonDelete(geometry, point)) {
         is PolygonModificationResult.Shape -> modification.result
         PolygonModificationResult.MinimumPoints -> {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_minimum_points")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_minimum_points"))
             return false
         }
         PolygonModificationResult.PointNotFound -> {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.polygon_point_not_found"))
             return false
         }
         PolygonModificationResult.PointsNotAdjacent -> error("unexpected polygon delete result")
@@ -135,9 +135,9 @@ private fun modifyScopePolygonDeletePoint(
 
     val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.POLYGON)
     if (changed) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.polygon_delete_success", existingScope.scopeName, region.name
-        )))
+        ))
     }
     return changed
 }
@@ -145,7 +145,7 @@ private fun modifyScopePolygonDeletePoint(
 private fun polygonGeometry(player: ServerPlayer, scope: GeoScope): PolygonGeometry? {
     val geometry = scope.geoShape?.typedGeometry as? PolygonGeometry
     if (geometry == null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.invalid_polygon")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.invalid_polygon"))
     }
     return geometry
 }

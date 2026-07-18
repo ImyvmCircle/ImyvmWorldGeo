@@ -31,11 +31,11 @@ fun onAddingTeleportPoint(
             geoScope.updateTeleportPoint(oldPoint)
             return 0
         }
-        playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name)!!)
+        playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.added", x, y, z, geoScope.scopeName, targetRegion.name))
         1
     } else {
-        playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.scopeName, targetRegion.name)!!)
-        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, x, y, z)!!)
+        playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.invalid", x, y, z, geoScope.scopeName, targetRegion.name))
+        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, x, y, z))
         0
     }
 }
@@ -52,7 +52,7 @@ fun onResettingTeleportPoint(
         scope.updateTeleportPoint(oldPoint)
         return 0
     }
-    playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name)!!)
+    playerExecutor.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.reset", scope.scopeName, region.name))
     return 1
 }
 
@@ -73,7 +73,7 @@ fun onTeleportingPlayer(
             "interaction.meta.scope.teleport_point.private",
             geoScope.scopeName,
             targetRegion.name
-        )!!)
+        ))
         return 0
     }
     return teleportPlayerToCanonicalScope(playerExecutor, targetRegion, geoScope)
@@ -100,7 +100,7 @@ private fun teleportPlayerToCanonicalScope(
         playerExecutor.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.teleport_point.null",
             geoScope.scopeName,
-            targetRegion.name)!!)
+            targetRegion.name))
         return 0
     }
 
@@ -114,7 +114,7 @@ private fun teleportPlayerToCanonicalScope(
         playerExecutor.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.teleport_point.teleported",
             geoScope.scopeName,
-            targetRegion.name)!!)
+            targetRegion.name))
         return 1
     }
 
@@ -138,8 +138,8 @@ private fun teleportPlayerToCanonicalScope(
             targetRegion.name,
             teleportPoint.x, teleportPoint.y, teleportPoint.z,
             fallback.x, fallback.y, fallback.z
-        )!!)
-        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z)!!)
+        ))
+        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z))
         1
     } else {
         playerExecutor.sendSystemMessage(Translator.tr(
@@ -147,8 +147,8 @@ private fun teleportPlayerToCanonicalScope(
             geoScope.scopeName,
             targetRegion.name,
             teleportPoint.x, teleportPoint.y, teleportPoint.z
-        )!!)
-        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z)!!)
+        ))
+        playerExecutor.sendSystemMessage(Translator.tr(reasonKey, teleportPoint.x, teleportPoint.y, teleportPoint.z))
         0
     }
 }
@@ -170,7 +170,7 @@ private fun resolveScopeWorldOrReport(
             scope.worldId,
             scope.scopeName,
             region.name
-        )!!)
+        ))
     }
 }
 

@@ -16,12 +16,12 @@ fun onScopeTransfer(
     RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
 
     if (sourceRegion.numberID == targetRegion.numberID) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.same_region")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.same_region"))
         return 0
     }
 
     if (sourceRegion.scopes.size < 2) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.last_scope")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.transfer.error.last_scope"))
         return 0
     }
 
@@ -44,14 +44,14 @@ fun onScopeTransfer(
             Translator.tr(
                 "interaction.meta.scope.transfer.success.renamed",
                 scopeName, resolvedName, sourceRegion.name, targetRegion.name
-            )!!
+            )
         )
     } else {
         player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.scope.transfer.success",
                 scopeName, sourceRegion.name, targetRegion.name
-            )!!
+            )
         )
     }
     return 1

@@ -50,7 +50,7 @@ fun playerAnimalKillingPermission() {
         regionAndScope?.let { (region, scope) ->
             val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.ANIMAL_KILLING, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
             if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildScopePermissionDenialContext(region, scope, denial))!!)
+                player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildScopePermissionDenialContext(region, scope, denial)))
                 return@register false
             }
         }

@@ -34,5 +34,5 @@ internal fun notifyRegionNotFound(player: ServerPlayer, regionIdentifier: String
     } else {
         "interaction.meta.not_found_name"
     }
-    player.sendSystemMessage(requireNotNull(Translator.tr(key, regionIdentifier)))
+    player.sendSystemMessage(Translator.tr(key, regionIdentifier))
 }

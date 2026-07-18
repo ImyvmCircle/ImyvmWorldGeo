@@ -25,7 +25,7 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, categoryName
                 "interaction.meta.stats.error.invalid_category",
                 categoryName,
                 NaturalStatsCategory.entries.joinToString(", ") { it.commandName }
-            )!!
+            )
         )
         return 0
     }
@@ -47,7 +47,7 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, category: Na
                     result.dimensionId,
                     result.candidateChunkCount,
                     result.limit
-                )!!
+                )
             )
             0
         }
@@ -59,13 +59,13 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, category: Na
                     result.dimensionId,
                     result.requestedWorkUnits,
                     result.limit
-                )!!
+                )
             )
             0
         }
 
         is RegionNaturalStatsResult.DimensionUnavailable -> {
-            player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId)!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId))
             0
         }
 
@@ -84,7 +84,7 @@ private fun sendStatsMessages(
     isApi: Boolean
 ): Int {
     if (stats.dimensionStats.isEmpty()) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.stats.empty", region.name)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.stats.empty", region.name))
         return 0
     }
 
@@ -98,7 +98,7 @@ private fun sendStatsMessages(
             stats.candidateChunkCount,
             stats.sampledColumnCount,
             stats.scopeCount
-        )!!
+        )
     )
 
     buildCategoryLines(stats, category, isDetail = false).forEach(player::sendSystemMessage)
@@ -113,14 +113,14 @@ private fun sendStatsMessages(
                     dimensionStats.candidateChunkCount,
                     dimensionStats.sampledColumnCount,
                     dimensionStats.scopeCount
-                )!!
+                )
             )
             buildCategoryLines(dimensionStats, category, isDetail = true).forEach(player::sendSystemMessage)
         }
     }
 
     if (stats.isPartial) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.stats.partial")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.stats.partial"))
     }
 
     return 1
@@ -134,38 +134,38 @@ private fun buildCategoryLines(
     val itemLimit = if (isDetail) DETAIL_ITEM_LIMIT else SUMMARY_ITEM_LIMIT
     return when (category) {
         NaturalStatsCategory.ALL -> listOf(
-            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty))!!,
-            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit))!!,
+            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty)),
+            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit)),
             Translator.tr(
                 "interaction.meta.stats.line.surface",
                 formatDistributionMap(stats.surfaceBlockCounts, stats.sampledColumnCount, itemLimit)
-            )!!,
+            ),
             Translator.tr(
                 "interaction.meta.stats.line.biomes",
                 formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, itemLimit)
-            )!!
+            )
         )
 
         NaturalStatsCategory.STRUCTURES -> listOf(
-            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit))!!
+            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit))
         )
 
         NaturalStatsCategory.DIFFICULTY -> listOf(
-            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty))!!
+            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty))
         )
 
         NaturalStatsCategory.SURFACE -> listOf(
             Translator.tr(
                 "interaction.meta.stats.line.surface",
                 formatDistributionMap(stats.surfaceBlockCounts, stats.sampledColumnCount, itemLimit)
-            )!!
+            )
         )
 
         NaturalStatsCategory.BIOMES -> listOf(
             Translator.tr(
                 "interaction.meta.stats.line.biomes",
                 formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, itemLimit)
-            )!!
+            )
         )
 
         NaturalStatsCategory.PLAYERS -> emptyList()
@@ -180,38 +180,38 @@ private fun buildCategoryLines(
     val itemLimit = if (isDetail) DETAIL_ITEM_LIMIT else SUMMARY_ITEM_LIMIT
     return when (category) {
         NaturalStatsCategory.ALL -> listOf(
-            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty))!!,
-            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit))!!,
+            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty)),
+            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit)),
             Translator.tr(
                 "interaction.meta.stats.line.surface",
                 formatDistributionMap(stats.surfaceBlockCounts, stats.sampledColumnCount, itemLimit)
-            )!!,
+            ),
             Translator.tr(
                 "interaction.meta.stats.line.biomes",
                 formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, itemLimit)
-            )!!
+            )
         )
 
         NaturalStatsCategory.STRUCTURES -> listOf(
-            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit))!!
+            Translator.tr("interaction.meta.stats.line.structures", formatCountMap(stats.structureCounts, itemLimit))
         )
 
         NaturalStatsCategory.DIFFICULTY -> listOf(
-            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty))!!
+            Translator.tr("interaction.meta.stats.line.difficulty", formatDifficulty(stats.averageLocalDifficulty))
         )
 
         NaturalStatsCategory.SURFACE -> listOf(
             Translator.tr(
                 "interaction.meta.stats.line.surface",
                 formatDistributionMap(stats.surfaceBlockCounts, stats.sampledColumnCount, itemLimit)
-            )!!
+            )
         )
 
         NaturalStatsCategory.BIOMES -> listOf(
             Translator.tr(
                 "interaction.meta.stats.line.biomes",
                 formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, itemLimit)
-            )!!
+            )
         )
 
         NaturalStatsCategory.PLAYERS -> emptyList()
@@ -225,7 +225,7 @@ private fun sendPlayerStatsMessages(
     isApi: Boolean
 ): Int {
     if (stats.isEmpty) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.player_stats.empty", region.name)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.player_stats.empty", region.name))
         return 0
     }
 
@@ -236,37 +236,37 @@ private fun sendPlayerStatsMessages(
             region.name,
             categoryLabel(NaturalStatsCategory.PLAYERS),
             stats.trackedPlayerCount
-        )!!
+        )
     )
 
     listOf(
-        Translator.tr("interaction.meta.player_stats.line.entries", stats.entryCount)!!,
-        Translator.tr("interaction.meta.player_stats.line.stay", formatDuration(stats.stayMillis))!!,
-        Translator.tr("interaction.meta.player_stats.line.deaths", stats.deathCount)!!,
-        Translator.tr("interaction.meta.player_stats.line.block_places", stats.blockPlaceCount)!!,
-        Translator.tr("interaction.meta.player_stats.line.block_breaks", stats.blockBreakCount)!!
+        Translator.tr("interaction.meta.player_stats.line.entries", stats.entryCount),
+        Translator.tr("interaction.meta.player_stats.line.stay", formatDuration(stats.stayMillis)),
+        Translator.tr("interaction.meta.player_stats.line.deaths", stats.deathCount),
+        Translator.tr("interaction.meta.player_stats.line.block_places", stats.blockPlaceCount),
+        Translator.tr("interaction.meta.player_stats.line.block_breaks", stats.blockBreakCount)
     ).forEach(player::sendSystemMessage)
 
     return 1
 }
 
 private fun categoryLabel(category: NaturalStatsCategory): String =
-    Translator.raw("interaction.meta.stats.category.${category.translationSuffix}") ?: category.commandName
+    Translator.raw("interaction.meta.stats.category.${category.translationSuffix}")
 
 private fun formatDifficulty(value: Double?): String =
     value?.let { String.format(Locale.ROOT, "%.3f", it) }
-        ?: (Translator.raw("interaction.meta.stats.not_available") ?: "N/A")
+        ?: (Translator.raw("interaction.meta.stats.not_available"))
 
 private fun formatCountMap(values: Map<Identifier, Int>, limit: Int): String {
     if (values.isEmpty()) {
-        return Translator.raw("interaction.meta.stats.none") ?: "none"
+        return Translator.raw("interaction.meta.stats.none")
     }
 
     val visible = values.entries.take(limit)
     val body = visible.joinToString(", ") { "${it.key} x${it.value}" }
     val remaining = values.size - visible.size
     return if (remaining > 0) {
-        "$body${Translator.raw("interaction.meta.stats.more_suffix", remaining) ?: ""}"
+        "$body${Translator.raw("interaction.meta.stats.more_suffix", remaining)}"
     } else {
         body
     }
@@ -274,7 +274,7 @@ private fun formatCountMap(values: Map<Identifier, Int>, limit: Int): String {
 
 private fun formatDistributionMap(values: Map<Identifier, Int>, total: Int, limit: Int): String {
     if (values.isEmpty() || total <= 0) {
-        return Translator.raw("interaction.meta.stats.none") ?: "none"
+        return Translator.raw("interaction.meta.stats.none")
     }
 
     val visible = values.entries.take(limit)
@@ -284,7 +284,7 @@ private fun formatDistributionMap(values: Map<Identifier, Int>, total: Int, limi
     }
     val remaining = values.size - visible.size
     return if (remaining > 0) {
-        "$body${Translator.raw("interaction.meta.stats.more_suffix", remaining) ?: ""}"
+        "$body${Translator.raw("interaction.meta.stats.more_suffix", remaining)}"
     } else {
         body
     }
@@ -298,11 +298,11 @@ private fun formatDuration(millis: Long): String {
     val seconds = totalSeconds % 60L
 
     val parts = buildList {
-        if (days > 0) add(Translator.raw("interaction.meta.player_stats.duration.day", days) ?: "${days}d")
-        if (hours > 0) add(Translator.raw("interaction.meta.player_stats.duration.hour", hours) ?: "${hours}h")
-        if (minutes > 0) add(Translator.raw("interaction.meta.player_stats.duration.minute", minutes) ?: "${minutes}m")
+        if (days > 0) add(Translator.raw("interaction.meta.player_stats.duration.day", days))
+        if (hours > 0) add(Translator.raw("interaction.meta.player_stats.duration.hour", hours))
+        if (minutes > 0) add(Translator.raw("interaction.meta.player_stats.duration.minute", minutes))
         if (seconds > 0 || isEmpty()) {
-            add(Translator.raw("interaction.meta.player_stats.duration.second", seconds) ?: "${seconds}s")
+            add(Translator.raw("interaction.meta.player_stats.duration.second", seconds))
         }
     }
     return parts.joinToString(" ")

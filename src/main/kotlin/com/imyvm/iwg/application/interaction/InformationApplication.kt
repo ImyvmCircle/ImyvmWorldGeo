@@ -19,7 +19,7 @@ fun onQueryRegion(player: ServerPlayer, region: Region, isApi: Boolean) : Int{
             region.name,
             region.numberID.toString(),
             region.calculateTotalArea(),
-            region.showOnDynmap)!!
+            region.showOnDynmap)
     )
 
     val server = player.level().server
@@ -31,12 +31,12 @@ fun onQueryRegion(player: ServerPlayer, region: Region, isApi: Boolean) : Int{
 fun onListRegions(player: ServerPlayer): Int {
     val regions = RegionDatabase.getRegionList()
     if (regions.isEmpty()) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.command.list.empty")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.list.empty"))
         return 0
     }
-    player.sendSystemMessage(Translator.tr("interaction.meta.command.list.header")!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.list.header"))
     regions.forEach { region ->
-        player.sendSystemMessage(Translator.tr("interaction.meta.command.list.item", region.name, region.numberID)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.list.item", region.name, region.numberID))
     }
     return 1
 }
@@ -44,10 +44,10 @@ fun onListRegions(player: ServerPlayer): Int {
 fun onToggleActionBar(player: ServerPlayer): Int {
     if (ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)) {
         ImyvmWorldGeo.locationActionBarEnabledPlayers.remove(player.uuid)
-        player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.disabled")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.disabled"))
     } else {
         ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
-        player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.enabled")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.command.toggle.enabled"))
         displayRegionScopeBoundariesForPlayer(player, RegionDatabase.getRegionList())
     }
     return 1
@@ -101,7 +101,7 @@ fun onHelp(player: ServerPlayer): Int {
         "dynmap.toggle_scope"
     )
 
-    Translator.trBase("interaction.meta.command.help", helpOrder).forEach { line ->
+    Translator.trAll(helpOrder.map { "interaction.meta.command.help.$it" }).forEach { line ->
         player.sendSystemMessage(line)
     }
 

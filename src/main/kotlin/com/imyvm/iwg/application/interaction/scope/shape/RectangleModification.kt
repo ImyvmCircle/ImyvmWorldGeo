@@ -19,7 +19,7 @@ fun modifyScopeRectangle(
 ): Boolean {
     val geometry = existingScope.geoShape?.typedGeometry as? RectangleGeometry
     if (geometry == null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.rectangle.invalid_rectangle"))
         return false
     }
     if (selectedPositions.size != 1) {
@@ -38,7 +38,7 @@ fun modifyScopeRectangle(
     val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.RECTANGLE)
     if (changed) {
         val replacementGeometry = requireNotNull(newGeometry)
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.rectangle.success",
             existingScope.scopeName,
             region.name,
@@ -46,7 +46,7 @@ fun modifyScopeRectangle(
             replacementGeometry.north,
             replacementGeometry.east,
             replacementGeometry.south
-        )))
+        ))
     }
     return changed
 }

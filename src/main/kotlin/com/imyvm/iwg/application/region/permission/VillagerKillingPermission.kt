@@ -29,7 +29,7 @@ fun playerVillagerKillingPermission() {
         regionAndScope?.let { (region, scope) ->
             val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.VILLAGER_KILLING, PERMISSION_DEFAULT_VILLAGER_KILLING.value)
             if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.villager_killing", buildScopePermissionDenialContext(region, scope, denial))!!)
+                player.sendSystemMessage(Translator.tr("setting.permission.villager_killing", buildScopePermissionDenialContext(region, scope, denial)))
                 return@register false
             }
         }

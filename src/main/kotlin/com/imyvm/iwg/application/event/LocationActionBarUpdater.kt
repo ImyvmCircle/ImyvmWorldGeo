@@ -27,11 +27,11 @@ private fun getPlayerRegionScope(player: ServerPlayer): Pair<Region?, GeoScope?>
 }
 
 private fun buildRegionScopeText(region: Region?, scope: GeoScope?): Pair<String, String> {
-    val regionPrefix = Translator.tr("scoreboard.region.prefix")?.string ?: "Region:"
-    val scopePrefix = Translator.tr("scoreboard.scope.prefix")?.string ?: "Scope:"
+    val regionPrefix = Translator.tr("scoreboard.region.prefix").string
+    val scopePrefix = Translator.tr("scoreboard.scope.prefix").string
 
-    val emptyRegionName = Translator.tr("scoreboard.region.none.name")?.string ?: "-wilderness-"
-    val emptyScopeName = Translator.tr("scoreboard.scope.none.name")?.string ?: "-Free to use-"
+    val emptyRegionName = Translator.tr("scoreboard.region.none.name").string
+    val emptyScopeName = Translator.tr("scoreboard.scope.none.name").string
     val regionName = region?.name?.takeIf { it.isNotBlank() }
         ?: emptyRegionName
     val scopeName = scope?.scopeName?.takeIf { it.isNotBlank() }

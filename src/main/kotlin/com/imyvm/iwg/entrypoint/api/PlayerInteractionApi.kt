@@ -79,10 +79,10 @@ object PlayerInteractionApi {
         val scope = getScopeOrNotify(player, region, scopeName) ?: return
         when (deleteScopeWithResult(player, region, scope)) {
             ScopeDeleteResult.SUCCESS -> player.sendSystemMessage(
-                requireNotNull(Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name))
+                Translator.tr("interaction.meta.scope.delete.success", scopeName, region.name)
             )
             ScopeDeleteResult.LAST_SCOPE -> player.sendSystemMessage(
-                requireNotNull(Translator.tr("interaction.meta.scope.delete.error.last_scope"))
+                Translator.tr("interaction.meta.scope.delete.error.last_scope")
             )
             ScopeDeleteResult.PERSISTENCE_FAILED -> Unit
         }

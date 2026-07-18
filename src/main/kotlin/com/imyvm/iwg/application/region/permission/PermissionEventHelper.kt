@@ -30,7 +30,7 @@ internal fun denyPermissionAt(
     if (world.isClientSide) return false
     val (region, scope) = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return false
     val denial = getScopePermissionDenialSource(region, scope, player.uuid, key, defaultValue) ?: return false
-    player.sendSystemMessage(Translator.tr(messageKey, buildScopePermissionDenialContext(region, scope, denial))!!)
+    player.sendSystemMessage(Translator.tr(messageKey, buildScopePermissionDenialContext(region, scope, denial)))
     return true
 }
 

@@ -17,35 +17,35 @@ fun errorMessage(
     error: CreationError,
     shapeType: GeoShapeType
 ): List<Component> = when (error) {
-    CreationError.DuplicatedPoints -> listOfNotNull(Translator.tr("error.duplicated_points")!!)
-    CreationError.InsufficientPoints -> listOfNotNull(Translator.tr("error.insufficient_points", shapeType.name.lowercase())!!)
-    CreationError.CoincidentPoints -> listOfNotNull(Translator.tr("error.coincident_points")!!)
+    CreationError.DuplicatedPoints -> listOfNotNull(Translator.tr("error.duplicated_points"))
+    CreationError.InsufficientPoints -> listOfNotNull(Translator.tr("error.insufficient_points", shapeType.name.lowercase()))
+    CreationError.CoincidentPoints -> listOfNotNull(Translator.tr("error.coincident_points"))
     CreationError.UnderSizeLimit -> listOfNotNull(when (shapeType) {
-        GeoShapeType.RECTANGLE -> Translator.tr("error.rectangle_too_small")!!
-        GeoShapeType.CIRCLE -> Translator.tr("error.circle_too_small")!!
-        GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")!!
-        else -> Translator.tr("error.generic_too_small")!!
+        GeoShapeType.RECTANGLE -> Translator.tr("error.rectangle_too_small")
+        GeoShapeType.CIRCLE -> Translator.tr("error.circle_too_small")
+        GeoShapeType.POLYGON -> Translator.tr("error.polygon_too_small")
+        else -> Translator.tr("error.generic_too_small")
     })
     CreationError.CoordinateRangeExceeded -> listOfNotNull(Translator.tr("error.coordinate_range_exceeded"))
     CreationError.PolygonVertexLimitExceeded -> listOfNotNull(
         Translator.tr("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES)
     )
-    CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit")!!)
-    CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid")!!)
-    CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short")!!)
-    CreationError.NotConvex -> listOfNotNull(Translator.tr("error.not_convex")!!)
+    CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.under_bounding_box_limit"))
+    CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid"))
+    CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short"))
+    CreationError.NotConvex -> listOfNotNull(Translator.tr("error.not_convex"))
     is CreationError.IntersectionBetweenScopes -> buildIntersectionErrorMessages(error.details, shapeType)
 }
 
 private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, shapeType: GeoShapeType): List<Component> {
     val lines = mutableListOf<Component>()
-    Translator.tr("error.intersection_between_scopes.header")?.let { lines.add(it) }
+    Translator.tr("error.intersection_between_scopes.header").let { lines.add(it) }
     for (detail in details) {
         val shapeDesc = getShapeParamDescription(detail.shape)
-        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc)?.let { lines.add(it) }
+        Translator.tr("error.intersection_between_scopes.scope_line", detail.regionName, detail.scopeName, shapeDesc).let { lines.add(it) }
         if (detail.verticesInside.isNotEmpty() && shapeType in listOf(GeoShapeType.POLYGON, GeoShapeType.RECTANGLE)) {
             val vertexStr = formatVertexList(detail.verticesInside, shapeType)
-            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr)?.let { lines.add(it) }
+            Translator.tr("error.intersection_between_scopes.vertices_inside", vertexStr).let { lines.add(it) }
         }
     }
     return lines
@@ -56,11 +56,11 @@ private fun getShapeParamDescription(shape: GeoShape): String {
         is RectangleGeometry -> Translator.raw(
             "error.intersection.shape.rectangle",
             geometry.west, geometry.north, geometry.east, geometry.south
-        ) ?: ""
+        )
         is CircleGeometry -> Translator.raw(
             "error.intersection.shape.circle",
             geometry.centerX, geometry.centerZ, geometry.radius
-        ) ?: ""
+        )
         is PolygonGeometry -> {
             val coords = buildString {
                 for (i in 0 until geometry.vertexCount) {
@@ -68,7 +68,7 @@ private fun getShapeParamDescription(shape: GeoShape): String {
                     append('(').append(geometry.x(i)).append(',').append(geometry.z(i)).append(')')
                 }
             }
-            Translator.raw("error.intersection.shape.polygon", coords) ?: ""
+            Translator.raw("error.intersection.shape.polygon", coords)
         }
         UnknownGeometry -> ""
     }
@@ -85,10 +85,10 @@ private fun formatVertexList(vertices: List<VertexInsideInfo>, shapeType: GeoSha
                     4 -> "error.intersection.vertex.rect_sw"
                     else -> null
                 }
-                if (cornerKey != null) Translator.raw(cornerKey, info.x, info.z) ?: "(${info.x},${info.z})"
-                else Translator.raw("error.intersection.vertex.polygon", info.index, info.x, info.z) ?: "#${info.index}(${info.x},${info.z})"
+                if (cornerKey != null) Translator.raw(cornerKey, info.x, info.z)
+                else Translator.raw("error.intersection.vertex.polygon", info.index, info.x, info.z)
             }
-            else -> Translator.raw("error.intersection.vertex.polygon", info.index, info.x, info.z) ?: "#${info.index}(${info.x},${info.z})"
+            else -> Translator.raw("error.intersection.vertex.polygon", info.index, info.x, info.z)
         }
     }
 }

@@ -18,7 +18,7 @@ fun onModifyScope(
     val selectedPositions = checkAndGetPlayerPositions(player, targetRegion, existingScope) ?: return 0
     val shapeType = existingScope.geoShape?.geoShapeType ?: GeoShapeType.UNKNOWN
     if (shapeType == GeoShapeType.UNKNOWN) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.unknown_shape_type"))
         return 0
     }
 
@@ -36,11 +36,11 @@ private fun checkAndGetPlayerPositions(
 ): MutableList<BlockPos>? {
     val state = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
     if (state == null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode"))
         return null
     }
     if (!isModifySelectionFor(state, existingScope)) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.select.modify_target_mismatch")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.modify_target_mismatch"))
         return null
     }
     val error = validateModifySelectionTarget(

@@ -9,6 +9,6 @@ import net.minecraft.server.level.ServerPlayer
 internal fun getScopeOrNotify(player: ServerPlayer, region: Region, scopeName: String): GeoScope? = try {
     region.getScopeByName(scopeName)
 } catch (error: ScopeNotFoundException) {
-    player.sendSystemMessage(requireNotNull(Translator.tr("region.error.no_scope", error.scopeName, error.regionName)))
+    player.sendSystemMessage(Translator.tr("region.error.no_scope", error.scopeName, error.regionName))
     null
 }

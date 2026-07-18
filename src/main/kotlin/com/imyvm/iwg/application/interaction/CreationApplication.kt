@@ -244,7 +244,7 @@ private fun createRegionCompatibility(
     val regionName = validateRegionCreationName(player, candidateName) ?: return null
     val region = createRegionFromSelection(player, regionName, idMark, selection) ?: return null
     if (notifyPlayer) {
-        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.create.success", region.name)))
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.success", region.name))
     }
     return region
 }
@@ -264,7 +264,7 @@ private fun createScopeCompatibility(
     val scope = createScopeFromSelection(player, region, scopeName, selection) ?: return null
     if (notifyPlayer) {
         player.sendSystemMessage(
-            requireNotNull(Translator.tr("interaction.meta.scope.add.success", scope.scopeName, region.name))
+            Translator.tr("interaction.meta.scope.add.success", scope.scopeName, region.name)
         )
     }
     return scope
@@ -310,7 +310,7 @@ private fun resolveCompatibilitySelection(
     val shapeType = GeoShapeType.entries.find { it.name == shapeTypeName } ?: GeoShapeType.UNKNOWN
     if (shapeType == GeoShapeType.UNKNOWN) {
         player.sendSystemMessage(
-            requireNotNull(Translator.tr("interaction.meta.create.invalid_shape", shapeTypeName))
+            Translator.tr("interaction.meta.create.invalid_shape", shapeTypeName)
         )
         return null
     }
@@ -364,7 +364,7 @@ private fun createRegionFromSelection(
             shapeType = selection.shapeType
         )
     } catch (_: RegionIdCapacityExceededException) {
-        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.create.error.id_capacity")))
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity"))
         return null
     }
     return when (creationResult) {
@@ -404,7 +404,7 @@ private fun createScopeFromSelection(
                     scope.assignScopeId(RegionDatabase.nextScopeIdForNewScope(region))
                 } catch (_: ScopeIdCapacityExceededException) {
                     player.sendSystemMessage(
-                        requireNotNull(Translator.tr("interaction.meta.scope.create.error.id_capacity"))
+                        Translator.tr("interaction.meta.scope.create.error.id_capacity")
                     )
                     return null
                 }

@@ -15,7 +15,7 @@ fun onRegionMerge(
     RegionDatabase.requireCanonicalRegions(sourceRegion, targetRegion)
 
     if (sourceRegion.numberID == targetRegion.numberID) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.region.merge.error.same_region")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.region.merge.error.same_region"))
         return 0
     }
     val result = mergeRegions(sourceRegion, targetRegion, System.currentTimeMillis()) { saveRegionData(player) }
@@ -29,7 +29,7 @@ fun onRegionMerge(
         Translator.tr(
             "interaction.meta.region.merge.success",
             sourceRegion.name, targetRegion.name, success.scopeCount, success.renamedCount
-        )!!
+        )
     )
     return 1
 }

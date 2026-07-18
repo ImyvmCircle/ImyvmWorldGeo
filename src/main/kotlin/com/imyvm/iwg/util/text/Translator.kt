@@ -15,26 +15,35 @@ object Translator : HokiTranslator() {
         }
     }
 
-    fun trBase(base: String,subKeys: List<String>): List<Component> {
-        return subKeys.mapNotNull { tr("$base.$it") }
+    fun trAll(keys: List<String>): List<Component> {
+        return keys.map(::tr)
     }
 
-    fun tr(key: String?, vararg args: Any?): Component? {
-        val raw = key?.let { languageInstance.get(it) }
-        val formatted = if (args.isNotEmpty()) {
-            raw?.let { java.text.MessageFormat.format(it, *args) }
-        } else {
-            raw
-        }
-        return formatted?.let { TextParser.parse(it) }
+    @Deprecated("Pass complete translation keys to trAll instead")
+    fun trBase(base: String, subKeys: List<String>): List<Component> {
+        return trAll(subKeys.map { "$base.$it" })
     }
 
-    fun raw(key: String?, vararg args: Any?): String? {
-        val rawStr = key?.let { languageInstance.get(it) }
+    fun tr(key: String, vararg args: Any?): Component {
+        return TextParser.parse(formatRequired(key, args))
+    }
+
+    fun raw(key: String, vararg args: Any?): String {
+        return formatRequired(key, args)
+    }
+
+    fun hasTranslation(key: String): Boolean {
+        return languageInstance.hasTranslation(key)
+    }
+
+    private fun formatRequired(key: String, args: Array<out Any?>): String {
+        val language = languageInstance
+        check(language.hasTranslation(key)) { "Missing required translation key: $key" }
+        val template = language.get(key)
         return if (args.isNotEmpty()) {
-            rawStr?.let { java.text.MessageFormat.format(it, *args) }
+            java.text.MessageFormat.format(template, *args)
         } else {
-            rawStr
+            template
         }
     }
 

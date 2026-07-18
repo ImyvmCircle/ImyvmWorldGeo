@@ -86,7 +86,7 @@ private fun getCurrentPlayerRegionScope(playerEntity: ServerPlayer): Triple<Serv
     return if (regionScopePair != null) {
         Triple(playerEntity, regionScopePair.first, regionScopePair.second)
     } else {
-        playerEntity.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region")!!)
+        playerEntity.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
         null
     }
 }

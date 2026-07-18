@@ -72,11 +72,11 @@ fun onReplacingScopeShape(
     newShape: GeoShape
 ): Int = when (val result = replaceScopeShape(region, scope, newShape) { saveRegionData(player) }) {
     ScopeShapeReplacementResult.Success -> {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.shape_replace.success",
             scope.scopeName,
             region.name
-        )))
+        ))
         1
     }
     is ScopeShapeReplacementResult.Rejected -> {

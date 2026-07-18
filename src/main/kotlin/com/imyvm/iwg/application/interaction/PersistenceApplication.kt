@@ -13,6 +13,6 @@ internal fun saveRegionData(
     true
 } catch (error: Exception) {
     ImyvmWorldGeo.logger.error("Failed to persist region data: ${error.message}", error)
-    if (player != null) Translator.tr("interaction.meta.persistence.save_failed")?.let(player::sendSystemMessage)
+    if (player != null) Translator.tr("interaction.meta.persistence.save_failed").let(player::sendSystemMessage)
     false
 }

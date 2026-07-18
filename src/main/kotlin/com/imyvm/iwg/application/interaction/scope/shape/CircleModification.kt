@@ -22,7 +22,7 @@ fun modifyScopeCircleRadius(
     val point = selectedPositions.singleOrNull() ?: return invalidPointCount(player, selectedPositions.size)
     val oldRadius = circle.radius
     if (point.x == circle.centerX && point.z == circle.centerZ) {
-        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive")))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.circle_radius.non_positive"))
         return false
     }
 
@@ -33,13 +33,13 @@ fun modifyScopeCircleRadius(
     }
     val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.CIRCLE)
     if (changed) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.circle_radius.success",
             existingScope.scopeName,
             region.name,
             oldRadius,
             requireNotNull(newRadius)
-        )))
+        ))
     }
     return changed
 }
@@ -56,13 +56,13 @@ fun modifyScopeCircleCenter(
     val centerX = circle.centerX
     val centerZ = circle.centerZ
     if (oldCenter.x != centerX || oldCenter.z != centerZ) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "selection.feedback.modify.guidance.circle.2points_invalid_pt1",
             oldCenter.x,
             oldCenter.z,
             centerX,
             centerZ
-        )))
+        ))
         return false
     }
 
@@ -70,14 +70,14 @@ fun modifyScopeCircleCenter(
     val shapeResult = modifyCircleCenter(circle, newCenter)
     val changed = applyModifiedShape(player, region, existingScope, shapeResult, GeoShapeType.CIRCLE)
     if (changed) {
-        player.sendSystemMessage(requireNotNull(Translator.tr(
+        player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.modify.circle_center.success",
             existingScope.scopeName,
             region.name,
             "$centerX,$centerZ",
             "${newCenter.x},${newCenter.z}",
             circle.radius
-        )))
+        ))
     }
     return changed
 }
@@ -85,7 +85,7 @@ fun modifyScopeCircleCenter(
 private fun circleGeometry(player: ServerPlayer, scope: GeoScope, messageKey: String): CircleGeometry? {
     val geometry = scope.geoShape?.typedGeometry as? CircleGeometry
     if (geometry == null) {
-        player.sendSystemMessage(requireNotNull(Translator.tr("interaction.meta.scope.modify.$messageKey")))
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.modify.$messageKey"))
     }
     return geometry
 }

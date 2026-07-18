@@ -20,10 +20,10 @@ fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
 
     return try {
         if (!renameRegion(region, normalizedName) { saveRegionData(player) }) return 0
-        player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, normalizedName)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, normalizedName))
         1
     } catch (e: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.name.duplicate_name", normalizedName)!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.name.duplicate_name", normalizedName))
         0
     }
 }
@@ -44,19 +44,19 @@ fun onScopeRename(
     if (!checkNameFormat(normalizedName, player)) return 0
 
     if (existingScope.scopeName.equals(normalizedName, ignoreCase = true)) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.repeated_same_name")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.repeated_same_name"))
         return 0
     }
 
     for (scope in targetRegion.scopes) {
         if (scope !== existingScope && scope.scopeName.equals(normalizedName, ignoreCase = true)) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.duplicate_scope_name")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.duplicate_scope_name"))
             return 0
         }
     }
 
     if (!renameScope(targetRegion, existingScope, normalizedName) { saveRegionData(player) }) return 0
-    player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, normalizedName, targetRegion.name)!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, normalizedName, targetRegion.name))
     return 1
 }
 

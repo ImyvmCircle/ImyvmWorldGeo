@@ -157,7 +157,7 @@ class GeoScope(
                 scopeName,
                 shapeInfoString,
                 dimensionDisplay,
-                showOnDynmap)!!
+                showOnDynmap)
         } else {
             Translator.tr("geo.scope.info.with_teleport_point",
                 index,
@@ -168,13 +168,13 @@ class GeoScope(
                 point.y,
                 point.z,
                 dimensionDisplay,
-                showOnDynmap)!!
+                showOnDynmap)
         }
     }
 
     private fun getDimensionDisplayName(): String {
         val key = "geo.dimension.${worldId.namespace}.${worldId.path}"
-        return Translator.tr(key)?.string ?: worldId.toString()
+        return if (Translator.hasTranslation(key)) Translator.tr(key).string else worldId.toString()
     }
 
     fun getWorld(server: MinecraftServer): ServerLevel? {

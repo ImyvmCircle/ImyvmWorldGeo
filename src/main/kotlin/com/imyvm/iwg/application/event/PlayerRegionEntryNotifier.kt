@@ -131,7 +131,7 @@ object PlayerRegionEntryExitTracker {
     private fun sendRegionExitTitle(player: ServerPlayer, region: Region) {
         if (!isRegionNotificationEnabled(region)) return
         val text = getRegionMessage(region, EntryExitMessageKey.EXIT_MESSAGE)
-            ?: Translator.tr(REGION_EXIT_I18N_KEY.value, region.name)
+            ?: translateConfigured(REGION_EXIT_I18N_KEY.value, region.name)
             ?: return
         player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
         player.connection.send(ClientboundSetTitleTextPacket(text))
@@ -140,7 +140,7 @@ object PlayerRegionEntryExitTracker {
     private fun sendRegionEntryTitle(player: ServerPlayer, region: Region) {
         if (isRegionNotificationEnabled(region)) {
             val text = getRegionMessage(region, EntryExitMessageKey.ENTER_MESSAGE)
-                ?: Translator.tr(REGION_ENTER_I18N_KEY.value, region.name)
+                ?: translateConfigured(REGION_ENTER_I18N_KEY.value, region.name)
             if (text != null) {
                 player.connection.send(ClientboundSetTitlesAnimationPacket(5, 50, 15))
                 player.connection.send(ClientboundSetTitleTextPacket(text))
@@ -152,7 +152,7 @@ object PlayerRegionEntryExitTracker {
     private fun sendScopeExitMessage(player: ServerPlayer, region: Region, scope: GeoScope) {
         if (!isScopeNotificationEnabled(scope)) return
         val text = getScopeMessage(scope, EntryExitMessageKey.EXIT_MESSAGE, region.name, scope.scopeName)
-            ?: Translator.tr(SCOPE_EXIT_I18N_KEY.value, region.name, scope.scopeName)
+            ?: translateConfigured(SCOPE_EXIT_I18N_KEY.value, region.name, scope.scopeName)
             ?: return
         player.sendSystemMessage(text)
     }
@@ -160,7 +160,7 @@ object PlayerRegionEntryExitTracker {
     private fun sendScopeEntryMessage(player: ServerPlayer, region: Region, scope: GeoScope) {
         if (isScopeNotificationEnabled(scope)) {
             val text = getScopeMessage(scope, EntryExitMessageKey.ENTER_MESSAGE, region.name, scope.scopeName)
-                ?: Translator.tr(SCOPE_ENTER_I18N_KEY.value, region.name, scope.scopeName)
+                ?: translateConfigured(SCOPE_ENTER_I18N_KEY.value, region.name, scope.scopeName)
             if (text != null) player.sendSystemMessage(text)
         }
         sendRpgEntryNotifications(player, region, scope, scope.scopeName)
@@ -201,9 +201,13 @@ object PlayerRegionEntryExitTracker {
             }
             if (!effective) {
                 val i18nKey = "notification.rpg.${key.name.lowercase().removePrefix("rpg_")}_restricted"
-                val msg = Translator.tr(i18nKey, locationName) ?: continue
+                val msg = Translator.tr(i18nKey, locationName)
                 player.sendSystemMessage(msg)
             }
         }
+    }
+
+    private fun translateConfigured(key: String, vararg args: Any?): Component? {
+        return if (Translator.hasTranslation(key)) Translator.tr(key, *args) else null
     }
 }

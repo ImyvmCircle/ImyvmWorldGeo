@@ -8,12 +8,12 @@ import net.minecraft.server.level.ServerPlayer
 
 fun onTogglingRegionDynmap(player: ServerPlayer, region: Region) {
     if (!toggleRegionDynmap(region) { saveRegionData(player) }) return
-    player.sendSystemMessage(Translator.tr("interaction.meta.region.dynmap.toggle", region.name, region.showOnDynmap)!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.region.dynmap.toggle", region.name, region.showOnDynmap))
 }
 
 fun onTogglingScopeDynmap(player: ServerPlayer, region: Region, scope: GeoScope): Int {
     if (!toggleScopeDynmap(region, scope) { saveRegionData(player) }) return 0
-    player.sendSystemMessage(Translator.tr("interaction.meta.scope.dynmap.toggle", region.name, scope.scopeName, scope.showOnDynmap)!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.scope.dynmap.toggle", region.name, scope.scopeName, scope.showOnDynmap))
     return 1
 }
 

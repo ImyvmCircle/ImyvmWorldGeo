@@ -67,7 +67,7 @@ class GeoShape(
             is CircleGeometry -> getCircleInfo(current, area)
             is RectangleGeometry -> getRectangleInfo(current, area)
             is PolygonGeometry -> getPolygonInfo(current, area)
-            UnknownGeometry -> Translator.tr("geo.shape.unknown.info", area)!!
+            UnknownGeometry -> Translator.tr("geo.shape.unknown.info", area)
         }
     }
 
@@ -111,7 +111,7 @@ class GeoShape(
             circle.centerZ,
             circle.radius,
             area
-        )!!
+        )
     }
 
     private fun getRectangleInfo(rectangle: RectangleGeometry, area: String): Component? {
@@ -122,7 +122,7 @@ class GeoShape(
             rectangle.east,
             rectangle.south,
             area
-        )!!
+        )
     }
 
     private fun getPolygonInfo(polygon: PolygonGeometry, area: String): Component? {
@@ -132,7 +132,7 @@ class GeoShape(
                 append('(').append(polygon.x(index)).append(", ").append(polygon.z(index)).append(')')
             }
         }
-        return Translator.tr("geo.shape.polygon.info", coords, area)!!
+        return Translator.tr("geo.shape.polygon.info", coords, area)
     }
 
     private fun generateSurfacePoint(world: Level, point: Pair<Int, Int>): BlockPos? {
