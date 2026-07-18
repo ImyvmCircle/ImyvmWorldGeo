@@ -19,6 +19,13 @@ fun getOptionalArgument(
     null
 }
 
+/**
+ * Legacy coordinate parser retained for JVM linkage compatibility.
+ *
+ * Production commands use Minecraft's [net.minecraft.commands.arguments.coordinates.BlockPosArgument]
+ * so absolute, world-relative, and local-relative coordinates share vanilla parsing semantics.
+ */
+@Deprecated("Use BlockPosArgument for command coordinates")
 fun getPosArgument(
     context: CommandContext<CommandSourceStack>,
     name: String

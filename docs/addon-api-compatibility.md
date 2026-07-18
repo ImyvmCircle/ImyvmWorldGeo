@@ -51,6 +51,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `Setting` / `BaseKey` | Not scheduled | Typed permission/rule/effect keys through supported APIs | Compatibility surface | No removal scheduled | Existing classes and JVM methods remain; unknown setting subclasses are rejected by persistence |
 | `Region.Companion.formatSettings` | B7-R4 (unreleased) | `Region.getSettingInfos` or `GeoScope.getSettingInfos` | Deprecated domain presentation surface | Two released versions, then maintainer review | Existing JVM method/default bridge remain; the compatibility facade accepts only the historical Region and Scope key/name combinations |
 | `NaturalStatsCategory.translationSuffix` | B7-R4 (unreleased) | `NaturalStatsCategory.translationKey` | Deprecated | Two released versions, then maintainer review | Existing `getTranslationSuffix()` descriptor remains; complete required translation keys are now available directly |
+| `CommandArgumentGetterKt.getPosArgument` | B7-R2 (unreleased) | Minecraft `BlockPosArgument` | Deprecated implementation helper | Two released versions, then maintainer review | Existing JVM descriptor remains; production commands now use vanilla absolute, world-relative, and local-relative coordinate parsing |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
 
@@ -124,6 +125,12 @@ val scopeLines = scope.getSettingInfos(server)
 ```
 
 The compatibility facade continues to accept `region.setting` without a Scope name and `geo.scope.setting` with a required Scope name. Other key/name combinations fail fast instead of probing arbitrary translation namespaces.
+
+## B7 teleport coordinate migration
+
+The `teleportPoint set` command uses Minecraft's `BlockPosArgument`. Explicit coordinates therefore follow vanilla syntax for absolute positions, `~` world-relative positions, and `^` local-relative positions. Omitting the entire position continues to use the player's current block position. Partial, malformed, or trailing coordinate input is rejected by Brigadier and no longer falls back to the player's position.
+
+The implementation helper `CommandArgumentGetterKt.getPosArgument(CommandContext, String)` remains linkable but is deprecated. Addons defining commands should register `BlockPosArgument.blockPos()` and resolve it with `BlockPosArgument.getBlockPos(context, name)` instead of calling the legacy helper.
 
 ## R9 rule query migration
 

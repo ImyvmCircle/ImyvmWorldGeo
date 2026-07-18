@@ -74,7 +74,7 @@
   "interaction.meta.scope.teleport_point.added": "&aSuccessfully added teleport point &e({0},{1},{2})&a to scope &b{3}&a in region &b{4}&a.",
   "interaction.meta.scope.teleport_point.invalid": "&cFailed to set teleport point at &e({0},{1},{2})&c for scope &b{3}&c in region &b{4}&c. The position does not satisfy the required conditions.",
   "interaction.meta.scope.teleport_point.reset": "&aSuccessfully reset teleport point for scope &b{0}&a in region &b{1}&a.",
-  "interaction.meta.scope.teleport_point.inquiry.result": "&aTeleport point of region &b{4}&a scope &b{5}&a: &ex:{0} y:{1} z:{2}",
+  "interaction.meta.scope.teleport_point.inquiry.result": "&aTeleport point of region &b{4}&a scope &b{3}&a: &ex:{0} y:{1} z:{2}",
   "interaction.meta.scope.teleport_point.inquiry.no_point": "&7Region &b{1}&7 scope &b{0}&7 has no teleport point set.",
   "interaction.meta.scope.teleport_point.teleported": "&aTeleported to scope &b{0}&a of region &b{1}&a.",
   "interaction.meta.scope.teleport_point.no_scope": "&cRegion &b{0}&c has no scope with a teleport point set.",

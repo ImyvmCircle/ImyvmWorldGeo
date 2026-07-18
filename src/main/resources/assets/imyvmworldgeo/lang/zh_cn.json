@@ -74,7 +74,7 @@
   "interaction.meta.scope.teleport_point.added": "&a已成功向境界 &b{4}&a 的地方 &b{3}&a 添加传送点 &e({0},{1},{2})&a。",
   "interaction.meta.scope.teleport_point.invalid": "&c无法为境界 &b{4}&c 的地方 &b{3}&c 在 &e({0},{1},{2})&c 处设置传送点。该位置不满足所需条件。",
   "interaction.meta.scope.teleport_point.reset": "&a已成功重置境界 &b{1}&a 的地方 &b{0}&a 的传送点。",
-  "interaction.meta.scope.teleport_point.inquiry.result": "&a境界 &b{4}&a 地方 &b{5}&a 的传送点：&ex:{0} y:{1} z:{2}",
+  "interaction.meta.scope.teleport_point.inquiry.result": "&a境界 &b{4}&a 地方 &b{3}&a 的传送点：&ex:{0} y:{1} z:{2}",
   "interaction.meta.scope.teleport_point.inquiry.no_point": "&7境界 &b{1}&7 的地方 &b{0}&7 尚未设置传送点。",
   "interaction.meta.scope.teleport_point.teleported": "&a已传送至境界 &b{1}&a 的地方 &b{0}&a。",
   "interaction.meta.scope.teleport_point.no_scope": "&c境界 &b{0}&c 中没有已设置传送点的地方。",

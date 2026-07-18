@@ -6,6 +6,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.text.Translator
+import net.minecraft.network.chat.Component
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 import net.minecraft.world.level.portal.TeleportTransition
@@ -60,6 +61,23 @@ fun onGettingTeleportPoint(
     geoScope: GeoScope
 ): BlockPos? {
     return geoScope.teleportPoint
+}
+
+internal fun formatTeleportPointInquiry(
+    regionName: String,
+    scopeName: String,
+    teleportPoint: BlockPos?
+): Component = if (teleportPoint != null) {
+    Translator.tr(
+        "interaction.meta.scope.teleport_point.inquiry.result",
+        teleportPoint.x,
+        teleportPoint.y,
+        teleportPoint.z,
+        scopeName,
+        regionName
+    )
+} else {
+    Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point", scopeName, regionName)
 }
 
 fun onTeleportingPlayer(

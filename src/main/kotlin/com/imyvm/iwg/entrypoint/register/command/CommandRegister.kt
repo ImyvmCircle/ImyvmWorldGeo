@@ -20,6 +20,8 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.commands.Commands.literal
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.CommandSourceStack
+import net.minecraft.commands.arguments.coordinates.BlockPosArgument
+import net.minecraft.core.BlockPos
 import net.minecraft.server.level.ServerPlayer
 
 fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
@@ -117,16 +119,10 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         literal("set")
-                            .executes { runSetTeleportPoint(it) }
+                            .executes { runSetTeleportPointAtCurrentPosition(it) }
                             .then(
-                                argument("x", StringArgumentType.word())
-                                    .then(
-                                        argument("y", StringArgumentType.word())
-                                            .then(
-                                                argument("z", StringArgumentType.word())
-                                                    .executes { runSetTeleportPoint(it) }
-                                            )
-                                    )
+                                argument("pos", BlockPosArgument.blockPos())
+                                    .executes { runSetTeleportPointAtPosition(it) }
                             )
                     )
                     .then(
@@ -551,24 +547,31 @@ private fun runMergeRegion(context: CommandContext<CommandSourceStack>): Int {
     }
 }
 
-private fun runSetTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
+private fun runSetTeleportPointAtCurrentPosition(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    var x = getPosArgument(context, "x")
-    var y = getPosArgument(context, "y")
-    var z = getPosArgument(context, "z")
-    if (x == null || y == null || z == null) {
-        x = player.blockPosition().x
-        y = player.blockPosition().y
-        z = player.blockPosition().z
-    }
+    return setTeleportPoint(player, player.blockPosition())
+}
 
-    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.level(),x,z)
+private fun runSetTeleportPointAtPosition(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return setTeleportPoint(player, BlockPosArgument.getBlockPos(context, "pos"))
+}
+
+private fun setTeleportPoint(player: ServerPlayer, position: BlockPos): Int {
+    val regionScopePair = RegionDatabase.getRegionAndScopeAt(player.level(), position.x, position.z)
     if (regionScopePair == null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_region"))
         return 0
     }
 
-    return onAddingTeleportPoint(player, regionScopePair.first, regionScopePair.second, x, y, z)
+    return onAddingTeleportPoint(
+        player,
+        regionScopePair.first,
+        regionScopePair.second,
+        position.x,
+        position.y,
+        position.z
+    )
 }
 
 private fun runResetTeleportPoint(context: CommandContext<CommandSourceStack>): Int {
@@ -593,18 +596,12 @@ private fun runInquiryTeleportPointAtCurrentScope(context: CommandContext<Comman
 
 private fun inquireTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope): Int {
     val teleportPoint = onGettingTeleportPoint(scope)
-    return if (teleportPoint != null) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.result",
-            teleportPoint.x, teleportPoint.y, teleportPoint.z,
-            scope.scopeName,
-            region))
-        1
-    } else {
-        player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.inquiry.no_point",
-            scope.scopeName,
-            region))
-        0
-    }
+    player.sendSystemMessage(formatTeleportPointInquiry(
+        regionName = region.name,
+        scopeName = scope.scopeName,
+        teleportPoint = teleportPoint
+    ))
+    return if (teleportPoint != null) 1 else 0
 }
 
 private fun runTeleportPlayer(context: CommandContext<CommandSourceStack>): Int {

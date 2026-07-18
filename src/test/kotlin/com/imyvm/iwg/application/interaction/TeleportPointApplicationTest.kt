@@ -9,6 +9,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertContains
 import kotlin.test.assertFailsWith
 import kotlin.test.assertFalse
 import kotlin.test.assertNull
@@ -16,6 +17,23 @@ import kotlin.test.assertSame
 import kotlin.test.assertTrue
 
 class TeleportPointApplicationTest {
+    @Test
+    fun `teleport point inquiry formats canonical region and scope names`() {
+        val present = formatTeleportPointInquiry("market", "spawn", BlockPos(1, 2, 3)).string
+        assertContains(present, "market")
+        assertContains(present, "spawn")
+        assertContains(present, "1")
+        assertContains(present, "2")
+        assertContains(present, "3")
+        assertFalse(present.contains("{3}"))
+        assertFalse(present.contains("{5}"))
+
+        val absent = formatTeleportPointInquiry("market", "spawn", null).string
+        assertContains(absent, "market")
+        assertContains(absent, "spawn")
+        assertFalse(absent.contains("Region@"))
+    }
+
     @Test
     fun `public teleport selector skips private and unset scopes`() {
         val privateScope = assignedScope("private", 7, 1, BlockPos.ZERO, false)
