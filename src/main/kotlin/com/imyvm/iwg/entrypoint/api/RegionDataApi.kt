@@ -155,7 +155,7 @@ object RegionDataApi {
     /**
      * Compatibility dispatcher for the former nullable permission API.
      *
-     * @deprecated Since R9 (unreleased). Use the explicit default/Region/Scope and
+     * @deprecated Since 26.2-1.5.2. Use the explicit default/Region/Scope and
      * global/player methods. Eligible for removal only after two released versions
      * and explicit maintainer approval.
      */
@@ -195,7 +195,7 @@ object RegionDataApi {
     /**
      * Compatibility dispatcher for extension permissions.
      *
-     * @deprecated Since R9 (unreleased). Use the explicit extension permission methods.
+     * @deprecated Since 26.2-1.5.2. Use the explicit extension permission methods.
      * Eligible for removal only after two released versions and explicit maintainer approval.
      */
     @Deprecated("Use an explicit default, region, or scope extension permission query")
@@ -223,7 +223,7 @@ object RegionDataApi {
     /**
      * Compatibility dispatcher for the former nullable rule API.
      *
-     * @deprecated Since R9 (unreleased). Use [getDefaultRuleValue], [getRegionRuleValue],
+     * @deprecated Since 26.2-1.5.2. Use [getDefaultRuleValue], [getRegionRuleValue],
      * or [getScopeRuleValue]. Eligible for removal only after two released versions and
      * explicit maintainer approval.
      */
@@ -255,7 +255,7 @@ object RegionDataApi {
     /**
      * Compatibility dispatcher for one effect value.
      *
-     * @deprecated Since R9 (unreleased). Use [getRegionEffectValue] or [getScopeEffectValue].
+     * @deprecated Since 26.2-1.5.2. Use [getRegionEffectValue] or [getScopeEffectValue].
      * Eligible for removal only after two released versions and explicit maintainer approval.
      */
     @Deprecated("Use an explicit region or scope effect query")
@@ -271,7 +271,7 @@ object RegionDataApi {
     /**
      * Compatibility dispatcher for active effects.
      *
-     * @deprecated Since R9 (unreleased). Use [getRegionActiveEffects] or [getScopeActiveEffects].
+     * @deprecated Since 26.2-1.5.2. Use [getRegionActiveEffects] or [getScopeActiveEffects].
      * Eligible for removal only after two released versions and explicit maintainer approval.
      */
     @Deprecated("Use an explicit region or scope effect query")

@@ -1,10 +1,14 @@
-# IMYVMWorldGeo 26.1 1.5.1
+# IMYVMWorldGeo 26.2 1.5.2
 
 ## Changelog
 
 ### 1.5.x
 
 This major version (1.5.x) extends RPG setting items and infrastructure APIs.
+
+#### 1.5.2
+
+- chore: update the Minecraft and Fabric target to 26.2.
 
 #### 1.5.1
 
@@ -35,10 +39,10 @@ and is also a basement for extensions, exemplified by jungle system, community s
 
 This mod is **server-side only** and requires the following environment:
 
-- **Minecraft Version:** 26.1  
-- **Fabric Loader Version:** 0.18.5 (or compatible with Minecraft 26.1)
+- **Minecraft Version:** 26.2
+- **Fabric Loader Version:** 0.19.3 (or compatible with Minecraft 26.2)
 - **Java Version:** 25  
-- **IMYVM Hoki Mod Version:** 1.1.4
+- **IMYVM Hoki Mod Version:** 1.1.6
 
 **Optional:**
 

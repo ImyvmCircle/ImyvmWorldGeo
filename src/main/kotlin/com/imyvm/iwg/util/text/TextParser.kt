@@ -38,7 +38,7 @@ object TextParser {
                 val code = sectioned[i + 1].lowercaseChar()
                 val formatting = ChatFormatting.getByCode(code)
                 currentStyle = when {
-                    formatting != null && formatting.isColor() -> Style.EMPTY.withColor(TextColor.fromLegacyFormat(formatting))
+                    formatting != null && (code in '0'..'9' || code in 'a'..'f') -> Style.EMPTY.withColor(TextColor.fromLegacyFormat(formatting))
                     formatting != null -> currentStyle.applyFormat(formatting)
                     code == 'r' -> Style.EMPTY
                     else -> currentStyle

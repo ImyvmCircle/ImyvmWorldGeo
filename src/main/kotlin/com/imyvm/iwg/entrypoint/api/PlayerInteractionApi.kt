@@ -67,7 +67,7 @@ object PlayerInteractionApi {
      *
      * Detached copies, orphaned scopes, and unassigned scopes are rejected.
      *
-     * @deprecated Since R11 (unreleased). Use [toggleTeleportPointAccessibility] with the
+     * @deprecated Since 26.2-1.5.2. Use [toggleTeleportPointAccessibility] with the
      * executing player and owning Region. Eligible for removal only after two released versions
      * and explicit maintainer approval.
     */
@@ -115,7 +115,7 @@ object PlayerInteractionApi {
     /**
      * Compatibility dispatcher for the former nullable permission API.
      *
-     * @deprecated Since R9 (unreleased). Use the explicit default/Region/Scope and
+     * @deprecated Since 26.2-1.5.2. Use the explicit default/Region/Scope and
      * global/player methods. Eligible for removal only after two released versions
      * and explicit maintainer approval.
      */

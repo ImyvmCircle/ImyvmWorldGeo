@@ -30,7 +30,7 @@ import net.minecraft.world.level.block.SmithingTableBlock
 import net.minecraft.world.level.block.StonecutterBlock
 import net.minecraft.world.level.block.SweetBerryBushBlock
 import net.minecraft.world.level.block.TrapDoorBlock
-import net.minecraft.world.entity.animal.Bucketable
+import net.minecraft.world.entity.Bucketable
 import net.minecraft.world.item.BlockItem
 import net.minecraft.world.item.BucketItem
 import net.minecraft.world.item.Items
