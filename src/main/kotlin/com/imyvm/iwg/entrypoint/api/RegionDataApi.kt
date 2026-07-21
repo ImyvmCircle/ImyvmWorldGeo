@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
@@ -374,6 +375,16 @@ object RegionDataApi {
     fun registerNaturalPeriodTransitionCallback(callback: Consumer<NaturalPeriodTransition>) {
         WorldGeoPeriodTracker.registerCallback { callback.accept(it) }
     }
+
+    fun registerBehaviorEventCallback(callback: Consumer<WorldGeoBehaviorEvent>) {
+        WorldGeoBehaviorEventBus.registerCallback { callback.accept(it) }
+    }
+
+    fun getRecentBehaviorEvents(): List<WorldGeoBehaviorEvent> =
+        WorldGeoBehaviorEventBus.getRecentEvents()
+
+    fun getRecentBehaviorEvents(limit: Int): List<WorldGeoBehaviorEvent> =
+        WorldGeoBehaviorEventBus.getRecentEvents(limit)
 
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)

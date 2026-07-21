@@ -209,3 +209,10 @@ registers a callback for hour/day/week/month changes detected by the WorldGeo la
 last processed period IDs in `iwg_periods.json`; after restart, the first lazy tick compares persisted IDs with
 current IDs and emits missed boundary callbacks. Business-level settlement retry queues remain a later V2
 statistics concern.
+
+`RegionDataApi.registerBehaviorEventCallback(Consumer<WorldGeoBehaviorEvent>)` subscribes addons to neutral
+WorldGeo behavior facts. `RegionDataApi.getRecentBehaviorEvents()` and `RegionDataApi.getRecentBehaviorEvents(Int)` returns the latest in-memory debug window.
+Initial producer coverage includes block place, block break, player death, Region/Scope/SubSpace enter and exit,
+and the server-operator debug command `/imyvmWorldGeo debug behavior emit`. The event type enum also reserves
+neutral values for entity damage, entity kill, container interaction, and item use so those runtime producers can
+land without changing the addon-facing event shape.

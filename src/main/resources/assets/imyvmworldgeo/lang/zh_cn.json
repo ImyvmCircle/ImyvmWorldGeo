@@ -468,5 +468,10 @@
   "selection.feedback.warn.only_subspace_possible": "&e当前选区完整位于境界 &b{1}&e 的地方 &b{0}&e 内，只能创建子空间；尺寸限制已按子空间规则计算。",
   "selection.feedback.warn.scope_partial_overlap": "&c当前选区与境界 &b{1}&c 的地方 &b{0}&c 部分重叠。创建子空间时选区需完整位于该地方内；创建境界或地方时选区需完全避开该地方。",
   "notification.subspace.enter": "&a进入境界 &e{0}&a 的地方 &b{1}&a 下的子空间 &b{2}&a。",
-  "notification.subspace.exit": "&7离开境界 &e{0}&7 的地方 &b{1}&7 下的子空间 &b{2}&7。"
+  "notification.subspace.exit": "&7离开境界 &e{0}&7 的地方 &b{1}&7 下的子空间 &b{2}&7。",
+  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent§6>\n  §f触发一条调试行为事件，或显示最近的行为事件。",
+  "interaction.meta.debug.behavior.emit": "&a已为玩家 &b{0}&a 在 &e{1}&a,&e{2}&a,&e{3}&a 触发调试行为事件。",
+  "interaction.meta.debug.behavior.none": "&c暂无最近的 WorldGeo 行为事件。",
+  "interaction.meta.debug.behavior.header": "&6最近的 WorldGeo 行为事件：&e{0}",
+  "interaction.meta.debug.behavior.line": "&7- &e{0}&7 玩家=&b{1}&7 空间=&b{2}&7 坐标=&e{3}&7,&e{4}&7,&e{5}&7 对象=&f{6}"
 }

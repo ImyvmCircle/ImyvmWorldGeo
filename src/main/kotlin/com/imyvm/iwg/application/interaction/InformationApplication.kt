@@ -104,6 +104,7 @@ fun onHelp(player: ServerPlayer): Int {
         // Debug
         "debug.space_here",
         "debug.time",
+        "debug.behavior",
         "debug.region",
         "debug.scope",
         "debug.subspace",

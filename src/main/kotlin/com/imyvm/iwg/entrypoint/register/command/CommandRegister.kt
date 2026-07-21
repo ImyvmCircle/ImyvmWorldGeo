@@ -502,6 +502,11 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(literal("spaceHere").executes { runDebugSpaceHere(it) })
                     .then(literal("time").executes { runDebugTime(it) })
+                    .then(
+                        literal("behavior")
+                            .then(literal("emit").executes { runDebugBehaviorEmit(it) })
+                            .then(literal("recent").executes { runDebugBehaviorRecent(it) })
+                    )
                     .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
                     .then(
                         literal("region")
@@ -983,6 +988,16 @@ private fun runDebugTime(context: CommandContext<CommandSourceStack>): Int {
 private fun runDebugSpaceHere(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onDebugCurrentSpace(player)
+}
+
+private fun runDebugBehaviorEmit(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugBehaviorEmit(player)
+}
+
+private fun runDebugBehaviorRecent(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugBehaviorRecent(player)
 }
 
 private fun runValidateSubSpaces(context: CommandContext<CommandSourceStack>): Int {

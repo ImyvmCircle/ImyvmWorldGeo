@@ -4,6 +4,8 @@ import com.imyvm.iwg.application.region.PlayerRegionChecker
 import com.imyvm.iwg.application.region.permission.helper.hasRegionPermission
 import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.domain.WorldGeoSpaceLevel
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
@@ -83,12 +85,34 @@ object PlayerRegionEntryExitTracker {
 
     private fun applyTransition(player: ServerPlayer, transition: LocationTransition, now: Long) {
         val uuid = player.uuid
-        transition.regionExit?.let { sendRegionExitTitle(player, it) }
-        transition.regionEntry?.let { sendRegionEntryTitle(player, it) }
-        transition.scopeExit?.let { sendScopeExitMessage(player, it.region, it.scope) }
-        transition.scopeEntry?.let { sendScopeEntryMessage(player, it.region, it.scope) }
-        transition.subSpaceExit?.let { location -> location.subSpace?.let { sendSubSpaceExitMessage(player, location.region, location.scope, it) } }
-        transition.subSpaceEntry?.let { location -> location.subSpace?.let { sendSubSpaceEntryMessage(player, location.region, location.scope, it) } }
+        transition.regionExit?.let {
+            sendRegionExitTitle(player, it)
+            recordRegionSpaceEvent(WorldGeoBehaviorType.SPACE_EXIT, player, it, now)
+        }
+        transition.regionEntry?.let {
+            sendRegionEntryTitle(player, it)
+            recordRegionSpaceEvent(WorldGeoBehaviorType.SPACE_ENTER, player, it, now)
+        }
+        transition.scopeExit?.let {
+            sendScopeExitMessage(player, it.region, it.scope)
+            recordScopeSpaceEvent(WorldGeoBehaviorType.SPACE_EXIT, player, it, now)
+        }
+        transition.scopeEntry?.let {
+            sendScopeEntryMessage(player, it.region, it.scope)
+            recordScopeSpaceEvent(WorldGeoBehaviorType.SPACE_ENTER, player, it, now)
+        }
+        transition.subSpaceExit?.let { location ->
+            location.subSpace?.let {
+                sendSubSpaceExitMessage(player, location.region, location.scope, it)
+                recordSubSpaceEvent(WorldGeoBehaviorType.SPACE_EXIT, player, location, now)
+            }
+        }
+        transition.subSpaceEntry?.let { location ->
+            location.subSpace?.let {
+                sendSubSpaceEntryMessage(player, location.region, location.scope, it)
+                recordSubSpaceEvent(WorldGeoBehaviorType.SPACE_ENTER, player, location, now)
+            }
+        }
         transition.completedStay?.let { addStayDuration(it.region, uuid, it.startedAt, it.endedAt) }
         transition.incrementEntry?.let { RegionDatabase.incrementRegionEntryStat(it, uuid) }
         transition.regionEvent?.let { (from, to) ->
@@ -102,6 +126,52 @@ object PlayerRegionEntryExitTracker {
                 now
             )
         }
+    }
+
+    private fun recordRegionSpaceEvent(type: WorldGeoBehaviorType, player: ServerPlayer, region: Region, now: Long) {
+        recordSpaceBehavior(
+            type,
+            player,
+            region.name,
+            region.numberID,
+            null,
+            null,
+            null,
+            null,
+            WorldGeoSpaceLevel.REGION,
+            now
+        )
+    }
+
+    private fun recordScopeSpaceEvent(type: WorldGeoBehaviorType, player: ServerPlayer, location: ScopedPlayerLocation, now: Long) {
+        recordSpaceBehavior(
+            type,
+            player,
+            location.region.name,
+            location.region.numberID,
+            location.scope.scopeName,
+            location.scope.assignedScopeIdOrNull?.raw,
+            null,
+            null,
+            WorldGeoSpaceLevel.SCOPE,
+            now
+        )
+    }
+
+    private fun recordSubSpaceEvent(type: WorldGeoBehaviorType, player: ServerPlayer, location: ScopedPlayerLocation, now: Long) {
+        val subSpace = location.subSpace ?: return
+        recordSpaceBehavior(
+            type,
+            player,
+            location.region.name,
+            location.region.numberID,
+            location.scope.scopeName,
+            location.scope.assignedScopeIdOrNull?.raw,
+            subSpace.name,
+            subSpace.subSpaceId,
+            WorldGeoSpaceLevel.SUBSPACE,
+            now
+        )
     }
 
     private fun processPendingEntryTitles(server: MinecraftServer, now: Long) {
