@@ -510,6 +510,25 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
                     .then(
+                        literal("spaceSnapshot")
+                            .executes { runDebugCurrentSpaceSnapshot(it) }
+                            .then(literal("region").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).executes { runDebugRegionSpaceSnapshot(it) }))
+                            .then(literal("scope").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("scopeName", StringArgumentType.string()).suggests(SCOPE_NAME_SUGGESTION_PROVIDER).executes { runDebugScopeSpaceSnapshot(it) })))
+                            .then(literal("subspace").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).executes { runDebugSubSpaceSnapshot(it) })))
+                    )
+                    .then(
+                        literal("settingSummaries")
+                            .then(literal("region").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).executes { runDebugRegionSettingSummaries(it) }))
+                            .then(literal("scope").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("scopeName", StringArgumentType.string()).suggests(SCOPE_NAME_SUGGESTION_PROVIDER).executes { runDebugScopeSettingSummaries(it) })))
+                            .then(literal("subspace").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).executes { runDebugSubSpaceSettingSummaries(it) })))
+                    )
+                    .then(
+                        literal("sendSpaceMessage")
+                            .then(literal("region").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("message", StringArgumentType.greedyString()).executes { runDebugSendRegionSpaceMessage(it) })))
+                            .then(literal("scope").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("scopeName", StringArgumentType.string()).suggests(SCOPE_NAME_SUGGESTION_PROVIDER).then(argument("message", StringArgumentType.greedyString()).executes { runDebugSendScopeSpaceMessage(it) }))))
+                            .then(literal("subspace").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("message", StringArgumentType.greedyString()).executes { runDebugSendSubSpaceMessage(it) }))))
+                    )
+                    .then(
                         literal("region")
                             .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).executes { runDebugRegion(it) })
                     )
@@ -1024,6 +1043,59 @@ private fun runDebugScope(context: CommandContext<CommandSourceStack>): Int {
 private fun runDebugSubSpace(context: CommandContext<CommandSourceStack>): Int {
     val target = getSubSpaceTarget(context) ?: return 0
     return onDebugSubSpace(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runDebugCurrentSpaceSnapshot(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugCurrentSpaceSnapshot(player)
+}
+
+private fun runDebugRegionSpaceSnapshot(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region -> onDebugRegionSpaceSnapshot(player, region) }
+}
+
+private fun runDebugScopeSpaceSnapshot(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return onDebugScopeSpaceSnapshot(player, region, scope)
+}
+
+private fun runDebugSubSpaceSnapshot(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onDebugSubSpaceSnapshot(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runDebugRegionSettingSummaries(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region -> onDebugRegionSettingSummaries(player, region) }
+}
+
+private fun runDebugScopeSettingSummaries(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return onDebugScopeSettingSummaries(player, region, scope)
+}
+
+private fun runDebugSubSpaceSettingSummaries(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onDebugSubSpaceSettingSummaries(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runDebugSendRegionSpaceMessage(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val message = context.getArgument("message", String::class.java)
+    return identifierHandler(regionIdentifier, player) { region -> onDebugSendRegionSpaceMessage(player, region, message) }
+}
+
+private fun runDebugSendScopeSpaceMessage(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    val message = context.getArgument("message", String::class.java)
+    return onDebugSendScopeSpaceMessage(player, region, scope, message)
+}
+
+private fun runDebugSendSubSpaceMessage(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val message = context.getArgument("message", String::class.java)
+    return onDebugSendSubSpaceMessage(target.player, target.region, target.scope, target.subSpace, message)
 }
 
 private fun getSubSpaceTarget(context: CommandContext<CommandSourceStack>): CommandSubSpaceTarget? {

@@ -476,5 +476,10 @@
   "interaction.meta.debug.behavior.line": "&7- &e{0}&7 player=&b{1}&7 space=&b{2}&7 pos=&e{3}&7,&e{4}&7,&e{5}&7 object=&f{6}",
   "interaction.meta.debug.behavior.stats.no_space": "&cNo Region/Scope/SubSpace behavior stats target at the current position.",
   "interaction.meta.debug.behavior.stats.header": "&6Behavior stats&r hour=&e{0}&r region=&b{1}&r scope=&b{2}&r SubSpace=&b{3}&r total=&e{4}",
-  "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 count=&b{1}"
+  "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 count=&b{1}",
+  "interaction.meta.debug.space_snapshot": "&6Space snapshot&r type=&e{0}&r id=&b{1}&r name=&b{2}&r dimension=&e{3}&r area=&e{4}&r parentRegion=&b{5}:{6}&r parentScope=&b{7}:{8}&r childScopes=&e{9}&r childSubSpaces=&e{10}&r tags=&f{11}&r keyed=&f{12}&r statsVersion=&e{13}",
+  "interaction.meta.debug.setting_summary.empty": "&cNo settings on this space.",
+  "interaction.meta.debug.setting_summary.header": "&6Setting summaries: &e{0}",
+  "interaction.meta.debug.setting_summary.line": "&7- &e{0}&7 id=&b{1}&7 type=&b{2}&7 key=&f{3}&7 value=&f{4}&7 subject=&b{5}",
+  "interaction.meta.debug.space_message.sent": "&aSent space message to &e{0}&a online player(s)."
 }

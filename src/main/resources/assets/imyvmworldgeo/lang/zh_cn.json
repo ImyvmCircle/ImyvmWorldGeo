@@ -476,5 +476,10 @@
   "interaction.meta.debug.behavior.line": "&7- &e{0}&7 玩家=&b{1}&7 空间=&b{2}&7 坐标=&e{3}&7,&e{4}&7,&e{5}&7 对象=&f{6}",
   "interaction.meta.debug.behavior.stats.no_space": "&c当前位置没有可查询行为统计的境界、地方或子空间。",
   "interaction.meta.debug.behavior.stats.header": "&6行为统计&r 小时=&e{0}&r 境界=&b{1}&r 地方=&b{2}&r 子空间=&b{3}&r 总数=&e{4}",
-  "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 次数=&b{1}"
+  "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 次数=&b{1}",
+  "interaction.meta.debug.space_snapshot": "&6空间快照&r 类型=&e{0}&r 编号=&b{1}&r 名称=&b{2}&r 维度=&e{3}&r 面积=&e{4}&r 父境界=&b{5}:{6}&r 父地方=&b{7}:{8}&r 子地方数=&e{9}&r 子空间数=&e{10}&r 标签=&f{11}&r 键值标签=&f{12}&r statsVersion=&e{13}",
+  "interaction.meta.debug.setting_summary.empty": "&c该空间没有设置。",
+  "interaction.meta.debug.setting_summary.header": "&6设置摘要：&e{0}",
+  "interaction.meta.debug.setting_summary.line": "&7- &e{0}&7 编号=&b{1}&7 类型=&b{2}&7 键=&f{3}&7 值=&f{4}&7 主体=&b{5}",
+  "interaction.meta.debug.space_message.sent": "&a已向 &e{0}&a 名在线玩家发送空间消息。"
 }

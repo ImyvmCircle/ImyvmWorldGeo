@@ -222,3 +222,14 @@ hour/day/week/month, behavior type, Region, Scope, SubSpace, player UUID, and ob
 command `/imyvmWorldGeo debug behavior stats` shows current-hour behavior totals at the executing player''s current
 space for in-game validation. The stats store uses the server data session, strict malformed-input rejection, and
 atomic writes matching the Region database persistence model.
+
+
+## V3 space support API
+
+`RegionDataApi.getRegionSpaceSnapshot`, `getScopeSpaceSnapshot`, and `getSubSpaceSnapshot` return immutable neutral snapshots for Region, GeoScope, and SubSpace. Snapshots include identity, name, dimension when the space has one, area, parent links, child counts, SubSpace tags, and a WorldGeo stats-version marker. They do not expose mutable live domain objects.
+
+`RegionDataApi.listRegionSettingSummaries`, `listScopeSettingSummaries`, and `listSubSpaceSettingSummaries` use `WorldGeoSettingVisibility`. WorldGeo defines only `PUBLIC` and `OP_DEBUG`; Community, Adventure, or other addons must map their own manager roles before choosing one of those visibility levels. `PUBLIC` excludes personal settings. `OP_DEBUG` returns complete per-space setting summaries for server-operator diagnostics.
+
+`RegionDataApi.sendRegionSpaceMessage`, `sendScopeSpaceMessage`, and `sendSubSpaceMessage` broadcast a caller-provided Minecraft `Component` to online players whose current resolved WorldGeo location is inside the target Region, GeoScope, or SubSpace. WorldGeo treats the message as neutral transport and does not interpret upper-layer semantics.
+
+In-game validation commands are OP-only under `/imyvmWorldGeo debug`: `spaceSnapshot`, `settingSummaries`, and `sendSpaceMessage` each provide Region, Scope, and SubSpace targets. These commands are the server-side test points for the V3 mechanisms.

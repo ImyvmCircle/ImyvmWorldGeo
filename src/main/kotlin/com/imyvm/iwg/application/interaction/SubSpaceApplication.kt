@@ -6,12 +6,17 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
+import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.WorldGeoSettingSummary
+import com.imyvm.iwg.domain.WorldGeoSettingVisibility
+import com.imyvm.iwg.domain.WorldGeoSpaceSnapshot
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
@@ -243,6 +248,112 @@ fun onDebugScope(player: ServerPlayer, region: Region, scope: GeoScope): Int {
 
 fun onDebugSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int =
     onQuerySubSpace(player, region, parentScope, subSpace)
+
+fun onDebugCurrentSpaceSnapshot(player: ServerPlayer): Int {
+    val resolved = RegionDatabase.getRegionScopeSubSpaceAt(player.level(), player.blockPosition().x, player.blockPosition().z)
+    if (resolved == null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.space.none")!!)
+        return 0
+    }
+    val (region, scope, subSpace) = resolved
+    val snapshot = if (subSpace == null) {
+        WorldGeoSpaceSupport.snapshot(region, scope)
+    } else {
+        WorldGeoSpaceSupport.snapshot(region, scope, subSpace)
+    }
+    sendDebugSnapshot(player, snapshot)
+    return 1
+}
+
+fun onDebugRegionSpaceSnapshot(player: ServerPlayer, region: Region): Int {
+    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(region))
+    return 1
+}
+
+fun onDebugScopeSpaceSnapshot(player: ServerPlayer, region: Region, scope: GeoScope): Int {
+    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(region, scope))
+    return 1
+}
+
+fun onDebugSubSpaceSnapshot(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
+    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(region, parentScope, subSpace))
+    return 1
+}
+
+fun onDebugRegionSettingSummaries(player: ServerPlayer, region: Region): Int =
+    sendDebugSettingSummaries(player, WorldGeoSpaceSupport.settingSummaries(region, WorldGeoSettingVisibility.OP_DEBUG))
+
+fun onDebugScopeSettingSummaries(player: ServerPlayer, region: Region, scope: GeoScope): Int {
+    RegionDatabase.requireCanonicalScope(region, scope)
+    return sendDebugSettingSummaries(player, WorldGeoSpaceSupport.settingSummaries(scope, WorldGeoSettingVisibility.OP_DEBUG))
+}
+
+fun onDebugSubSpaceSettingSummaries(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
+    RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
+    return sendDebugSettingSummaries(player, WorldGeoSpaceSupport.settingSummaries(subSpace, WorldGeoSettingVisibility.OP_DEBUG))
+}
+
+fun onDebugSendRegionSpaceMessage(player: ServerPlayer, region: Region, rawMessage: String): Int {
+    val count = WorldGeoSpaceSupport.sendMessage(player.level().server, region, TextParser.parse(rawMessage))
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.space_message.sent", count)!!)
+    return count
+}
+
+fun onDebugSendScopeSpaceMessage(player: ServerPlayer, region: Region, scope: GeoScope, rawMessage: String): Int {
+    val count = WorldGeoSpaceSupport.sendMessage(player.level().server, region, scope, TextParser.parse(rawMessage))
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.space_message.sent", count)!!)
+    return count
+}
+
+fun onDebugSendSubSpaceMessage(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, rawMessage: String): Int {
+    val count = WorldGeoSpaceSupport.sendMessage(player.level().server, region, parentScope, subSpace, TextParser.parse(rawMessage))
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.space_message.sent", count)!!)
+    return count
+}
+
+private fun sendDebugSnapshot(player: ServerPlayer, snapshot: WorldGeoSpaceSnapshot) {
+    player.sendSystemMessage(
+        Translator.tr(
+            "interaction.meta.debug.space_snapshot",
+            snapshot.type.name,
+            snapshot.id,
+            snapshot.name,
+            snapshot.dimensionId?.toString() ?: "",
+            snapshot.area ?: 0.0,
+            snapshot.parentRegionId ?: 0,
+            snapshot.parentRegionName ?: "",
+            snapshot.parentScopeId ?: 0L,
+            snapshot.parentScopeName ?: "",
+            snapshot.childScopeCount,
+            snapshot.childSubSpaceCount,
+            snapshot.stringTags.joinToString(", "),
+            snapshot.keyedTags.entries.joinToString(", ") { "${it.key}=${it.value}" },
+            snapshot.statsVersion
+        )!!
+    )
+}
+
+private fun sendDebugSettingSummaries(player: ServerPlayer, summaries: List<WorldGeoSettingSummary>): Int {
+    if (summaries.isEmpty()) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.setting_summary.empty")!!)
+        return 0
+    }
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.setting_summary.header", summaries.size)!!)
+    summaries.forEach { summary ->
+        player.sendSystemMessage(
+            Translator.tr(
+                "interaction.meta.debug.setting_summary.line",
+                summary.spaceType.name,
+                summary.spaceId,
+                summary.settingType,
+                summary.key,
+                summary.value,
+                summary.subject
+            )!!
+        )
+    }
+    return summaries.size
+}
 
 fun onValidateSubSpaces(player: ServerPlayer): Int {
     val count = RegionDatabase.getRegionList().sumOf { it.subSpaces.size }

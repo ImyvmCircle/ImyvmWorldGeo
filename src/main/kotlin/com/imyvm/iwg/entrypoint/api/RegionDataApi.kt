@@ -2,6 +2,7 @@ package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
@@ -30,6 +31,7 @@ import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
 import net.minecraft.core.BlockPos
+import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
@@ -363,6 +365,55 @@ object RegionDataApi {
         else getScopeActiveEffects(region, scope, playerUUID)
 
     fun getRegionScopeCount(region: Region): Int = region.scopes.size
+
+    fun getRegionSpaceSnapshot(region: Region): WorldGeoSpaceSnapshot =
+        WorldGeoSpaceSupport.snapshot(region)
+
+    fun getScopeSpaceSnapshot(region: Region, scope: GeoScope): WorldGeoSpaceSnapshot =
+        WorldGeoSpaceSupport.snapshot(region, scope)
+
+    fun getSubSpaceSnapshot(region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot =
+        WorldGeoSpaceSupport.snapshot(region, scope, subSpace)
+
+    fun listRegionSettingSummaries(
+        region: Region,
+        visibility: WorldGeoSettingVisibility
+    ): List<WorldGeoSettingSummary> = WorldGeoSpaceSupport.settingSummaries(region, visibility)
+
+    fun listScopeSettingSummaries(
+        region: Region,
+        scope: GeoScope,
+        visibility: WorldGeoSettingVisibility
+    ): List<WorldGeoSettingSummary> {
+        require(region.containsScope(scope)) { "scope does not belong to region" }
+        return WorldGeoSpaceSupport.settingSummaries(scope, visibility)
+    }
+
+    fun listSubSpaceSettingSummaries(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        visibility: WorldGeoSettingVisibility
+    ): List<WorldGeoSettingSummary> {
+        require(region.containsScope(scope)) { "scope does not belong to region" }
+        require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
+        require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace parent scope does not match" }
+        return WorldGeoSpaceSupport.settingSummaries(subSpace, visibility)
+    }
+
+    fun sendRegionSpaceMessage(server: MinecraftServer, region: Region, message: Component): Int =
+        WorldGeoSpaceSupport.sendMessage(server, region, message)
+
+    fun sendScopeSpaceMessage(server: MinecraftServer, region: Region, scope: GeoScope, message: Component): Int =
+        WorldGeoSpaceSupport.sendMessage(server, region, scope, message)
+
+    fun sendSubSpaceMessage(
+        server: MinecraftServer,
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        message: Component
+    ): Int = WorldGeoSpaceSupport.sendMessage(server, region, scope, subSpace, message)
 
     fun getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectRegionStats(server, region)
