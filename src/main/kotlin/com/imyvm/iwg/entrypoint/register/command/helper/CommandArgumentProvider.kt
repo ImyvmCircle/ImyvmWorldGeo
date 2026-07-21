@@ -39,6 +39,14 @@ val SCOPE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { co
     builder.buildFuture()
 }
 
+val SUBSPACE_NAME_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
+    val regionIdentifier = StringArgumentType.getString(context, "regionIdentifier")
+    getSubSpacesForRegion(regionIdentifier).forEach { name ->
+        if (!name.all { it.isLetterOrDigit() && it.code < 128 }) builder.suggest("\"$name\"") else builder.suggest(name)
+    }
+    builder.buildFuture()
+}
+
 val ONLINE_PLAYER_SUGGESTION_PROVIDER = SuggestionProvider<CommandSourceStack> { context, builder ->
     val sourceServer = context.source.server
     getOnlinePlayers(sourceServer).forEach { player ->
@@ -97,4 +105,11 @@ fun getScopesForRegion(identifier: String): List<String> {
         it.name.equals(identifier, ignoreCase = true) || it.numberID.toString() == identifier
     }
     return region?.scopes?.map { it.scopeName } ?: emptyList()
+}
+
+fun getSubSpacesForRegion(identifier: String): List<String> {
+    val region = RegionDatabase.getRegionList().find {
+        it.name.equals(identifier, ignoreCase = true) || it.numberID.toString() == identifier
+    }
+    return region?.subSpaces?.map { it.name } ?: emptyList()
 }

@@ -4,9 +4,11 @@ import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.domain.NaturalStatsCategory
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.entrypoint.register.command.helper.*
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.register.command.helper.*
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.commands.Commands as MinecraftCommands
@@ -365,6 +367,154 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
+                literal("subspace")
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
+                    .then(
+                        literal("create")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("subSpaceName", StringArgumentType.string())
+                                                    .executes { runCreateSubSpace(it) }
+                                                    .then(
+                                                        argument("shapeType", StringArgumentType.word())
+                                                            .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                                                            .executes { runCreateSubSpace(it) }
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("delete")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("subSpaceName", StringArgumentType.string())
+                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runDeleteSubSpace(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("rename")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("subSpaceName", StringArgumentType.string())
+                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("newName", StringArgumentType.string())
+                                                    .executes { runRenameSubSpace(it) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("replaceShape")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("subSpaceName", StringArgumentType.string())
+                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runReplaceSubSpaceShape(it) }
+                                            .then(
+                                                argument("shapeType", StringArgumentType.word())
+                                                    .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                                                    .executes { runReplaceSubSpaceShape(it) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("setEntryMessage")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("subSpaceName", StringArgumentType.string())
+                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("message", StringArgumentType.greedyString())
+                                                    .executes { runSetSubSpaceEntryMessage(it) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("clearEntryMessage")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("subSpaceName", StringArgumentType.string())
+                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runClearSubSpaceEntryMessage(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("query")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("subSpaceName", StringArgumentType.string())
+                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runQuerySubSpace(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("tag")
+                            .then(literal("add").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("tag", StringArgumentType.string()).executes { runAddSubSpaceStringTag(it) }))))
+                            .then(literal("remove").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("tag", StringArgumentType.string()).executes { runRemoveSubSpaceStringTag(it) }))))
+                            .then(literal("put").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).then(argument("value", StringArgumentType.string()).executes { runPutSubSpaceKeyedTag(it) })))))
+                            .then(literal("removeKey").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).executes { runRemoveSubSpaceKeyedTag(it) }))))
+                    )
+            )
+            .then(
+                literal("debug")
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
+                    .then(literal("spaceHere").executes { runDebugSpaceHere(it) })
+                    .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
+                    .then(
+                        literal("region")
+                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).executes { runDebugRegion(it) })
+                    )
+                    .then(
+                        literal("scope")
+                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("scopeName", StringArgumentType.string()).suggests(SCOPE_NAME_SUGGESTION_PROVIDER).executes { runDebugScope(it) }))
+                    )
+                    .then(
+                        literal("subspace")
+                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).executes { runDebugSubSpace(it) }))
+                    )
+            )
+            .then(
+                literal("settingSubSpace")
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
+                    .then(
+                        literal("add")
+                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).then(argument("value", StringArgumentType.string()).executes { runAddDeleteSubSpaceSetting(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) })))))
+                    )
+                    .then(
+                        literal("remove")
+                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) }))))
+                    )
+                    .then(
+                        literal("queryValue")
+                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).executes { runQuerySubSpaceSettingValue(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runQuerySubSpaceSettingValue(it) }))))
+                    )
+            )
+            .then(
                 literal("dynmapToggle")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
@@ -598,7 +748,7 @@ private fun runTeleportPlayerToRegion(context: CommandContext<CommandSourceStack
             onTeleportingPlayer(player, regionToTeleport, scope)
         } else {
             player.sendSystemMessage(Translator.tr("interaction.meta.scope.teleport_point.no_public_scope", regionToTeleport.name)!!)
-            0
+            return@identifierHandler
         }
     }
 }
@@ -697,6 +847,27 @@ private fun runStartSelectForModify(context: CommandContext<CommandSourceStack>)
     }
 }
 
+private fun runAddDeleteSubSpaceSetting(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val keyString = context.getArgument("key", String::class.java)
+    val valueString = getOptionalArgument(context, "value")
+    val targetPlayer = getOptionalArgument(context, "playerName")
+    if (valueString != null) {
+        addSubSpaceSetting(target.player, target.region, target.scope, target.subSpace, keyString, valueString, targetPlayer)
+    } else {
+        removeSubSpaceSetting(target.player, target.region, target.scope, target.subSpace, keyString, targetPlayer)
+    }
+    return 1
+}
+
+private fun runQuerySubSpaceSettingValue(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val keyString = context.getArgument("key", String::class.java)
+    val targetPlayer = getOptionalArgument(context, "playerName")
+    onQuerySettingValue(target.player, target.region, target.scope, keyString, targetPlayer, target.subSpace)
+    return 1
+}
+
 private fun runToggleRegionDynmap(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { region -> onTogglingRegionDynmap(player, region) }
@@ -705,4 +876,118 @@ private fun runToggleRegionDynmap(context: CommandContext<CommandSourceStack>): 
 private fun runToggleScopeDynmap(context: CommandContext<CommandSourceStack>): Int {
     val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
     return onTogglingScopeDynmap(player, region, scope)
+}
+
+private data class CommandSubSpaceTarget(
+    val player: ServerPlayer,
+    val region: Region,
+    val scope: GeoScope,
+    val subSpace: SubSpace
+)
+
+private fun runCreateSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    val subSpaceName = context.getArgument("subSpaceName", String::class.java)
+    val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, player) ?: return 0 }
+    return onSubSpaceCreationFromSelection(player, region, scope, subSpaceName, shapeType)
+}
+
+private fun runDeleteSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onSubSpaceDelete(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runRenameSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val newName = context.getArgument("newName", String::class.java)
+    return onSubSpaceRename(target.player, target.region, target.scope, target.subSpace, newName)
+}
+
+private fun runReplaceSubSpaceShape(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, target.player) ?: return 0 }
+    return onSubSpaceShapeReplacementFromSelection(target.player, target.region, target.scope, target.subSpace, shapeType)
+}
+
+private fun runSetSubSpaceEntryMessage(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val message = context.getArgument("message", String::class.java)
+    return onSettingSubSpaceEntryMessage(target.player, target.region, target.scope, target.subSpace, message)
+}
+
+private fun runClearSubSpaceEntryMessage(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onSettingSubSpaceEntryMessage(target.player, target.region, target.scope, target.subSpace, null)
+}
+
+private fun runQuerySubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onQuerySubSpace(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runAddSubSpaceStringTag(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val tag = context.getArgument("tag", String::class.java)
+    return onAddingSubSpaceStringTag(target.player, target.region, target.scope, target.subSpace, tag)
+}
+
+private fun runRemoveSubSpaceStringTag(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val tag = context.getArgument("tag", String::class.java)
+    return onRemovingSubSpaceStringTag(target.player, target.region, target.scope, target.subSpace, tag)
+}
+
+private fun runPutSubSpaceKeyedTag(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val key = context.getArgument("key", String::class.java)
+    val value = context.getArgument("value", String::class.java)
+    return onPuttingSubSpaceKeyedTag(target.player, target.region, target.scope, target.subSpace, key, value)
+}
+
+private fun runRemoveSubSpaceKeyedTag(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val key = context.getArgument("key", String::class.java)
+    return onRemovingSubSpaceKeyedTag(target.player, target.region, target.scope, target.subSpace, key)
+}
+
+private fun runDebugSpaceHere(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugCurrentSpace(player)
+}
+
+private fun runValidateSubSpaces(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onValidateSubSpaces(player)
+}
+
+private fun runDebugRegion(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region -> onDebugRegion(player, region) }
+}
+
+private fun runDebugScope(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return onDebugScope(player, region, scope)
+}
+
+private fun runDebugSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onDebugSubSpace(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun getSubSpaceTarget(context: CommandContext<CommandSourceStack>): CommandSubSpaceTarget? {
+    val player = context.source.player ?: return null
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val subSpaceName = context.getArgument("subSpaceName", String::class.java)
+    val region = try {
+        resolveRegionIdentifier(regionIdentifier)
+    } catch (e: RegionNotFoundException) {
+        notifyRegionNotFound(player, regionIdentifier)
+        return null
+    }
+    val (scope, subSpace) = RegionDatabase.getSubSpaceByName(region, subSpaceName) ?: run {
+        player.sendSystemMessage(Translator.tr("region.error.no_subspace", subSpaceName, region.name)!!)
+        return null
+    }
+    return CommandSubSpaceTarget(player, region, scope, subSpace)
 }

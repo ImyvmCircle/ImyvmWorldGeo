@@ -15,6 +15,19 @@ fun getScopeEffectValue(region: Region, scope: GeoScope, playerUUID: UUID, key: 
     return resolveScopeEffectValue(region, scope, playerUUID, key, scopeOverlay(scope))
 }
 
+fun getSubSpaceEffectValue(region: Region, scope: GeoScope, subSpace: SubSpace, playerUUID: UUID, key: EffectKey): Int? {
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
+    require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace does not belong to scope" }
+    return subSpace.settingStore.playerEffect(key, playerUUID)
+        ?: scope.settingStore.playerEffect(key, playerUUID)
+        ?: region.settingStore.playerEffect(key, playerUUID)
+        ?: scopeOverlay(scope)[key]
+        ?: subSpace.settingStore.globalEffect(key)
+        ?: scope.settingStore.globalEffect(key)
+        ?: region.settingStore.globalEffect(key)
+}
+
 fun getRegionActiveEffects(region: Region, playerUUID: UUID): Map<EffectKey, Int> =
     region.settingStore.effectKeys().mapNotNull { key ->
         getRegionEffectValue(region, playerUUID, key)?.let { key to it }
@@ -30,6 +43,21 @@ fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Ma
     }
     return keys.mapNotNull { key ->
         resolveScopeEffectValue(region, scope, playerUUID, key, overlay)?.let { key to it }
+    }.toMap()
+}
+
+fun getSubSpaceActiveEffects(region: Region, scope: GeoScope, subSpace: SubSpace, playerUUID: UUID): Map<EffectKey, Int> {
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
+    require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace does not belong to scope" }
+    val keys = buildSet {
+        addAll(subSpace.settingStore.effectKeys())
+        addAll(scope.settingStore.effectKeys())
+        addAll(region.settingStore.effectKeys())
+        addAll(scopeOverlay(scope).keys)
+    }
+    return keys.mapNotNull { key ->
+        getSubSpaceEffectValue(region, scope, subSpace, playerUUID, key)?.let { key to it }
     }.toMap()
 }
 

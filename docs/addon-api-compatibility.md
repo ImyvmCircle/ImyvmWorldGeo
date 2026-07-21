@@ -169,6 +169,18 @@ PlayerInteractionApi.teleportPlayerToScopeAsAdministrator(player, region, scope)
 
 The administrator entry bypasses only accessibility. Both entries still require the exact live Region/Scope pair and enforce dimension availability, physical safety, bounded fallback, persistence, and rollback. The retained ordinary method descriptor is unchanged; unrestricted use of private teleport points is not retained as compatibility behavior.
 
+## R12 SubSpace API contract
+
+`SubSpace` is a child space owned by a persisted `GeoScope`. Addons read SubSpace data through `RegionDataApi.getRegionSubSpaces`, `getSubSpaceById`, `getSubSpaceByName`, `getRegionScopeSubSpaceByLocation`, and `resolveSubSpaceAtEntity`. Existing Region and Scope location queries keep their descriptors and continue to return Region and Scope pairs.
+
+Supported mutations run through `PlayerInteractionApi.createSubSpace`, `createAndGetSubSpace`, `deleteSubSpace`, `renameSubSpace`, `replaceSubSpaceShape`, SubSpace tag methods, and SubSpace setting methods. The Region, parent Scope, and SubSpace arguments have to be exact live database objects. Detached copies, mismatched parent scopes, duplicate names, duplicate IDs, cross-dimension shapes, and shapes outside the parent Scope fail before persistence.
+
+SubSpace settings resolve before Scope settings and Region settings. Personal settings in the same container resolve before global settings. Built-in permission parent inheritance keeps its existing behavior. Extension permission and rule keys remain exact-match keys.
+
+Persisted Region and Scope data written before the SubSpace format loads with an empty SubSpace list. New database records append SubSpace data after ownership history, preserving the Region, Scope, settings, and ownership block order.
+
+OP commands mirror the addon surface for live-server debugging. Use `subspace create`, `delete`, `rename`, `replaceShape`, `setEntryMessage`, `query`, `tag`, `settingSubSpace`, and `debug spaceHere` to inspect and mutate SubSpace state in-game.
+
 ## Selection API contract
 
 Call `PlayerInteractionApi` selection operations on the Minecraft server thread. A normal selection

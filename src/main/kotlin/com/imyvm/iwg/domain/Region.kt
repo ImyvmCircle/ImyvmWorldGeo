@@ -2,6 +2,8 @@ package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.AssignedScopeId
+import com.imyvm.iwg.domain.component.SubSpace
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.Setting
 import com.imyvm.iwg.domain.component.PermissionSetting
 import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
@@ -27,9 +29,19 @@ class Region(
     numberID: Int,
     geometryScope: MutableList<GeoScope>,
     settings: MutableList<Setting> = mutableListOf(),
+    subSpaces: MutableList<SubSpace> = mutableListOf(),
     var showOnDynmap: Boolean = true,
     ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
+    constructor(
+        name: String,
+        numberID: Int,
+        geometryScope: MutableList<GeoScope>,
+        settings: MutableList<Setting> = mutableListOf(),
+        showOnDynmap: Boolean = true,
+        ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
+    ) : this(name, numberID, geometryScope, settings, mutableListOf(), showOnDynmap, ownershipHistoryByScope)
+
     var name: String = name
         set(value) {
             require(isValidGeoName(value)) { "invalid region name" }
@@ -38,12 +50,14 @@ class Region(
 
     private val stableNumberId = numberID.also { require(it > 0) { "region id must be positive" } }
     private val mutableScopes = mutableListOf<GeoScope>()
+    private val mutableSubSpaces = mutableListOf<SubSpace>()
     private val mutableOwnershipHistory = mutableMapOf<AssignedScopeId, MutableList<ScopeOwnershipEntry>>()
     internal val settingStore = com.imyvm.iwg.domain.component.SettingStore(settings)
 
     init {
         require(isValidGeoName(name)) { "invalid region name" }
         replaceScopes(geometryScope)
+        replaceSubSpaces(subSpaces)
         replaceLegacyOwnershipHistory(ownershipHistoryByScope)
     }
 
@@ -54,6 +68,9 @@ class Region(
 
     internal val scopes: List<GeoScope>
         get() = mutableScopes
+
+    val subSpaces: List<SubSpace>
+        get() = mutableSubSpaces.toList()
 
     /**
      * Binary-compatible snapshot for existing addons.
@@ -93,6 +110,8 @@ class Region(
 
     fun containsScope(scope: GeoScope): Boolean = mutableScopes.any { it === scope }
 
+    fun containsSubSpace(subSpace: SubSpace): Boolean = mutableSubSpaces.any { it === subSpace }
+
     fun addScope(scope: GeoScope) {
         validateScope(scope, mutableScopes)
         mutableScopes.add(scope)
@@ -101,6 +120,7 @@ class Region(
     fun removeScope(scope: GeoScope): Int {
         val index = mutableScopes.indexOfFirst { it === scope }
         require(index >= 0) { "scope does not belong to region" }
+        require(mutableSubSpaces.none { it.parentScopeId == scope.requireAssignedScopeId() }) { "scope has subspaces" }
         mutableScopes.removeAt(index)
         return index
     }
@@ -112,12 +132,75 @@ class Region(
 
     internal fun restoreScopes(scopes: List<GeoScope>) = replaceScopes(scopes)
 
+    fun addSubSpace(subSpace: SubSpace) {
+        validateSubSpace(subSpace, mutableSubSpaces)
+        mutableSubSpaces.add(subSpace)
+    }
+
+    fun removeSubSpace(subSpace: SubSpace): Int {
+        val index = mutableSubSpaces.indexOfFirst { it === subSpace }
+        require(index >= 0) { "subspace does not belong to region" }
+        mutableSubSpaces.removeAt(index)
+        return index
+    }
+
+    fun restoreSubSpace(index: Int, subSpace: SubSpace) {
+        validateSubSpace(subSpace, mutableSubSpaces)
+        mutableSubSpaces.add(index.coerceIn(0, mutableSubSpaces.size), subSpace)
+    }
+
+    internal fun replaceSubSpaces(subSpaces: List<SubSpace>) {
+        val names = hashSetOf<String>()
+        val ids = hashSetOf<Long>()
+        subSpaces.forEach { subSpace ->
+            require(names.add(subSpace.name.lowercase())) { "duplicate subspace name" }
+            require(ids.add(subSpace.subSpaceId)) { "duplicate subspace id" }
+            validateSubSpacePlacement(subSpace)
+        }
+        mutableSubSpaces.clear()
+        mutableSubSpaces.addAll(subSpaces)
+    }
+
     fun renameScope(scope: GeoScope, newName: String) {
         require(containsScope(scope)) { "scope does not belong to region" }
         require(mutableScopes.none { it !== scope && it.scopeName.equals(newName, ignoreCase = true) }) {
             "duplicate scope name"
         }
         scope.renameTo(newName)
+    }
+
+    fun renameSubSpace(subSpace: SubSpace, newName: String) {
+        require(containsSubSpace(subSpace)) { "subspace does not belong to region" }
+        require(mutableSubSpaces.none { it !== subSpace && it.name.equals(newName, ignoreCase = true) }) {
+            "duplicate subspace name"
+        }
+        subSpace.renameTo(newName)
+    }
+
+    fun replaceScopeGeometry(scope: GeoScope, shape: GeoShape?) {
+        require(containsScope(scope)) { "scope does not belong to region" }
+        val oldShape = scope.geoShape
+        scope.replaceGeometry(shape)
+        try {
+            mutableSubSpaces
+                .filter { it.parentScopeId == scope.requireAssignedScopeId() }
+                .forEach(::validateSubSpacePlacement)
+        } catch (error: IllegalArgumentException) {
+            scope.replaceGeometry(oldShape)
+            throw error
+        }
+    }
+
+    fun replaceSubSpaceGeometry(subSpace: SubSpace, shape: GeoShape) {
+        require(containsSubSpace(subSpace)) { "subspace does not belong to region" }
+        val oldShape = subSpace.geoShape
+        subSpace.replaceGeometry(shape)
+        try {
+            validateSubSpacePlacement(subSpace)
+        } catch (error: IllegalArgumentException) {
+            subSpace.replaceGeometry(oldShape)
+            throw error
+        }
     }
 
     fun recordScopeOwnership(entry: ScopeOwnershipEntry) {
@@ -177,6 +260,20 @@ class Region(
         require(existing.none { it.scopeName.equals(scope.scopeName, ignoreCase = true) }) { "duplicate scope name" }
         val scopeId = scope.requireAssignedScopeId()
         require(existing.none { it.requireAssignedScopeId() == scopeId }) { "duplicate scope id" }
+    }
+
+    private fun validateSubSpace(subSpace: SubSpace, existing: List<SubSpace>) {
+        require(existing.none { it.name.equals(subSpace.name, ignoreCase = true) }) { "duplicate subspace name" }
+        require(existing.none { it.subSpaceId == subSpace.subSpaceId }) { "duplicate subspace id" }
+        validateSubSpacePlacement(subSpace)
+    }
+
+    private fun validateSubSpacePlacement(subSpace: SubSpace) {
+        val parentScope = mutableScopes.firstOrNull { it.requireAssignedScopeId() == subSpace.parentScopeId }
+            ?: throw IllegalArgumentException("subspace parent scope does not belong to region")
+        require(parentScope.worldId == subSpace.worldId) { "subspace world must match parent scope" }
+        val parentShape = parentScope.geoShape ?: throw IllegalArgumentException("subspace parent scope must have a shape")
+        require(subSpace.geoShape.isContainedBy(parentShape)) { "subspace shape must be inside parent scope" }
     }
 
     fun getScopeInfos(server: MinecraftServer): List<Component> {

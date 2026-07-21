@@ -24,6 +24,17 @@ private sealed interface PermissionTarget {
             require(region.containsScope(scope)) { "scope does not belong to region" }
         }
     }
+    data class SubSpaceOverride(
+        override val region: Region,
+        val scope: GeoScope,
+        val subSpace: SubSpace
+    ) : PermissionTarget {
+        init {
+            require(region.containsScope(scope)) { "scope does not belong to region" }
+            require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
+            require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace does not belong to scope" }
+        }
+    }
 }
 
 private sealed interface PermissionSubject {
@@ -79,6 +90,29 @@ internal fun resolveScopePlayerPermission(
     key: PermissionKeyLike
 ): ResolvedPermission? = resolvePermission(
     PermissionTarget.ScopeOverride(region, scope),
+    PermissionSubject.Player(playerUUID),
+    key
+)
+
+internal fun resolveSubSpaceGlobalPermission(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    key: PermissionKeyLike
+): ResolvedPermission? = resolvePermission(
+    PermissionTarget.SubSpaceOverride(region, scope, subSpace),
+    PermissionSubject.Global,
+    key
+)
+
+internal fun resolveSubSpacePlayerPermission(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    playerUUID: UUID,
+    key: PermissionKeyLike
+): ResolvedPermission? = resolvePermission(
+    PermissionTarget.SubSpaceOverride(region, scope, subSpace),
     PermissionSubject.Player(playerUUID),
     key
 )
@@ -147,7 +181,17 @@ private fun resolveExplicitPermission(
     subject: PermissionSubject,
     key: PermissionKeyLike
 ): ResolvedPermission? {
+    if (target is PermissionTarget.SubSpaceOverride) {
+        findPermission(target.subSpace.settingStore, subject, key)?.let {
+            return ResolvedPermission(it, PermissionDenialSource.AtScope)
+        }
+    }
     if (target is PermissionTarget.ScopeOverride) {
+        findPermission(target.scope.settingStore, subject, key)?.let {
+            return ResolvedPermission(it, PermissionDenialSource.AtScope)
+        }
+    }
+    if (target is PermissionTarget.SubSpaceOverride) {
         findPermission(target.scope.settingStore, subject, key)?.let {
             return ResolvedPermission(it, PermissionDenialSource.AtScope)
         }

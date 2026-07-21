@@ -7,6 +7,7 @@ import net.minecraft.core.BlockPos
 import net.minecraft.core.Direction
 import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.Level
+import kotlin.math.sqrt
 
 internal const val MAX_TELEPORT_FALLBACK_SEARCH_RADIUS = 8
 
@@ -76,6 +77,18 @@ class GeoShape(
     }
 
     fun calculateArea(): Double = geometry.calculateArea()
+
+    internal fun isContainedBy(container: GeoShape): Boolean {
+        if (geometry === UnknownGeometry || container.geometry === UnknownGeometry) return false
+        val containerGeometry = container.geometry
+        if (geometry is CircleGeometry) {
+            return circleIsContainedBy(geometry, containerGeometry)
+        }
+        for ((x, z) in containmentProbePoints()) {
+            if (!container.containsPoint(x, z)) return false
+        }
+        return true
+    }
 
     /**
      * Retained for JVM compatibility. Checks one deterministic representative surface position
@@ -153,6 +166,77 @@ class GeoShape(
 
     internal fun isValidTeleportPoint(pos: BlockPos, physicallySafe: Boolean): Boolean =
         physicallySafe && containsPoint(pos.x, pos.z)
+
+    private fun containmentProbePoints(): List<Pair<Int, Int>> =
+        when (val current = geometry) {
+            is CircleGeometry -> listOf(
+                current.centerX to current.centerZ,
+                current.centerX - current.radius to current.centerZ,
+                current.centerX + current.radius to current.centerZ,
+                current.centerX to current.centerZ - current.radius,
+                current.centerX to current.centerZ + current.radius
+            )
+            is RectangleGeometry -> listOf(
+                current.west to current.north,
+                current.east to current.north,
+                current.east to current.south,
+                current.west to current.south
+            )
+            is PolygonGeometry -> List(current.vertexCount) { current.x(it) to current.z(it) }
+            UnknownGeometry -> emptyList()
+        }
+
+    private fun circleIsContainedBy(circle: CircleGeometry, container: ShapeGeometry): Boolean {
+        if (!container.containsPoint(circle.centerX, circle.centerZ)) return false
+        return when (container) {
+            is CircleGeometry -> {
+                val dx = (circle.centerX - container.centerX).toDouble()
+                val dz = (circle.centerZ - container.centerZ).toDouble()
+                sqrt(dx * dx + dz * dz) + circle.radius <= container.radius
+            }
+            is RectangleGeometry ->
+                circle.centerX - circle.radius >= container.west &&
+                    circle.centerX + circle.radius <= container.east &&
+                    circle.centerZ - circle.radius >= container.north &&
+                    circle.centerZ + circle.radius <= container.south
+            is PolygonGeometry -> minimumDistanceToPolygonEdge(circle.centerX, circle.centerZ, container) >= circle.radius
+            UnknownGeometry -> false
+        }
+    }
+
+    private fun minimumDistanceToPolygonEdge(x: Int, z: Int, polygon: PolygonGeometry): Double {
+        var minimum = Double.POSITIVE_INFINITY
+        for (index in 0 until polygon.vertexCount) {
+            val next = (index + 1) % polygon.vertexCount
+            val distance = distanceToSegment(
+                x.toDouble(),
+                z.toDouble(),
+                polygon.x(index).toDouble(),
+                polygon.z(index).toDouble(),
+                polygon.x(next).toDouble(),
+                polygon.z(next).toDouble()
+            )
+            if (distance < minimum) minimum = distance
+        }
+        return minimum
+    }
+
+    private fun distanceToSegment(px: Double, pz: Double, ax: Double, az: Double, bx: Double, bz: Double): Double {
+        val dx = bx - ax
+        val dz = bz - az
+        val lengthSquared = dx * dx + dz * dz
+        if (lengthSquared == 0.0) {
+            val pointDx = px - ax
+            val pointDz = pz - az
+            return sqrt(pointDx * pointDx + pointDz * pointDz)
+        }
+        val t = (((px - ax) * dx + (pz - az) * dz) / lengthSquared).coerceIn(0.0, 1.0)
+        val closestX = ax + t * dx
+        val closestZ = az + t * dz
+        val pointDx = px - closestX
+        val pointDz = pz - closestZ
+        return sqrt(pointDx * pointDx + pointDz * pointDz)
+    }
 
     companion object {
         /** Creates a structurally validated circle. Placement policy is checked by the owning Scope operation. */

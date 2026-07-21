@@ -1,6 +1,9 @@
 package com.imyvm.iwg.domain
 
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoPoint
+import com.imyvm.iwg.domain.component.GeoShape
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
@@ -145,6 +148,52 @@ class RegionTest {
         region.restoreScope(index, first)
 
         assertEquals(listOf(first, second), region.scopes)
+    }
+
+    @Test
+    fun `subspaces require parent ownership and contained geometry`() {
+        val main = GeoScope(
+            "main",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(10, 10)),
+            scopeId = ScopeId(com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(7, 1))
+        )
+        val region = Region("region", 7, mutableListOf(main))
+        val inside = SubSpace(
+            1,
+            "plot",
+            main.requireAssignedScopeId(),
+            main.worldId,
+            GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
+        )
+
+        region.addSubSpace(inside)
+
+        assertEquals(listOf(inside), region.subSpaces)
+        assertFailsWith<IllegalArgumentException> {
+            region.addSubSpace(
+                SubSpace(
+                    2,
+                    "outside",
+                    main.requireAssignedScopeId(),
+                    main.worldId,
+                    GeoShape.rectangle(GeoPoint(9, 9), GeoPoint(12, 12))
+                )
+            )
+        }
+        assertFailsWith<IllegalArgumentException> {
+            region.addSubSpace(
+                SubSpace(
+                    3,
+                    "wideCircle",
+                    main.requireAssignedScopeId(),
+                    main.worldId,
+                    GeoShape.circle(GeoPoint(5, 5), 6)
+                )
+            )
+        }
+        assertFailsWith<IllegalArgumentException> { region.removeScope(main) }
     }
 
     private fun scope(name: String, id: Long) = GeoScope(

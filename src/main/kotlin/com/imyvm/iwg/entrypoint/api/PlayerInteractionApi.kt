@@ -9,6 +9,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
@@ -82,10 +83,71 @@ object PlayerInteractionApi {
      */
     fun replaceScopeShape(player: ServerPlayer, region: Region, scope: GeoScope, newShape: GeoShape) =
         onReplacingScopeShape(player, region, scope, newShape)
+
+    fun createSubSpace(
+        player: ServerPlayer,
+        region: Region,
+        parentScope: GeoScope,
+        name: String,
+        shape: GeoShape,
+        entryMessage: String? = null,
+        stringTags: Set<String> = emptySet(),
+        keyedTags: Map<String, String> = emptyMap()
+    ): Int = if (createAndGetSubSpace(player, region, parentScope, name, shape, entryMessage, stringTags, keyedTags) == null) 0 else 1
+
+    fun createAndGetSubSpace(
+        player: ServerPlayer,
+        region: Region,
+        parentScope: GeoScope,
+        name: String,
+        shape: GeoShape,
+        entryMessage: String? = null,
+        stringTags: Set<String> = emptySet(),
+        keyedTags: Map<String, String> = emptyMap()
+    ): SubSpace? = onSubSpaceCreation(player, region, parentScope, name, shape, entryMessage, stringTags, keyedTags)
+
+    fun deleteSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace) =
+        onSubSpaceDelete(player, region, parentScope, subSpace)
+
+    fun renameSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newName: String) =
+        onSubSpaceRename(player, region, parentScope, subSpace, newName)
+
+    fun replaceSubSpaceShape(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newShape: GeoShape) =
+        onReplacingSubSpaceShape(player, region, parentScope, subSpace, newShape)
+
+    fun addSubSpaceStringTag(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, tag: String) =
+        onAddingSubSpaceStringTag(player, region, parentScope, subSpace, tag)
+
+    fun removeSubSpaceStringTag(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, tag: String) =
+        onRemovingSubSpaceStringTag(player, region, parentScope, subSpace, tag)
+
+    fun putSubSpaceKeyedTag(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, key: String, value: String) =
+        onPuttingSubSpaceKeyedTag(player, region, parentScope, subSpace, key, value)
+
+    fun removeSubSpaceKeyedTag(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, key: String) =
+        onRemovingSubSpaceKeyedTag(player, region, parentScope, subSpace, key)
     fun addSettingRegion(player: ServerPlayer, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?) = addRegionSetting(player, region, keyString, valueString, targetPlayerStr)
     fun addSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?) = addScopeSetting(player, region, region.getScopeByName(scopeName), keyString, valueString, targetPlayerStr)
     fun removeSettingRegion(player: ServerPlayer, region: Region, keyString: String, targetPlayerStr: String?) = removeRegionSetting(player, region, keyString, targetPlayerStr)
     fun removeSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?) = removeScopeSetting(player, region, region.getScopeByName(scopeName), keyString, targetPlayerStr)
+    fun addSettingSubSpace(
+        player: ServerPlayer,
+        region: Region,
+        parentScope: GeoScope,
+        subSpace: SubSpace,
+        keyString: String,
+        valueString: String?,
+        targetPlayerStr: String?
+    ) = addSubSpaceSetting(player, region, parentScope, subSpace, keyString, valueString, targetPlayerStr)
+
+    fun removeSettingSubSpace(
+        player: ServerPlayer,
+        region: Region,
+        parentScope: GeoScope,
+        subSpace: SubSpace,
+        keyString: String,
+        targetPlayerStr: String?
+    ) = removeSubSpaceSetting(player, region, parentScope, subSpace, keyString, targetPlayerStr)
     fun getDefaultPermissionValue(keyString: String): Boolean {
         val key = PermissionKey.entries.firstOrNull { it.name == keyString }
         if (key != null) return getDefaultValueForPermission(key)

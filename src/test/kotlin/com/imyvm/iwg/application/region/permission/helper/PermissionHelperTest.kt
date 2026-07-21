@@ -2,15 +2,19 @@ package com.imyvm.iwg.application.region.permission.helper
 
 import com.imyvm.iwg.application.interaction.getRegionPermissionValue
 import com.imyvm.iwg.application.interaction.getScopePermissionValue
+import com.imyvm.iwg.application.interaction.getSubSpacePermissionValue
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoPoint
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.ExtensionPermissionKey
 import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
 import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
 import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import net.minecraft.resources.Identifier
 import java.util.UUID
@@ -131,6 +135,32 @@ class PermissionHelperTest {
         assertTrue(getRegionPermissionValue(region, player, PermissionKey.PVP))
         assertTrue(getScopePermissionValue(region, scope, PermissionKey.PVP))
         assertFalse(getScopePermissionValue(region, scope, player, PermissionKey.PVP))
+    }
+
+    @Test
+    fun `subspace permission wins over scope and region settings`() {
+        val parentScope = GeoScope(
+            "parent",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(10, 10)),
+            scopeId = ScopeId(generateCompatScopeIdRaw(3, 0))
+        )
+        val parentRegion = Region("parent-region", 3, mutableListOf(parentScope))
+        val subSpace = SubSpace(
+            1,
+            "plot",
+            parentScope.requireAssignedScopeId(),
+            parentScope.worldId,
+            GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
+        )
+        parentRegion.addSubSpace(subSpace)
+        parentRegion.settingStore.put(PermissionSetting(PermissionKey.PVP, true, player))
+        parentScope.settingStore.put(PermissionSetting(PermissionKey.PVP, true))
+        subSpace.settingStore.put(PermissionSetting(PermissionKey.PVP, false, player))
+
+        assertFalse(getSubSpacePermissionValue(parentRegion, parentScope, subSpace, player, PermissionKey.PVP))
+        assertTrue(getSubSpacePermissionValue(parentRegion, parentScope, subSpace, otherPlayer, PermissionKey.PVP))
     }
 
     @Suppress("DEPRECATION")

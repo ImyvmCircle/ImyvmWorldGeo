@@ -133,6 +133,12 @@ object RegionFactory {
         }
     }
 
+    internal fun createSubSpaceShape(
+        positions: List<BlockPos>,
+        shapeType: GeoShapeType,
+        worldId: Identifier
+    ): Result<GeoShape, CreationError> = createGeoShape(positions, shapeType, worldId, null)
+
     private fun createGeoShape(
         positions: List<BlockPos>,
         shapeType: GeoShapeType,

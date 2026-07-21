@@ -18,6 +18,14 @@ fun getScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): Boolean? {
         ?: getRegionRuleValue(region, key)
 }
 
+fun getSubSpaceRuleValue(region: Region, scope: GeoScope, subSpace: SubSpace, key: RuleKey): Boolean? {
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
+    require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace does not belong to scope" }
+    return subSpace.settingStore.rule(key)
+        ?: getScopeRuleValue(region, scope, key)
+}
+
 fun getScopeRuleValue(region: Region, key: RuleKey, scope: GeoScope): Boolean? =
     getScopeRuleValue(region, scope, key)
 
@@ -26,6 +34,9 @@ fun getEffectiveRegionRuleValue(region: Region, key: RuleKey): Boolean =
 
 fun getEffectiveScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): Boolean =
     getScopeRuleValue(region, scope, key) ?: getDefaultValueForRule(key)
+
+fun getEffectiveSubSpaceRuleValue(region: Region, scope: GeoScope, subSpace: SubSpace, key: RuleKey): Boolean =
+    getSubSpaceRuleValue(region, scope, subSpace, key) ?: getDefaultValueForRule(key)
 
 fun getEffectiveRuleValueAt(world: Level, pos: BlockPos, key: RuleKey): Boolean? {
     val (region, scope) = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return null
@@ -42,6 +53,15 @@ fun getScopeRuleValue(region: Region, scope: GeoScope, key: ExtensionRuleKey): B
     require(region.containsScope(scope)) { "scope does not belong to region" }
     return scope.settingStore.rule(key)
         ?: getRegionRuleValue(region, key)
+}
+
+fun getSubSpaceRuleValue(region: Region, scope: GeoScope, subSpace: SubSpace, key: ExtensionRuleKey): Boolean? {
+    require(ExtensionSettingRegistry.isRegisteredRuleKey(key.id)) { "Extension rule key '${key.id}' is not registered." }
+    require(region.containsScope(scope)) { "scope does not belong to region" }
+    require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
+    require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace does not belong to scope" }
+    return subSpace.settingStore.rule(key)
+        ?: getScopeRuleValue(region, scope, key)
 }
 
 fun getScopeRuleValue(region: Region, key: ExtensionRuleKey, scope: GeoScope): Boolean? =

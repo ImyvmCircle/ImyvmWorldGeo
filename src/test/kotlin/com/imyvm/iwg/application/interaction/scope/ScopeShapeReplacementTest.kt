@@ -54,7 +54,7 @@ class ScopeShapeReplacementTest {
         assertEquals(ScopeShapeReplacementResult.PersistenceFailed, result)
         assertSame(oldShape, scope.geoShape)
         assertFailsWith<IOException> {
-            replaceScopeGeometryAndSave(scope, failedShape) { throw IOException("save failed") }
+            replaceScopeGeometryAndSave(region, scope, failedShape) { throw IOException("save failed") }
         }
         assertSame(oldShape, scope.geoShape)
     }

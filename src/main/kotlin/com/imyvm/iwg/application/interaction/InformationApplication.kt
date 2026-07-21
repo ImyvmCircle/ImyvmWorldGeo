@@ -88,6 +88,24 @@ fun onHelp(player: ServerPlayer): Int {
         "setting_scope.add",
         "setting_scope.remove",
         "setting_scope.query",
+        "setting_subspace.add",
+        "setting_subspace.remove",
+        "setting_subspace.query",
+
+        // SubSpaces
+        "subspace.create",
+        "subspace.delete",
+        "subspace.rename",
+        "subspace.replace_shape",
+        "subspace.query",
+        "subspace.tag",
+
+        // Debug
+        "debug.space_here",
+        "debug.region",
+        "debug.scope",
+        "debug.subspace",
+        "debug.validate_subspaces",
 
         // Info & General
         "info.query",

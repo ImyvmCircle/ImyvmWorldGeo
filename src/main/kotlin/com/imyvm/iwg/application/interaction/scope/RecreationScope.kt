@@ -34,7 +34,7 @@ fun recreateScope(
 
     return when (newShape) {
         is Result.Ok -> {
-            if (replaceScopeGeometryAndSave(existingScope, newShape.value) { saveRegionData(player) }) {
+            if (replaceScopeGeometryAndSave(region, existingScope, newShape.value) { saveRegionData(player) }) {
                 clearSelectionDisplay(player)
                 clearPlayerSelection(player.uuid)
                 true
@@ -89,7 +89,7 @@ internal fun replaceScopeShape(
 
     val error = RegionFactory.validateGeoShapePlacement(newShape, scope.worldId, scope, currentRegions)
     if (error != null) return ScopeShapeReplacementResult.Rejected(error)
-    return if (replaceScopeGeometryAndSave(scope, newShape, save)) {
+    return if (replaceScopeGeometryAndSave(region, scope, newShape, save)) {
         ScopeShapeReplacementResult.Success
     } else {
         ScopeShapeReplacementResult.PersistenceFailed
@@ -97,19 +97,20 @@ internal fun replaceScopeShape(
 }
 
 internal fun replaceScopeGeometryAndSave(
+    region: Region,
     scope: GeoScope,
     newShape: GeoShape,
     save: () -> Boolean
 ): Boolean {
     val oldShape = scope.geoShape
-    scope.replaceGeometry(newShape)
+    region.replaceScopeGeometry(scope, newShape)
     return try {
         if (save()) true else {
-            scope.replaceGeometry(oldShape)
+            region.replaceScopeGeometry(scope, oldShape)
             false
         }
     } catch (error: Exception) {
-        scope.replaceGeometry(oldShape)
+        region.replaceScopeGeometry(scope, oldShape)
         throw error
     }
 }

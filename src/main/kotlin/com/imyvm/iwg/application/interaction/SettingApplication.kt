@@ -6,6 +6,8 @@ import com.imyvm.iwg.application.region.permission.helper.resolveRegionGlobalPer
 import com.imyvm.iwg.application.region.permission.helper.resolveRegionPlayerPermission
 import com.imyvm.iwg.application.region.permission.helper.resolveScopeGlobalPermission
 import com.imyvm.iwg.application.region.permission.helper.resolveScopePlayerPermission
+import com.imyvm.iwg.application.region.permission.helper.resolveSubSpaceGlobalPermission
+import com.imyvm.iwg.application.region.permission.helper.resolveSubSpacePlayerPermission
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
@@ -74,6 +76,15 @@ private sealed interface SettingTarget {
         override val store get() = scope.settingStore
         override val scopeName get() = scope.scopeName
     }
+
+    data class SubSpaceTarget(val region: Region, val scope: GeoScope, val subSpace: SubSpace) : SettingTarget {
+        init {
+            RegionDatabase.requireCanonicalSubSpace(region, scope, subSpace)
+        }
+
+        override val store get() = subSpace.settingStore
+        override val scopeName get() = subSpace.name
+    }
 }
 
 fun addRegionSetting(
@@ -92,6 +103,16 @@ fun addScopeSetting(
     valueString: String?,
     targetPlayerStr: String?
 ) = addSetting(player, SettingTarget.ScopeTarget(region, scope), keyString, valueString, targetPlayerStr)
+
+fun addSubSpaceSetting(
+    player: ServerPlayer,
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    keyString: String,
+    valueString: String?,
+    targetPlayerStr: String?
+) = addSetting(player, SettingTarget.SubSpaceTarget(region, scope, subSpace), keyString, valueString, targetPlayerStr)
 
 private fun addSetting(
     player: ServerPlayer,
@@ -147,6 +168,15 @@ fun removeScopeSetting(
     keyString: String,
     targetPlayerStr: String?
 ) = removeSetting(player, SettingTarget.ScopeTarget(region, scope), keyString, targetPlayerStr)
+
+fun removeSubSpaceSetting(
+    player: ServerPlayer,
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    keyString: String,
+    targetPlayerStr: String?
+) = removeSetting(player, SettingTarget.SubSpaceTarget(region, scope, subSpace), keyString, targetPlayerStr)
 
 private fun removeSetting(
     player: ServerPlayer,
@@ -232,6 +262,17 @@ fun getScopePermissionValue(region: Region, scope: GeoScope, key: PermissionKey)
 fun getScopePermissionValue(region: Region, scope: GeoScope, playerUuid: UUID, key: PermissionKey): Boolean =
     resolveScopePlayerPermission(region, scope, playerUuid, key)?.value ?: getDefaultValueForPermission(key)
 
+fun getSubSpacePermissionValue(region: Region, scope: GeoScope, subSpace: SubSpace, key: PermissionKey): Boolean =
+    resolveSubSpaceGlobalPermission(region, scope, subSpace, key)?.value ?: getDefaultValueForPermission(key)
+
+fun getSubSpacePermissionValue(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    playerUuid: UUID,
+    key: PermissionKey
+): Boolean = resolveSubSpacePlayerPermission(region, scope, subSpace, playerUuid, key)?.value ?: getDefaultValueForPermission(key)
+
 fun getRegionPermissionValue(region: Region, key: ExtensionPermissionKey): Boolean {
     val default = getDefaultValueForPermission(key)
     return resolveRegionGlobalPermission(region, key)?.value ?: default
@@ -250,6 +291,22 @@ fun getScopePermissionValue(region: Region, scope: GeoScope, key: ExtensionPermi
 fun getScopePermissionValue(region: Region, scope: GeoScope, playerUuid: UUID, key: ExtensionPermissionKey): Boolean {
     val default = getDefaultValueForPermission(key)
     return resolveScopePlayerPermission(region, scope, playerUuid, key)?.value ?: default
+}
+
+fun getSubSpacePermissionValue(region: Region, scope: GeoScope, subSpace: SubSpace, key: ExtensionPermissionKey): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return resolveSubSpaceGlobalPermission(region, scope, subSpace, key)?.value ?: default
+}
+
+fun getSubSpacePermissionValue(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    playerUuid: UUID,
+    key: ExtensionPermissionKey
+): Boolean {
+    val default = getDefaultValueForPermission(key)
+    return resolveSubSpacePlayerPermission(region, scope, subSpace, playerUuid, key)?.value ?: default
 }
 
 fun onCertificateExtensionPermissionValue(
@@ -430,15 +487,25 @@ fun onQuerySettingValue(
     region: Region,
     scope: GeoScope?,
     keyString: String,
-    targetPlayerStr: String?
+    targetPlayerStr: String?,
+    subSpace: SubSpace? = null
 ) {
     try {
         val key = parseKey(keyString)
         val scopeName = scope?.scopeName
-        val displayTarget = if (scopeName != null) "Scope &b${scopeName}&r of Region &b${region.name}&r" else "Region &b${region.name}&r"
+        val displayTarget = when {
+            subSpace != null && scope != null -> "SubSpace &b${subSpace.name}&r of Scope &b${scope.scopeName}&r in Region &b${region.name}&r"
+            scopeName != null -> "Scope &b${scopeName}&r of Region &b${region.name}&r"
+            else -> "Region &b${region.name}&r"
+        }
         when (key) {
             is RuleKey, is ExtensionRuleKey -> {
-                val value = onCertificateRuleValue(region, scope, keyString)
+                val value = if (subSpace != null && scope != null) {
+                    when (key) {
+                        is RuleKey -> com.imyvm.iwg.application.region.rule.helper.getSubSpaceRuleValue(region, scope, subSpace, key)
+                        is ExtensionRuleKey -> com.imyvm.iwg.application.region.rule.helper.getSubSpaceRuleValue(region, scope, subSpace, key)
+                    }
+                } else onCertificateRuleValue(region, scope, keyString)
                 if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
@@ -446,11 +513,18 @@ fun onQuerySettingValue(
                 }
             }
             is PermissionKey, is ExtensionPermissionKey -> {
-                val value = onCertificatePermissionValue(player, region, scope, targetPlayerStr, keyString)
+                val targetUuid = if (targetPlayerStr != null) resolveTargetPlayerUUID(player, targetPlayerStr) ?: return else null
+                val value = when {
+                    subSpace != null && scope != null && key is PermissionKey && targetUuid != null -> getSubSpacePermissionValue(region, scope, subSpace, targetUuid, key)
+                    subSpace != null && scope != null && key is PermissionKey -> getSubSpacePermissionValue(region, scope, subSpace, key)
+                    subSpace != null && scope != null && key is ExtensionPermissionKey && targetUuid != null -> getSubSpacePermissionValue(region, scope, subSpace, targetUuid, key)
+                    subSpace != null && scope != null && key is ExtensionPermissionKey -> getSubSpacePermissionValue(region, scope, subSpace, key)
+                    else -> onCertificatePermissionValue(player, region, scope, targetPlayerStr, keyString)
+                }
                 player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.result", keyString, value, displayTarget)!!)
             }
             is EntryExitToggleKey -> {
-                val value = (scope?.settingStore ?: region.settingStore).entryExitToggle(key)
+                val value = (subSpace?.settingStore ?: scope?.settingStore ?: region.settingStore).entryExitToggle(key)
                 if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
@@ -458,7 +532,7 @@ fun onQuerySettingValue(
                 }
             }
             is EntryExitMessageKey -> {
-                val value = (scope?.settingStore ?: region.settingStore).entryExitMessage(key)
+                val value = (subSpace?.settingStore ?: scope?.settingStore ?: region.settingStore).entryExitMessage(key)
                 if (value == null) {
                     player.sendSystemMessage(Translator.tr("interaction.meta.setting.query.rule.not_set", keyString, displayTarget)!!)
                 } else {
@@ -466,7 +540,7 @@ fun onQuerySettingValue(
                 }
             }
             is EffectKey -> {
-                val store = scope?.settingStore ?: region.settingStore
+                val store = subSpace?.settingStore ?: scope?.settingStore ?: region.settingStore
                 val subject = if (targetPlayerStr == null) SettingSubject.Global else {
                     val uuid = resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
                     SettingSubject.Player(uuid)

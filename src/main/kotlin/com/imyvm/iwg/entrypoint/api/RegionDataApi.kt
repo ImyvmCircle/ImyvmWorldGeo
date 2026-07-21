@@ -5,17 +5,21 @@ import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.application.interaction.getDefaultValueForRule
 import com.imyvm.iwg.application.interaction.getRegionPermissionValue
 import com.imyvm.iwg.application.interaction.getScopePermissionValue
+import com.imyvm.iwg.application.interaction.getSubSpacePermissionValue
 import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
 import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveRegionRuleValue
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveScopeRuleValue
+import com.imyvm.iwg.application.region.rule.helper.getEffectiveSubSpaceRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
 import com.imyvm.iwg.application.region.effect.helper.getRegionActiveEffects as resolveRegionActiveEffects
 import com.imyvm.iwg.application.region.effect.helper.getRegionEffectValue as resolveRegionEffectValue
 import com.imyvm.iwg.application.region.effect.helper.getScopeActiveEffects as resolveScopeActiveEffects
+import com.imyvm.iwg.application.region.effect.helper.getSubSpaceActiveEffects as resolveSubSpaceActiveEffects
 import com.imyvm.iwg.application.region.effect.helper.getScopeEffectValue as resolveScopeEffectValue
+import com.imyvm.iwg.application.region.effect.helper.getSubSpaceEffectValue as resolveSubSpaceEffectValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.RegionDatabase
@@ -76,6 +80,15 @@ object RegionDataApi {
     fun getRegionScopes(region: Region): List<GeoScope> =
         region.scopes.toList()
 
+    fun getRegionSubSpaces(region: Region): List<SubSpace> =
+        region.subSpaces.toList()
+
+    fun getSubSpaceById(subSpaceId: Long): Triple<Region, GeoScope, SubSpace>? =
+        RegionDatabase.getSubSpaceById(subSpaceId)
+
+    fun getSubSpaceByName(region: Region, name: String): Pair<GeoScope, SubSpace>? =
+        RegionDatabase.getSubSpaceByName(region, name)
+
     fun getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?> =
         RegionDatabase.getRegionAndScope(region, scopeName)
 
@@ -87,6 +100,12 @@ object RegionDataApi {
 
     fun getRegionScopePairByLocation(world: Level, blockPos: BlockPos): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
+
+    fun getRegionScopeSubSpaceByLocation(world: Level, x: Int, z: Int): Triple<Region, GeoScope, SubSpace?>? =
+        RegionDatabase.getRegionScopeSubSpaceAt(world, x, z)
+
+    fun getRegionScopeSubSpaceByLocation(world: Level, blockPos: BlockPos): Triple<Region, GeoScope, SubSpace?>? =
+        RegionDatabase.getRegionScopeSubSpaceAt(world, blockPos.x, blockPos.z)
     fun inquireTeleportPointAccessibility(scope: GeoScope) = onGettingTeleportPointAccessibility(scope)
 
     fun getScopeTeleportPoint(scope: GeoScope): BlockPos? = scope.teleportPoint
@@ -152,6 +171,21 @@ object RegionDataApi {
         permissionKey: PermissionKey
     ): Boolean = getScopePermissionValue(region, scope, playerUUID, permissionKey)
 
+    fun getSubSpaceGlobalPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        permissionKey: PermissionKey
+    ): Boolean = getSubSpacePermissionValue(region, scope, subSpace, permissionKey)
+
+    fun getSubSpacePlayerPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        playerUUID: UUID,
+        permissionKey: PermissionKey
+    ): Boolean = getSubSpacePermissionValue(region, scope, subSpace, playerUUID, permissionKey)
+
     /**
      * Compatibility dispatcher for the former nullable permission API.
      *
@@ -192,6 +226,31 @@ object RegionDataApi {
         key: String
     ): Boolean = onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
 
+    fun getSubSpaceGlobalExtensionPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        key: String
+    ): Boolean {
+        if (!ExtensionSettingRegistry.isRegisteredPermissionKey(key)) {
+            throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+        }
+        return getSubSpacePermissionValue(region, scope, subSpace, ExtensionSettingRegistry.permissionKey(key))
+    }
+
+    fun getSubSpacePlayerExtensionPermissionValue(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        playerUUID: UUID,
+        key: String
+    ): Boolean {
+        if (!ExtensionSettingRegistry.isRegisteredPermissionKey(key)) {
+            throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+        }
+        return getSubSpacePermissionValue(region, scope, subSpace, playerUUID, ExtensionSettingRegistry.permissionKey(key))
+    }
+
     /**
      * Compatibility dispatcher for extension permissions.
      *
@@ -220,6 +279,9 @@ object RegionDataApi {
     fun getScopeRuleValue(region: Region, scope: GeoScope, ruleKey: RuleKey): Boolean =
         getEffectiveScopeRuleValue(region, scope, ruleKey)
 
+    fun getSubSpaceRuleValue(region: Region, scope: GeoScope, subSpace: SubSpace, ruleKey: RuleKey): Boolean =
+        getEffectiveSubSpaceRuleValue(region, scope, subSpace, ruleKey)
+
     /**
      * Compatibility dispatcher for the former nullable rule API.
      *
@@ -246,11 +308,26 @@ object RegionDataApi {
     fun getScopeEffectValue(region: Region, scope: GeoScope, playerUUID: UUID, effectKey: EffectKey): Int? =
         resolveScopeEffectValue(region, scope, playerUUID, effectKey)
 
+    fun getSubSpaceEffectValue(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        playerUUID: UUID,
+        effectKey: EffectKey
+    ): Int? = resolveSubSpaceEffectValue(region, scope, subSpace, playerUUID, effectKey)
+
     fun getRegionActiveEffects(region: Region, playerUUID: UUID): Map<EffectKey, Int> =
         resolveRegionActiveEffects(region, playerUUID)
 
     fun getScopeActiveEffects(region: Region, scope: GeoScope, playerUUID: UUID): Map<EffectKey, Int> =
         resolveScopeActiveEffects(region, scope, playerUUID)
+
+    fun getSubSpaceActiveEffects(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        playerUUID: UUID
+    ): Map<EffectKey, Int> = resolveSubSpaceActiveEffects(region, scope, subSpace, playerUUID)
 
     /**
      * Compatibility dispatcher for one effect value.
@@ -338,6 +415,12 @@ object RegionDataApi {
 
     fun resolveScopeAtEntity(world: Level, blockPos: BlockPos): Pair<Region, GeoScope>? =
         RegionDatabase.getRegionAndScopeAt(world, blockPos.x, blockPos.z)
+
+    fun resolveSubSpaceAtEntity(world: Level, x: Int, z: Int): Triple<Region, GeoScope, SubSpace?>? =
+        RegionDatabase.getRegionScopeSubSpaceAt(world, x, z)
+
+    fun resolveSubSpaceAtEntity(world: Level, blockPos: BlockPos): Triple<Region, GeoScope, SubSpace?>? =
+        RegionDatabase.getRegionScopeSubSpaceAt(world, blockPos.x, blockPos.z)
 
     fun getEffectiveEffectsForScope(region: Region, scope: GeoScope): Map<EffectKey, Int> {
         require(region.containsScope(scope)) { "scope does not belong to region" }

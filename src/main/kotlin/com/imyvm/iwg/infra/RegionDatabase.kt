@@ -117,6 +117,7 @@ object RegionDatabase {
     private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
     private const val PLAYER_STATS_FILENAME = "iwg_player_stats.json"
     private const val DB_V1_SENTINEL: Int = -1
+    private const val DB_V2_SENTINEL: Int = -2
     private const val MAX_COLLECTION_SIZE = 100_000
     private val gson = Gson()
     private val regionPlayerStats: MutableMap<Int, RegionPlayerStatsLedger> = mutableMapOf()
@@ -164,7 +165,7 @@ object RegionDatabase {
         validateDatabaseIdentities(regions)
         atomicWrite(path) { output ->
             val stream = DataOutputStream(output)
-            stream.writeInt(DB_V1_SENTINEL)
+            stream.writeInt(DB_V2_SENTINEL)
             stream.writeInt(checkedCount(regions.size, "regions"))
             for (region in regions) {
                 stream.writeUTF(region.name)
@@ -172,6 +173,7 @@ object RegionDatabase {
                 saveGeoScopes(stream, region.scopes)
                 saveSettings(stream, region.settings)
                 saveOwnershipHistory(stream, region.ownershipHistoryByScope)
+                saveSubSpaces(stream, region.subSpaces)
             }
         }
     }
@@ -224,19 +226,24 @@ object RegionDatabase {
         try {
             return DataInputStream(Files.newInputStream(path)).use { stream ->
                 val first = stream.readInt()
+                val isV2 = first == DB_V2_SENTINEL
                 val isV1 = first == DB_V1_SENTINEL
-                val regionCount = checkedCount(if (isV1) stream.readInt() else first, "regions")
+                val hasScopeIds = isV1 || isV2
+                val regionCount = checkedCount(if (hasScopeIds) stream.readInt() else first, "regions")
                 val loadedRegions = ArrayList<Region>(regionCount)
 
                 repeat(regionCount) {
                     val name = stream.readUTF()
                     val numberID = stream.readInt()
-                    val geometryScopes = loadGeoScopes(stream, isV1, numberID)
+                    val geometryScopes = loadGeoScopes(stream, hasScopeIds, numberID)
                     val settings = loadSettings(stream)
 
                     val region = Region(name, numberID, geometryScopes, settings)
-                    if (isV1) {
+                    if (hasScopeIds) {
                         region.ownershipHistoryByScope = loadOwnershipHistory(stream)
+                    }
+                    if (isV2) {
+                        region.replaceSubSpaces(loadSubSpaces(stream))
                     }
                     loadedRegions.add(region)
                 }
@@ -254,7 +261,11 @@ object RegionDatabase {
         val existingScopeIds = regions.flatMapTo(hashSetOf()) { existing ->
             existing.scopes.map { it.requireAssignedScopeId() }
         }
+        val existingSubSpaceIds = regions.flatMapTo(hashSetOf()) { existing ->
+            existing.subSpaces.map { it.subSpaceId }
+        }
         require(region.scopes.none { it.requireAssignedScopeId() in existingScopeIds }) { "duplicate scope id" }
+        require(region.subSpaces.none { it.subSpaceId in existingSubSpaceIds }) { "duplicate subspace id" }
         regions.add(region)
     }
 
@@ -283,6 +294,17 @@ object RegionDatabase {
     ) {
         requireCanonicalRegion(region, currentRegions)
         require(region.containsScope(scope)) { "scope must be a canonical child of region" }
+    }
+
+    internal fun requireCanonicalSubSpace(
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        currentRegions: List<Region> = regions
+    ) {
+        requireCanonicalScope(region, scope, currentRegions)
+        require(region.containsSubSpace(subSpace)) { "subspace must be a canonical child of region" }
+        require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace must belong to scope" }
     }
 
     internal fun removeRegionReversibly(region: Region): () -> Unit {
@@ -415,6 +437,39 @@ object RegionDatabase {
         return null
     }
 
+    fun getRegionScopeSubSpaceAt(world: Level, x: Int, z: Int): Triple<Region, GeoScope, SubSpace?>? {
+        val (region, scope) = getRegionAndScopeAt(world, x, z) ?: return null
+        val scopeId = scope.requireAssignedScopeId()
+        val subSpace = region.subSpaces.firstOrNull {
+            it.parentScopeId == scopeId && it.worldId == scope.worldId && it.geoShape.containsPoint(x, z)
+        }
+        return Triple(region, scope, subSpace)
+    }
+
+    fun getSubSpaceById(subSpaceId: Long): Triple<Region, GeoScope, SubSpace>? {
+        for (region in regions) {
+            val subSpace = region.subSpaces.firstOrNull { it.subSpaceId == subSpaceId } ?: continue
+            val scope = region.scopes.firstOrNull { it.requireAssignedScopeId() == subSpace.parentScopeId } ?: continue
+            return Triple(region, scope, subSpace)
+        }
+        return null
+    }
+
+    fun getSubSpaceByName(region: Region, name: String): Pair<GeoScope, SubSpace>? {
+        requireCanonicalRegion(region)
+        val subSpace = region.subSpaces.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: return null
+        val scope = region.scopes.firstOrNull { it.requireAssignedScopeId() == subSpace.parentScopeId } ?: return null
+        return scope to subSpace
+    }
+
+    fun nextSubSpaceId(): Long {
+        var max = 0L
+        regions.forEach { region ->
+            region.subSpaces.forEach { subSpace -> if (subSpace.subSpaceId > max) max = subSpace.subSpaceId }
+        }
+        return Math.addExact(max, 1L)
+    }
+
     fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? =
         AssignedScopeId.from(scopeId)?.let(::getScopeByAssignedId)
 
@@ -525,11 +580,67 @@ object RegionDatabase {
         return list
     }
 
+    private fun saveSubSpaces(stream: DataOutputStream, subSpaces: List<SubSpace>) {
+        stream.writeInt(checkedCount(subSpaces.size, "subspaces"))
+        for (subSpace in subSpaces) {
+            stream.writeLong(subSpace.subSpaceId)
+            stream.writeUTF(subSpace.name)
+            stream.writeLong(subSpace.parentScopeId.raw)
+            stream.writeUTF(subSpace.worldId.toString())
+            saveGeoShape(stream, subSpace.geoShape)
+            saveNullableString(stream, subSpace.entryMessage)
+            saveSettings(stream, subSpace.settings)
+            stream.writeInt(checkedCount(subSpace.stringTags.size, "subspace string tags"))
+            subSpace.stringTags.forEach(stream::writeUTF)
+            stream.writeInt(checkedCount(subSpace.keyedTags.size, "subspace keyed tags"))
+            subSpace.keyedTags.forEach { (key, value) ->
+                stream.writeUTF(key)
+                stream.writeUTF(value)
+            }
+        }
+    }
+
+    private fun loadSubSpaces(stream: DataInputStream): MutableList<SubSpace> {
+        val count = checkedCount(stream.readInt(), "subspaces")
+        val list = ArrayList<SubSpace>(count)
+        repeat(count) {
+            val id = stream.readLong()
+            val name = stream.readUTF()
+            val parentScopeId = AssignedScopeId.fromRaw(stream.readLong())
+                ?: throw IOException("Invalid subspace parent scope id")
+            val worldId = Identifier.parse(stream.readUTF())
+            val shape = loadGeoShape(stream) ?: throw IOException("Subspace shape is missing")
+            val enterMessage = loadNullableString(stream)
+            val settings = loadSettings(stream)
+            val stringTagCount = checkedCount(stream.readInt(), "subspace string tags")
+            val stringTags = linkedSetOf<String>()
+            repeat(stringTagCount) { require(stringTags.add(stream.readUTF())) { "duplicate subspace string tag" } }
+            val keyedTagCount = checkedCount(stream.readInt(), "subspace keyed tags")
+            val keyedTags = linkedMapOf<String, String>()
+            repeat(keyedTagCount) {
+                val key = stream.readUTF()
+                require(!keyedTags.containsKey(key)) { "duplicate subspace keyed tag" }
+                keyedTags[key] = stream.readUTF()
+            }
+            list.add(SubSpace(id, name, parentScopeId, worldId, shape, enterMessage, settings, stringTags, keyedTags))
+        }
+        return list
+    }
+
+    private fun saveNullableString(stream: DataOutputStream, value: String?) {
+        stream.writeBoolean(value != null)
+        if (value != null) stream.writeUTF(value)
+    }
+
+    private fun loadNullableString(stream: DataInputStream): String? =
+        if (stream.readBoolean()) stream.readUTF() else null
+
     private fun validateDatabaseIdentities(regionsToValidate: List<Region>) {
         val regionIds = hashSetOf<Int>()
         val regionNames = TreeSet(String.CASE_INSENSITIVE_ORDER)
         val scopeIds = hashSetOf<AssignedScopeId>()
         val ownershipScopeIds = hashSetOf<AssignedScopeId>()
+        val subSpaceIds = hashSetOf<Long>()
         for (region in regionsToValidate) {
             require(isValidGeoName(region.name)) { "invalid region name" }
             require(region.scopes.isNotEmpty()) { "region must contain at least one scope" }
@@ -538,6 +649,9 @@ object RegionDatabase {
             for (scope in region.scopes) {
                 require(isValidGeoName(scope.scopeName)) { "invalid scope name" }
                 require(scopeIds.add(scope.requireAssignedScopeId())) { "duplicate scope id" }
+            }
+            for (subSpace in region.subSpaces) {
+                require(subSpaceIds.add(subSpace.subSpaceId)) { "duplicate subspace id" }
             }
             region.ownershipHistorySnapshot().keys.forEach { scopeId ->
                 require(ownershipScopeIds.add(scopeId)) { "ownership history is stored by multiple regions" }

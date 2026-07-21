@@ -212,6 +212,42 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `round trips subspaces with settings and tags`() = withTempDirectory { directory ->
+        val path = directory.resolve("subspaces.db")
+        val scopeId = ScopeId(generateCompatScopeIdRaw(7, 0))
+        val scope = GeoScope(
+            "scope",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(10, 10)),
+            scopeId = scopeId
+        )
+        val subSpace = SubSpace(
+            1,
+            "plot",
+            scope.requireAssignedScopeId(),
+            scope.worldId,
+            GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2)),
+            "enter",
+            mutableListOf(PermissionSetting(PermissionKey.PVP, false)),
+            setOf("market"),
+            mapOf("kind" to "plot")
+        )
+        val region = Region("region", 7, mutableListOf(scope), subSpaces = mutableListOf(subSpace))
+
+        RegionDatabase.writeRegions(path, listOf(region))
+        val loaded = RegionDatabase.readRegions(path).single().subSpaces.single()
+
+        assertEquals(1L, loaded.subSpaceId)
+        assertEquals("plot", loaded.name)
+        assertEquals(scopeId.raw, loaded.parentScopeId.raw)
+        assertEquals("enter", loaded.entryMessage)
+        assertEquals(setOf("market"), loaded.stringTags)
+        assertEquals(mapOf("kind" to "plot"), loaded.keyedTags)
+        assertEquals(false, (loaded.settings.single() as PermissionSetting).value)
+    }
+
+    @Test
     fun `round trips every legacy setting tag through the typed store`() = withTempDirectory { directory ->
         val path = directory.resolve("settings.db")
         val settings = mutableListOf<Setting>(
@@ -355,6 +391,46 @@ class RegionDatabaseTest {
         val loaded = RegionDatabase.readRegions(path).single().geometryScope.single().geoShape
 
         assertEquals(parameters, loaded?.shapeParameter)
+    }
+
+    @Test
+    fun `rejects persisted subspace outside its parent scope`() = withTempDirectory { directory ->
+        val path = directory.resolve("invalid-subspace.db")
+        val scopeId = generateCompatScopeIdRaw(7, 0)
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-2)
+            stream.writeInt(1)
+            stream.writeUTF("region")
+            stream.writeInt(7)
+            stream.writeInt(1)
+            stream.writeUTF("scope")
+            stream.writeUTF("minecraft:overworld")
+            stream.writeBoolean(false)
+            stream.writeBoolean(false)
+            stream.writeBoolean(true)
+            stream.writeInt(GeoShapeType.RECTANGLE.ordinal)
+            stream.writeInt(4)
+            listOf(0, 0, 10, 10).forEach(stream::writeInt)
+            stream.writeInt(0)
+            stream.writeLong(scopeId)
+            stream.writeInt(0)
+            stream.writeInt(0)
+            stream.writeInt(1)
+            stream.writeLong(1)
+            stream.writeUTF("plot")
+            stream.writeLong(scopeId)
+            stream.writeUTF("minecraft:overworld")
+            stream.writeBoolean(true)
+            stream.writeInt(GeoShapeType.RECTANGLE.ordinal)
+            stream.writeInt(4)
+            listOf(9, 9, 12, 12).forEach(stream::writeInt)
+            stream.writeBoolean(false)
+            stream.writeInt(0)
+            stream.writeInt(0)
+            stream.writeInt(0)
+        }
+
+        assertFailsWith<IOException> { RegionDatabase.readRegions(path) }
     }
 
     @Test
