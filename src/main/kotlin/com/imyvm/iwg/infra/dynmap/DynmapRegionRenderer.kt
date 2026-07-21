@@ -1,75 +1,102 @@
 package com.imyvm.iwg.infra.dynmap
 
-import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.domain.component.CircleGeometry
 import com.imyvm.iwg.domain.component.GeoScope
-import com.imyvm.iwg.domain.component.PolygonGeometry
-import com.imyvm.iwg.domain.component.RectangleGeometry
-import com.imyvm.iwg.domain.component.UnknownGeometry
-import net.minecraft.resources.Identifier
-import net.minecraft.core.BlockPos
+import org.dynmap.markers.AreaMarker
 import org.dynmap.markers.MarkerAPI
 import org.dynmap.markers.MarkerSet
 
 object DynmapRegionRenderer {
 
-    fun renderScope(markerSet: MarkerSet, markerAPI: MarkerAPI, region: Region, scope: GeoScope, color: Int) {
-        val shape = scope.geoShape ?: return
-        val worldName = worldName(scope.worldId)
-        val label = "${region.name}:${scope.scopeName}"
-        val id = dynmapScopeMarkerId(scope)
-        when (val geometry = shape.typedGeometry) {
-            is CircleGeometry -> renderCircle(markerSet, id, label, worldName, geometry, color)
-            is RectangleGeometry -> renderRectangle(markerSet, id, label, worldName, geometry, color)
-            is PolygonGeometry -> renderPolygon(markerSet, id, label, worldName, geometry, color)
-            UnknownGeometry -> return
-        }
-        scope.teleportPoint?.let {
-            renderTeleportPoint(markerSet, markerAPI, region, scope, it, worldName)
+    internal fun upsertMarker(markerSet: MarkerSet, markerAPI: MarkerAPI, spec: DynmapMarkerSpec) {
+        when (spec) {
+            is DynmapAreaMarkerSpec -> upsertArea(markerSet, spec)
+            is DynmapCircleMarkerSpec -> upsertCircle(markerSet, spec)
+            is DynmapPointMarkerSpec -> upsertPoint(markerSet, markerAPI, spec)
         }
     }
 
-    private fun renderCircle(markerSet: MarkerSet, id: String, label: String, world: String, geometry: CircleGeometry, color: Int) {
-        val cx = geometry.centerX.toDouble()
-        val cz = geometry.centerZ.toDouble()
-        val r = geometry.radius.toDouble()
-        markerSet.createCircleMarker(id, label, false, world, cx, 64.0, cz, r, r, false)?.apply {
-            setFillStyle(0.3, color)
-            setLineStyle(2, 0.8, color)
+    private fun upsertArea(markerSet: MarkerSet, spec: DynmapAreaMarkerSpec) {
+        val existing = markerSet.findAreaMarker(spec.identity.id)
+        if (existing == null) {
+            configureArea(createArea(markerSet, spec.identity.id, spec), spec)
+            return
         }
-    }
-
-    private fun renderRectangle(markerSet: MarkerSet, id: String, label: String, world: String, geometry: RectangleGeometry, color: Int) {
-        val xs = doubleArrayOf(geometry.west.toDouble(), geometry.east.toDouble(), geometry.east.toDouble(), geometry.west.toDouble())
-        val zs = doubleArrayOf(geometry.north.toDouble(), geometry.north.toDouble(), geometry.south.toDouble(), geometry.south.toDouble())
-        markerSet.createAreaMarker(id, label, false, world, xs, zs, false)?.apply {
-            setFillStyle(0.3, color)
-            setLineStyle(2, 0.8, color)
+        if (existing.world == spec.world) {
+            configureArea(existing, spec)
+            return
         }
+
+        replaceAreaAcrossWorld(markerSet, existing, spec)
     }
 
-    private fun renderPolygon(markerSet: MarkerSet, id: String, label: String, world: String, geometry: PolygonGeometry, color: Int) {
-        val count = geometry.vertexCount
-        val xs = DoubleArray(count) { geometry.x(it).toDouble() }
-        val zs = DoubleArray(count) { geometry.z(it).toDouble() }
-        markerSet.createAreaMarker(id, label, false, world, xs, zs, false)?.apply {
-            setFillStyle(0.3, color)
-            setLineStyle(2, 0.8, color)
+    private fun replaceAreaAcrossWorld(markerSet: MarkerSet, existing: AreaMarker, spec: DynmapAreaMarkerSpec) {
+        val stagingId = "${spec.identity.id}__iwg_staging"
+        var staging = markerSet.findAreaMarker(stagingId)
+        if (staging != null && staging.world != spec.world) {
+            staging.deleteMarker()
+            staging = null
         }
+        val replacement = staging ?: createArea(markerSet, stagingId, spec)
+        configureArea(replacement, spec)
+        existing.deleteMarker()
+
+        val canonical = createArea(markerSet, spec.identity.id, spec)
+        configureArea(canonical, spec)
+        replacement.deleteMarker()
     }
 
-    private fun renderTeleportPoint(markerSet: MarkerSet, markerAPI: MarkerAPI, region: Region, scope: GeoScope, tp: BlockPos, world: String) {
-        val tpId = dynmapTeleportMarkerId(scope)
-        val tpLabel = "${region.name}:${scope.scopeName}"
-        val icon = markerAPI.getMarkerIcon("house") ?: markerAPI.getMarkerIcon("default") ?: return
-        markerSet.createMarker(tpId, tpLabel, false, world, tp.x.toDouble(), tp.y.toDouble(), tp.z.toDouble(), icon, false)
+    private fun createArea(markerSet: MarkerSet, id: String, spec: DynmapAreaMarkerSpec): AreaMarker =
+        markerSet.createAreaMarker(id, spec.label, false, spec.world, spec.x, spec.z, false)
+            ?: error("Dynmap refused to create area marker $id")
+
+    private fun configureArea(marker: AreaMarker, spec: DynmapAreaMarkerSpec) {
+        marker.setLabel(spec.label)
+        marker.setCornerLocations(spec.x, spec.z)
+        marker.setFillStyle(0.3, spec.color)
+        marker.setLineStyle(2, 0.8, spec.color)
     }
 
-    private fun worldName(worldId: Identifier): String = when (worldId.toString()) {
-        "minecraft:overworld" -> "world"
-        "minecraft:the_nether" -> "world_nether"
-        "minecraft:the_end" -> "world_the_end"
-        else -> worldId.path
+    private fun upsertCircle(markerSet: MarkerSet, spec: DynmapCircleMarkerSpec) {
+        val marker = markerSet.findCircleMarker(spec.identity.id)
+            ?: markerSet.createCircleMarker(
+                spec.identity.id,
+                spec.label,
+                false,
+                spec.world,
+                spec.centerX,
+                64.0,
+                spec.centerZ,
+                spec.radius,
+                spec.radius,
+                false
+            )
+            ?: error("Dynmap refused to create circle marker ${spec.identity.id}")
+        marker.setLabel(spec.label)
+        marker.setCenter(spec.world, spec.centerX, 64.0, spec.centerZ)
+        marker.setRadius(spec.radius, spec.radius)
+        marker.setFillStyle(0.3, spec.color)
+        marker.setLineStyle(2, 0.8, spec.color)
+    }
+
+    private fun upsertPoint(markerSet: MarkerSet, markerAPI: MarkerAPI, spec: DynmapPointMarkerSpec) {
+        val icon = markerAPI.getMarkerIcon("house") ?: markerAPI.getMarkerIcon("default")
+            ?: error("Dynmap has no house or default marker icon")
+        val marker = markerSet.findMarker(spec.identity.id)
+            ?: markerSet.createMarker(
+                spec.identity.id,
+                spec.label,
+                false,
+                spec.world,
+                spec.x,
+                spec.y,
+                spec.z,
+                icon,
+                false
+            )
+            ?: error("Dynmap refused to create point marker ${spec.identity.id}")
+        marker.setLabel(spec.label)
+        marker.setLocation(spec.world, spec.x, spec.y, spec.z)
+        check(marker.setMarkerIcon(icon)) { "Dynmap refused to set icon for point marker ${spec.identity.id}" }
     }
 }
 

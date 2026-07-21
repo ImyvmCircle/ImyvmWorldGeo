@@ -71,6 +71,7 @@ dependencies {
 
 	// Optional integrations.
 	compileOnly("us.dynmap:DynmapCoreAPI:${project.dynmap_version}")
+	testRuntimeOnly("us.dynmap:DynmapCoreAPI:${project.dynmap_version}")
 }
 
 processResources {

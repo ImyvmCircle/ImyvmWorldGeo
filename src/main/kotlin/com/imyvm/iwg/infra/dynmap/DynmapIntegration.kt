@@ -6,6 +6,7 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import org.dynmap.DynmapCommonAPI
 import org.dynmap.DynmapCommonAPIListener
 import org.dynmap.markers.MarkerAPI
+import org.dynmap.markers.GenericMarker
 import org.dynmap.markers.MarkerSet
 
 object DynmapIntegration : DynmapCommonAPIListener() {
@@ -39,19 +40,46 @@ object DynmapIntegration : DynmapCommonAPIListener() {
         val set = markerSet ?: return
         val api = markerAPI ?: return
         try {
-            set.areaMarkers.toList().forEach { it.deleteMarker() }
-            set.circleMarkers.toList().forEach { it.deleteMarker() }
-            set.markers.toList().forEach { it.deleteMarker() }
-            for (region in RegionDatabase.getRegionList()) {
-                if (!region.showOnDynmap) continue
-                val color = DynmapColorResolver.resolveColor(region)
-                for (scope in region.scopes) {
-                    if (!scope.showOnDynmap) continue
-                    DynmapRegionRenderer.renderScope(set, api, region, scope, color)
-                }
+            val desired = buildDynmapProjection(RegionDatabase.getRegionList())
+            val existing = snapshotMarkers(set)
+            val result = reconcileDynmapProjection(
+                desired,
+                existing,
+                ExistingDynmapMarker::identity,
+                { DynmapRegionRenderer.upsertMarker(set, api, it) },
+                { it.marker.deleteMarker() }
+            )
+            result.upsertFailures.forEach { failure ->
+                ImyvmWorldGeo.logger.error(
+                    "Failed to upsert Dynmap marker ${failure.identity.kind}:${failure.identity.id}: ${failure.cause.message}",
+                    failure.cause
+                )
+            }
+            result.deletionFailures.forEach { failure ->
+                ImyvmWorldGeo.logger.error(
+                    "Failed to delete stale Dynmap marker ${failure.identity.kind}:${failure.identity.id}: ${failure.cause.message}",
+                    failure.cause
+                )
             }
         } catch (e: Exception) {
             ImyvmWorldGeo.logger.error("Failed to sync regions to Dynmap: ${e.message}", e)
         }
     }
+
+    private fun snapshotMarkers(set: MarkerSet): List<ExistingDynmapMarker> = buildList {
+        set.areaMarkers.toList().forEach {
+            add(ExistingDynmapMarker(DynmapMarkerIdentity(DynmapMarkerKind.AREA, it.markerID), it))
+        }
+        set.circleMarkers.toList().forEach {
+            add(ExistingDynmapMarker(DynmapMarkerIdentity(DynmapMarkerKind.CIRCLE, it.markerID), it))
+        }
+        set.markers.toList().forEach {
+            add(ExistingDynmapMarker(DynmapMarkerIdentity(DynmapMarkerKind.POINT, it.markerID), it))
+        }
+    }
+
+    private data class ExistingDynmapMarker(
+        val identity: DynmapMarkerIdentity,
+        val marker: GenericMarker
+    )
 }
