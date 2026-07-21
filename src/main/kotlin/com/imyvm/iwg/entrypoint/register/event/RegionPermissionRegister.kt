@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.register.event
 
+import com.imyvm.iwg.application.event.registerBehaviorEventProducers
 import com.imyvm.iwg.application.region.permission.*
 import com.imyvm.iwg.infra.LazyTicker
 import com.imyvm.iwg.util.translator.getOnlinePlayers
@@ -49,4 +50,5 @@ fun registerRegionPermissions() {
     playerVehicleUsePermission()
     playerEatingPermission()
     playerFishingPermission()
+    registerBehaviorEventProducers()
 }

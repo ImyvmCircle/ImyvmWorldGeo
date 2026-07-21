@@ -211,11 +211,10 @@ current IDs and emits missed boundary callbacks. Business-level settlement retry
 statistics concern.
 
 `RegionDataApi.registerBehaviorEventCallback(Consumer<WorldGeoBehaviorEvent>)` subscribes addons to neutral
-WorldGeo behavior facts. `RegionDataApi.getRecentBehaviorEvents()` and `RegionDataApi.getRecentBehaviorEvents(Int)` returns the latest in-memory debug window.
-Initial producer coverage includes block place, block break, player death, Region/Scope/SubSpace enter and exit,
-and the server-operator debug command `/imyvmWorldGeo debug behavior emit`. The event type enum also reserves
-neutral values for entity damage, entity kill, container interaction, and item use so those runtime producers can
-land without changing the addon-facing event shape.
+WorldGeo behavior facts. `RegionDataApi.getRecentBehaviorEvents()` and `RegionDataApi.getRecentBehaviorEvents(Int)` return the latest in-memory debug window.
+Producer coverage includes block place, block break, player death, entity damage, entity kill, container
+interaction, item use, Region/Scope/SubSpace enter and exit, and the server-operator debug command
+`/imyvmWorldGeo debug behavior emit`.
 
 `RegionDataApi.queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and the explicit-parameter overload return
 persisted neutral behavior counts from `iwg_behavior_stats.json`. WorldGeo aggregates behavior facts by natural
