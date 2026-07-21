@@ -15,10 +15,9 @@ class ConfigValidationTest {
     }
 
     @Test
-    fun `relations reject inverted selection and short effects`() {
-        assertFailsWith<IllegalArgumentException> { validateConfigRelations(3, 2, 5, 1) }
-        assertFailsWith<IllegalArgumentException> { validateConfigRelations(1, 2, 1, 1) }
-        validateConfigRelations(1, 2, 2, 1)
+    fun `relations reject short effects`() {
+        assertFailsWith<IllegalArgumentException> { validateConfigRelations(1, 1) }
+        validateConfigRelations(2, 1)
     }
 
     @Test

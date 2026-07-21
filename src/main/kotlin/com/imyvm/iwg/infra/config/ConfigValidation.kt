@@ -19,7 +19,6 @@ private val positiveOptions by lazy { listOf(
     CoreConfig.LAZY_TICKER_SECONDS,
     EffectConfig.EFFECT_DURATION_SECONDS,
     SelectionConfig.SELECTION_MAX_POINTS,
-    SelectionConfig.SELECTION_MIN_POINTS,
     SelectionConfig.SELECTION_DISPLAY_LINE_STEP,
     SelectionConfig.SELECTION_DISPLAY_PILLAR_STEP
 ) }
@@ -42,9 +41,7 @@ fun initializeConfigValidation() {
 
     listOf(
         CoreConfig.LAZY_TICKER_SECONDS,
-        EffectConfig.EFFECT_DURATION_SECONDS,
-        SelectionConfig.SELECTION_MAX_POINTS,
-        SelectionConfig.SELECTION_MIN_POINTS
+        EffectConfig.EFFECT_DURATION_SECONDS
     ).forEach { validateRelationsOnChange(it) }
 
     validateCurrentConfig()
@@ -87,16 +84,11 @@ private fun rollbackInvalidUpdate(option: Option<Int>, oldValue: Int?, validate:
 }
 
 private fun validateCurrentRelations() = validateConfigRelations(
-    SelectionConfig.SELECTION_MIN_POINTS.value,
-    SelectionConfig.SELECTION_MAX_POINTS.value,
     EffectConfig.EFFECT_DURATION_SECONDS.value,
     CoreConfig.LAZY_TICKER_SECONDS.value
 )
 
-internal fun validateConfigRelations(minPoints: Int, maxPoints: Int, effectSeconds: Int, lazySeconds: Int) {
-    require(minPoints <= maxPoints) {
-        "core.selection.min_points must not exceed core.selection.max_points"
-    }
+internal fun validateConfigRelations(effectSeconds: Int, lazySeconds: Int) {
     require(effectSeconds > lazySeconds) {
         "core.effect.duration_seconds must be greater than core.lazy_ticker_seconds"
     }
