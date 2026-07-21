@@ -13,5 +13,6 @@ sealed class CreationError {
     data object AspectRatioInvalid : CreationError()
     data object EdgeTooShort : CreationError()
     data object NotConvex : CreationError()
+    data class SubSpaceOutsideParentScope(val regionName: String, val scopeName: String) : CreationError()
     data class IntersectionBetweenScopes(val details: List<IntersectionDetail>) : CreationError()
 }

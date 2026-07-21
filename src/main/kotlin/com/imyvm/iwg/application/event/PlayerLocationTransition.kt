@@ -2,10 +2,11 @@ package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.SubSpace
 
-internal data class PlayerLocation(val region: Region?, val scope: GeoScope?)
+internal data class PlayerLocation(val region: Region?, val scope: GeoScope?, val subSpace: SubSpace? = null)
 
-internal data class ScopedPlayerLocation(val region: Region, val scope: GeoScope)
+internal data class ScopedPlayerLocation(val region: Region, val scope: GeoScope, val subSpace: SubSpace? = null)
 
 internal data class ScheduledEntryTitle(val region: Region, val scheduledAt: Long)
 
@@ -26,6 +27,8 @@ internal data class LocationTransition(
     val regionEntry: Region? = null,
     val scopeExit: ScopedPlayerLocation? = null,
     val scopeEntry: ScopedPlayerLocation? = null,
+    val subSpaceExit: ScopedPlayerLocation? = null,
+    val subSpaceEntry: ScopedPlayerLocation? = null,
     val completedStay: StayPeriod? = null,
     val incrementEntry: Region? = null,
     val regionEvent: Pair<Region?, Region?>? = null,
@@ -97,11 +100,15 @@ internal fun calculateLocationTransition(
     }
 
     val committedScope = if (sameRegion(currentRegion, committedRegion)) current.scope else null
-    val newLocation = PlayerLocation(committedRegion, committedScope)
+    val committedSubSpace = if (sameRegion(currentRegion, committedRegion)) current.subSpace else null
+    val newLocation = PlayerLocation(committedRegion, committedScope, committedSubSpace)
     val previousScoped = previous.location.toScopedLocation()
     val currentScoped = newLocation.toScopedLocation()
     val scopeChanged = previousScoped?.region?.numberID != currentScoped?.region?.numberID ||
         previousScoped?.scope !== currentScoped?.scope
+    val subSpaceChanged = previousScoped?.region?.numberID != currentScoped?.region?.numberID ||
+        previousScoped?.scope !== currentScoped?.scope ||
+        previousScoped?.subSpace !== currentScoped?.subSpace
     val regionChanged = previousRegion?.numberID != committedRegion?.numberID
 
     return LocationTransition(
@@ -110,6 +117,8 @@ internal fun calculateLocationTransition(
         regionEntry = regionEntry,
         scopeExit = previousScoped.takeIf { scopeChanged },
         scopeEntry = currentScoped.takeIf { scopeChanged },
+        subSpaceExit = previousScoped?.takeIf { subSpaceChanged && it.subSpace != null },
+        subSpaceEntry = currentScoped?.takeIf { subSpaceChanged && it.subSpace != null },
         completedStay = completedStay,
         incrementEntry = incrementEntry,
         regionEvent = (previousRegion to committedRegion).takeIf { regionChanged },
@@ -122,5 +131,5 @@ private fun sameRegion(left: Region?, right: Region?): Boolean = left?.numberID 
 private fun PlayerLocation.toScopedLocation(): ScopedPlayerLocation? {
     val region = region ?: return null
     val scope = scope ?: return null
-    return ScopedPlayerLocation(region, scope)
+    return ScopedPlayerLocation(region, scope, subSpace)
 }

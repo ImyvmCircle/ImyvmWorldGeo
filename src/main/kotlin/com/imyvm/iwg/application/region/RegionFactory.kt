@@ -136,14 +136,74 @@ object RegionFactory {
     internal fun createSubSpaceShape(
         positions: List<BlockPos>,
         shapeType: GeoShapeType,
-        worldId: Identifier
-    ): Result<GeoShape, CreationError> = createGeoShape(positions, shapeType, worldId, null)
+        region: Region,
+        parentScope: GeoScope
+    ): Result<GeoShape, CreationError> {
+        require(region.containsScope(parentScope)) { "scope does not belong to region" }
+        val geoShapeResult = createGeoShape(
+            positions,
+            shapeType,
+            parentScope.worldId,
+            null,
+            ::validateSubSpaceGeoShapeSize,
+            validatePlacement = false
+        )
+        if (geoShapeResult is Result.Err) return geoShapeResult
+        val geoShape = (geoShapeResult as Result.Ok).value
+        return validateSubSpaceShapePlacement(geoShape, region.name, parentScope)?.let { Result.Err(it) } ?: Result.Ok(geoShape)
+    }
+
+    internal fun validateSubSpaceSelection(
+        positions: List<BlockPos>,
+        shapeType: GeoShapeType,
+        region: Region,
+        parentScope: GeoScope
+    ): CreationError? {
+        val result = createSubSpaceShape(positions, shapeType, region, parentScope)
+        return (result as? Result.Err)?.error
+    }
+
+    internal fun validateSubSpaceSelection(
+        positions: List<BlockPos>,
+        shapeType: GeoShapeType,
+        regionName: String,
+        parentScope: GeoScope
+    ): CreationError? {
+        val geoShapeResult = createGeoShape(
+            positions,
+            shapeType,
+            parentScope.worldId,
+            null,
+            ::validateSubSpaceGeoShapeSize,
+            validatePlacement = false
+        )
+        if (geoShapeResult is Result.Err) return geoShapeResult.error
+        val geoShape = (geoShapeResult as Result.Ok).value
+        return validateSubSpaceShapePlacement(geoShape, regionName, parentScope)
+    }
+
+
+    internal fun createSelectionShape(
+        positions: List<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<GeoShape, CreationError> {
+        val requiredPoints = requiredPoints(shapeType)
+        if (positions.size < requiredPoints) return Result.Err(CreationError.InsufficientPoints)
+        return when (shapeType) {
+            GeoShapeType.RECTANGLE -> createRectangle(positions)
+            GeoShapeType.CIRCLE -> createCircle(positions)
+            GeoShapeType.POLYGON -> createPolygon(positions)
+            else -> Result.Err(CreationError.InsufficientPoints)
+        }
+    }
 
     private fun createGeoShape(
         positions: List<BlockPos>,
         shapeType: GeoShapeType,
         worldId: Identifier,
-        excludedScope: GeoScope? = null
+        excludedScope: GeoScope? = null,
+        sizeValidator: (GeoShape) -> CreationError? = ::validateGeoShapeSize,
+        validatePlacement: Boolean = true
     ): Result<GeoShape, CreationError> {
         val requiredPoints = requiredPoints(shapeType)
         if (positions.size < requiredPoints) {
@@ -160,8 +220,11 @@ object RegionFactory {
         if (geoShapeResult is Result.Err) return geoShapeResult
 
         val geoShape = (geoShapeResult as Result.Ok).value
-        val placementError = validateGeoShapePlacement(geoShape, worldId, excludedScope)
-        if (placementError != null) return Result.Err(placementError)
+        sizeValidator(geoShape)?.let { return Result.Err(it) }
+        if (validatePlacement) {
+            val placementError = validateGeoShapePlacement(geoShape, worldId, excludedScope, validateSize = false)
+            if (placementError != null) return Result.Err(placementError)
+        }
 
         return Result.Ok(geoShape)
     }
@@ -170,9 +233,10 @@ object RegionFactory {
         geoShape: GeoShape,
         worldId: Identifier,
         excludedScope: GeoScope?,
-        currentRegions: List<Region> = RegionDatabase.getRegionList()
+        currentRegions: List<Region> = RegionDatabase.getRegionList(),
+        validateSize: Boolean = true
     ): CreationError? {
-        validateGeoShapeSize(geoShape)?.let { return it }
+        if (validateSize) validateGeoShapeSize(geoShape)?.let { return it }
         val existingScopes = currentRegions
             .flatMap { region ->
                 region.scopes
@@ -181,6 +245,31 @@ object RegionFactory {
             }
         val intersections = checkIntersection(geoShape, existingScopes)
         return intersections.takeIf { it.isNotEmpty() }?.let(CreationError::IntersectionBetweenScopes)
+    }
+
+
+    internal fun validateSubSpaceGeoShapeSize(geoShape: GeoShape): CreationError? =
+        when (val geometry = geoShape.typedGeometry) {
+            is CircleGeometry -> if (checkCircleSize(geometry.radius.toDouble(), subSpaceGeometrySizeLimits)) null else CreationError.UnderSizeLimit
+            is RectangleGeometry -> checkRectangleSize(
+                geometry.east.toLong() - geometry.west,
+                geometry.south.toLong() - geometry.north,
+                subSpaceGeometrySizeLimits
+            )
+            is PolygonGeometry -> checkPolygonSize(
+                List(geometry.vertexCount) { BlockPos(geometry.x(it), 0, geometry.z(it)) },
+                subSpaceGeometrySizeLimits
+            )
+            UnknownGeometry -> CreationError.InsufficientPoints
+        }
+
+    private fun validateSubSpaceShapePlacement(
+        geoShape: GeoShape,
+        regionName: String,
+        parentScope: GeoScope
+    ): CreationError? {
+        val parentShape = parentScope.geoShape ?: return CreationError.SubSpaceOutsideParentScope(regionName, parentScope.scopeName)
+        return if (geoShape.isContainedBy(parentShape)) null else CreationError.SubSpaceOutsideParentScope(regionName, parentScope.scopeName)
     }
 
     internal fun validateGeoShapeSize(geoShape: GeoShape): CreationError? =

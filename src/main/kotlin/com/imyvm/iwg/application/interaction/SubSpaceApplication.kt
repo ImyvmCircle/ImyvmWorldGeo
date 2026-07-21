@@ -1,7 +1,7 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
-import com.imyvm.iwg.application.interaction.helper.errorMessage
+import com.imyvm.iwg.application.interaction.helper.subSpaceErrorMessage
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
@@ -30,7 +30,7 @@ fun onSubSpaceCreationFromSelection(
     }
     val state = getCreationSelectionForSubSpace(player) ?: return 0
     val resolvedShapeType = shapeType ?: state.getEffectiveShapeType()
-    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, parentScope.worldId)) {
+    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope)) {
         is Result.Ok -> {
             val subSpace = onSubSpaceCreation(player, region, parentScope, name, result.value, entryMessage) ?: return 0
             clearSelectionDisplay(player)
@@ -41,7 +41,7 @@ fun onSubSpaceCreationFromSelection(
             1
         }
         is Result.Err -> {
-            errorMessage(result.error, resolvedShapeType).forEach(player::sendSystemMessage)
+            subSpaceErrorMessage(result.error, resolvedShapeType).forEach(player::sendSystemMessage)
             0
         }
     }
@@ -61,7 +61,7 @@ fun onSubSpaceShapeReplacementFromSelection(
     }
     val state = getCreationSelectionForSubSpace(player) ?: return 0
     val resolvedShapeType = shapeType ?: subSpace.geoShape.geoShapeType
-    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, parentScope.worldId)) {
+    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope)) {
         is Result.Ok -> {
             val replaced = onReplacingSubSpaceShape(player, region, parentScope, subSpace, result.value)
             if (replaced == 1) {
@@ -74,7 +74,7 @@ fun onSubSpaceShapeReplacementFromSelection(
             replaced
         }
         is Result.Err -> {
-            errorMessage(result.error, resolvedShapeType).forEach(player::sendSystemMessage)
+            subSpaceErrorMessage(result.error, resolvedShapeType).forEach(player::sendSystemMessage)
             0
         }
     }
@@ -184,6 +184,7 @@ fun onSettingSubSpaceEntryMessage(
 fun onQuerySubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
     RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
     val shapeInfo = subSpace.geoShape.getShapeInfo()?.string ?: ""
+    val entryMessage = subSpace.entryMessage ?: Translator.raw("notification.subspace.enter", region.name, parentScope.scopeName, subSpace.name).orEmpty()
     player.sendSystemMessage(
         Translator.tr(
             "interaction.meta.subspace.query.result",
@@ -193,7 +194,7 @@ fun onQuerySubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope,
             region.name,
             subSpace.worldId.toString(),
             shapeInfo,
-            subSpace.entryMessage ?: "",
+            entryMessage,
             subSpace.stringTags.joinToString(", "),
             subSpace.keyedTags.entries.joinToString(", ") { "${it.key}=${it.value}" }
         )!!

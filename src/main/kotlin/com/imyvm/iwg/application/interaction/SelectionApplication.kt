@@ -29,7 +29,12 @@ internal fun isModifySelectionFor(state: SelectionState, scope: GeoScope): Boole
 internal fun resetSelectionState(state: SelectionState, shapeType: GeoShapeType?): Boolean {
     if (shapeType != null && !isCreationSelection(state)) return false
     state.points.clear()
-    if (shapeType != null) state.hypotheticalShape = HypotheticalShape.Normal(shapeType)
+    if (shapeType != null) {
+        state.hypotheticalShape = when (val current = state.hypotheticalShape) {
+            is HypotheticalShape.SubSpace -> current.copy(shapeType = shapeType)
+            else -> HypotheticalShape.Normal(shapeType)
+        }
+    }
     return true
 }
 
@@ -100,7 +105,7 @@ fun onStartSelection(player: ServerPlayer, shapeType: GeoShapeType? = null): Int
         player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeType.name)!!)
         return 0
     }
-    val state = SelectionState(hypotheticalShape = shapeType?.let { HypotheticalShape.Normal(it) })
+    val state = SelectionState(hypotheticalShape = shapeType?.let { HypotheticalShape.Normal(it) }, worldId = player.level().dimension().identifier())
     if (ImyvmWorldGeo.pointSelectingPlayers.putIfAbsent(playerUUID, state) != null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
         return 0
@@ -161,8 +166,52 @@ fun onSetSelectionShape(player: ServerPlayer, shapeType: GeoShapeType): Int {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.shape.cannot_change_modify")!!)
         return 0
     }
-    state.hypotheticalShape = HypotheticalShape.Normal(shapeType)
+    state.hypotheticalShape = when (val current = state.hypotheticalShape) {
+        is HypotheticalShape.SubSpace -> current.copy(shapeType = shapeType)
+        else -> HypotheticalShape.Normal(shapeType)
+    }
     player.sendSystemMessage(Translator.tr("interaction.meta.select.shape.success", shapeType.name)!!)
+    return 1
+}
+
+
+fun onStartSelectionForSubSpace(
+    player: ServerPlayer,
+    region: Region,
+    parentScope: GeoScope,
+    shapeType: GeoShapeType? = null
+): Int {
+    val playerUUID = player.uuid
+    if (ImyvmWorldGeo.pointSelectingPlayers[playerUUID] != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
+        return 0
+    }
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeType.name)!!)
+        return 0
+    }
+    RegionDatabase.requireCanonicalScope(region, parentScope)
+    if (player.level().dimension().identifier() != parentScope.worldId) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.wrong_world", parentScope.scopeName, region.name)!!)
+        return 0
+    }
+    if (parentScope.geoShape == null) {
+        player.sendSystemMessage(Translator.tr("error.subspace.outside_parent_scope", parentScope.scopeName, region.name)!!)
+        return 0
+    }
+    val state = SelectionState(
+        hypotheticalShape = HypotheticalShape.SubSpace(region.name, parentScope, shapeType),
+        worldId = parentScope.worldId
+    )
+    if (ImyvmWorldGeo.pointSelectingPlayers.putIfAbsent(playerUUID, state) != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
+        return 0
+    }
+    if (shapeType == null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.start.subspace", region.name, parentScope.scopeName)!!)
+    } else {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.start.subspace.with_shape", region.name, parentScope.scopeName, shapeType.name)!!)
+    }
     return 1
 }
 
@@ -180,7 +229,7 @@ fun onStartSelectionForModify(player: ServerPlayer, scope: GeoScope): Int {
         sendModifySelectionTargetError(player, error)
         return 0
     }
-    val state = SelectionState(hypotheticalShape = HypotheticalShape.ModifyExisting(scope))
+    val state = SelectionState(hypotheticalShape = HypotheticalShape.ModifyExisting(scope), worldId = scope.worldId)
     if (ImyvmWorldGeo.pointSelectingPlayers.putIfAbsent(playerUUID, state) != null) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
         return 0

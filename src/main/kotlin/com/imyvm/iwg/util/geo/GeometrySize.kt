@@ -11,31 +11,72 @@ import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import net.minecraft.core.BlockPos
 import java.math.BigInteger
 
+internal data class GeometrySizeLimits(
+    val minRectangleArea: Double,
+    val minSideLength: Double,
+    val minCircleRadius: Double,
+    val minPolygonArea: Double,
+    val minPolygonSpan: Double,
+    val minAspectRatio: Double,
+    val minEdgeLength: Double
+)
+
+internal val regionGeometrySizeLimits: GeometrySizeLimits
+    get() = GeometrySizeLimits(
+        MIN_RECTANGLE_AREA.value,
+        MIN_SIDE_LENGTH.value,
+        MIN_CIRCLE_RADIUS.value,
+        MIN_POLYGON_AREA.value,
+        MIN_POLYGON_SPAN.value,
+        MIN_ASPECT_RATIO.value,
+        MIN_EDGE_LENGTH.value
+    )
+
+internal val subSpaceGeometrySizeLimits = GeometrySizeLimits(
+    minRectangleArea = 450.0,
+    minSideLength = 15.0,
+    minCircleRadius = 12.0,
+    minPolygonArea = 450.0,
+    minPolygonSpan = 15.0,
+    minAspectRatio = 0.2,
+    minEdgeLength = 6.0
+)
+
 fun checkRectangleSize(width: Int, length: Int): CreationError? =
     checkRectangleSize(width.toLong(), length.toLong())
 
-fun checkRectangleSize(width: Long, length: Long): CreationError? {
+fun checkRectangleSize(width: Long, length: Long): CreationError? =
+    checkRectangleSize(width, length, regionGeometrySizeLimits)
+
+internal fun checkRectangleSize(width: Long, length: Long, limits: GeometrySizeLimits): CreationError? {
     val area = width.toDouble() * length
-    if (area < MIN_RECTANGLE_AREA.value) return CreationError.UnderSizeLimit
-    if (width < MIN_SIDE_LENGTH.value || length < MIN_SIDE_LENGTH.value) return CreationError.EdgeTooShort
+    if (area < limits.minRectangleArea) return CreationError.UnderSizeLimit
+    if (width < limits.minSideLength || length < limits.minSideLength) return CreationError.EdgeTooShort
 
     val aspectRatio = if (length == 0L) Double.MAX_VALUE else width.toDouble() / length
-    if (aspectRatio < MIN_ASPECT_RATIO.value|| aspectRatio > (1.0 / MIN_ASPECT_RATIO.value)) return CreationError.AspectRatioInvalid
+    if (aspectRatio < limits.minAspectRatio || aspectRatio > (1.0 / limits.minAspectRatio)) {
+        return CreationError.AspectRatioInvalid
+    }
 
     return null
 }
 
 fun checkCircleSize(radius: Double) = radius >= MIN_CIRCLE_RADIUS.value
 
-fun checkPolygonSize(positions: List<BlockPos>): CreationError? {
+internal fun checkCircleSize(radius: Double, limits: GeometrySizeLimits) = radius >= limits.minCircleRadius
+
+fun checkPolygonSize(positions: List<BlockPos>): CreationError? =
+    checkPolygonSize(positions, regionGeometrySizeLimits)
+
+internal fun checkPolygonSize(positions: List<BlockPos>, limits: GeometrySizeLimits): CreationError? {
     if (!isPolygonVertexCountSupported(positions.size)) return CreationError.PolygonVertexLimitExceeded
     val xs = positions.map { it.x }
     val zs = positions.map { it.z }
 
-    return checkArea(polygonTwiceArea(positions.size, { positions[it].x }, { positions[it].z }))
-        ?: checkBoundingBox(xs, zs)
-        ?: checkAspectRatio(xs, zs)
-        ?: checkEdges(positions)
+    return checkArea(polygonTwiceArea(positions.size, { positions[it].x }, { positions[it].z }), limits)
+        ?: checkBoundingBox(xs, zs, limits)
+        ?: checkAspectRatio(xs, zs, limits)
+        ?: checkEdges(positions, limits)
 }
 
 fun calculateCircleArea(shapeParameter : MutableList<Int>) : Double {
@@ -80,28 +121,28 @@ fun getBoundingBox(shapeParameters: MutableList<Int>): IntArray {
     return intArrayOf(minX, minZ, maxX, maxZ)
 }
 
-private fun checkArea(twiceArea: BigInteger): CreationError? {
-    return if (twiceArea.toDouble() < MIN_POLYGON_AREA.value * 2.0) CreationError.UnderSizeLimit else null
+private fun checkArea(twiceArea: BigInteger, limits: GeometrySizeLimits): CreationError? {
+    return if (twiceArea.toDouble() < limits.minPolygonArea * 2.0) CreationError.UnderSizeLimit else null
 }
 
-private fun checkBoundingBox(xs: List<Int>, zs: List<Int>): CreationError? {
+private fun checkBoundingBox(xs: List<Int>, zs: List<Int>, limits: GeometrySizeLimits): CreationError? {
     val width = xs.maxOrNull()!!.toLong() - xs.minOrNull()!!
     val height = zs.maxOrNull()!!.toLong() - zs.minOrNull()!!
-    return if (width < MIN_POLYGON_SPAN.value || height < MIN_POLYGON_SPAN.value) {
+    return if (width < limits.minPolygonSpan || height < limits.minPolygonSpan) {
         CreationError.UnderBoundingBoxLimit
     } else null
 }
 
-private fun checkAspectRatio(xs: List<Int>, zs: List<Int>): CreationError? {
+private fun checkAspectRatio(xs: List<Int>, zs: List<Int>, limits: GeometrySizeLimits): CreationError? {
     val width = xs.maxOrNull()!!.toLong() - xs.minOrNull()!!
     val height = zs.maxOrNull()!!.toLong() - zs.minOrNull()!!
     val aspectRatio = if (height == 0L) Double.MAX_VALUE else width.toDouble() / height
-    return if (aspectRatio < MIN_ASPECT_RATIO.value|| aspectRatio > (1.0 / MIN_ASPECT_RATIO.value)) {
+    return if (aspectRatio < limits.minAspectRatio || aspectRatio > (1.0 / limits.minAspectRatio)) {
         CreationError.AspectRatioInvalid
     } else null
 }
 
-private fun checkEdges(positions: List<BlockPos>): CreationError? {
+private fun checkEdges(positions: List<BlockPos>, limits: GeometrySizeLimits): CreationError? {
     val n = positions.size
     for (i in positions.indices) {
         val p1 = positions[i]
@@ -109,7 +150,7 @@ private fun checkEdges(positions: List<BlockPos>): CreationError? {
         val dx = p1.x.toDouble() - p2.x
         val dz = p1.z.toDouble() - p2.z
         val length = kotlin.math.hypot(dx, dz)
-        if (length < MIN_EDGE_LENGTH.value) {
+        if (length < limits.minEdgeLength) {
             return CreationError.EdgeTooShort
         }
     }

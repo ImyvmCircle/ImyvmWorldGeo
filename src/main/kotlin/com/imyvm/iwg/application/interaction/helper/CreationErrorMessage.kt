@@ -29,7 +29,28 @@ fun errorMessage(
     CreationError.AspectRatioInvalid -> listOfNotNull(Translator.tr("error.aspect_ratio_invalid")!!)
     CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.edge_too_short")!!)
     CreationError.NotConvex -> listOfNotNull(Translator.tr("error.not_convex")!!)
+    is CreationError.SubSpaceOutsideParentScope -> listOfNotNull(
+        Translator.tr("error.subspace.outside_parent_scope", error.scopeName, error.regionName)
+    )
     is CreationError.IntersectionBetweenScopes -> buildIntersectionErrorMessages(error.details, shapeType)
+}
+
+fun subSpaceErrorMessage(
+    error: CreationError,
+    shapeType: GeoShapeType
+): List<Component> = when (error) {
+    CreationError.UnderSizeLimit -> listOfNotNull(when (shapeType) {
+        GeoShapeType.RECTANGLE -> Translator.tr("error.subspace.rectangle_too_small")
+        GeoShapeType.CIRCLE -> Translator.tr("error.subspace.circle_too_small")
+        GeoShapeType.POLYGON -> Translator.tr("error.subspace.polygon_too_small")
+        else -> Translator.tr("error.generic_too_small")
+    })
+    CreationError.UnderBoundingBoxLimit -> listOfNotNull(Translator.tr("error.subspace.under_bounding_box_limit"))
+    CreationError.EdgeTooShort -> listOfNotNull(Translator.tr("error.subspace.edge_too_short"))
+    is CreationError.SubSpaceOutsideParentScope -> listOfNotNull(
+        Translator.tr("error.subspace.outside_parent_scope", error.scopeName, error.regionName)
+    )
+    else -> errorMessage(error, shapeType)
 }
 
 private fun buildIntersectionErrorMessages(details: List<IntersectionDetail>, shapeType: GeoShapeType): List<Component> {

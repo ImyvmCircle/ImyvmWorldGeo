@@ -10,6 +10,7 @@ import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.PermissionKey
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_ENTER_I18N_KEY
@@ -36,7 +37,7 @@ object PlayerRegionEntryExitTracker {
 
         for ((uuid, currentPair) in allCurrent) {
             val player = server.playerList.getPlayer(uuid) ?: continue
-            val current = PlayerLocation(currentPair.first, currentPair.second)
+            val current = PlayerLocation(currentPair.first, currentPair.second, currentPair.third)
             val previous = playerStates[uuid]
             if (previous == null) {
                 playerStates[uuid] = initialPlayerLocationState(current, now)
@@ -86,6 +87,8 @@ object PlayerRegionEntryExitTracker {
         transition.regionEntry?.let { sendRegionEntryTitle(player, it) }
         transition.scopeExit?.let { sendScopeExitMessage(player, it.region, it.scope) }
         transition.scopeEntry?.let { sendScopeEntryMessage(player, it.region, it.scope) }
+        transition.subSpaceExit?.let { location -> location.subSpace?.let { sendSubSpaceExitMessage(player, location.region, location.scope, it) } }
+        transition.subSpaceEntry?.let { location -> location.subSpace?.let { sendSubSpaceEntryMessage(player, location.region, location.scope, it) } }
         transition.completedStay?.let { addStayDuration(it.region, uuid, it.startedAt, it.endedAt) }
         transition.incrementEntry?.let { RegionDatabase.incrementRegionEntryStat(it, uuid) }
         transition.regionEvent?.let { (from, to) ->
@@ -158,6 +161,19 @@ object PlayerRegionEntryExitTracker {
         sendRpgEntryNotifications(player, region, scope, scope.scopeName)
     }
 
+
+    private fun sendSubSpaceExitMessage(player: ServerPlayer, region: Region, scope: GeoScope, subSpace: SubSpace) {
+        val text = Translator.tr("notification.subspace.exit", region.name, scope.scopeName, subSpace.name) ?: return
+        player.sendSystemMessage(text)
+    }
+
+    private fun sendSubSpaceEntryMessage(player: ServerPlayer, region: Region, scope: GeoScope, subSpace: SubSpace) {
+        val text = getSubSpaceEntryMessage(subSpace, region.name, scope.scopeName)
+            ?: Translator.tr("notification.subspace.enter", region.name, scope.scopeName, subSpace.name)
+            ?: return
+        player.sendSystemMessage(text)
+    }
+
     private fun isRegionNotificationEnabled(region: Region): Boolean {
         return region.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
     }
@@ -174,6 +190,12 @@ object PlayerRegionEntryExitTracker {
     private fun getScopeMessage(scope: GeoScope, key: EntryExitMessageKey, regionName: String, scopeName: String): Component? {
         val raw = scope.settingStore.entryExitMessage(key) ?: return null
         return TextParser.parse(raw.replace("{0}", regionName).replace("{1}", scopeName))
+    }
+
+
+    private fun getSubSpaceEntryMessage(subSpace: SubSpace, regionName: String, scopeName: String): Component? {
+        val raw = subSpace.entryMessage ?: return null
+        return TextParser.parse(raw.replace("{0}", regionName).replace("{1}", scopeName).replace("{2}", subSpace.name))
     }
 
     private fun sendRpgEntryNotifications(player: ServerPlayer, region: Region, scope: GeoScope?, locationName: String) {

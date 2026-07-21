@@ -370,6 +370,23 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                 literal("subspace")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
+                        literal("select")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runStartSelectForSubSpace(it) }
+                                            .then(
+                                                argument("shapeType", StringArgumentType.word())
+                                                    .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                                                    .executes { runStartSelectForSubSpace(it) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
                         literal("create")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
@@ -884,6 +901,13 @@ private data class CommandSubSpaceTarget(
     val scope: GeoScope,
     val subSpace: SubSpace
 )
+
+
+private fun runStartSelectForSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, player) ?: return 0 }
+    return onStartSelectionForSubSpace(player, region, scope, shapeType)
+}
 
 private fun runCreateSubSpace(context: CommandContext<CommandSourceStack>): Int {
     val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0

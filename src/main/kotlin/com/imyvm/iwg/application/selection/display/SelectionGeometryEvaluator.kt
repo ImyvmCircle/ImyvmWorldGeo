@@ -3,16 +3,21 @@ package com.imyvm.iwg.application.selection.display
 import com.imyvm.iwg.application.region.updateRectangleBounds
 import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
+import com.imyvm.iwg.util.geo.GeometrySizeLimits
 import com.imyvm.iwg.util.geo.checkCircleSize
 import com.imyvm.iwg.util.geo.checkPolygonSize
 import com.imyvm.iwg.util.geo.checkRectangleSize
+import com.imyvm.iwg.util.geo.regionGeometrySizeLimits
 import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.geo.isConvex
 import net.minecraft.core.BlockPos
 import kotlin.math.abs
 import kotlin.math.hypot
 
-fun evaluateRectangleShape(pos1: BlockPos, pos2: BlockPos): List<Int>? {
+fun evaluateRectangleShape(pos1: BlockPos, pos2: BlockPos): List<Int>? =
+    evaluateRectangleShape(pos1, pos2, regionGeometrySizeLimits)
+
+internal fun evaluateRectangleShape(pos1: BlockPos, pos2: BlockPos, limits: GeometrySizeLimits): List<Int>? {
     if (pos1.x == pos2.x || pos1.z == pos2.z) return null
     val west = minOf(pos1.x, pos2.x)
     val east = maxOf(pos1.x, pos2.x)
@@ -20,14 +25,17 @@ fun evaluateRectangleShape(pos1: BlockPos, pos2: BlockPos): List<Int>? {
     val south = maxOf(pos1.z, pos2.z)
     val width = east.toLong() - west
     val length = south.toLong() - north
-    if (checkRectangleSize(width, length) != null) return null
+    if (checkRectangleSize(width, length, limits) != null) return null
     return listOf(west, north, east, south)
 }
 
-fun evaluateCircleShape(center: BlockPos, edge: BlockPos): List<Int>? {
+fun evaluateCircleShape(center: BlockPos, edge: BlockPos): List<Int>? =
+    evaluateCircleShape(center, edge, regionGeometrySizeLimits)
+
+internal fun evaluateCircleShape(center: BlockPos, edge: BlockPos, limits: GeometrySizeLimits): List<Int>? {
     if (center.x == edge.x && center.z == edge.z) return null
     val radius = hypot(edge.x.toDouble() - center.x, edge.z.toDouble() - center.z)
-    return evaluatedCircle(center.x, center.z, radius)
+    return evaluatedCircle(center.x, center.z, radius, limits)
 }
 
 fun evaluateModifyRectangle(newPoint: BlockPos, existingParams: List<Int>): List<Int>? {
@@ -42,13 +50,13 @@ fun evaluateModifyCircleRadius(newPoint: BlockPos, existingParams: List<Int>): L
     val centerX = existingParams[0]
     val centerZ = existingParams[1]
     val radius = hypot(newPoint.x.toDouble() - centerX, newPoint.z.toDouble() - centerZ)
-    return evaluatedCircle(centerX, centerZ, radius)
+    return evaluatedCircle(centerX, centerZ, radius, regionGeometrySizeLimits)
 }
 
 fun evaluateModifyCircleCenter(oldCenter: BlockPos, newCenter: BlockPos, existingParams: List<Int>): List<Int>? {
     if (oldCenter.x != existingParams[0] || oldCenter.z != existingParams[1]) return null
     val radius = existingParams[2]
-    return evaluatedCircle(newCenter.x, newCenter.z, radius.toDouble())
+    return evaluatedCircle(newCenter.x, newCenter.z, radius.toDouble(), regionGeometrySizeLimits)
 }
 
 fun evaluateModifyPolygonInsert(newPoint: BlockPos, existingPoints: List<BlockPos>): List<BlockPos>? {
@@ -79,8 +87,8 @@ fun evaluateModifyPolygonExplicitInsert(adj1: BlockPos, adj2: BlockPos, newPoint
     return validatedPolygon(newPolygon)
 }
 
-private fun evaluatedCircle(centerX: Int, centerZ: Int, radius: Double): List<Int>? {
-    if (!checkCircleSize(radius) || radius > Int.MAX_VALUE) return null
+private fun evaluatedCircle(centerX: Int, centerZ: Int, radius: Double, limits: GeometrySizeLimits): List<Int>? {
+    if (!checkCircleSize(radius, limits) || radius > Int.MAX_VALUE) return null
     val intRadius = radius.toInt()
     val min = Int.MIN_VALUE.toLong()
     val max = Int.MAX_VALUE.toLong()

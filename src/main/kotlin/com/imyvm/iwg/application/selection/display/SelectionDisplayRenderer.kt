@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.selection.display
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.CircleGeometry
@@ -14,6 +15,7 @@ import com.imyvm.iwg.domain.component.ShapeGeometry
 import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.checkPolygonSize
+import com.imyvm.iwg.util.geo.subSpaceGeometrySizeLimits
 import com.imyvm.iwg.util.geo.isConvex
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import net.minecraft.core.BlockPos
@@ -114,10 +116,64 @@ private fun displayForPlayer(
 
     when (val shape = state.hypotheticalShape) {
         is HypotheticalShape.ModifyExisting -> displayForModifyExisting(player, points, shape.scope, session)
-        is HypotheticalShape.Normal -> displayForShape(player, points, shape.shapeType, session)
-        null -> displayForShape(player, points, state.getEffectiveShapeType(), session)
+        is HypotheticalShape.SubSpace -> displayForSubSpaceShape(player, points, state.getEffectiveShapeType(), shape, session)
+        is HypotheticalShape.Normal -> displayForCreationShape(player, state, points, shape.shapeType, session)
+        null -> displayForCreationShape(player, state, points, state.getEffectiveShapeType(), session)
     }
     commitPillars(player, session)
+}
+
+
+private fun displayForCreationShape(
+    player: ServerPlayer,
+    state: SelectionState,
+    points: List<BlockPos>,
+    shapeType: GeoShapeType,
+    session: SelectionDisplaySession
+) {
+    val subSpaceTarget = findAutoSubSpaceTarget(state, shapeType)
+    if (subSpaceTarget != null) {
+        displayForSubSpaceShape(player, points, shapeType, subSpaceTarget, session)
+    } else {
+        displayForShape(player, points, shapeType, session)
+    }
+}
+
+private fun findAutoSubSpaceTarget(state: SelectionState, shapeType: GeoShapeType): HypotheticalShape.SubSpace? {
+    val worldId = state.worldId ?: return null
+    val geoShape = (RegionFactory.createSelectionShape(state.points, shapeType) as? com.imyvm.iwg.application.region.Result.Ok)?.value ?: return null
+    for (region in RegionDatabase.getRegionList()) {
+        for (scope in region.scopes) {
+            val parentShape = scope.geoShape ?: continue
+            if (scope.worldId == worldId && geoShape.isContainedBy(parentShape)) {
+                return HypotheticalShape.SubSpace(region.name, scope, shapeType)
+            }
+        }
+    }
+    return null
+}
+
+
+private fun displayForSubSpaceShape(
+    player: ServerPlayer,
+    points: List<BlockPos>,
+    shapeType: GeoShapeType,
+    target: HypotheticalShape.SubSpace,
+    session: SelectionDisplaySession
+) {
+    if (RegionFactory.validateSubSpaceSelection(
+            points,
+            shapeType,
+            target.regionName,
+            target.parentScope
+        ) != null
+    ) return
+    when (shapeType) {
+        GeoShapeType.CIRCLE -> displayCircleSelection(player, points, session, subSpaceGeometrySizeLimits)
+        GeoShapeType.RECTANGLE -> displayRectangleSelection(player, points, session, subSpaceGeometrySizeLimits)
+        GeoShapeType.POLYGON -> emitClosedBoundary(player, points.size, { points[it].x }, { points[it].z }, BoundaryStyle.SELECTION, session)
+        GeoShapeType.UNKNOWN -> Unit
+    }
 }
 
 private fun displayForShape(
@@ -137,10 +193,11 @@ private fun displayForShape(
 private fun displayCircleSelection(
     player: ServerPlayer,
     points: List<BlockPos>,
-    session: SelectionDisplaySession
+    session: SelectionDisplaySession,
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits
 ) {
     if (points.size < 2) return
-    val params = evaluateCircleShape(points[0], points[1]) ?: return
+    val params = evaluateCircleShape(points[0], points[1], limits) ?: return
     val lineSamples = maxOf(1, session.surfaceUnits / 4)
     emitLineSurface(player, points[0], points[1], session, lineSamples)
     drawCircleOutline(player, params[0], params[1], params[2], session)
@@ -149,10 +206,11 @@ private fun displayCircleSelection(
 private fun displayRectangleSelection(
     player: ServerPlayer,
     points: List<BlockPos>,
-    session: SelectionDisplaySession
+    session: SelectionDisplaySession,
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits
 ) {
     if (points.size < 2) return
-    val params = evaluateRectangleShape(points[0], points[1]) ?: return
+    val params = evaluateRectangleShape(points[0], points[1], limits) ?: return
     val west = params[0]
     val north = params[1]
     val east = params[2]

@@ -1,7 +1,10 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShape
+import com.imyvm.iwg.domain.component.SubSpace
 import net.minecraft.resources.Identifier
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -16,6 +19,13 @@ class PlayerLocationTransitionTest {
     private val regionA = Region("A", 1, mutableListOf(scopeA, scopeA2))
     private val regionB = Region("B", 2, mutableListOf(scopeB))
     private val regionC = Region("C", 3, mutableListOf(scopeC))
+    private val subSpaceA = SubSpace(
+        1L,
+        "room",
+        scopeA.requireAssignedScopeId(),
+        Identifier.parse("minecraft:overworld"),
+        GeoShape.rectangle(GeoPoint(10, 10), GeoPoint(30, 30))
+    )
 
     @Test
     fun `first sample establishes baseline without transition output`() {
@@ -94,6 +104,24 @@ class PlayerLocationTransitionTest {
         assertSame(scopeA, transition.scopeExit?.scope)
         assertSame(scopeA2, transition.scopeEntry?.scope)
         assertEquals(10, transition.state.stayStartedAt)
+    }
+
+
+    @Test
+    fun `subspace-only movement emits subspace entry and exit without scope event`() {
+        val entered = calculateLocationTransition(state(regionA, scopeA, 10), PlayerLocation(regionA, scopeA, subSpaceA), 20, 1_000)
+
+        assertNull(entered.scopeEntry)
+        assertNull(entered.scopeExit)
+        assertSame(subSpaceA, entered.subSpaceEntry?.subSpace)
+        assertNull(entered.subSpaceExit)
+
+        val left = calculateLocationTransition(entered.state, PlayerLocation(regionA, scopeA), 30, 1_000)
+
+        assertNull(left.scopeEntry)
+        assertNull(left.scopeExit)
+        assertSame(subSpaceA, left.subSpaceExit?.subSpace)
+        assertNull(left.subSpaceEntry)
     }
 
     @Test

@@ -93,6 +93,7 @@ fun onHelp(player: ServerPlayer): Int {
         "setting_subspace.query",
 
         // SubSpaces
+        "subspace.select",
         "subspace.create",
         "subspace.delete",
         "subspace.rename",
