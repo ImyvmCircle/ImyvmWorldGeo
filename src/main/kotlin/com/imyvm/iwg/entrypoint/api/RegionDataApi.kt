@@ -1,6 +1,7 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.application.interaction.getDefaultValueForRule
 import com.imyvm.iwg.application.interaction.getRegionPermissionValue
@@ -27,6 +28,7 @@ import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
 import net.minecraft.core.BlockPos
 import net.minecraft.server.MinecraftServer
+import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
 import java.util.*
 /**
@@ -360,6 +362,9 @@ object RegionDataApi {
 
     fun getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectRegionStats(server, region)
+
+    fun getTimeSnapshot(level: ServerLevel): WorldGeoTimeSnapshot =
+        WorldGeoTimeService.snapshot(level)
 
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)

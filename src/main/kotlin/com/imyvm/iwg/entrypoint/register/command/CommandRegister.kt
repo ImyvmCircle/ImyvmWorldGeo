@@ -501,6 +501,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                 literal("debug")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(literal("spaceHere").executes { runDebugSpaceHere(it) })
+                    .then(literal("time").executes { runDebugTime(it) })
                     .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
                     .then(
                         literal("region")
@@ -972,6 +973,11 @@ private fun runRemoveSubSpaceKeyedTag(context: CommandContext<CommandSourceStack
     val target = getSubSpaceTarget(context) ?: return 0
     val key = context.getArgument("key", String::class.java)
     return onRemovingSubSpaceKeyedTag(target.player, target.region, target.scope, target.subSpace, key)
+}
+
+private fun runDebugTime(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugTime(player)
 }
 
 private fun runDebugSpaceHere(context: CommandContext<CommandSourceStack>): Int {

@@ -193,3 +193,12 @@ Detached copies, orphaned or unassigned Scopes, cross-dimension targets, and att
 selection to another Scope fail without mutation. Disconnecting, changing dimension, or stopping the
 server clears transient selection state; deleting a Region or Scope clears selections that reference
 it only after the deletion is successfully persisted.
+
+## V2-A time snapshot API
+
+`RegionDataApi.getTimeSnapshot(ServerLevel)` returns neutral WorldGeo time facts for addon code. The
+snapshot contains dimension ID, server game tick, derived game day/day tick, weather flags, moon phase,
+UNIX time, and default east-eight natural hour/day/week/month/year identifiers.
+
+Use this API as the stable read boundary for Community and Adventure scheduling facts. The in-game OP
+entrypoint `/imyvmWorldGeo debug time` prints the same facts for live-server debugging.
