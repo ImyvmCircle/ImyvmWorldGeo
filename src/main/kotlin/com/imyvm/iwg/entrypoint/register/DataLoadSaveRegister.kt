@@ -4,6 +4,7 @@ import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.application.region.permission.clearFlySessionState
+import com.imyvm.iwg.infra.PeriodProcessingStore
 import com.imyvm.iwg.infra.RegionDatabase
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.world.level.storage.LevelResource
@@ -17,6 +18,7 @@ fun registerDataLoadSave(){
         try {
             PlayerRegionEntryExitTracker.flushAllDurations()
             RegionDatabase.saveForShutdown()
+            PeriodProcessingStore.save()
         } catch (e: Exception) {
             ImyvmWorldGeo.logger.error("Failed to save region database: ${e.message}", e)
         }
@@ -31,12 +33,19 @@ internal fun openRegionSession(worldRoot: Path) {
         check(!RegionDatabase.hasActiveSession()) { "Region database session is already active" }
         EffectOverlayService.clearAll()
         RegionDatabase.bindSession(worldRoot)
+        try {
+            PeriodProcessingStore.bindSession(worldRoot)
+        } catch (error: Throwable) {
+            RegionDatabase.unbindSession()
+            throw error
+        }
     }
 }
 
 internal fun closeRegionSession() {
     EffectOverlayService.withScopeLifecycle {
         RegionDatabase.unbindSession()
+        PeriodProcessingStore.unbindSession()
         EffectOverlayService.clearAll()
     }
     clearFlySessionState()

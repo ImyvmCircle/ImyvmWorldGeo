@@ -205,6 +205,7 @@ entrypoint `/imyvmWorldGeo debug time` prints the same facts for live-server deb
 
 `RegionDataApi.getCurrentNaturalPeriodIds()` exposes the current east-eight natural hour/day/week/month
 identifiers. `RegionDataApi.registerNaturalPeriodTransitionCallback(Consumer<NaturalPeriodTransition>)`
-registers an in-memory callback for future hour/day/week/month changes detected by the WorldGeo lazy ticker.
-Persistent missed-period replay is not part of this entrypoint yet and will be added with the V2 period
-processing store.
+registers a callback for hour/day/week/month changes detected by the WorldGeo lazy ticker. WorldGeo records
+last processed period IDs in `iwg_periods.json`; after restart, the first lazy tick compares persisted IDs with
+current IDs and emits missed boundary callbacks. Business-level settlement retry queues remain a later V2
+statistics concern.

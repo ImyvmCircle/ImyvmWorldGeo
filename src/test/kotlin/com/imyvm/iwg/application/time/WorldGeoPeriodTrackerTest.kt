@@ -1,6 +1,9 @@
 package com.imyvm.iwg.application.time
 
 import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.infra.PeriodProcessingStore
+import java.nio.file.Files
+import java.nio.file.Path
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -12,10 +15,12 @@ class WorldGeoPeriodTrackerTest {
     @AfterTest
     fun tearDown() {
         WorldGeoPeriodTracker.resetForTest()
+        PeriodProcessingStore.unbindSession()
     }
 
     @Test
-    fun `first period sample initializes without transition`() {
+    fun `first period sample initializes without transition`() = withTempDirectory { directory ->
+        PeriodProcessingStore.bindSession(directory)
         val transitions = mutableListOf<NaturalPeriodKind>()
         WorldGeoPeriodTracker.registerCallback { transitions.add(it.kind) }
 
@@ -25,7 +30,8 @@ class WorldGeoPeriodTrackerTest {
     }
 
     @Test
-    fun `hour and day boundary emits changed periods`() {
+    fun `hour and day boundary emits changed periods`() = withTempDirectory { directory ->
+        PeriodProcessingStore.bindSession(directory)
         val transitions = mutableListOf<NaturalPeriodKind>()
         WorldGeoPeriodTracker.registerCallback { transitions.add(it.kind) }
 
@@ -35,5 +41,33 @@ class WorldGeoPeriodTrackerTest {
         assertEquals(listOf(NaturalPeriodKind.HOUR, NaturalPeriodKind.DAY), transitions)
     }
 
+    @Test
+    fun `stored previous period emits missed boundary on first sample`() = withTempDirectory { directory ->
+        PeriodProcessingStore.bindSession(directory)
+        PeriodProcessingStore.replaceProcessedPeriodIds(
+            mapOf(
+                NaturalPeriodKind.HOUR to "2026-07-20T23",
+                NaturalPeriodKind.DAY to "2026-07-20",
+                NaturalPeriodKind.WEEK to "2026-W30",
+                NaturalPeriodKind.MONTH to "2026-07"
+            )
+        )
+        val transitions = mutableListOf<NaturalPeriodKind>()
+        WorldGeoPeriodTracker.registerCallback { transitions.add(it.kind) }
+
+        WorldGeoPeriodTracker.process(clock("2026-07-20T16:00:00Z"))
+
+        assertEquals(listOf(NaturalPeriodKind.HOUR, NaturalPeriodKind.DAY), transitions)
+    }
+
     private fun clock(value: String): Clock = Clock.fixed(Instant.parse(value), ZoneOffset.UTC)
+
+    private fun withTempDirectory(block: (Path) -> Unit) {
+        val directory = Files.createTempDirectory("iwg-period-tracker")
+        try {
+            block(directory)
+        } finally {
+            directory.toFile().deleteRecursively()
+        }
+    }
 }

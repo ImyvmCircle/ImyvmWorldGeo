@@ -3,6 +3,7 @@ package com.imyvm.iwg.application.time
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.NaturalPeriodTransition
+import com.imyvm.iwg.infra.PeriodProcessingStore
 import java.time.Clock
 
 object WorldGeoPeriodTracker {
@@ -18,14 +19,18 @@ object WorldGeoPeriodTracker {
 
     fun process(clock: Clock = Clock.systemUTC()) {
         val current = currentPeriodIds(clock)
-        val previous = lastPeriodIds
+        val previous = lastPeriodIds ?: PeriodProcessingStore.getProcessedPeriodIds().takeIf { it.isNotEmpty() }
         lastPeriodIds = current
-        if (previous == null) return
+        if (previous == null) {
+            PeriodProcessingStore.replaceProcessedPeriodIds(current)
+            return
+        }
         val unixMillis = clock.millis()
         for ((kind, currentId) in current) {
             val previousId = previous[kind] ?: continue
             if (previousId != currentId) emit(NaturalPeriodTransition(kind, previousId, currentId, unixMillis))
         }
+        PeriodProcessingStore.replaceProcessedPeriodIds(current)
     }
 
     internal fun resetForTest() {
