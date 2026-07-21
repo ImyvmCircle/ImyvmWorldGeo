@@ -216,3 +216,10 @@ Initial producer coverage includes block place, block break, player death, Regio
 and the server-operator debug command `/imyvmWorldGeo debug behavior emit`. The event type enum also reserves
 neutral values for entity damage, entity kill, container interaction, and item use so those runtime producers can
 land without changing the addon-facing event shape.
+
+`RegionDataApi.queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and the explicit-parameter overload return
+persisted neutral behavior counts from `iwg_behavior_stats.json`. WorldGeo aggregates behavior facts by natural
+hour/day/week/month, behavior type, Region, Scope, SubSpace, player UUID, and object ID. The server-operator
+command `/imyvmWorldGeo debug behavior stats` shows current-hour behavior totals at the executing player''s current
+space for in-game validation. The stats store uses the server data session, strict malformed-input rejection, and
+atomic writes matching the Region database persistence model.

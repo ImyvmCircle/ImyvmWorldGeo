@@ -4,6 +4,7 @@ import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.application.region.permission.clearFlySessionState
+import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.PeriodProcessingStore
 import com.imyvm.iwg.infra.RegionDatabase
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
@@ -15,17 +16,19 @@ fun registerDataLoadSave(){
         openRegionSession(server.getWorldPath(LevelResource.ROOT))
     }
     ServerLifecycleEvents.SERVER_STOPPING.register { _ ->
-        try {
-            PlayerRegionEntryExitTracker.flushAllDurations()
-            RegionDatabase.saveForShutdown()
-            PeriodProcessingStore.save()
-        } catch (e: Exception) {
-            ImyvmWorldGeo.logger.error("Failed to save region database: ${e.message}", e)
-        }
+        saveForShutdown("player region durations") { PlayerRegionEntryExitTracker.flushAllDurations() }
+        saveForShutdown("region database") { RegionDatabase.saveForShutdown() }
+        saveForShutdown("period processing store") { PeriodProcessingStore.save() }
+        saveForShutdown("behavior stats store") { BehaviorStatsStore.save() }
     }
     ServerLifecycleEvents.SERVER_STOPPED.register { _ ->
         closeRegionSession()
     }
+}
+
+private fun saveForShutdown(label: String, save: () -> Unit) {
+    runCatching(save)
+        .onFailure { ImyvmWorldGeo.logger.error("Failed to save WorldGeo $label: ${it.message}", it) }
 }
 
 internal fun openRegionSession(worldRoot: Path) {
@@ -35,7 +38,10 @@ internal fun openRegionSession(worldRoot: Path) {
         RegionDatabase.bindSession(worldRoot)
         try {
             PeriodProcessingStore.bindSession(worldRoot)
+            BehaviorStatsStore.bindSession(worldRoot)
         } catch (error: Throwable) {
+            PeriodProcessingStore.unbindSession()
+            BehaviorStatsStore.unbindSession()
             RegionDatabase.unbindSession()
             throw error
         }
@@ -46,6 +52,7 @@ internal fun closeRegionSession() {
     EffectOverlayService.withScopeLifecycle {
         RegionDatabase.unbindSession()
         PeriodProcessingStore.unbindSession()
+        BehaviorStatsStore.unbindSession()
         EffectOverlayService.clearAll()
     }
     clearFlySessionState()

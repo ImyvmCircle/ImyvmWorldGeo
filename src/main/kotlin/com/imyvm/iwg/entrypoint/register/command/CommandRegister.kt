@@ -506,6 +506,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                         literal("behavior")
                             .then(literal("emit").executes { runDebugBehaviorEmit(it) })
                             .then(literal("recent").executes { runDebugBehaviorRecent(it) })
+                            .then(literal("stats").executes { runDebugBehaviorStats(it) })
                     )
                     .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
                     .then(
@@ -998,6 +999,11 @@ private fun runDebugBehaviorEmit(context: CommandContext<CommandSourceStack>): I
 private fun runDebugBehaviorRecent(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onDebugBehaviorRecent(player)
+}
+
+private fun runDebugBehaviorStats(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugBehaviorStats(player)
 }
 
 private fun runValidateSubSpaces(context: CommandContext<CommandSourceStack>): Int {

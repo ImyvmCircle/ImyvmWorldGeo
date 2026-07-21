@@ -469,9 +469,12 @@
   "selection.feedback.warn.scope_partial_overlap": "&cCurrent selection partially overlaps scope &b{0}&c in region &b{1}&c. Move the selection fully inside that scope for SubSpace creation, or fully outside it for Region/Scope creation.",
   "notification.subspace.enter": "&aEntered SubSpace &b{2}&a under scope &b{1}&a in region &e{0}&a.",
   "notification.subspace.exit": "&7Left SubSpace &b{2}&7 under scope &b{1}&7 in region &e{0}&7.",
-  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent§6>\n  §fEmit a debug behavior event or show recent behavior events.",
+  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent|stats§6>\n  §fEmit a debug behavior event, show recent events, or show current-hour stats at the current space.",
   "interaction.meta.debug.behavior.emit": "&aEmitted debug behavior event for player &b{0}&a at &e{1}&a,&e{2}&a,&e{3}&a.",
   "interaction.meta.debug.behavior.none": "&cNo recent WorldGeo behavior events.",
   "interaction.meta.debug.behavior.header": "&6Recent WorldGeo behavior events: &e{0}",
-  "interaction.meta.debug.behavior.line": "&7- &e{0}&7 player=&b{1}&7 space=&b{2}&7 pos=&e{3}&7,&e{4}&7,&e{5}&7 object=&f{6}"
+  "interaction.meta.debug.behavior.line": "&7- &e{0}&7 player=&b{1}&7 space=&b{2}&7 pos=&e{3}&7,&e{4}&7,&e{5}&7 object=&f{6}",
+  "interaction.meta.debug.behavior.stats.no_space": "&cNo Region/Scope/SubSpace behavior stats target at the current position.",
+  "interaction.meta.debug.behavior.stats.header": "&6Behavior stats&r hour=&e{0}&r region=&b{1}&r scope=&b{2}&r SubSpace=&b{3}&r total=&e{4}",
+  "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 count=&b{1}"
 }

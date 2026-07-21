@@ -1,0 +1,184 @@
+package com.imyvm.iwg.infra
+
+import com.google.gson.JsonArray
+import com.google.gson.JsonObject
+import com.google.gson.JsonParser
+import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.time.WorldGeoTimeService
+import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
+import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import java.io.IOException
+import java.nio.file.Files
+import java.nio.file.Path
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
+import java.util.UUID
+
+object BehaviorStatsStore {
+    private const val FILE_NAME = "iwg_behavior_stats.json"
+    private const val MAX_ENTRY_COUNT = 100_000
+    private var sessionWorldRoot: Path? = null
+    private val counts = linkedMapOf<BehaviorStatsKey, Long>()
+
+    internal fun bindSession(worldRoot: Path) {
+        check(sessionWorldRoot == null) { "Behavior stats store session is already active" }
+        val root = worldRoot.toAbsolutePath().normalize()
+        Files.createDirectories(root)
+        counts.clear()
+        counts.putAll(readStats(root.resolve(FILE_NAME)))
+        sessionWorldRoot = root
+    }
+
+    internal fun unbindSession() {
+        counts.clear()
+        sessionWorldRoot = null
+    }
+
+    fun record(event: WorldGeoBehaviorEvent) {
+        val regionId = event.regionId ?: return
+        val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC))
+        for ((periodKind, periodId) in periodIds) {
+            val key = BehaviorStatsKey(
+                periodKind = periodKind,
+                periodId = periodId,
+                behaviorType = event.type,
+                regionId = regionId,
+                scopeId = event.scopeId,
+                subSpaceId = event.subSpaceId,
+                playerUuid = event.playerUuid,
+                objectId = event.objectId
+            )
+            counts[key] = Math.addExact(counts[key] ?: 0L, 1L)
+            require(counts.size <= MAX_ENTRY_COUNT) { "behavior stats entry count exceeds $MAX_ENTRY_COUNT" }
+        }
+    }
+
+    fun query(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> {
+        require(query.periodId.isNotBlank()) { "period id must not be blank" }
+        return counts.asSequence()
+            .filter { (key, _) -> key.matches(query) }
+            .map { (key, count) -> key.toEntry(count) }
+            .toList()
+    }
+
+    fun saveSnapshot() {
+        if (sessionWorldRoot == null) return
+        runCatching { save() }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to save behavior stats: ${it.message}", it) }
+    }
+
+    internal fun save() {
+        val root = sessionWorldRoot ?: error("Behavior stats store session is not active")
+        writeStats(root.resolve(FILE_NAME), counts)
+    }
+
+    internal fun readStats(path: Path): Map<BehaviorStatsKey, Long> {
+        if (!Files.exists(path)) return emptyMap()
+        try {
+            val array = JsonParser.parseString(Files.readString(path)).asJsonArray
+            require(array.size() <= MAX_ENTRY_COUNT) { "too many behavior stats entries" }
+            val result = linkedMapOf<BehaviorStatsKey, Long>()
+            for (element in array) {
+                val obj = element.asJsonObject
+                val key = BehaviorStatsKey(
+                    periodKind = enumValue<NaturalPeriodKind>(obj, "periodKind"),
+                    periodId = stringValue(obj, "periodId"),
+                    behaviorType = enumValue<WorldGeoBehaviorType>(obj, "behaviorType"),
+                    regionId = intValue(obj, "regionId"),
+                    scopeId = optionalLongValue(obj, "scopeId"),
+                    subSpaceId = optionalLongValue(obj, "subSpaceId"),
+                    playerUuid = UUID.fromString(stringValue(obj, "playerUuid")),
+                    objectId = optionalStringValue(obj, "objectId")
+                )
+                val count = longValue(obj, "count")
+                validateEntry(key, count)
+                result[key] = Math.addExact(result[key] ?: 0L, count)
+            }
+            return result
+        } catch (error: IllegalArgumentException) {
+            throw IOException("Invalid behavior stats store", error)
+        } catch (error: IllegalStateException) {
+            throw IOException("Invalid behavior stats store", error)
+        } catch (error: NullPointerException) {
+            throw IOException("Invalid behavior stats store", error)
+        }
+    }
+
+    internal fun writeStats(path: Path, stats: Map<BehaviorStatsKey, Long>) {
+        require(stats.size <= MAX_ENTRY_COUNT) { "too many behavior stats entries" }
+        val array = JsonArray()
+        for ((key, count) in stats) {
+            validateEntry(key, count)
+            val obj = JsonObject()
+            obj.addProperty("periodKind", key.periodKind.name)
+            obj.addProperty("periodId", key.periodId)
+            obj.addProperty("behaviorType", key.behaviorType.name)
+            obj.addProperty("regionId", key.regionId)
+            key.scopeId?.let { obj.addProperty("scopeId", it) }
+            key.subSpaceId?.let { obj.addProperty("subSpaceId", it) }
+            obj.addProperty("playerUuid", key.playerUuid.toString())
+            key.objectId?.let { obj.addProperty("objectId", it) }
+            obj.addProperty("count", count)
+            array.add(obj)
+        }
+        RegionDatabase.atomicWrite(path) { output -> output.write(array.toString().toByteArray(Charsets.UTF_8)) }
+    }
+
+    internal fun clearForTest() {
+        counts.clear()
+        sessionWorldRoot = null
+    }
+
+    private fun BehaviorStatsKey.matches(query: WorldGeoBehaviorStatsQuery): Boolean =
+        periodKind == query.periodKind &&
+            periodId == query.periodId &&
+            (query.behaviorType == null || behaviorType == query.behaviorType) &&
+            (query.regionId == null || regionId == query.regionId) &&
+            (query.scopeId == null || scopeId == query.scopeId) &&
+            (query.subSpaceId == null || subSpaceId == query.subSpaceId) &&
+            (query.playerUuid == null || playerUuid == query.playerUuid) &&
+            (query.objectId == null || objectId == query.objectId)
+
+    private fun BehaviorStatsKey.toEntry(count: Long): WorldGeoBehaviorStatsEntry = WorldGeoBehaviorStatsEntry(
+        periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId, count
+    )
+
+    private fun validateEntry(key: BehaviorStatsKey, count: Long) {
+        require(key.periodId.isNotBlank()) { "period id must not be blank" }
+        require(key.regionId > 0) { "region id must be positive" }
+        require(key.scopeId == null || key.scopeId > 0L) { "scope id must be positive" }
+        require(key.subSpaceId == null || key.subSpaceId > 0L) { "subspace id must be positive" }
+        require(key.objectId == null || key.objectId.isNotBlank()) { "object id must not be blank" }
+        require(count > 0L) { "count must be positive" }
+    }
+
+    private inline fun <reified T : Enum<T>> enumValue(obj: JsonObject, name: String): T =
+        enumValueOf(stringValue(obj, name))
+
+    private fun stringValue(obj: JsonObject, name: String): String = obj.get(name).asString
+
+    private fun optionalStringValue(obj: JsonObject, name: String): String? =
+        obj.get(name)?.takeUnless { it.isJsonNull }?.asString
+
+    private fun intValue(obj: JsonObject, name: String): Int = obj.get(name).asInt
+
+    private fun longValue(obj: JsonObject, name: String): Long = obj.get(name).asLong
+
+    private fun optionalLongValue(obj: JsonObject, name: String): Long? =
+        obj.get(name)?.takeUnless { it.isJsonNull }?.asLong
+}
+
+internal data class BehaviorStatsKey(
+    val periodKind: NaturalPeriodKind,
+    val periodId: String,
+    val behaviorType: WorldGeoBehaviorType,
+    val regionId: Int,
+    val scopeId: Long?,
+    val subSpaceId: Long?,
+    val playerUuid: UUID,
+    val objectId: String?
+)

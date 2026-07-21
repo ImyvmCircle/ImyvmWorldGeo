@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
+import com.imyvm.iwg.infra.BehaviorStatsStore
 
 object WorldGeoBehaviorEventBus {
     private const val MAX_RECENT_EVENTS = 20
@@ -13,6 +14,8 @@ object WorldGeoBehaviorEventBus {
     }
 
     fun publish(event: WorldGeoBehaviorEvent) {
+        runCatching { BehaviorStatsStore.record(event) }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to record behavior stats: ${it.message}", it) }
         recentEvents.addLast(event)
         while (recentEvents.size > MAX_RECENT_EVENTS) recentEvents.removeFirst()
         for (callback in callbacks.toList()) {

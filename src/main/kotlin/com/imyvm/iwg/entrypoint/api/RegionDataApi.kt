@@ -25,6 +25,7 @@ import com.imyvm.iwg.application.region.effect.helper.getScopeEffectValue as res
 import com.imyvm.iwg.application.region.effect.helper.getSubSpaceEffectValue as resolveSubSpaceEffectValue
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
+import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
@@ -385,6 +386,22 @@ object RegionDataApi {
 
     fun getRecentBehaviorEvents(limit: Int): List<WorldGeoBehaviorEvent> =
         WorldGeoBehaviorEventBus.getRecentEvents(limit)
+
+    fun queryBehaviorStats(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> =
+        BehaviorStatsStore.query(query)
+
+    fun queryBehaviorStats(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        behaviorType: WorldGeoBehaviorType?,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        playerUuid: UUID?,
+        objectId: String?
+    ): List<WorldGeoBehaviorStatsEntry> = BehaviorStatsStore.query(
+        WorldGeoBehaviorStatsQuery(periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId)
+    )
 
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)
