@@ -202,3 +202,9 @@ UNIX time, and default east-eight natural hour/day/week/month/year identifiers.
 
 Use this API as the stable read boundary for Community and Adventure scheduling facts. The in-game OP
 entrypoint `/imyvmWorldGeo debug time` prints the same facts for live-server debugging.
+
+`RegionDataApi.getCurrentNaturalPeriodIds()` exposes the current east-eight natural hour/day/week/month
+identifiers. `RegionDataApi.registerNaturalPeriodTransitionCallback(Consumer<NaturalPeriodTransition>)`
+registers an in-memory callback for future hour/day/week/month changes detected by the WorldGeo lazy ticker.
+Persistent missed-period replay is not part of this entrypoint yet and will be added with the V2 period
+processing store.

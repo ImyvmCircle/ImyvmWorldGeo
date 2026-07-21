@@ -1,6 +1,9 @@
 package com.imyvm.iwg.application.time
 
+import com.imyvm.iwg.domain.NaturalPeriodKind
+import java.time.Clock
 import java.time.Instant
+import java.time.ZoneOffset
 import kotlin.test.Test
 import kotlin.test.assertEquals
 
@@ -19,6 +22,19 @@ class WorldGeoTimeServiceTest {
         assertEquals("2026-W30", snapshot.naturalWeek)
         assertEquals("2026-07", snapshot.naturalMonth)
         assertEquals(2026, snapshot.naturalYear)
+    }
+
+
+    @Test
+    fun `natural period ids use east eight real snapshot`() {
+        val ids = WorldGeoTimeService.currentNaturalPeriodIds(
+            Clock.fixed(Instant.parse("2026-07-20T16:30:00Z"), ZoneOffset.UTC)
+        )
+
+        assertEquals("2026-07-21T00", ids[NaturalPeriodKind.HOUR])
+        assertEquals("2026-07-21", ids[NaturalPeriodKind.DAY])
+        assertEquals("2026-W30", ids[NaturalPeriodKind.WEEK])
+        assertEquals("2026-07", ids[NaturalPeriodKind.MONTH])
     }
 
     @Test

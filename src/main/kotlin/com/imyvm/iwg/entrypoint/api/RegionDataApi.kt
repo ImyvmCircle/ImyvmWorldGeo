@@ -1,6 +1,7 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.application.interaction.getDefaultValueForRule
@@ -31,6 +32,7 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
 import java.util.*
+import java.util.function.Consumer
 /**
  * Supported read/query API for addons.
  *
@@ -365,6 +367,13 @@ object RegionDataApi {
 
     fun getTimeSnapshot(level: ServerLevel): WorldGeoTimeSnapshot =
         WorldGeoTimeService.snapshot(level)
+
+    fun getCurrentNaturalPeriodIds(): Map<NaturalPeriodKind, String> =
+        WorldGeoPeriodTracker.currentPeriodIds()
+
+    fun registerNaturalPeriodTransitionCallback(callback: Consumer<NaturalPeriodTransition>) {
+        WorldGeoPeriodTracker.registerCallback { callback.accept(it) }
+    }
 
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)

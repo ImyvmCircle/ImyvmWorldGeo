@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.time
 
 import com.imyvm.iwg.domain.GameTimeSnapshot
+import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.RealTimeSnapshot
 import com.imyvm.iwg.domain.WorldGeoTimeSnapshot
 import net.minecraft.server.level.ServerLevel
@@ -53,6 +54,16 @@ object WorldGeoTimeService {
             moonPhase = moonPhase(dayTime)
         )
     }
+
+    fun currentNaturalPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
+        naturalPeriodIds(realSnapshot(clock.instant(), DEFAULT_ZONE))
+
+    internal fun naturalPeriodIds(snapshot: RealTimeSnapshot): Map<NaturalPeriodKind, String> = linkedMapOf(
+        NaturalPeriodKind.HOUR to snapshot.naturalHour,
+        NaturalPeriodKind.DAY to snapshot.naturalDay,
+        NaturalPeriodKind.WEEK to snapshot.naturalWeek,
+        NaturalPeriodKind.MONTH to snapshot.naturalMonth
+    )
 
     internal fun moonPhase(dayTime: Long): Int = Math.floorMod(Math.floorDiv(dayTime, TICKS_PER_DAY), 8L).toInt()
 
