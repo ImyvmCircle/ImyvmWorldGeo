@@ -5,6 +5,12 @@ import com.typesafe.config.Config
 
 object GeoConfig {
     @JvmField
+    val GEOGRAPHIC_REFRESH_BATCH_SIZE = Option("core.geographic_refresh_batch_size", 1,
+        "the number of geographic profile refresh jobs processed per lazy ticker run.") { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
     val MIN_RECTANGLE_AREA = Option("core.min_rectangle_area", 5000.0,
         "the minimum area of a rectangle region.") { obj: Config, path: String? -> obj.getDouble(path) }
 

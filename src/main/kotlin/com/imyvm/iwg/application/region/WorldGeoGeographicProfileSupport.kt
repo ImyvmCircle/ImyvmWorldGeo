@@ -15,6 +15,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.SubSpace
+import com.imyvm.iwg.infra.config.GeoConfig
 import com.imyvm.iwg.util.geo.getBoundingBox
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
@@ -31,7 +32,9 @@ object WorldGeoGeographicProfileSupport {
     private val OVERWORLD_ID = Identifier.parse("minecraft:overworld")
     private val NETHER_ID = Identifier.parse("minecraft:the_nether")
     private val END_ID = Identifier.parse("minecraft:the_end")
+    private val stateLock = Any()
     private val cache = linkedMapOf<ProfileCacheKey, CachedProfile>()
+    private val pendingRefreshes = ArrayDeque<QueuedProfileRefresh>()
     private var lastInvalidatedAtMillis: Long? = null
     private var lastInvalidationReason: String? = null
 
@@ -73,16 +76,19 @@ object WorldGeoGeographicProfileSupport {
         return cachedProfileForShape(server, WorldGeoSpaceType.SUBSPACE, subSpace.subSpaceId, subSpace.name, subSpace.worldId, subSpace.geoShape)
     }
 
-    @Synchronized
     fun invalidateAll(reason: String) {
-        cache.clear()
-        lastInvalidatedAtMillis = System.currentTimeMillis()
-        lastInvalidationReason = reason
+        synchronized(stateLock) {
+            cache.clear()
+            pendingRefreshes.clear()
+            lastInvalidatedAtMillis = System.currentTimeMillis()
+            lastInvalidationReason = reason
+        }
     }
 
-    @Synchronized
     fun cacheStatus(): WorldGeoGeographicProfileCacheStatus =
-        WorldGeoGeographicProfileCacheStatus(cache.size, lastInvalidatedAtMillis, lastInvalidationReason)
+        synchronized(stateLock) {
+            WorldGeoGeographicProfileCacheStatus(cache.size, lastInvalidatedAtMillis, lastInvalidationReason)
+        }
 
     fun refreshAll(server: MinecraftServer, regions: List<Region>): Int {
         invalidateAll("period_refresh")
@@ -100,14 +106,43 @@ object WorldGeoGeographicProfileSupport {
         return refreshed
     }
 
-    @Synchronized
-    internal fun clearForTest() {
-        cache.clear()
-        lastInvalidatedAtMillis = null
-        lastInvalidationReason = null
+    fun scheduleRefreshAll(regions: List<Region>): Int {
+        val jobs = buildRefreshQueue(regions)
+        synchronized(stateLock) {
+            cache.clear()
+            pendingRefreshes.clear()
+            lastInvalidatedAtMillis = System.currentTimeMillis()
+            lastInvalidationReason = "period_refresh"
+            pendingRefreshes.addAll(jobs)
+            return pendingRefreshes.size
+        }
     }
 
-    @Synchronized
+    fun processScheduledRefresh(
+        server: MinecraftServer,
+        maxProfiles: Int = GeoConfig.GEOGRAPHIC_REFRESH_BATCH_SIZE.value
+    ): Int = drainScheduledRefresh(maxProfiles) { refresh ->
+        when (refresh) {
+            is QueuedProfileRefresh.RegionRefresh -> profileSnapshot(server, refresh.region)
+            is QueuedProfileRefresh.ScopeRefresh -> profileSnapshot(server, refresh.region, refresh.scope)
+            is QueuedProfileRefresh.SubSpaceRefresh -> profileSnapshot(server, refresh.region, refresh.scope, refresh.subSpace)
+        }
+    }
+
+    internal fun processScheduledRefresh(
+        maxProfiles: Int,
+        refresh: (QueuedProfileRefresh) -> Unit
+    ): Int = drainScheduledRefresh(maxProfiles, refresh)
+
+    internal fun clearForTest() {
+        synchronized(stateLock) {
+            cache.clear()
+            pendingRefreshes.clear()
+            lastInvalidatedAtMillis = null
+            lastInvalidationReason = null
+        }
+    }
+
     private fun cachedProfileForShape(
         server: MinecraftServer,
         type: WorldGeoSpaceType,
@@ -117,34 +152,90 @@ object WorldGeoGeographicProfileSupport {
         shape: GeoShape
     ): WorldGeoGeographicProfileSnapshot {
         val key = ProfileCacheKey(type, id, name, dimensionId, shape.geoShapeType, shape.shapeParameter)
-        val cached = cache[key]
-        if (cached != null) return WorldGeoGeographicProfileSnapshot(
-            cached.result,
-            WorldGeoGeographicProfileSource.CACHED,
-            cached.calculatedAtMillis,
-            lastInvalidatedAtMillis,
-            lastInvalidationReason
-        )
+        synchronized(stateLock) {
+            cache[key]?.let { cached ->
+                return snapshotFromCached(cached, WorldGeoGeographicProfileSource.CACHED)
+            }
+        }
         val calculatedAt = System.currentTimeMillis()
         val result = profileForShape(server, type, id, name, dimensionId, shape)
-        if (result is WorldGeoGeographicProfileResult.Success) cache[key] = CachedProfile(result, calculatedAt)
+        if (result is WorldGeoGeographicProfileResult.Success) {
+            synchronized(stateLock) {
+                val cached = cache[key]
+                if (cached != null) {
+                    return snapshotFromCached(cached, WorldGeoGeographicProfileSource.CACHED)
+                }
+                val created = CachedProfile(result, calculatedAt)
+                cache[key] = created
+                return snapshotFromCached(created, WorldGeoGeographicProfileSource.COMPUTED)
+            }
+        }
+        return computedSnapshot(result, calculatedAt)
+    }
+
+    private fun computedSnapshot(
+        result: WorldGeoGeographicProfileResult,
+        calculatedAt: Long = System.currentTimeMillis()
+    ): WorldGeoGeographicProfileSnapshot {
+        val invalidation = invalidationSnapshot()
         return WorldGeoGeographicProfileSnapshot(
             result,
             WorldGeoGeographicProfileSource.COMPUTED,
             calculatedAt,
-            lastInvalidatedAtMillis,
-            lastInvalidationReason
+            invalidation.lastInvalidatedAtMillis,
+            invalidation.lastInvalidationReason
         )
     }
 
-    private fun computedSnapshot(result: WorldGeoGeographicProfileResult): WorldGeoGeographicProfileSnapshot =
-        WorldGeoGeographicProfileSnapshot(
-            result,
-            WorldGeoGeographicProfileSource.COMPUTED,
-            System.currentTimeMillis(),
-            lastInvalidatedAtMillis,
-            lastInvalidationReason
+    private fun snapshotFromCached(
+        cached: CachedProfile,
+        source: WorldGeoGeographicProfileSource
+    ): WorldGeoGeographicProfileSnapshot {
+        val invalidation = invalidationSnapshot()
+        return WorldGeoGeographicProfileSnapshot(
+            cached.result,
+            source,
+            cached.calculatedAtMillis,
+            invalidation.lastInvalidatedAtMillis,
+            invalidation.lastInvalidationReason
         )
+    }
+
+    private fun invalidationSnapshot(): InvalidationSnapshot =
+        synchronized(stateLock) {
+            InvalidationSnapshot(lastInvalidatedAtMillis, lastInvalidationReason)
+        }
+
+    private fun buildRefreshQueue(regions: List<Region>): List<QueuedProfileRefresh> = buildList {
+        for (region in regions) {
+            add(QueuedProfileRefresh.RegionRefresh(region))
+            for (scope in region.scopes) {
+                add(QueuedProfileRefresh.ScopeRefresh(region, scope))
+            }
+            for (subSpace in region.subSpaces) {
+                val scope = region.scopes.firstOrNull { it.requireAssignedScopeId() == subSpace.parentScopeId } ?: continue
+                add(QueuedProfileRefresh.SubSpaceRefresh(region, scope, subSpace))
+            }
+        }
+    }
+
+    private fun drainScheduledRefresh(
+        maxProfiles: Int,
+        refresh: (QueuedProfileRefresh) -> Unit
+    ): Int {
+        require(maxProfiles > 0) { "max profile refresh batch must be positive" }
+        var processed = 0
+        while (processed < maxProfiles) {
+            val next = synchronized(stateLock) {
+                pendingRefreshes.removeFirstOrNull()
+            } ?: break
+            refresh(next)
+            processed++
+        }
+        return processed
+    }
+
+    internal fun pendingRefreshCount(): Int = synchronized(stateLock) { pendingRefreshes.size }
 
     internal fun classifyBiome(biomeId: Identifier): WorldGeoBiomeCategory {
         val path = biomeId.path
@@ -441,3 +532,18 @@ private data class CachedProfile(
     val result: WorldGeoGeographicProfileResult.Success,
     val calculatedAtMillis: Long
 )
+
+private data class InvalidationSnapshot(
+    val lastInvalidatedAtMillis: Long?,
+    val lastInvalidationReason: String?
+)
+
+internal sealed interface QueuedProfileRefresh {
+    data class RegionRefresh(val region: Region) : QueuedProfileRefresh
+    data class ScopeRefresh(val region: Region, val scope: GeoScope) : QueuedProfileRefresh
+    data class SubSpaceRefresh(
+        val region: Region,
+        val scope: GeoScope,
+        val subSpace: SubSpace
+    ) : QueuedProfileRefresh
+}

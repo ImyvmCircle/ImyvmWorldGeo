@@ -26,6 +26,7 @@ class ConfigValidationTest {
         val oldTicker = CoreConfig.LAZY_TICKER_SECONDS.value
         val oldBehaviorStatsLimit = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
         val oldEffect = EffectConfig.EFFECT_DURATION_SECONDS.value
+        val oldGeographyBatchSize = GeoConfig.GEOGRAPHIC_REFRESH_BATCH_SIZE.value
         val oldFallbackRadius = TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
 
         assertFailsWith<IllegalArgumentException> { CoreConfig.LAZY_TICKER_SECONDS.setValue(0) }
@@ -38,6 +39,9 @@ class ConfigValidationTest {
             EffectConfig.EFFECT_DURATION_SECONDS.setValue(CoreConfig.LAZY_TICKER_SECONDS.value)
         }
         assertEquals(oldEffect, EffectConfig.EFFECT_DURATION_SECONDS.value)
+
+        assertFailsWith<IllegalArgumentException> { GeoConfig.GEOGRAPHIC_REFRESH_BATCH_SIZE.setValue(0) }
+        assertEquals(oldGeographyBatchSize, GeoConfig.GEOGRAPHIC_REFRESH_BATCH_SIZE.value)
 
         assertFailsWith<IllegalArgumentException> {
             TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.setValue(

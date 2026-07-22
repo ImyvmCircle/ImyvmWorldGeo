@@ -43,8 +43,9 @@ ImyvmWorldGeo : ModInitializer {
 		LazyTicker.registerTask { server ->
 			if (refreshGeographicProfiles) {
 				refreshGeographicProfiles = false
-				WorldGeoGeographicProfileSupport.refreshAll(server, RegionDatabase.getRegionList())
+				WorldGeoGeographicProfileSupport.scheduleRefreshAll(RegionDatabase.getRegionList())
 			}
+			WorldGeoGeographicProfileSupport.processScheduledRefresh(server)
 		}
 		EffectOverlayService.register()
 		registerPlayerGeographyPair()

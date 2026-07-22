@@ -3,6 +3,11 @@ package com.imyvm.iwg.application.region
 import com.imyvm.iwg.domain.WorldGeoBiomeCategory
 import com.imyvm.iwg.domain.WorldGeoGeographicAttributeKind
 import com.imyvm.iwg.domain.WorldGeoGeographicOrientation
+import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.SubSpace
+import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoShape
 import net.minecraft.resources.Identifier
@@ -96,6 +101,38 @@ class WorldGeoGeographicProfileSupportTest {
         assertEquals(0, status.cachedProfileCount)
         assertEquals("test_reset", status.lastInvalidationReason)
         assertNotNull(status.lastInvalidatedAtMillis)
+    }
+
+    @Test
+    fun `scheduled refresh drains in batches and invalidate clears pending jobs`() {
+        val scope = GeoScope(
+            "scope",
+            Identifier.parse("minecraft:the_nether"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(10, 10)),
+            scopeId = ScopeId(generateCompatScopeIdRaw(7, 1))
+        )
+        val subSpace = SubSpace(
+            1,
+            "plot",
+            scope.requireAssignedScopeId(),
+            scope.worldId,
+            GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
+        )
+        val region = Region("region", 7, mutableListOf(scope), subSpaces = mutableListOf(subSpace))
+
+        assertEquals(3, WorldGeoGeographicProfileSupport.scheduleRefreshAll(listOf(region)))
+        assertEquals(3, WorldGeoGeographicProfileSupport.pendingRefreshCount())
+        assertEquals(
+            1,
+            WorldGeoGeographicProfileSupport.processScheduledRefresh(maxProfiles = 1) { }
+        )
+        assertEquals(2, WorldGeoGeographicProfileSupport.pendingRefreshCount())
+
+        WorldGeoGeographicProfileSupport.invalidateAll("manual_reset")
+
+        assertEquals(0, WorldGeoGeographicProfileSupport.pendingRefreshCount())
+        assertEquals("manual_reset", WorldGeoGeographicProfileSupport.cacheStatus().lastInvalidationReason)
     }
 
     @Test
