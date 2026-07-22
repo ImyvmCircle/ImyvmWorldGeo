@@ -28,7 +28,7 @@ object WorldGeoPeriodTracker {
         val unixMillis = clock.millis()
         for ((kind, currentId) in current) {
             val previousId = previous[kind] ?: continue
-            if (previousId != currentId) emit(NaturalPeriodTransition(kind, previousId, currentId, unixMillis))
+            WorldGeoTimeService.missedPeriodTransitions(kind, previousId, currentId, unixMillis).forEach(::emit)
         }
         PeriodProcessingStore.replaceProcessedPeriodIds(current)
     }
