@@ -30,4 +30,13 @@ object CoreConfig {
     ) { obj: Config, path: String? ->
         positiveInt(path, obj.getInt(path))
     }
+
+    @JvmField
+    val ASYNC_CALLBACK_QUEUE_CAPACITY = Option(
+        "core.async_callback_queue_capacity",
+        1024,
+        "the maximum number of immutable callback payloads queued for asynchronous delivery."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
 }

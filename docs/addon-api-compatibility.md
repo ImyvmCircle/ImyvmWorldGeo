@@ -269,11 +269,20 @@ last processed period IDs in `iwg_periods.json`; after restart, the first lazy t
 current IDs and emits each missed boundary in order. Addons can use the previous/current period pair as their
 idempotency key for backfill settlement.
 
+Natural-period callbacks now receive immutable payloads through a bounded asynchronous queue. WorldGeo no
+longer runs addon callbacks on the server tick for this API. When the queue is full, WorldGeo drops the
+newest callback payload and writes a server warning instead of blocking tick progression.
+
 `RegionDataApi.registerBehaviorEventCallback(Consumer<WorldGeoBehaviorEvent>)` subscribes addons to neutral
 WorldGeo behavior facts. `RegionDataApi.getRecentBehaviorEvents()` and `RegionDataApi.getRecentBehaviorEvents(Int)` return the latest in-memory debug window.
 Producer coverage includes block place, block break, player death, entity damage, entity kill, container
 interaction, item use, Region/Scope/SubSpace enter and exit, and the server-operator debug command
 `/imyvmWorldGeo debug behavior emit`.
+
+Behavior-event callbacks follow the same bounded asynchronous delivery model. Published
+`WorldGeoBehaviorEvent` objects remain immutable facts; queue overflow drops the newest callback payload with
+a server warning, while the persisted stats store and recent-event debug window continue to update on the
+server thread.
 
 `RegionDataApi.queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and the explicit-parameter overload return
 persisted neutral behavior counts from `iwg_behavior_stats.json`. WorldGeo aggregates behavior facts by natural

@@ -1,19 +1,24 @@
 package com.imyvm.iwg.application.time
 
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.event.AsyncCallbackDispatcher
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.NaturalPeriodTransition
+import com.imyvm.iwg.infra.config.CoreConfig
 import com.imyvm.iwg.infra.PeriodProcessingStore
 import com.imyvm.iwg.infra.TestPeriodModeStore
 import java.time.Clock
 
 object WorldGeoPeriodTracker {
-    private val callbacks = mutableListOf<(NaturalPeriodTransition) -> Unit>()
+    private val dispatcher = AsyncCallbackDispatcher<NaturalPeriodTransition>(
+        "natural-period-callback",
+        { CoreConfig.ASYNC_CALLBACK_QUEUE_CAPACITY.value }
+    )
     private var lastProductionPeriodIds: Map<NaturalPeriodKind, String>? = null
     private var lastTestPeriodIds: Map<NaturalPeriodKind, String>? = null
 
     fun registerCallback(callback: (NaturalPeriodTransition) -> Unit) {
-        callbacks.add(callback)
+        dispatcher.registerCallback(callback)
     }
 
     fun currentPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
@@ -75,14 +80,14 @@ object WorldGeoPeriodTracker {
     internal fun resetForTest() {
         lastProductionPeriodIds = null
         lastTestPeriodIds = null
-        callbacks.clear()
+        dispatcher.clearForTest()
+    }
+
+    internal fun awaitCallbacksForTest(timeoutMillis: Long = 5_000L) {
+        dispatcher.awaitIdleForTest(timeoutMillis)
     }
 
     private fun emit(transition: NaturalPeriodTransition) {
-        callbacks.forEach { callback ->
-            runCatching { callback(transition) }.onFailure {
-                ImyvmWorldGeo.logger.warn("Natural period transition subscriber threw: ${it.message}", it)
-            }
-        }
+        dispatcher.dispatch(transition)
     }
 }

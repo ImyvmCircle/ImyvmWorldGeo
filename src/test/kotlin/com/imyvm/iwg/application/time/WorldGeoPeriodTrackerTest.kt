@@ -27,6 +27,7 @@ class WorldGeoPeriodTrackerTest {
         WorldGeoPeriodTracker.registerCallback { transitions.add(it.kind) }
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T15:30:00Z"))
+        WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(emptyList(), transitions)
     }
@@ -39,6 +40,7 @@ class WorldGeoPeriodTrackerTest {
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T15:59:00Z"))
         WorldGeoPeriodTracker.process(clock("2026-07-20T16:00:00Z"))
+        WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(listOf(NaturalPeriodKind.HOUR, NaturalPeriodKind.DAY), transitions)
     }
@@ -58,6 +60,7 @@ class WorldGeoPeriodTrackerTest {
         WorldGeoPeriodTracker.registerCallback { transitions.add(it.kind) }
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T16:00:00Z"))
+        WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(listOf(NaturalPeriodKind.HOUR, NaturalPeriodKind.DAY), transitions)
     }
@@ -77,6 +80,7 @@ class WorldGeoPeriodTrackerTest {
         WorldGeoPeriodTracker.registerCallback { transitions.add("${it.kind}:${it.previousId}->${it.currentId}") }
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T16:00:00Z"))
+        WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(
             listOf(
@@ -99,6 +103,7 @@ class WorldGeoPeriodTrackerTest {
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T15:59:00Z"))
         WorldGeoPeriodTracker.process(Clock.fixed(Instant.parse("2026-07-20T15:59:05Z"), ZoneOffset.UTC))
+        WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(listOf("HOUR:test:hour:0->test:hour:1"), transitions)
         assertEquals(emptyMap(), PeriodProcessingStore.getProcessedPeriodIds())
@@ -114,6 +119,7 @@ class WorldGeoPeriodTrackerTest {
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T15:59:00Z"))
         WorldGeoPeriodTracker.process(clock("2026-07-20T16:41:01Z"))
+        WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(emptyList(), transitions)
         assertEquals(

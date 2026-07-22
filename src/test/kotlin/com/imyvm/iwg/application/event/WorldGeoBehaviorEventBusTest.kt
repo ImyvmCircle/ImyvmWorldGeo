@@ -21,6 +21,7 @@ class WorldGeoBehaviorEventBusTest {
         val event = event(WorldGeoBehaviorType.DEBUG_TEST, 1)
 
         WorldGeoBehaviorEventBus.publish(event)
+        WorldGeoBehaviorEventBus.awaitCallbacksForTest()
 
         assertEquals(listOf(event), received)
         assertEquals(listOf(event), WorldGeoBehaviorEventBus.getRecentEvents())
