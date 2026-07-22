@@ -1,12 +1,16 @@
 package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.domain.DimensionNaturalStats
 import com.imyvm.iwg.domain.NaturalStatsCategory
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionNaturalStats
 import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.domain.RegionPlayerStats
+import com.imyvm.iwg.domain.WorldGeoBiomeCategoryRatio
+import com.imyvm.iwg.domain.WorldGeoGeographicProfile
+import com.imyvm.iwg.domain.WorldGeoGeographicProfileResult
 import com.imyvm.iwg.domain.WorldGeoSpaceType
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.SubSpace
@@ -76,7 +80,7 @@ fun onDebugGeographyRegion(player: ServerPlayer, region: Region): Int {
         region.numberID.toString(),
         region.name,
         region.calculateTotalArea(),
-        RegionNaturalStatsCollector.collectRegionStats(player.level().server, region),
+        WorldGeoGeographicProfileSupport.profile(player.level().server, region),
         "/imyvmWorldGeo debug geography region ${region.numberID} detail"
     )
 }
@@ -87,7 +91,7 @@ fun onDebugGeographyRegionDetail(player: ServerPlayer, region: Region, pageRaw: 
         player,
         WorldGeoSpaceType.REGION.name,
         region.numberID.toString(),
-        RegionNaturalStatsCollector.collectRegionStats(player.level().server, region),
+        WorldGeoGeographicProfileSupport.profile(player.level().server, region),
         pageRaw
     )
 }
@@ -100,7 +104,7 @@ fun onDebugGeographyScope(player: ServerPlayer, region: Region, scope: GeoScope)
         scope.requireAssignedScopeId().raw.toString(),
         scope.scopeName,
         scope.geoShape?.calculateArea(),
-        RegionNaturalStatsCollector.collectScopeStats(player.level().server, scope),
+        WorldGeoGeographicProfileSupport.profile(player.level().server, region, scope),
         "/imyvmWorldGeo debug geography scope ${region.numberID} ${scope.scopeName} detail"
     )
 }
@@ -111,7 +115,7 @@ fun onDebugGeographyScopeDetail(player: ServerPlayer, region: Region, scope: Geo
         player,
         WorldGeoSpaceType.GEOSCOPE.name,
         scope.requireAssignedScopeId().raw.toString(),
-        RegionNaturalStatsCollector.collectScopeStats(player.level().server, scope),
+        WorldGeoGeographicProfileSupport.profile(player.level().server, region, scope),
         pageRaw
     )
 }
@@ -124,7 +128,7 @@ fun onDebugGeographySubSpace(player: ServerPlayer, region: Region, parentScope: 
         subSpace.subSpaceId.toString(),
         subSpace.name,
         subSpace.geoShape.calculateArea(),
-        RegionNaturalStatsCollector.collectSubSpaceStats(player.level().server, subSpace),
+        WorldGeoGeographicProfileSupport.profile(player.level().server, region, parentScope, subSpace),
         "/imyvmWorldGeo debug geography subspace ${region.numberID} ${subSpace.name} detail"
     )
 }
@@ -141,7 +145,7 @@ fun onDebugGeographySubSpaceDetail(
         player,
         WorldGeoSpaceType.SUBSPACE.name,
         subSpace.subSpaceId.toString(),
-        RegionNaturalStatsCollector.collectSubSpaceStats(player.level().server, subSpace),
+        WorldGeoGeographicProfileSupport.profile(player.level().server, region, parentScope, subSpace),
         pageRaw
     )
 }
@@ -152,10 +156,10 @@ private fun sendDebugGeographyOverview(
     id: String,
     name: String,
     area: Double?,
-    result: RegionNaturalStatsResult,
+    result: WorldGeoGeographicProfileResult,
     detailCommand: String
 ): Int = when (result) {
-    is RegionNaturalStatsResult.ChunkLimitExceeded -> {
+    is WorldGeoGeographicProfileResult.ChunkLimitExceeded -> {
         player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.stats.error.chunk_limit",
@@ -167,38 +171,39 @@ private fun sendDebugGeographyOverview(
         0
     }
 
-    is RegionNaturalStatsResult.DimensionUnavailable -> {
+    is WorldGeoGeographicProfileResult.DimensionUnavailable -> {
         player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId)!!)
         0
     }
 
-    is RegionNaturalStatsResult.Success -> {
-        val stats = result.stats
+    is WorldGeoGeographicProfileResult.Success -> {
+        val profile = result.profile
         player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.debug.geography.header",
                 type,
                 id,
                 name,
-                stats.dimensionStats.keys.joinToString(", ").ifBlank { "-" },
+                profile.dimensionId?.toString() ?: "-",
                 area?.let { String.format(Locale.ROOT, "%.2f", it) } ?: "-",
-                dominantBiome(stats)?.toString() ?: "-",
-                stats.sampledColumnCount,
-                stats.loadedChunkCount,
-                stats.candidateChunkCount,
-                stats.isPartial
+                profile.attributeKey,
+                profile.averageElevation?.let { String.format(Locale.ROOT, "%.2f", it) } ?: "-",
+                profile.orientation?.key ?: "-",
+                profile.sampleWeight,
+                profile.loadedChunkCount,
+                profile.candidateChunkCount,
+                profile.isPartial
             )!!
         )
         player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.debug.geography.summary",
-                formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, SUMMARY_ITEM_LIMIT),
-                formatDistributionMap(stats.surfaceBlockCounts, stats.sampledColumnCount, SUMMARY_ITEM_LIMIT),
-                formatCountMap(stats.structureCounts, SUMMARY_ITEM_LIMIT),
-                formatDifficulty(stats.averageLocalDifficulty)
+                formatCategoryRatios(profile.categoryRatios),
+                profile.attributeKind.name,
+                formatDominantCategories(profile),
+                detailCommand
             )!!
         )
-        player.sendSystemMessage(Translator.tr("interaction.meta.debug.geography.detail_hint", detailCommand)!!)
         1
     }
 }
@@ -207,10 +212,10 @@ private fun sendDebugGeographyDetail(
     player: ServerPlayer,
     type: String,
     id: String,
-    result: RegionNaturalStatsResult,
+    result: WorldGeoGeographicProfileResult,
     pageRaw: String?
 ): Int = when (result) {
-    is RegionNaturalStatsResult.ChunkLimitExceeded -> {
+    is WorldGeoGeographicProfileResult.ChunkLimitExceeded -> {
         player.sendSystemMessage(
             Translator.tr(
                 "interaction.meta.stats.error.chunk_limit",
@@ -222,13 +227,14 @@ private fun sendDebugGeographyDetail(
         0
     }
 
-    is RegionNaturalStatsResult.DimensionUnavailable -> {
+    is WorldGeoGeographicProfileResult.DimensionUnavailable -> {
         player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId)!!)
         0
     }
 
-    is RegionNaturalStatsResult.Success -> {
-        val lines = buildDebugGeographyDetailLines(result.stats)
+    is WorldGeoGeographicProfileResult.Success -> {
+        val profile = result.profile
+        val lines = buildDebugGeographyDetailLines(profile)
         if (lines.isEmpty()) {
             player.sendSystemMessage(Translator.tr("interaction.meta.debug.geography.detail.empty", type, id)!!)
             return 0
@@ -241,35 +247,31 @@ private fun sendDebugGeographyDetail(
     }
 }
 
-private fun buildDebugGeographyDetailLines(stats: RegionNaturalStats): List<Component> = buildList {
-    stats.dimensionStats.forEach { (dimensionId, dimensionStats) ->
+private fun buildDebugGeographyDetailLines(profile: WorldGeoGeographicProfile): List<Component> = buildList {
+    profile.categoryRatios.forEach { ratio ->
         add(
             Translator.tr(
-                "interaction.meta.debug.geography.detail.dimension",
-                dimensionId,
-                dimensionStats.sampledColumnCount,
-                dimensionStats.loadedChunkCount,
-                dimensionStats.candidateChunkCount,
-                formatDifficulty(dimensionStats.averageLocalDifficulty)
+                "interaction.meta.debug.geography.detail.category",
+                ratio.category.key,
+                ratio.sampleWeight,
+                String.format(Locale.ROOT, "%.1f%%", ratio.ratio * 100.0)
             )!!
         )
     }
-    addDebugDistributionLines("biome", stats.biomeCounts, stats.sampledColumnCount)
-    addDebugDistributionLines("surface", stats.surfaceBlockCounts, stats.sampledColumnCount)
-    stats.structureCounts.forEach { (structureId, count) ->
-        add(Translator.tr("interaction.meta.debug.geography.detail.count", "structure", structureId, count)!!)
+    profile.rawBiomeCounts.forEach { (biomeId, count) ->
+        add(Translator.tr("interaction.meta.debug.geography.detail.biome", biomeId, count)!!)
     }
 }
 
-private fun MutableList<Component>.addDebugDistributionLines(label: String, values: Map<Identifier, Int>, total: Int) {
-    values.forEach { (key, count) ->
-        val percent = if (total <= 0) "0.0%" else String.format(Locale.ROOT, "%.1f%%", count.toDouble() * 100.0 / total)
-        add(Translator.tr("interaction.meta.debug.geography.detail.distribution", label, key, count, percent)!!)
+private fun formatCategoryRatios(ratios: List<WorldGeoBiomeCategoryRatio>): String {
+    if (ratios.isEmpty()) return Translator.raw("interaction.meta.stats.none") ?: "none"
+    return ratios.joinToString(", ") { ratio ->
+        "${ratio.category.key} ${String.format(Locale.ROOT, "%.1f%%", ratio.ratio * 100.0)} (${ratio.sampleWeight})"
     }
 }
 
-private fun dominantBiome(stats: RegionNaturalStats): Identifier? =
-    stats.biomeCounts.maxByOrNull { it.value }?.key
+private fun formatDominantCategories(profile: WorldGeoGeographicProfile): String =
+    profile.dominantCategories.joinToString("+") { it.key }.ifBlank { profile.attributeKey }
 
 private fun sendStatsMessages(
     player: ServerPlayer,

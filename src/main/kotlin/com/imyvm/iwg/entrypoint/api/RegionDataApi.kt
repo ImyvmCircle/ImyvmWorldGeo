@@ -2,6 +2,7 @@ package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
@@ -383,6 +384,19 @@ object RegionDataApi {
 
     fun getSubSpaceSnapshot(server: MinecraftServer, region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot =
         WorldGeoSpaceSupport.snapshot(server, region, scope, subSpace)
+
+    fun getRegionGeographicProfile(server: MinecraftServer, region: Region): WorldGeoGeographicProfileResult =
+        WorldGeoGeographicProfileSupport.profile(server, region)
+
+    fun getScopeGeographicProfile(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoGeographicProfileResult =
+        WorldGeoGeographicProfileSupport.profile(server, region, scope)
+
+    fun getSubSpaceGeographicProfile(
+        server: MinecraftServer,
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace
+    ): WorldGeoGeographicProfileResult = WorldGeoGeographicProfileSupport.profile(server, region, scope, subSpace)
 
     fun listRegionSettingSummaries(
         region: Region,

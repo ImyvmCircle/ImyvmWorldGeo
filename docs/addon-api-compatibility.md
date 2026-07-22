@@ -169,6 +169,19 @@ PlayerInteractionApi.teleportPlayerToScopeAsAdministrator(player, region, scope)
 
 The administrator entry bypasses only accessibility. Both entries still require the exact live Region/Scope pair and enforce dimension availability, physical safety, bounded fallback, persistence, and rollback. The retained ordinary method descriptor is unchanged; unrestricted use of private teleport points is not retained as compatibility behavior.
 
+## R13 geographic profile API
+
+Use `RegionDataApi.getRegionGeographicProfile`, `getScopeGeographicProfile`, and
+`getSubSpaceGeographicProfile` when an addon needs geography for menus, lore,
+settlement inputs, or OP diagnostics. These methods return `WorldGeoGeographicProfileResult`
+so addons can handle unloaded dimensions and oversized scan ranges without parsing chat text.
+
+`WorldGeoSpaceSnapshot.dominantBiomeId` remains available for compatibility. New code should
+prefer the profile result because it exposes the neutral geographic attribute, overworld biome
+category ratios, average elevation, orientation, sampling counters, and raw biome weights.
+Community and Adventure should interpret these facts in their own modules instead of reading
+WorldGeo implementation packages.
+
 ## R12 SubSpace API contract
 
 `SubSpace` is a child space owned by a persisted `GeoScope`. Addons read SubSpace data through `RegionDataApi.getRegionSubSpaces`, `getSubSpaceById`, `getSubSpaceByName`, `getRegionScopeSubSpaceByLocation`, and `resolveSubSpaceAtEntity`. Existing Region and Scope location queries keep their descriptors and continue to return Region and Scope pairs.
