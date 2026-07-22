@@ -6,7 +6,9 @@ import com.imyvm.iwg.domain.WorldGeoSettingVisibility
 import com.imyvm.iwg.domain.WorldGeoSpaceSnapshot
 import com.imyvm.iwg.domain.WorldGeoSpaceType
 import com.imyvm.iwg.domain.component.EffectSetting
+import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
+import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
 import com.imyvm.iwg.domain.component.ExtensionRuleSetting
@@ -16,8 +18,10 @@ import com.imyvm.iwg.domain.component.RuleSetting
 import com.imyvm.iwg.domain.component.Setting
 import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.dynmap.DynmapColorResolver
 import com.imyvm.iwg.util.translator.getOnlinePlayers
 import net.minecraft.network.chat.Component
+import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import java.util.Collections
 
@@ -39,7 +43,12 @@ object WorldGeoSpaceSupport {
             childSubSpaceCount = region.subSpaces.size,
             stringTags = emptySet(),
             keyedTags = emptyMap(),
-            statsVersion = SPACE_STATS_VERSION
+            statsVersion = SPACE_STATS_VERSION,
+            dominantBiomeId = null,
+            entryMessageEnabled = entryMessageEnabled(region),
+            entryMessageConfigured = entryMessageConfigured(region),
+            mapColorSuggestion = DynmapColorResolver.resolveColor(region),
+            settingSummary = settingSummaries(region, WorldGeoSettingVisibility.PUBLIC)
         )
     }
 
@@ -59,7 +68,12 @@ object WorldGeoSpaceSupport {
             childSubSpaceCount = region.subSpaces.count { it.parentScopeId == scope.requireAssignedScopeId() },
             stringTags = emptySet(),
             keyedTags = emptyMap(),
-            statsVersion = SPACE_STATS_VERSION
+            statsVersion = SPACE_STATS_VERSION,
+            dominantBiomeId = null,
+            entryMessageEnabled = entryMessageEnabled(scope),
+            entryMessageConfigured = entryMessageConfigured(scope),
+            mapColorSuggestion = DynmapColorResolver.resolveColor(region),
+            settingSummary = settingSummaries(scope, WorldGeoSettingVisibility.PUBLIC)
         )
     }
 
@@ -81,7 +95,12 @@ object WorldGeoSpaceSupport {
             childSubSpaceCount = 0,
             stringTags = Collections.unmodifiableSet(linkedSetOf<String>().also { it.addAll(subSpace.stringTags) }),
             keyedTags = Collections.unmodifiableMap(linkedMapOf<String, String>().also { it.putAll(subSpace.keyedTags) }),
-            statsVersion = SPACE_STATS_VERSION
+            statsVersion = SPACE_STATS_VERSION,
+            dominantBiomeId = dominantBiomeId(subSpace.keyedTags),
+            entryMessageEnabled = true,
+            entryMessageConfigured = subSpace.entryMessage != null,
+            mapColorSuggestion = DynmapColorResolver.resolveColor(region),
+            settingSummary = settingSummaries(subSpace, WorldGeoSettingVisibility.PUBLIC)
         )
     }
 
@@ -132,6 +151,25 @@ object WorldGeoSpaceSupport {
             }
         }
         return count
+    }
+
+    private fun entryMessageEnabled(region: Region): Boolean =
+        region.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
+
+    private fun entryMessageEnabled(scope: GeoScope): Boolean =
+        scope.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true
+
+    private fun entryMessageConfigured(region: Region): Boolean =
+        region.settingStore.entryExitMessage(EntryExitMessageKey.ENTER_MESSAGE) != null ||
+            region.settingStore.entryExitMessage(EntryExitMessageKey.EXIT_MESSAGE) != null
+
+    private fun entryMessageConfigured(scope: GeoScope): Boolean =
+        scope.settingStore.entryExitMessage(EntryExitMessageKey.ENTER_MESSAGE) != null ||
+            scope.settingStore.entryExitMessage(EntryExitMessageKey.EXIT_MESSAGE) != null
+
+    private fun dominantBiomeId(tags: Map<String, String>): Identifier? {
+        val raw = tags["worldgeo:dominant_biome"] ?: tags["dominant_biome"] ?: return null
+        return runCatching { Identifier.parse(raw) }.getOrNull()
     }
 
     private fun settingSummaries(

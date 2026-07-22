@@ -22,5 +22,10 @@ data class WorldGeoSpaceSnapshot(
     val childSubSpaceCount: Int,
     val stringTags: Set<String>,
     val keyedTags: Map<String, String>,
-    val statsVersion: Long
+    val statsVersion: Long,
+    val dominantBiomeId: Identifier? = null,
+    val entryMessageEnabled: Boolean = true,
+    val entryMessageConfigured: Boolean = false,
+    val mapColorSuggestion: Int? = null,
+    val settingSummary: List<WorldGeoSettingSummary> = emptyList()
 )

@@ -8,6 +8,10 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.EffectKey
+import com.imyvm.iwg.domain.component.EntryExitMessageKey
+import com.imyvm.iwg.domain.component.EntryExitMessageSetting
+import com.imyvm.iwg.domain.component.EntryExitToggleKey
+import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionSetting
 import com.imyvm.iwg.domain.component.ScopeId
@@ -35,9 +39,18 @@ class RegionDataApiTest {
     @Test
     fun `space snapshot exposes immutable subspace facts`() {
         val scope = scope("first", geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(30, 30)))
-        val subSpace = SubSpace(7, "room", scope.requireAssignedScopeId(), scope.worldId,
-            GeoShape.rectangle(GeoPoint(5, 5), GeoPoint(10, 10)), stringTags = setOf("debug"))
-        val region = Region("region", 1, mutableListOf(scope), subSpaces = mutableListOf(subSpace))
+        val subSpace = SubSpace(
+            7,
+            "room",
+            scope.requireAssignedScopeId(),
+            scope.worldId,
+            GeoShape.rectangle(GeoPoint(5, 5), GeoPoint(10, 10)),
+            enterMessage = "enter",
+            settings = mutableListOf(EntryExitToggleSetting(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED, true)),
+            stringTags = setOf("debug"),
+            keyedTags = mapOf("worldgeo:dominant_biome" to "minecraft:plains")
+        )
+        val region = Region("green-region", 1, mutableListOf(scope), subSpaces = mutableListOf(subSpace))
 
         val snapshot = RegionDataApi.getSubSpaceSnapshot(region, scope, subSpace)
 
@@ -46,7 +59,32 @@ class RegionDataApiTest {
         assertEquals(1, snapshot.parentRegionId)
         assertEquals(scope.requireAssignedScopeId().raw, snapshot.parentScopeId)
         assertEquals(setOf("debug"), snapshot.stringTags)
+        assertEquals(Identifier.parse("minecraft:plains"), snapshot.dominantBiomeId)
+        assertEquals(true, snapshot.entryMessageEnabled)
+        assertEquals(true, snapshot.entryMessageConfigured)
+        assertEquals(0x44BB44, snapshot.mapColorSuggestion)
+        assertEquals(listOf("ENTRY_EXIT_MESSAGE_ENABLED"), snapshot.settingSummary.map { it.key })
         assertFailsWith<UnsupportedOperationException> { (snapshot.stringTags as MutableSet).add("later") }
+    }
+
+    @Test
+    fun `region snapshot reports entry message configuration`() {
+        val region = Region(
+            "green-region",
+            1,
+            mutableListOf(scope("first")),
+            settings = mutableListOf(
+                EntryExitToggleSetting(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED, false),
+                EntryExitMessageSetting(EntryExitMessageKey.ENTER_MESSAGE, "hello")
+            )
+        )
+
+        val snapshot = RegionDataApi.getRegionSpaceSnapshot(region)
+
+        assertEquals(false, snapshot.entryMessageEnabled)
+        assertEquals(true, snapshot.entryMessageConfigured)
+        assertEquals(0x44BB44, snapshot.mapColorSuggestion)
+        assertEquals(2, snapshot.settingSummary.size)
     }
 
     @Test
