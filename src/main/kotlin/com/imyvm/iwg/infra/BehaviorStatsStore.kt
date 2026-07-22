@@ -49,6 +49,15 @@ object BehaviorStatsStore {
     }
 
     fun record(event: WorldGeoBehaviorEvent) {
+        record(event, 1L)
+    }
+
+    internal fun recordDebugCount(event: WorldGeoBehaviorEvent, count: Long) {
+        require(count > 0L) { "count must be positive" }
+        record(event, count)
+    }
+
+    private fun record(event: WorldGeoBehaviorEvent, count: Long) {
         val regionId = event.regionId ?: return
         val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC))
         for ((periodKind, periodId) in periodIds) {
@@ -62,7 +71,7 @@ object BehaviorStatsStore {
                 playerUuid = event.playerUuid,
                 objectId = event.objectId
             )
-            counts[key] = Math.addExact(counts[key] ?: 0L, 1L)
+            counts[key] = Math.addExact(counts[key] ?: 0L, count)
             require(counts.size <= MAX_ENTRY_COUNT) { "behavior stats entry count exceeds $MAX_ENTRY_COUNT" }
         }
     }

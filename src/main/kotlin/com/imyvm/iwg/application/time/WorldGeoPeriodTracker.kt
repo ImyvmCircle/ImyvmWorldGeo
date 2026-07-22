@@ -17,6 +17,12 @@ object WorldGeoPeriodTracker {
     fun currentPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
         WorldGeoTimeService.currentNaturalPeriodIds(clock)
 
+    fun emitMissedForDebug(kind: NaturalPeriodKind, previousId: String, currentId: String, unixMillis: Long = Clock.systemUTC().millis()): Int {
+        val transitions = WorldGeoTimeService.missedPeriodTransitions(kind, previousId, currentId, unixMillis)
+        transitions.forEach(::emit)
+        return transitions.size
+    }
+
     fun process(clock: Clock = Clock.systemUTC()) {
         val current = currentPeriodIds(clock)
         val previous = lastPeriodIds ?: PeriodProcessingStore.getProcessedPeriodIds().takeIf { it.isNotEmpty() }

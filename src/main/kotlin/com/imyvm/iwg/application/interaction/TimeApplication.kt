@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.interaction
 
+import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
+import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
@@ -35,4 +37,14 @@ fun onDebugTime(player: ServerPlayer): Int {
         )!!
     )
     return 1
+}
+
+fun onDebugPeriodEmit(player: ServerPlayer, periodKindName: String, previousId: String, currentId: String): Int {
+    val periodKind = runCatching { enumValueOf<NaturalPeriodKind>(periodKindName.uppercase()) }.getOrNull() ?: run {
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.period.invalid_kind", periodKindName)!!)
+        return 0
+    }
+    val count = WorldGeoPeriodTracker.emitMissedForDebug(periodKind, previousId, currentId)
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.period.emit", periodKind.name, previousId, currentId, count)!!)
+    return count
 }

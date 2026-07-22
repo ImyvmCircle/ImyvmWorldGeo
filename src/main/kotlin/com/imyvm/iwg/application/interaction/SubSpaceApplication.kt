@@ -328,7 +328,12 @@ private fun sendDebugSnapshot(player: ServerPlayer, snapshot: WorldGeoSpaceSnaps
             snapshot.childSubSpaceCount,
             snapshot.stringTags.joinToString(", "),
             snapshot.keyedTags.entries.joinToString(", ") { "${it.key}=${it.value}" },
-            snapshot.statsVersion
+            snapshot.statsVersion,
+            snapshot.dominantBiomeId?.toString() ?: "-",
+            snapshot.entryMessageEnabled,
+            snapshot.entryMessageConfigured,
+            snapshot.mapColorSuggestion?.let { "#" + it.toString(16).padStart(6, '0').uppercase() } ?: "-",
+            snapshot.settingSummary.joinToString(", ") { "${it.key}=${it.value}" }
         )!!
     )
 }

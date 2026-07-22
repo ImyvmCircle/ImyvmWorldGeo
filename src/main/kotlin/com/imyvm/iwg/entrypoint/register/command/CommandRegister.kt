@@ -507,6 +507,19 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             .then(literal("emit").executes { runDebugBehaviorEmit(it) })
                             .then(literal("recent").executes { runDebugBehaviorRecent(it) })
                             .then(literal("stats").executes { runDebugBehaviorStats(it) })
+                            .then(
+                                literal("typedStats")
+                                    .executes { runDebugBehaviorTypedStats(it) }
+                                    .then(argument("periodKind", StringArgumentType.word()).then(argument("periodId", StringArgumentType.string()).executes { runDebugBehaviorTypedStatsForPeriod(it) }))
+                            )
+                            .then(
+                                literal("seed")
+                                    .then(argument("behaviorType", StringArgumentType.word()).then(argument("objectId", StringArgumentType.string()).then(argument("count", StringArgumentType.word()).executes { runDebugBehaviorSeed(it) })))
+                            )
+                    )
+                    .then(
+                        literal("period")
+                            .then(literal("emit").then(argument("periodKind", StringArgumentType.word()).then(argument("previousId", StringArgumentType.string()).then(argument("currentId", StringArgumentType.string()).executes { runDebugPeriodEmit(it) }))))
                     )
                     .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
                     .then(
@@ -1023,6 +1036,34 @@ private fun runDebugBehaviorRecent(context: CommandContext<CommandSourceStack>):
 private fun runDebugBehaviorStats(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onDebugBehaviorStats(player)
+}
+
+private fun runDebugBehaviorTypedStats(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugBehaviorTypedStats(player)
+}
+
+private fun runDebugBehaviorTypedStatsForPeriod(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val periodKind = context.getArgument("periodKind", String::class.java)
+    val periodId = context.getArgument("periodId", String::class.java)
+    return onDebugBehaviorTypedStats(player, periodKind, periodId)
+}
+
+private fun runDebugBehaviorSeed(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val behaviorType = context.getArgument("behaviorType", String::class.java)
+    val objectId = context.getArgument("objectId", String::class.java)
+    val count = context.getArgument("count", String::class.java)
+    return onDebugBehaviorSeed(player, behaviorType, objectId, count)
+}
+
+private fun runDebugPeriodEmit(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val periodKind = context.getArgument("periodKind", String::class.java)
+    val previousId = context.getArgument("previousId", String::class.java)
+    val currentId = context.getArgument("currentId", String::class.java)
+    return onDebugPeriodEmit(player, periodKind, previousId, currentId)
 }
 
 private fun runValidateSubSpaces(context: CommandContext<CommandSourceStack>): Int {
