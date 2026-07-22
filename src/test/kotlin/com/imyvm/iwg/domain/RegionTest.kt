@@ -196,6 +196,50 @@ class RegionTest {
         assertFailsWith<IllegalArgumentException> { region.removeScope(main) }
     }
 
+    @Test
+    fun `subspaces cannot overlap siblings`() {
+        val main = GeoScope(
+            "main",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(100, 100)),
+            scopeId = ScopeId(com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(7, 1))
+        )
+        val region = Region("region", 7, mutableListOf(main))
+        val first = SubSpace(
+            1,
+            "first",
+            main.requireAssignedScopeId(),
+            main.worldId,
+            GeoShape.rectangle(GeoPoint(10, 10), GeoPoint(40, 40))
+        )
+        region.addSubSpace(first)
+
+        assertFailsWith<IllegalArgumentException> {
+            region.addSubSpace(
+                SubSpace(
+                    2,
+                    "second",
+                    main.requireAssignedScopeId(),
+                    main.worldId,
+                    GeoShape.rectangle(GeoPoint(30, 30), GeoPoint(60, 60))
+                )
+            )
+        }
+        region.addSubSpace(
+            SubSpace(
+                3,
+                "third",
+                main.requireAssignedScopeId(),
+                main.worldId,
+                GeoShape.rectangle(GeoPoint(60, 60), GeoPoint(90, 90))
+            )
+        )
+        assertFailsWith<IllegalArgumentException> {
+            region.replaceSubSpaceGeometry(first, GeoShape.rectangle(GeoPoint(30, 30), GeoPoint(70, 70)))
+        }
+    }
+
     private fun scope(name: String, id: Long) = GeoScope(
         name,
         Identifier.parse("minecraft:overworld"),

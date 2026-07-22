@@ -15,6 +15,7 @@ import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.isValidGeoName
 import com.imyvm.iwg.util.translator.resolvePlayerName
 import com.imyvm.iwg.util.text.Translator
+import com.imyvm.iwg.util.geo.checkIntersection
 import net.minecraft.server.MinecraftServer
 import net.minecraft.network.chat.Component
 import kotlin.math.round
@@ -274,6 +275,20 @@ class Region(
         require(parentScope.worldId == subSpace.worldId) { "subspace world must match parent scope" }
         val parentShape = parentScope.geoShape ?: throw IllegalArgumentException("subspace parent scope must have a shape")
         require(subSpace.geoShape.isContainedBy(parentShape)) { "subspace shape must be inside parent scope" }
+        val siblingScopes = mutableSubSpaces
+            .asSequence()
+            .filter { it !== subSpace && it.parentScopeId == subSpace.parentScopeId }
+            .map { sibling ->
+                GeoScope(
+                    sibling.name,
+                    sibling.worldId,
+                    null,
+                    geoShape = sibling.geoShape,
+                    scopeId = com.imyvm.iwg.domain.component.ScopeId(subSpace.parentScopeId.raw)
+                ) to name
+            }
+            .toList()
+        require(checkIntersection(subSpace.geoShape, siblingScopes).isEmpty()) { "subspace overlaps another subspace" }
     }
 
     fun getScopeInfos(server: MinecraftServer): List<Component> {

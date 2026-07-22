@@ -66,7 +66,7 @@ fun onSubSpaceShapeReplacementFromSelection(
     }
     val state = getCreationSelectionForSubSpace(player) ?: return 0
     val resolvedShapeType = shapeType ?: subSpace.geoShape.geoShapeType
-    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope)) {
+    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope, subSpace)) {
         is Result.Ok -> {
             val replaced = onReplacingSubSpaceShape(player, region, parentScope, subSpace, result.value)
             if (replaced == 1) {

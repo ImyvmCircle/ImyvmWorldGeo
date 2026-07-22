@@ -11,6 +11,7 @@ import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.generateNewScopeIdRaw
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.infra.RegionDatabase
@@ -137,7 +138,8 @@ object RegionFactory {
         positions: List<BlockPos>,
         shapeType: GeoShapeType,
         region: Region,
-        parentScope: GeoScope
+        parentScope: GeoScope,
+        excludedSubSpace: SubSpace? = null
     ): Result<GeoShape, CreationError> {
         require(region.containsScope(parentScope)) { "scope does not belong to region" }
         val geoShapeResult = createGeoShape(
@@ -150,7 +152,8 @@ object RegionFactory {
         )
         if (geoShapeResult is Result.Err) return geoShapeResult
         val geoShape = (geoShapeResult as Result.Ok).value
-        return validateSubSpaceShapePlacement(geoShape, region.name, parentScope)?.let { Result.Err(it) } ?: Result.Ok(geoShape)
+        return validateSubSpaceShapePlacement(geoShape, region, parentScope, excludedSubSpace)?.let { Result.Err(it) }
+            ?: Result.Ok(geoShape)
     }
 
     internal fun validateSubSpaceSelection(
@@ -179,7 +182,7 @@ object RegionFactory {
         )
         if (geoShapeResult is Result.Err) return geoShapeResult.error
         val geoShape = (geoShapeResult as Result.Ok).value
-        return validateSubSpaceShapePlacement(geoShape, regionName, parentScope)
+        return validateSubSpaceShapeContainedByParent(geoShape, regionName, parentScope)
     }
 
 
@@ -264,6 +267,30 @@ object RegionFactory {
         }
 
     private fun validateSubSpaceShapePlacement(
+        geoShape: GeoShape,
+        region: Region,
+        parentScope: GeoScope,
+        excludedSubSpace: SubSpace?
+    ): CreationError? {
+        validateSubSpaceShapeContainedByParent(geoShape, region.name, parentScope)?.let { return it }
+        val existingSubSpaces = region.subSpaces
+            .asSequence()
+            .filter { it !== excludedSubSpace && it.parentScopeId == parentScope.requireAssignedScopeId() }
+            .map { subSpace ->
+                GeoScope(
+                    subSpace.name,
+                    subSpace.worldId,
+                    null,
+                    geoShape = subSpace.geoShape,
+                    scopeId = ScopeId(parentScope.requireAssignedScopeId().raw)
+                ) to region.name
+            }
+            .toList()
+        val intersections = checkIntersection(geoShape, existingSubSpaces)
+        return intersections.takeIf { it.isNotEmpty() }?.let(CreationError::IntersectionBetweenScopes)
+    }
+
+    private fun validateSubSpaceShapeContainedByParent(
         geoShape: GeoShape,
         regionName: String,
         parentScope: GeoScope
