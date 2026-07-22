@@ -111,6 +111,77 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
+                literal("scope")
+                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
+                    .then(
+                        literal("add")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .executes { runAddScope(it) }
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .executes { runAddScope(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("delete")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runDeleteScope(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("modify")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runModifyScope(it) }
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("rename")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("newName", StringArgumentType.string())
+                                                    .executes { runRenameScope(it) }
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("transfer")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("targetRegionIdentifier", StringArgumentType.string())
+                                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                                    .executes { runTransferScope(it) }
+                                            )
+                                    )
+                            )
+                    )
+            )
+            .then(
                 literal("teleportPoint")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
