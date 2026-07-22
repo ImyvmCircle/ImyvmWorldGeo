@@ -5,10 +5,11 @@ import com.imyvm.iwg.application.region.permission.helper.PermissionHelperKt;
 import com.imyvm.iwg.domain.Region;
 import com.imyvm.iwg.domain.component.GeoScope;
 import com.imyvm.iwg.domain.component.PermissionKey;
+import com.imyvm.iwg.domain.component.SubSpace;
 import com.imyvm.iwg.infra.RegionDatabase;
 import com.imyvm.iwg.infra.config.PermissionConfig;
 import com.imyvm.iwg.util.text.Translator;
-import kotlin.Pair;
+import kotlin.Triple;
 import net.minecraft.core.BlockPos;
 import net.minecraft.world.entity.item.ItemEntity;
 import net.minecraft.world.entity.player.Player;
@@ -23,16 +24,23 @@ public class ItemPickupMixin {
     @Inject(at = @At("HEAD"), method = "playerTouch", cancellable = true)
     private void onPlayerTouch(Player player, CallbackInfo ci) {
         BlockPos pos = ((ItemEntity) (Object) this).blockPosition();
-        Pair<Region, GeoScope> regionAndScope = RegionDatabase.INSTANCE.getRegionAndScopeAt(
+        Triple<Region, GeoScope, SubSpace> resolved = RegionDatabase.INSTANCE.getRegionScopeSubSpaceAt(
                 ((ItemEntity) (Object) this).level(), pos.getX(), pos.getZ());
-        if (regionAndScope == null) return;
-        Region region = regionAndScope.getFirst();
-        GeoScope scope = regionAndScope.getSecond();
-        PermissionDenialSource denial = PermissionHelperKt.getScopePermissionDenialSource(
-                region, scope, player.getUUID(), PermissionKey.RPG_ITEM_PICKUP,
-                PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP.getValue());
+        if (resolved == null) return;
+        Region region = resolved.getFirst();
+        GeoScope scope = resolved.getSecond();
+        SubSpace subSpace = resolved.getThird();
+        PermissionDenialSource denial = subSpace == null
+                ? PermissionHelperKt.getScopePermissionDenialSource(
+                        region, scope, player.getUUID(), PermissionKey.RPG_ITEM_PICKUP,
+                        PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP.getValue())
+                : PermissionHelperKt.getSubSpacePermissionDenialSource(
+                        region, scope, subSpace, player.getUUID(), PermissionKey.RPG_ITEM_PICKUP,
+                        PermissionConfig.PERMISSION_DEFAULT_RPG_ITEM_PICKUP.getValue());
         if (denial == null) return;
-        String ctx = PermissionHelperKt.buildScopePermissionDenialContext(region, scope, denial);
+        String ctx = subSpace == null
+                ? PermissionHelperKt.buildScopePermissionDenialContext(region, scope, denial)
+                : PermissionHelperKt.buildSubSpacePermissionDenialContext(region, scope, subSpace, denial);
         player.sendSystemMessage(Translator.INSTANCE.tr("setting.permission.item_pickup", ctx));
         ci.cancel();
     }

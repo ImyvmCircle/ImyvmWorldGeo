@@ -114,6 +114,54 @@ class PermissionHelperTest {
     }
 
     @Test
+    fun `subspace denial source and context distinguish subspace from scope and region`() {
+        val parentScope = GeoScope(
+            "parent",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(10, 10)),
+            scopeId = ScopeId(generateCompatScopeIdRaw(3, 0))
+        )
+        val parentRegion = Region("parent-region", 3, mutableListOf(parentScope))
+        val subSpace = SubSpace(
+            1,
+            "plot",
+            parentScope.requireAssignedScopeId(),
+            parentScope.worldId,
+            GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
+        )
+        parentRegion.addSubSpace(subSpace)
+        parentRegion.settingStore.put(PermissionSetting(PermissionKey.FLY, false))
+        parentScope.settingStore.put(PermissionSetting(PermissionKey.BUILD, false))
+        subSpace.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
+
+        assertEquals(
+            PermissionDenialSource.AtSubSpace,
+            getSubSpacePermissionDenialSource(parentRegion, parentScope, subSpace, player, PermissionKey.PVP)
+        )
+        assertEquals(
+            PermissionDenialSource.AtScope,
+            getSubSpacePermissionDenialSource(parentRegion, parentScope, subSpace, player, PermissionKey.BUILD)
+        )
+        assertEquals(
+            PermissionDenialSource.AtRegion,
+            getSubSpacePermissionDenialSource(parentRegion, parentScope, subSpace, player, PermissionKey.FLY)
+        )
+        assertEquals(
+            "SubSpace &bplot&7 of Scope &bparent&7 of Region &bparent-region&7",
+            buildSubSpacePermissionDenialContext(parentRegion, parentScope, subSpace, PermissionDenialSource.AtSubSpace)
+        )
+        assertEquals(
+            "Scope &bparent&7 of Region &bparent-region&7",
+            buildSubSpacePermissionDenialContext(parentRegion, parentScope, subSpace, PermissionDenialSource.AtScope)
+        )
+        assertEquals(
+            "Region &bparent-region&7",
+            buildSubSpacePermissionDenialContext(parentRegion, parentScope, subSpace, PermissionDenialSource.AtRegion)
+        )
+    }
+
+    @Test
     fun `extension permissions use the same container and personal precedence`() {
         ExtensionSettingRegistry.registerPermissionKey("test:permission", true)
         val key = ExtensionSettingRegistry.permissionKey("test:permission")

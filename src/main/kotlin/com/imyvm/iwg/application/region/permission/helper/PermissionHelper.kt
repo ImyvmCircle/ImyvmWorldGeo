@@ -5,6 +5,7 @@ import com.imyvm.iwg.domain.component.*
 import java.util.UUID
 
 sealed class PermissionDenialSource {
+    data object AtSubSpace : PermissionDenialSource()
     data object AtScope : PermissionDenialSource()
     data object AtRegion : PermissionDenialSource()
     data object ByDefault : PermissionDenialSource()
@@ -53,6 +54,15 @@ fun hasScopePermission(
     defaultValue: Boolean = true
 ): Boolean = getScopePermissionDenialSource(region, scope, playerUUID, key, defaultValue) == null
 
+fun hasSubSpacePermission(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    playerUUID: UUID,
+    key: PermissionKey,
+    defaultValue: Boolean = true
+): Boolean = getSubSpacePermissionDenialSource(region, scope, subSpace, playerUUID, key, defaultValue) == null
+
 fun getRegionPermissionDenialSource(
     region: Region,
     playerUUID: UUID,
@@ -71,6 +81,18 @@ fun getScopePermissionDenialSource(
     defaultValue: Boolean = true
 ): PermissionDenialSource? = denialSource(
     resolvePermission(PermissionTarget.ScopeOverride(region, scope), PermissionSubject.Player(playerUUID), key),
+    defaultValue
+)
+
+fun getSubSpacePermissionDenialSource(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    playerUUID: UUID,
+    key: PermissionKey,
+    defaultValue: Boolean = true
+): PermissionDenialSource? = denialSource(
+    resolvePermission(PermissionTarget.SubSpaceOverride(region, scope, subSpace), PermissionSubject.Player(playerUUID), key),
     defaultValue
 )
 
@@ -144,11 +166,23 @@ fun getPermissionDenialSource(
 }
 
 fun buildScopePermissionDenialContext(region: Region, scope: GeoScope, source: PermissionDenialSource): String {
-    return if (source == PermissionDenialSource.AtScope) {
+    return if (source == PermissionDenialSource.AtScope || source == PermissionDenialSource.AtSubSpace) {
         "Scope &b${scope.scopeName}&7 of Region &b${region.name}&7"
     } else {
         "Region &b${region.name}&7"
     }
+}
+
+fun buildSubSpacePermissionDenialContext(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace,
+    source: PermissionDenialSource
+): String = when (source) {
+    PermissionDenialSource.AtSubSpace -> "SubSpace &b${subSpace.name}&7 of Scope &b${scope.scopeName}&7 of Region &b${region.name}&7"
+    PermissionDenialSource.AtScope -> "Scope &b${scope.scopeName}&7 of Region &b${region.name}&7"
+    PermissionDenialSource.AtRegion,
+    PermissionDenialSource.ByDefault -> "Region &b${region.name}&7"
 }
 
 @Deprecated("Use buildScopePermissionDenialContext or the region name directly")
@@ -183,7 +217,7 @@ private fun resolveExplicitPermission(
 ): ResolvedPermission? {
     if (target is PermissionTarget.SubSpaceOverride) {
         findPermission(target.subSpace.settingStore, subject, key)?.let {
-            return ResolvedPermission(it, PermissionDenialSource.AtScope)
+            return ResolvedPermission(it, PermissionDenialSource.AtSubSpace)
         }
     }
     if (target is PermissionTarget.ScopeOverride) {

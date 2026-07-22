@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.region.permission
 
 import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
+import com.imyvm.iwg.application.region.permission.helper.hasSubSpacePermission
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_FLY
@@ -78,13 +79,17 @@ fun processPlayerFly(player: ServerPlayer) {
 
 private fun processPlayerFly(player: ServerPlayer, currentTick: Long) {
     val uuid = player.uuid
-    val regionAndScope = RegionDatabase.getRegionAndScopeAt(
+    val resolved = RegionDatabase.getRegionScopeSubSpaceAt(
         player.level(),
         player.blockPosition().x,
         player.blockPosition().z
     )
-    val canFlyHere = regionAndScope?.let { (region, scope) ->
-        hasScopePermission(region, scope, uuid, PermissionKey.FLY, PERMISSION_DEFAULT_FLY.value)
+    val canFlyHere = resolved?.let { (region, scope, subSpace) ->
+        if (subSpace == null) {
+            hasScopePermission(region, scope, uuid, PermissionKey.FLY, PERMISSION_DEFAULT_FLY.value)
+        } else {
+            hasSubSpacePermission(region, scope, subSpace, uuid, PermissionKey.FLY, PERMISSION_DEFAULT_FLY.value)
+        }
     } ?: false
     val transition = transitionManagedFly(
         state = managedFlyStates[uuid],

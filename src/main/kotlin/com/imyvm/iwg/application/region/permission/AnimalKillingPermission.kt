@@ -1,8 +1,5 @@
 package com.imyvm.iwg.application.region.permission
 
-import com.imyvm.iwg.application.region.permission.helper.buildScopePermissionDenialContext
-import com.imyvm.iwg.application.region.permission.helper.getScopePermissionDenialSource
-import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.infra.config.PermissionConfig.PERMISSION_DEFAULT_ANIMAL_KILLING
 import com.imyvm.iwg.util.text.Translator
@@ -46,13 +43,16 @@ fun playerAnimalKillingPermission() {
     ServerLivingEntityEvents.ALLOW_DAMAGE.register { entity, source, _ ->
         if (!isProtectedAnimal(entity)) return@register true
         val player = source.entity as? Player ?: return@register true
-        val regionAndScope = RegionDatabase.getRegionAndScopeAt(entity.level(), entity.blockPosition().x, entity.blockPosition().z)
-        regionAndScope?.let { (region, scope) ->
-            val denial = getScopePermissionDenialSource(region, scope, player.uuid, PermissionKey.ANIMAL_KILLING, PERMISSION_DEFAULT_ANIMAL_KILLING.value)
-            if (denial != null) {
-                player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", buildScopePermissionDenialContext(region, scope, denial))!!)
-                return@register false
-            }
+        val denial = findPermissionDenialAt(
+            entity.level(),
+            entity.blockPosition(),
+            player.uuid,
+            PermissionKey.ANIMAL_KILLING,
+            PERMISSION_DEFAULT_ANIMAL_KILLING.value
+        )
+        if (denial != null) {
+            player.sendSystemMessage(Translator.tr("setting.permission.animal_killing", denial.context())!!)
+            return@register false
         }
         true
     }

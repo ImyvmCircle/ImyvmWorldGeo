@@ -61,6 +61,15 @@ fun getSubSpaceActiveEffects(region: Region, scope: GeoScope, subSpace: SubSpace
     }.toMap()
 }
 
+internal fun getResolvedActiveEffects(
+    region: Region,
+    scope: GeoScope,
+    subSpace: SubSpace?,
+    playerUUID: UUID
+): Map<EffectKey, Int> =
+    if (subSpace == null) getScopeActiveEffects(region, scope, playerUUID)
+    else getSubSpaceActiveEffects(region, scope, subSpace, playerUUID)
+
 @Deprecated("Use getRegionEffectValue or getScopeEffectValue")
 fun getEffectValue(region: Region?, playerUUID: UUID, key: EffectKey, scope: GeoScope? = null): Int? {
     if (region == null) {

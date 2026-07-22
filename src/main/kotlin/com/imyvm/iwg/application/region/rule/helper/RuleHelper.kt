@@ -38,9 +38,13 @@ fun getEffectiveScopeRuleValue(region: Region, scope: GeoScope, key: RuleKey): B
 fun getEffectiveSubSpaceRuleValue(region: Region, scope: GeoScope, subSpace: SubSpace, key: RuleKey): Boolean =
     getSubSpaceRuleValue(region, scope, subSpace, key) ?: getDefaultValueForRule(key)
 
+internal fun getEffectiveResolvedRuleValue(region: Region, scope: GeoScope, subSpace: SubSpace?, key: RuleKey): Boolean =
+    if (subSpace == null) getEffectiveScopeRuleValue(region, scope, key)
+    else getEffectiveSubSpaceRuleValue(region, scope, subSpace, key)
+
 fun getEffectiveRuleValueAt(world: Level, pos: BlockPos, key: RuleKey): Boolean? {
-    val (region, scope) = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return null
-    return getEffectiveScopeRuleValue(region, scope, key)
+    val (region, scope, subSpace) = RegionDatabase.getRegionScopeSubSpaceAt(world, pos.x, pos.z) ?: return null
+    return getEffectiveResolvedRuleValue(region, scope, subSpace, key)
 }
 
 fun getRegionRuleValue(region: Region, key: ExtensionRuleKey): Boolean? {
