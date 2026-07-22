@@ -103,6 +103,7 @@ fun onDebugBehaviorTypedStats(player: ServerPlayer, periodKindName: String, peri
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.residence", residence.totalResidenceMillis, residence.averageResidenceMillis, residence.chunkResidenceMillis.size)!!)
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.combat", combat.damageCount, combat.killCount, combat.deathCount, combat.damagedCount, combat.playerStats.size, combat.targetStats.size)!!)
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.online", online.totalOnlineMillis, online.totalAfkMillis, online.totalNonAfkMillis, online.playerStats.size)!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.keys", ONLINE_OBJECT_ID, AFK_OBJECT_ID, "$RESIDENCE_CHUNK_PREFIX<x,z>", DAMAGED_OBJECT_ID)!!)
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.detail_hint", periodKind.name, periodId)!!)
     return 1
 }
