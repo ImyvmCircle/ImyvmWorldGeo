@@ -1,10 +1,21 @@
-# IMYVMWorldGeo 26.2 1.5.4
+# IMYVMWorldGeo 26.2 1.5.5
 
 ## Changelog
 
 ### 1.5.x
 
 The 1.5.x line expands WorldGeo from region settings into a neutral infrastructure layer for addons. It adds RPG permission and rule keys, namespaced extension settings, stable Scope IDs, ownership history, SubSpace, neutral time and behavior events, periodic statistics, and menu-facing space snapshots.
+
+#### 1.5.5
+
+- feat: add `listPlayersInRegion`/`Scope`/`SubSpace` to `RegionDataApi` with cache and instant-resolution fallback.
+- feat: add `toggleLocationActionBar`, `setLocationActionBarVisible`, `isLocationActionBarVisible` to `PlayerInteractionApi`.
+- feat: add messageKey+args overloads for `sendRegionSpaceMessage`, `sendScopeSpaceMessage`, `sendSubSpaceMessage`.
+- feat: add `openSpaceDebugView` to `PlayerInteractionApi` with OP permission check for Region, Scope, and SubSpace.
+- feat: add direct `GeoShape` overloads for `createRegion`, `createAndGetRegion`, `addScope`, `createAndGetRegionScopePair`.
+- feat: add `eventId`, `quantity`, and `source` fields to `WorldGeoBehaviorEvent` with safe defaults.
+- feat: add `YEAR` to `NaturalPeriodKind` with full enumeration, backfill, and test-mode support.
+- feat: add `getRealTimeSnapshot(zoneId)` to `RegionDataApi` for configurable timezone queries.
 
 #### 1.5.4
 

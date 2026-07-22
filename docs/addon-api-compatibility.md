@@ -37,6 +37,14 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `ScopeId` compatibility encoding | 26.2-1.5.2 | `RegionDataApi.parseScopeId` and ScopeId query methods | Compatible encoding fix | No removal scheduled | Existing raw IDs remain parseable; newly migrated legacy scopes use a marker bit and full local index without changing the persisted `Long` field |
 | `ScopeId` query and overlay methods | 26.2-1.5.2 | `AssignedScopeId` and the corresponding `RegionDataApi` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; `GeoScope` constructor and scopeId getter/setter descriptors remain |
 | `Setting` / `BaseKey` | Not scheduled | Typed permission/rule/effect keys through supported APIs | Compatibility surface | No removal scheduled | Existing classes and JVM methods remain; unknown setting subclasses are rejected by persistence |
+| `WorldGeoBehaviorEvent.eventId` / `quantity` / `source` | — (new in 26.2-1.5.5) | — | New fields with defaults | — | Default values preserve all existing callers; `eventId` auto-generated, `quantity` defaults to 1, `source` defaults to `"BEHAVIOR"` |
+| `NaturalPeriodKind.YEAR` | — (new in 26.2-1.5.5) | — | New enum value | — | `YEAR` appended to enum; old period files missing YEAR use current year as default |
+| `RegionDataApi.getRealTimeSnapshot(zoneId)` | — (new in 26.2-1.5.5) | — | New API | — | Returns `RealTimeSnapshot` for any valid `ZoneId` string |
+| `RegionDataApi.listPlayersInRegion/Scope/SubSpace` | — (new in 26.2-1.5.5) | — | New API | — | Uses `PlayerRegionChecker` cache with online-player instant-resolution fallback |
+| `PlayerInteractionApi.setLocationActionBarVisible` / `isLocationActionBarVisible` / `toggleLocationActionBar` | — (new in 26.2-1.5.5) | — | New API | — | `toggleLocationActionBar` delegates to existing `toggleActionBar`; `set`/`is` operate directly |
+| `RegionDataApi.sendRegionSpaceMessage` / `sendScopeSpaceMessage` / `sendSubSpaceMessage` `(messageKey, args)` overloads | — (new in 26.2-1.5.5) | — | New API | — | messageKey resolved via `Translator.tr`; `null` result logs an error and returns 0 |
+| `PlayerInteractionApi.openSpaceDebugView` | — (new in 26.2-1.5.5) | — | New API | — | Accepts Region/Scope/SubSpace; OP check via `PlayerList.isOp` |
+| `PlayerInteractionApi.createRegion/createAndGetRegion/addScope/createAndGetRegionScopePair` with `GeoShape` | — (new in 26.2-1.5.5) | — | New API | — | Direct shape creation bypasses selection session; existing selection-based methods unchanged |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
 
