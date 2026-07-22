@@ -8,6 +8,12 @@ import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
+import com.imyvm.iwg.domain.WorldGeoBlockDeltaStats
+import com.imyvm.iwg.domain.WorldGeoCombatPlayerStats
+import com.imyvm.iwg.domain.WorldGeoEntityCombatStats
+import com.imyvm.iwg.domain.WorldGeoOnlineTimeStats
+import com.imyvm.iwg.domain.WorldGeoPlayerOnlineTimeStats
+import com.imyvm.iwg.domain.WorldGeoResidenceStats
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
 import java.io.IOException
@@ -21,6 +27,10 @@ import java.util.UUID
 object BehaviorStatsStore {
     private const val FILE_NAME = "iwg_behavior_stats.json"
     private const val MAX_ENTRY_COUNT = 100_000
+    private const val RESIDENCE_CHUNK_PREFIX = "residence_chunk:"
+    private const val ONLINE_OBJECT_ID = "online_millis"
+    private const val AFK_OBJECT_ID = "afk_millis"
+    private const val DAMAGED_OBJECT_ID = "damaged"
     private var sessionWorldRoot: Path? = null
     private val counts = linkedMapOf<BehaviorStatsKey, Long>()
 
@@ -63,6 +73,129 @@ object BehaviorStatsStore {
             .filter { (key, _) -> key.matches(query) }
             .map { (key, count) -> key.toEntry(count) }
             .toList()
+    }
+
+    fun queryBlockDelta(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        blockFilter: String?
+    ): WorldGeoBlockDeltaStats {
+        val placed = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.BLOCK_PLACE, regionId, scopeId, subSpaceId, objectId = blockFilter))
+        val broken = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.BLOCK_BREAK, regionId, scopeId, subSpaceId, objectId = blockFilter))
+        val contributions = linkedMapOf<UUID, Long>()
+        placed.forEach { contributions[it.playerUuid] = Math.addExact(contributions[it.playerUuid] ?: 0L, it.count) }
+        broken.forEach { contributions[it.playerUuid] = Math.subtractExact(contributions[it.playerUuid] ?: 0L, it.count) }
+        val placedCount = placed.sumOf { it.count }
+        val brokenCount = broken.sumOf { it.count }
+        return WorldGeoBlockDeltaStats(
+            periodKind = periodKind,
+            periodId = periodId,
+            regionId = regionId,
+            scopeId = scopeId,
+            subSpaceId = subSpaceId,
+            blockFilter = blockFilter,
+            placedCount = placedCount,
+            brokenCount = brokenCount,
+            netDelta = Math.subtractExact(placedCount, brokenCount),
+            playerContributions = contributions.toMap()
+        )
+    }
+
+    fun queryResidence(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?
+    ): WorldGeoResidenceStats {
+        val entries = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.SPACE_ENTER, regionId, scopeId, subSpaceId))
+            .filter { it.objectId?.startsWith(RESIDENCE_CHUNK_PREFIX) == true }
+        val chunks = linkedMapOf<String, Long>()
+        entries.forEach { entry ->
+            val chunkId = entry.objectId?.removePrefix(RESIDENCE_CHUNK_PREFIX) ?: return@forEach
+            chunks[chunkId] = Math.addExact(chunks[chunkId] ?: 0L, entry.count)
+        }
+        val total = chunks.values.sum()
+        return WorldGeoResidenceStats(
+            periodKind = periodKind,
+            periodId = periodId,
+            regionId = regionId,
+            scopeId = scopeId,
+            subSpaceId = subSpaceId,
+            chunkResidenceMillis = chunks.toMap(),
+            averageResidenceMillis = if (chunks.isEmpty()) 0L else total / chunks.size,
+            totalResidenceMillis = total
+        )
+    }
+
+    fun queryEntityCombat(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        objectFilter: String?
+    ): WorldGeoEntityCombatStats {
+        val damage = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_DAMAGE, regionId, scopeId, subSpaceId, objectId = objectFilter))
+        val kills = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_KILL, regionId, scopeId, subSpaceId, objectId = objectFilter))
+        val deaths = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.PLAYER_DEATH, regionId, scopeId, subSpaceId, objectId = objectFilter))
+        val damaged = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_DAMAGE, regionId, scopeId, subSpaceId, objectId = DAMAGED_OBJECT_ID))
+        val players = linkedMapOf<UUID, LongArray>()
+        damage.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[0] += it.count }
+        kills.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[1] += it.count }
+        deaths.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[2] += it.count }
+        damaged.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[3] += it.count }
+        return WorldGeoEntityCombatStats(
+            periodKind = periodKind,
+            periodId = periodId,
+            regionId = regionId,
+            scopeId = scopeId,
+            subSpaceId = subSpaceId,
+            objectFilter = objectFilter,
+            damageCount = damage.sumOf { it.count },
+            killCount = kills.sumOf { it.count },
+            deathCount = deaths.sumOf { it.count },
+            damagedCount = damaged.sumOf { it.count },
+            playerStats = players.mapValues { (_, values) ->
+                WorldGeoCombatPlayerStats(values[0], values[1], values[2], values[3])
+            }
+        )
+    }
+
+    fun queryOnlineTime(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        playerUuid: UUID?
+    ): WorldGeoOnlineTimeStats {
+        val online = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ITEM_USE, regionId, scopeId, subSpaceId, playerUuid, ONLINE_OBJECT_ID))
+        val afk = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ITEM_USE, regionId, scopeId, subSpaceId, playerUuid, AFK_OBJECT_ID))
+        val players = linkedMapOf<UUID, LongArray>()
+        online.forEach { players.getOrPut(it.playerUuid) { LongArray(2) }[0] += it.count }
+        afk.forEach { players.getOrPut(it.playerUuid) { LongArray(2) }[1] += it.count }
+        val playerStats = players.mapValues { (_, values) ->
+            val nonAfk = (values[0] - values[1]).coerceAtLeast(0L)
+            WorldGeoPlayerOnlineTimeStats(values[0], values[1], nonAfk)
+        }
+        val totalOnline = playerStats.values.sumOf { it.onlineMillis }
+        val totalAfk = playerStats.values.sumOf { it.afkMillis }
+        return WorldGeoOnlineTimeStats(
+            periodKind = periodKind,
+            periodId = periodId,
+            regionId = regionId,
+            scopeId = scopeId,
+            subSpaceId = subSpaceId,
+            playerFilter = playerUuid,
+            totalOnlineMillis = totalOnline,
+            totalAfkMillis = totalAfk,
+            totalNonAfkMillis = (totalOnline - totalAfk).coerceAtLeast(0L),
+            playerStats = playerStats
+        )
     }
 
     fun saveSnapshot() {

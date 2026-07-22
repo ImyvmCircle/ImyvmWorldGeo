@@ -454,6 +454,41 @@ object RegionDataApi {
         WorldGeoBehaviorStatsQuery(periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId)
     )
 
+    fun queryBlockDelta(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        blockFilter: String?
+    ): WorldGeoBlockDeltaStats = BehaviorStatsStore.queryBlockDelta(periodKind, periodId, regionId, scopeId, subSpaceId, blockFilter)
+
+    fun queryResidence(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?
+    ): WorldGeoResidenceStats = BehaviorStatsStore.queryResidence(periodKind, periodId, regionId, scopeId, subSpaceId)
+
+    fun queryEntityCombat(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        objectFilter: String?
+    ): WorldGeoEntityCombatStats = BehaviorStatsStore.queryEntityCombat(periodKind, periodId, regionId, scopeId, subSpaceId, objectFilter)
+
+    fun queryOnlineTime(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        playerUuid: UUID?
+    ): WorldGeoOnlineTimeStats = BehaviorStatsStore.queryOnlineTime(periodKind, periodId, regionId, scopeId, subSpaceId, playerUuid)
+
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)
 
