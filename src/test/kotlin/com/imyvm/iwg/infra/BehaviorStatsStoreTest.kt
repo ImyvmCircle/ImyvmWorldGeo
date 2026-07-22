@@ -19,6 +19,8 @@ import kotlin.test.assertFailsWith
 
 class BehaviorStatsStoreTest {
     private val playerUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
+    private val targetPlayerUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
+    private val otherTargetUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000003")
 
     @AfterTest
     fun tearDown() {
@@ -51,6 +53,54 @@ class BehaviorStatsStoreTest {
 
         assertEquals(1, entries.size)
         assertEquals(2, entries.single().count)
+    }
+
+    @Test
+    fun `records behavior stats for a specific target`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.ENTITY_KILL, "minecraft:player", targetPlayerUuid.toString()))
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.ENTITY_KILL, "minecraft:player", otherTargetUuid.toString()))
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.ENTITY_KILL, "minecraft:player", targetPlayerUuid.toString()))
+
+        val entries = BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(
+                periodKind = NaturalPeriodKind.HOUR,
+                periodId = "2026-07-21T00",
+                behaviorType = WorldGeoBehaviorType.ENTITY_KILL,
+                regionId = 7,
+                playerUuid = playerUuid,
+                objectId = "minecraft:player",
+                targetId = targetPlayerUuid.toString()
+            )
+        )
+
+        assertEquals(1, entries.size)
+        assertEquals(targetPlayerUuid.toString(), entries.single().targetId)
+        assertEquals(2, entries.single().count)
+    }
+
+    @Test
+    fun `round trips target behavior stats`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.ENTITY_DAMAGE, "minecraft:zombie", targetPlayerUuid.toString()))
+        BehaviorStatsStore.save()
+        BehaviorStatsStore.unbindSession()
+
+        BehaviorStatsStore.bindSession(directory)
+        val entries = BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(
+                NaturalPeriodKind.DAY,
+                "2026-07-21",
+                behaviorType = WorldGeoBehaviorType.ENTITY_DAMAGE,
+                regionId = 7,
+                objectId = "minecraft:zombie",
+                targetId = targetPlayerUuid.toString()
+            )
+        )
+
+        assertEquals(1, entries.size)
+        assertEquals(targetPlayerUuid.toString(), entries.single().targetId)
     }
 
     @Test
@@ -108,8 +158,8 @@ class BehaviorStatsStoreTest {
                 BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.BLOCK_PLACE, 7, 7001, 9001, playerUuid, "minecraft:stone") to 5L,
                 BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.BLOCK_BREAK, 7, 7001, 9001, playerUuid, "minecraft:stone") to 2L,
                 BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.SPACE_ENTER, 7, 7001, 9001, playerUuid, "residence_chunk:1,2") to 3_000L,
-                BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.ENTITY_DAMAGE, 7, 7001, 9001, playerUuid, "minecraft:zombie") to 4L,
-                BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.ENTITY_KILL, 7, 7001, 9001, playerUuid, "minecraft:zombie") to 1L,
+                BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.ENTITY_DAMAGE, 7, 7001, 9001, playerUuid, "minecraft:zombie", targetPlayerUuid.toString()) to 4L,
+                BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.ENTITY_KILL, 7, 7001, 9001, playerUuid, "minecraft:zombie", targetPlayerUuid.toString()) to 1L,
                 BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.PLAYER_DEATH, 7, 7001, 9001, playerUuid, "minecraft:zombie") to 1L,
                 BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.ITEM_USE, 7, 7001, 9001, playerUuid, "online_millis") to 10_000L,
                 BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.ITEM_USE, 7, 7001, 9001, playerUuid, "afk_millis") to 2_000L
@@ -131,6 +181,11 @@ class BehaviorStatsStoreTest {
         assertEquals(4L, combat.damageCount)
         assertEquals(1L, combat.killCount)
         assertEquals(1L, combat.deathCount)
+        assertEquals(4L, combat.targetStats[targetPlayerUuid.toString()]?.damageCount)
+        assertEquals(1L, combat.targetStats[targetPlayerUuid.toString()]?.killCount)
+        val targetCombat = BehaviorStatsStore.queryEntityCombat(NaturalPeriodKind.HOUR, "2026-07-21T00", 7, 7001, 9001, "minecraft:zombie", targetPlayerUuid.toString())
+        assertEquals(1L, targetCombat.killCount)
+        assertEquals(1, targetCombat.targetStats.size)
         assertEquals(10_000L, online.totalOnlineMillis)
         assertEquals(2_000L, online.totalAfkMillis)
         assertEquals(8_000L, online.totalNonAfkMillis)
@@ -154,7 +209,7 @@ class BehaviorStatsStoreTest {
         assertEquals(original, Files.readString(path))
     }
 
-    private fun event(type: WorldGeoBehaviorType, objectId: String?) = WorldGeoBehaviorEvent(
+    private fun event(type: WorldGeoBehaviorType, objectId: String?, targetId: String? = null) = WorldGeoBehaviorEvent(
         type = type,
         playerUuid = playerUuid,
         playerName = "tester",
@@ -169,7 +224,8 @@ class BehaviorStatsStoreTest {
         scopeName = "scope",
         subSpaceId = 9001,
         subSpaceName = "plot",
-        objectId = objectId
+        objectId = objectId,
+        targetId = targetId
     )
 
     private fun withTempDirectory(block: (Path) -> Unit) {

@@ -28,7 +28,7 @@ fun onDebugBehaviorRecent(player: ServerPlayer): Int {
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.header", events.size)!!)
     for (event in events.takeLast(10)) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.line", event.type.name, event.playerName, spaceName(event), event.x, event.y, event.z, event.objectId ?: "-")!!)
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.line", event.type.name, event.playerName, spaceName(event), event.x, event.y, event.z, event.objectId ?: "-", event.targetId ?: "-")!!)
     }
     return 1
 }
@@ -102,7 +102,7 @@ fun onDebugBehaviorTypedStats(player: ServerPlayer, periodKindName: String, peri
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.header", periodKind.name, periodId, resolved.first.name, resolved.second.scopeName, resolved.third?.name ?: "-")!!)
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.block", block.placedCount, block.brokenCount, block.netDelta, block.playerContributions.size)!!)
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.residence", residence.totalResidenceMillis, residence.averageResidenceMillis, residence.chunkResidenceMillis.size)!!)
-    player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.combat", combat.damageCount, combat.killCount, combat.deathCount, combat.damagedCount, combat.playerStats.size)!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.combat", combat.damageCount, combat.killCount, combat.deathCount, combat.damagedCount, combat.playerStats.size, combat.targetStats.size)!!)
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.typed.online", online.totalOnlineMillis, online.totalAfkMillis, online.totalNonAfkMillis, online.playerStats.size)!!)
     return 1
 }

@@ -450,8 +450,22 @@ object RegionDataApi {
         subSpaceId: Long?,
         playerUuid: UUID?,
         objectId: String?
+    ): List<WorldGeoBehaviorStatsEntry> = queryBehaviorStats(
+        periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId, null
+    )
+
+    fun queryBehaviorStats(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        behaviorType: WorldGeoBehaviorType?,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        playerUuid: UUID?,
+        objectId: String?,
+        targetId: String?
     ): List<WorldGeoBehaviorStatsEntry> = BehaviorStatsStore.query(
-        WorldGeoBehaviorStatsQuery(periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId)
+        WorldGeoBehaviorStatsQuery(periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId, targetId)
     )
 
     fun queryBlockDelta(
@@ -479,6 +493,16 @@ object RegionDataApi {
         subSpaceId: Long?,
         objectFilter: String?
     ): WorldGeoEntityCombatStats = BehaviorStatsStore.queryEntityCombat(periodKind, periodId, regionId, scopeId, subSpaceId, objectFilter)
+
+    fun queryEntityCombat(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        objectFilter: String?,
+        targetFilter: String?
+    ): WorldGeoEntityCombatStats = BehaviorStatsStore.queryEntityCombat(periodKind, periodId, regionId, scopeId, subSpaceId, objectFilter, targetFilter)
 
     fun queryOnlineTime(
         periodKind: NaturalPeriodKind,

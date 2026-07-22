@@ -10,6 +10,7 @@ import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
 import com.imyvm.iwg.domain.WorldGeoBlockDeltaStats
 import com.imyvm.iwg.domain.WorldGeoCombatPlayerStats
+import com.imyvm.iwg.domain.WorldGeoCombatTargetStats
 import com.imyvm.iwg.domain.WorldGeoEntityCombatStats
 import com.imyvm.iwg.domain.WorldGeoOnlineTimeStats
 import com.imyvm.iwg.domain.WorldGeoPlayerOnlineTimeStats
@@ -69,7 +70,8 @@ object BehaviorStatsStore {
                 scopeId = event.scopeId,
                 subSpaceId = event.subSpaceId,
                 playerUuid = event.playerUuid,
-                objectId = event.objectId
+                objectId = event.objectId,
+                targetId = event.targetId
             )
             counts[key] = Math.addExact(counts[key] ?: 0L, count)
             require(counts.size <= MAX_ENTRY_COUNT) { "behavior stats entry count exceeds $MAX_ENTRY_COUNT" }
@@ -147,14 +149,31 @@ object BehaviorStatsStore {
         scopeId: Long?,
         subSpaceId: Long?,
         objectFilter: String?
+    ): WorldGeoEntityCombatStats = queryEntityCombat(periodKind, periodId, regionId, scopeId, subSpaceId, objectFilter, null)
+
+    fun queryEntityCombat(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int?,
+        scopeId: Long?,
+        subSpaceId: Long?,
+        objectFilter: String?,
+        targetFilter: String?
     ): WorldGeoEntityCombatStats {
-        val damage = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_DAMAGE, regionId, scopeId, subSpaceId, objectId = objectFilter))
-        val kills = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_KILL, regionId, scopeId, subSpaceId, objectId = objectFilter))
-        val deaths = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.PLAYER_DEATH, regionId, scopeId, subSpaceId, objectId = objectFilter))
-        val damaged = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_DAMAGE, regionId, scopeId, subSpaceId, objectId = DAMAGED_OBJECT_ID))
+        val damage = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_DAMAGE, regionId, scopeId, subSpaceId, objectId = objectFilter, targetId = targetFilter))
+        val kills = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_KILL, regionId, scopeId, subSpaceId, objectId = objectFilter, targetId = targetFilter))
+        val deaths = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.PLAYER_DEATH, regionId, scopeId, subSpaceId, objectId = objectFilter, targetId = targetFilter))
+        val damaged = query(WorldGeoBehaviorStatsQuery(periodKind, periodId, WorldGeoBehaviorType.ENTITY_DAMAGE, regionId, scopeId, subSpaceId, objectId = DAMAGED_OBJECT_ID, targetId = targetFilter))
         val players = linkedMapOf<UUID, LongArray>()
-        damage.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[0] += it.count }
-        kills.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[1] += it.count }
+        val targets = linkedMapOf<String, LongArray>()
+        damage.forEach { entry ->
+            players.getOrPut(entry.playerUuid) { LongArray(4) }[0] += entry.count
+            entry.targetId?.let { targets.getOrPut(it) { LongArray(2) }[0] += entry.count }
+        }
+        kills.forEach { entry ->
+            players.getOrPut(entry.playerUuid) { LongArray(4) }[1] += entry.count
+            entry.targetId?.let { targets.getOrPut(it) { LongArray(2) }[1] += entry.count }
+        }
         deaths.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[2] += it.count }
         damaged.forEach { players.getOrPut(it.playerUuid) { LongArray(4) }[3] += it.count }
         return WorldGeoEntityCombatStats(
@@ -164,12 +183,16 @@ object BehaviorStatsStore {
             scopeId = scopeId,
             subSpaceId = subSpaceId,
             objectFilter = objectFilter,
+            targetFilter = targetFilter,
             damageCount = damage.sumOf { it.count },
             killCount = kills.sumOf { it.count },
             deathCount = deaths.sumOf { it.count },
             damagedCount = damaged.sumOf { it.count },
             playerStats = players.mapValues { (_, values) ->
                 WorldGeoCombatPlayerStats(values[0], values[1], values[2], values[3])
+            },
+            targetStats = targets.mapValues { (_, values) ->
+                WorldGeoCombatTargetStats(values[0], values[1])
             }
         )
     }
@@ -234,7 +257,8 @@ object BehaviorStatsStore {
                     scopeId = optionalLongValue(obj, "scopeId"),
                     subSpaceId = optionalLongValue(obj, "subSpaceId"),
                     playerUuid = UUID.fromString(stringValue(obj, "playerUuid")),
-                    objectId = optionalStringValue(obj, "objectId")
+                    objectId = optionalStringValue(obj, "objectId"),
+                    targetId = optionalStringValue(obj, "targetId")
                 )
                 val count = longValue(obj, "count")
                 validateEntry(key, count)
@@ -264,6 +288,7 @@ object BehaviorStatsStore {
             key.subSpaceId?.let { obj.addProperty("subSpaceId", it) }
             obj.addProperty("playerUuid", key.playerUuid.toString())
             key.objectId?.let { obj.addProperty("objectId", it) }
+            key.targetId?.let { obj.addProperty("targetId", it) }
             obj.addProperty("count", count)
             array.add(obj)
         }
@@ -283,10 +308,11 @@ object BehaviorStatsStore {
             (query.scopeId == null || scopeId == query.scopeId) &&
             (query.subSpaceId == null || subSpaceId == query.subSpaceId) &&
             (query.playerUuid == null || playerUuid == query.playerUuid) &&
-            (query.objectId == null || objectId == query.objectId)
+            (query.objectId == null || objectId == query.objectId) &&
+            (query.targetId == null || targetId == query.targetId)
 
     private fun BehaviorStatsKey.toEntry(count: Long): WorldGeoBehaviorStatsEntry = WorldGeoBehaviorStatsEntry(
-        periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId, count
+        periodKind, periodId, behaviorType, regionId, scopeId, subSpaceId, playerUuid, objectId, targetId, count
     )
 
     private fun validateEntry(key: BehaviorStatsKey, count: Long) {
@@ -295,6 +321,7 @@ object BehaviorStatsStore {
         require(key.scopeId == null || key.scopeId > 0L) { "scope id must be positive" }
         require(key.subSpaceId == null || key.subSpaceId > 0L) { "subspace id must be positive" }
         require(key.objectId == null || key.objectId.isNotBlank()) { "object id must not be blank" }
+        require(key.targetId == null || key.targetId.isNotBlank()) { "target id must not be blank" }
         require(count > 0L) { "count must be positive" }
     }
 
@@ -322,5 +349,6 @@ internal data class BehaviorStatsKey(
     val scopeId: Long?,
     val subSpaceId: Long?,
     val playerUuid: UUID,
-    val objectId: String?
+    val objectId: String?,
+    val targetId: String? = null
 )
