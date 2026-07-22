@@ -59,7 +59,7 @@ fun onToggleActionBar(player: ServerPlayer): Int {
     return 1
 }
 
-private const val HELP_PAGE_SIZE = 10
+private const val HELP_PAGE_SIZE = 5
 
 fun onHelp(player: ServerPlayer, pageRaw: String? = null): Int {
     val helpOrder = listOf(

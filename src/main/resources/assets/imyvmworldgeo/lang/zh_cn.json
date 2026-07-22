@@ -497,7 +497,7 @@
   "interaction.meta.command.delete.confirm.subspace": "&e境界 &b{1}&e 中的子空间 &b{0}&e 尚未删除。仅在确认永久删除时继续执行。",
   "interaction.meta.command.delete.confirm.button": "&c[确认删除] &7{0}",
   "interaction.meta.command.delete.confirm.hover": "&c执行确认命令：&e{0}",
-  "interaction.meta.command.help.page": "§7第 §e{0}§7/§e{1}§7 页。每页显示十条帮助。",
+  "interaction.meta.command.help.page": "§7第 §e{0}§7/§e{1}§7 页。每页显示五条帮助。",
   "interaction.meta.command.help.previous": "§e[上一页]",
   "interaction.meta.command.help.next": "§e[下一页]",
   "interaction.meta.command.help.previous.disabled": "§8[上一页]",
@@ -506,5 +506,10 @@
   "interaction.meta.command.help.scope.create": "§d/imyvmWorldGeo scope create <§b境界标识符§d> [§b地方名称§d]\n  §f根据当前选区在境界中创建新地方。形状将根据选择状态自动推断。\n  §7别名：/imyvmWorldGeo scope add、/imyvmWorldGeo addScope。",
   "interaction.meta.command.help.scope.select": "§d/imyvmWorldGeo scope select <§b境界标识符§d> <§b地方名称§d>\n  §f开始地方修改选区，与 subspace select 格式对齐。\n  §7旧别名：/imyvmWorldGeo select modifyScope。",
   "interaction.meta.command.help.scope.replace_shape": "§d/imyvmWorldGeo scope replaceShape <§b境界标识符§d> <§b地方名称§d>\n  §f使用当前修改选区替换或调整地方几何。\n  §7别名：/imyvmWorldGeo scope modify、/imyvmWorldGeo modifyScope。",
-  "interaction.meta.command.help.scope.rename": "§d/imyvmWorldGeo scope rename <§b境界标识符§d> <§b地方名称§d> <§b新名称§d>\n  §f重命名地方。\n  §7旧别名：/imyvmWorldGeo modifyScope <境界标识符> <地方名称> <新名称>。"
+  "interaction.meta.command.help.scope.rename": "§d/imyvmWorldGeo scope rename <§b境界标识符§d> <§b地方名称§d> <§b新名称§d>\n  §f重命名地方。\n  §7旧别名：/imyvmWorldGeo modifyScope <境界标识符> <地方名称> <新名称>。",
+  "interaction.meta.debug.test_period.started": "&a测试周期模式已启用。&r\n&7配置：&e{0}&7=&e{1}&7秒；默认周数=&e{2}&r\n&7虚拟长度：小时=&e{3}&7秒 日=&e{4}&7秒 周=&e{5}&7秒 月=&e{6}&7秒&r\n&7开始时间：&e{7}&r\n&7剩余时间：&e{8}&r\n&7当前测试周：&e{9}&7/&e{10}&r\n&7周期ID：HOUR=&e{11}&7 DAY=&e{12}&7 WEEK=&e{13}&7 MONTH=&e{14}&r",
+  "interaction.meta.debug.test_period.status": "&6测试周期模式已启用&r\n&7配置：&e{0}&7=&e{1}&7秒；默认周数=&e{2}&r\n&7虚拟长度：小时=&e{3}&7秒 日=&e{4}&7秒 周=&e{5}&7秒 月=&e{6}&7秒&r\n&7开始时间：&e{7}&r\n&7剩余时间：&e{8}&r\n&7当前测试周：&e{9}&7/&e{10}&r\n&7周期ID：HOUR=&e{11}&7 DAY=&e{12}&7 WEEK=&e{13}&7 MONTH=&e{14}&r",
+  "interaction.meta.debug.test_period.inactive": "&7测试周期模式未启用。配置的测试周长度：&e{0}&7秒。默认运行长度：&e{1}&7周。",
+  "interaction.meta.debug.test_period.stopped": "&a已停止测试周期模式。真实自然周期结果重新生效。",
+  "interaction.meta.debug.test_period.invalid_weeks": "&c无效测试周期周数：&e{0}&c。请使用正整数。"
 }

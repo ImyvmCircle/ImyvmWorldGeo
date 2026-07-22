@@ -4,6 +4,7 @@ import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.application.time.TestPeriodModeService
 import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.infra.config.TestPeriodConfig
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
 
@@ -83,10 +84,20 @@ fun onDebugTestPeriodStatus(player: ServerPlayer): Int {
 }
 
 private fun sendTestPeriodStatus(player: ServerPlayer, key: String, status: com.imyvm.iwg.application.time.TestPeriodModeStatus) {
+    val weekSeconds = status.weekLengthSeconds
+    val daySeconds = (weekSeconds / 7).coerceAtLeast(1)
+    val hourSeconds = (daySeconds / 24).coerceAtLeast(1)
+    val monthSeconds = Math.multiplyExact(weekSeconds, 4)
     player.sendSystemMessage(
         Translator.tr(
             key,
-            status.weekLengthSeconds,
+            TestPeriodConfig.TEST_WEEK_LENGTH_SECONDS.key,
+            weekSeconds,
+            TestPeriodModeService.DEFAULT_WEEK_COUNT,
+            hourSeconds,
+            daySeconds,
+            weekSeconds,
+            monthSeconds,
             status.startedAtMillis?.let { TestPeriodModeService.formatStartedAt(it, WorldGeoTimeService.DEFAULT_ZONE) } ?: "-",
             TestPeriodModeService.formatDuration(status.remainingMillis),
             status.currentWeek,
