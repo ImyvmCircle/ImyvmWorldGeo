@@ -92,6 +92,28 @@ object RegionDataApi {
     fun getRegionSubSpaces(region: Region): List<SubSpace> =
         region.subSpaces.toList()
 
+    fun listScopeSnapshots(regionId: Int): List<WorldGeoSpaceSnapshot> {
+        val region = getRegion(regionId) ?: return emptyList()
+        return region.scopes.map { WorldGeoSpaceSupport.snapshot(region, it) }
+    }
+
+    fun listSubSpaceSnapshots(scopeId: Long): List<WorldGeoSpaceSnapshot> {
+        val (region, scope, subSpaces) = findScopeWithSubSpaces(scopeId) ?: return emptyList()
+        return subSpaces.map { WorldGeoSpaceSupport.snapshot(region, scope, it) }
+    }
+
+    fun getSpaceSnapshot(type: WorldGeoSpaceType, id: Long): WorldGeoSpaceSnapshot? = when (type) {
+        WorldGeoSpaceType.REGION -> getRegion(id.toInt())?.let { WorldGeoSpaceSupport.snapshot(it) }
+        WorldGeoSpaceType.GEOSCOPE -> getRegionByScopeId(id)?.let { (region, scope) -> WorldGeoSpaceSupport.snapshot(region, scope) }
+        WorldGeoSpaceType.SUBSPACE -> getSubSpaceById(id)?.let { (region, scope, subSpace) -> WorldGeoSpaceSupport.snapshot(region, scope, subSpace) }
+    }
+
+    fun getSubSpaceSnapshotByName(scopeId: Long, name: String): WorldGeoSpaceSnapshot? {
+        val (region, scope, subSpaces) = findScopeWithSubSpaces(scopeId) ?: return null
+        val subSpace = subSpaces.firstOrNull { it.name.equals(name, ignoreCase = true) } ?: return null
+        return WorldGeoSpaceSupport.snapshot(region, scope, subSpace)
+    }
+
     fun getSubSpaceById(subSpaceId: Long): Triple<Region, GeoScope, SubSpace>? =
         RegionDatabase.getSubSpaceById(subSpaceId)
 
@@ -115,6 +137,20 @@ object RegionDataApi {
 
     fun getRegionScopeSubSpaceByLocation(world: Level, blockPos: BlockPos): Triple<Region, GeoScope, SubSpace?>? =
         RegionDatabase.getRegionScopeSubSpaceAt(world, blockPos.x, blockPos.z)
+    private fun getRegionByScopeId(scopeId: Long): Pair<Region, GeoScope>? {
+        for (region in RegionDatabase.getRegionList()) {
+            val scope = region.scopes.firstOrNull { it.assignedScopeIdOrNull?.raw == scopeId } ?: continue
+            return region to scope
+        }
+        return null
+    }
+
+    private fun findScopeWithSubSpaces(scopeId: Long): Triple<Region, GeoScope, List<SubSpace>>? {
+        val (region, scope) = getRegionByScopeId(scopeId) ?: return null
+        val assigned = scope.requireAssignedScopeId()
+        return Triple(region, scope, region.subSpaces.filter { it.parentScopeId == assigned })
+    }
+
     fun inquireTeleportPointAccessibility(scope: GeoScope) = onGettingTeleportPointAccessibility(scope)
 
     fun getScopeTeleportPoint(scope: GeoScope): BlockPos? = scope.teleportPoint
@@ -388,8 +424,14 @@ object RegionDataApi {
     fun getRegionGeographicProfile(server: MinecraftServer, region: Region): WorldGeoGeographicProfileResult =
         WorldGeoGeographicProfileSupport.profile(server, region)
 
+    fun getRegionGeographicProfileSnapshot(server: MinecraftServer, region: Region): WorldGeoGeographicProfileSnapshot =
+        WorldGeoGeographicProfileSupport.profileSnapshot(server, region)
+
     fun getScopeGeographicProfile(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoGeographicProfileResult =
         WorldGeoGeographicProfileSupport.profile(server, region, scope)
+
+    fun getScopeGeographicProfileSnapshot(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoGeographicProfileSnapshot =
+        WorldGeoGeographicProfileSupport.profileSnapshot(server, region, scope)
 
     fun getSubSpaceGeographicProfile(
         server: MinecraftServer,
@@ -397,6 +439,19 @@ object RegionDataApi {
         scope: GeoScope,
         subSpace: SubSpace
     ): WorldGeoGeographicProfileResult = WorldGeoGeographicProfileSupport.profile(server, region, scope, subSpace)
+
+    fun getSubSpaceGeographicProfileSnapshot(
+        server: MinecraftServer,
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace
+    ): WorldGeoGeographicProfileSnapshot = WorldGeoGeographicProfileSupport.profileSnapshot(server, region, scope, subSpace)
+
+    fun getGeographicProfileCacheStatus(): WorldGeoGeographicProfileCacheStatus =
+        WorldGeoGeographicProfileSupport.cacheStatus()
+
+    fun refreshGeographicProfiles(server: MinecraftServer): Int =
+        WorldGeoGeographicProfileSupport.refreshAll(server, RegionDatabase.getRegionList())
 
     fun listRegionSettingSummaries(
         region: Region,

@@ -488,8 +488,8 @@
   "interaction.meta.debug.period.invalid_kind": "&c未知自然周期类型：&e{0}&c。",
   "interaction.meta.debug.period.emit": "&a已触发调试周期 transition kind=&e{0}&a previous=&b{1}&a current=&b{2}&a count=&e{3}&a。",
   "interaction.meta.debug.space_snapshot": "&6空间快照&r\n&7类型：&e{0}&7  编号：&b{1}&7  名称：&b{2}&r\n&7维度：&e{3}&7  面积：&e{4}&r\n&7父境界：&b{5}:{6}&r\n&7父地方：&b{7}:{8}&r\n&7子对象：地方=&e{9}&7 子空间=&e{10}&r\n&7标签：&f{11}&r\n&7键值标签：&f{12}&r\n&7statsVersion：&e{13}&7  地貌：&e{14}&r\n&7进入提示：启用=&e{15}&7 已配置=&e{16}&r\n&7地图颜色：&e{17}&r\n&7设置：&f{18}",
-  "interaction.meta.debug.geography.header": "&6地理画像&r 类型=&e{0}&r 编号=&b{1}&r 名称=&b{2}&r 维度=&e{3}&r 面积=&e{4}&r 属性=&e{5}&r 平均海拔=&e{6}&r 方位=&e{7}&r 样本权重=&a{8}&r 已加载区块=&a{9}&7/&e{10}&r 部分结果=&e{11}",
-  "interaction.meta.debug.geography.summary": "&7分类比例：&f{0}&r\n&7属性类型：&e{1}&r  主导：&e{2}&r\n&7详情：&e{3} [page]",
+  "interaction.meta.debug.geography.header": "&6地理画像&r 类型=&e{0}&r 编号=&b{1}&r 名称=&b{2}&r 维度=&e{3}&r 面积=&e{4}&r 属性=&e{5}&r 平均海拔=&e{6}&r 方位=&e{7}&r 样本权重=&a{8}&r 已加载区块=&a{9}&7/&e{10}&r 部分结果=&e{11}&r\n&7来源=&e{12}&7 计算时间=&e{13}&7 最近失效=&e{14}&7 @ &e{15}",
+  "interaction.meta.debug.geography.summary": "&7分类比例：&f{0}&r\n&7属性类型：&e{1}&r  主导：&e{2}&r\n&7详情：&e{3} [page]\n&7无明细时通常表示非主世界维度、无已加载候选区块或空间没有可采样形状。",
   "interaction.meta.debug.geography.detail.category": "&7- 分类 &e{0}&7 权重=&e{1}&7 比例=&e{2}",
   "interaction.meta.debug.geography.detail.biome": "&7- 原始生物群系 &f{0}&7 权重=&e{1}",
   "interaction.meta.debug.geography.detail_hint": "&7详情：&e{0} [page]",
@@ -528,5 +528,6 @@
   "interaction.meta.debug.behavior.typed.detail.block": "&7- 方块 玩家=&b{0}&7 方块=&f{1}&7 放置=&e{2}&7 破坏=&e{3}&7 净值=&e{4}",
   "interaction.meta.debug.behavior.typed.detail.combat": "&7- 战斗 玩家=&b{0}&7 对象=&f{1}&7 目标=&f{2}&7 伤害=&e{3}&7 击杀=&e{4}&7 死亡=&e{5}&7 被伤害=&e{6}",
   "interaction.meta.debug.behavior.typed.detail.residence": "&7- 栖息 区块=&b{0}&7 毫秒=&e{1}",
-  "interaction.meta.debug.behavior.typed.detail.online": "&7- 在线 玩家=&b{0}&7 总毫秒=&e{1}&7 AFK毫秒=&e{2}&7 非AFK毫秒=&e{3}"
+  "interaction.meta.debug.behavior.typed.detail.online": "&7- 在线 玩家=&b{0}&7 总毫秒=&e{1}&7 AFK毫秒=&e{2}&7 非AFK毫秒=&e{3}",
+  "interaction.meta.debug.behavior.typed.keys": "&7统计键：在线=&e{0}&7 AFK=&e{1}&7 居住=&e{2}&7 受击=&e{3}"
 }

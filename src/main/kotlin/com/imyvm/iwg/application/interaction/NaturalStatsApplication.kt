@@ -11,6 +11,7 @@ import com.imyvm.iwg.domain.RegionPlayerStats
 import com.imyvm.iwg.domain.WorldGeoBiomeCategoryRatio
 import com.imyvm.iwg.domain.WorldGeoGeographicProfile
 import com.imyvm.iwg.domain.WorldGeoGeographicProfileResult
+import com.imyvm.iwg.domain.WorldGeoGeographicProfileSnapshot
 import com.imyvm.iwg.domain.WorldGeoSpaceType
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.SubSpace
@@ -80,7 +81,7 @@ fun onDebugGeographyRegion(player: ServerPlayer, region: Region): Int {
         region.numberID.toString(),
         region.name,
         region.calculateTotalArea(),
-        WorldGeoGeographicProfileSupport.profile(player.level().server, region),
+        WorldGeoGeographicProfileSupport.profileSnapshot(player.level().server, region),
         "/imyvmWorldGeo debug geography region ${region.numberID} detail"
     )
 }
@@ -91,7 +92,7 @@ fun onDebugGeographyRegionDetail(player: ServerPlayer, region: Region, pageRaw: 
         player,
         WorldGeoSpaceType.REGION.name,
         region.numberID.toString(),
-        WorldGeoGeographicProfileSupport.profile(player.level().server, region),
+        WorldGeoGeographicProfileSupport.profileSnapshot(player.level().server, region),
         pageRaw
     )
 }
@@ -104,7 +105,7 @@ fun onDebugGeographyScope(player: ServerPlayer, region: Region, scope: GeoScope)
         scope.requireAssignedScopeId().raw.toString(),
         scope.scopeName,
         scope.geoShape?.calculateArea(),
-        WorldGeoGeographicProfileSupport.profile(player.level().server, region, scope),
+        WorldGeoGeographicProfileSupport.profileSnapshot(player.level().server, region, scope),
         "/imyvmWorldGeo debug geography scope ${region.numberID} ${scope.scopeName} detail"
     )
 }
@@ -115,7 +116,7 @@ fun onDebugGeographyScopeDetail(player: ServerPlayer, region: Region, scope: Geo
         player,
         WorldGeoSpaceType.GEOSCOPE.name,
         scope.requireAssignedScopeId().raw.toString(),
-        WorldGeoGeographicProfileSupport.profile(player.level().server, region, scope),
+        WorldGeoGeographicProfileSupport.profileSnapshot(player.level().server, region, scope),
         pageRaw
     )
 }
@@ -128,7 +129,7 @@ fun onDebugGeographySubSpace(player: ServerPlayer, region: Region, parentScope: 
         subSpace.subSpaceId.toString(),
         subSpace.name,
         subSpace.geoShape.calculateArea(),
-        WorldGeoGeographicProfileSupport.profile(player.level().server, region, parentScope, subSpace),
+        WorldGeoGeographicProfileSupport.profileSnapshot(player.level().server, region, parentScope, subSpace),
         "/imyvmWorldGeo debug geography subspace ${region.numberID} ${subSpace.name} detail"
     )
 }
@@ -145,7 +146,7 @@ fun onDebugGeographySubSpaceDetail(
         player,
         WorldGeoSpaceType.SUBSPACE.name,
         subSpace.subSpaceId.toString(),
-        WorldGeoGeographicProfileSupport.profile(player.level().server, region, parentScope, subSpace),
+        WorldGeoGeographicProfileSupport.profileSnapshot(player.level().server, region, parentScope, subSpace),
         pageRaw
     )
 }
@@ -156,9 +157,9 @@ private fun sendDebugGeographyOverview(
     id: String,
     name: String,
     area: Double?,
-    result: WorldGeoGeographicProfileResult,
+    snapshot: WorldGeoGeographicProfileSnapshot,
     detailCommand: String
-): Int = when (result) {
+): Int = when (val result = snapshot.result) {
     is WorldGeoGeographicProfileResult.ChunkLimitExceeded -> {
         player.sendSystemMessage(
             Translator.tr(
@@ -192,7 +193,11 @@ private fun sendDebugGeographyOverview(
                 profile.sampleWeight,
                 profile.loadedChunkCount,
                 profile.candidateChunkCount,
-                profile.isPartial
+                profile.isPartial,
+                snapshot.source.name.lowercase(Locale.ROOT),
+                snapshot.calculatedAtMillis,
+                snapshot.lastInvalidationReason ?: "-",
+                snapshot.lastInvalidatedAtMillis?.toString() ?: "-"
             )!!
         )
         player.sendSystemMessage(
@@ -212,9 +217,9 @@ private fun sendDebugGeographyDetail(
     player: ServerPlayer,
     type: String,
     id: String,
-    result: WorldGeoGeographicProfileResult,
+    snapshot: WorldGeoGeographicProfileSnapshot,
     pageRaw: String?
-): Int = when (result) {
+): Int = when (val result = snapshot.result) {
     is WorldGeoGeographicProfileResult.ChunkLimitExceeded -> {
         player.sendSystemMessage(
             Translator.tr(

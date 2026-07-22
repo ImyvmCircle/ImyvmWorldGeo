@@ -18,6 +18,7 @@ import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import com.imyvm.iwg.domain.component.SubSpace
+import com.imyvm.iwg.infra.RegionDatabase
 import net.minecraft.resources.Identifier
 import java.util.UUID
 import kotlin.test.Test
@@ -64,7 +65,36 @@ class RegionDataApiTest {
         assertEquals(true, snapshot.entryMessageConfigured)
         assertEquals(0x44BB44, snapshot.mapColorSuggestion)
         assertEquals(listOf("ENTRY_EXIT_MESSAGE_ENABLED"), snapshot.settingSummary.map { it.key })
+        assertEquals(listOf(5, 5, 10, 10), snapshot.shapeParameters)
         assertFailsWith<UnsupportedOperationException> { (snapshot.stringTags as MutableSet).add("later") }
+        assertFailsWith<UnsupportedOperationException> { (snapshot.shapeParameters as MutableList).add(11) }
+    }
+
+    @Test
+    fun `snapshot lookup APIs return immutable space facts by id`() {
+        val scope = scope("first", geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(30, 30)))
+        val subSpace = SubSpace(
+            8,
+            "room",
+            scope.requireAssignedScopeId(),
+            scope.worldId,
+            GeoShape.rectangle(GeoPoint(5, 5), GeoPoint(10, 10))
+        )
+        val region = Region("region", 9, mutableListOf(scope), subSpaces = mutableListOf(subSpace))
+        RegionDatabase.addRegion(region)
+        try {
+            val scopeSnapshots = RegionDataApi.listScopeSnapshots(9)
+            val subSpaceSnapshots = RegionDataApi.listSubSpaceSnapshots(scope.requireAssignedScopeId().raw)
+            val direct = RegionDataApi.getSpaceSnapshot(WorldGeoSpaceType.SUBSPACE, 8)
+            val byName = RegionDataApi.getSubSpaceSnapshotByName(scope.requireAssignedScopeId().raw, "ROOM")
+
+            assertEquals(listOf(scope.requireAssignedScopeId().raw), scopeSnapshots.map { it.id })
+            assertEquals(listOf(8L), subSpaceSnapshots.map { it.id })
+            assertEquals(8L, direct?.id)
+            assertEquals(8L, byName?.id)
+        } finally {
+            RegionDatabase.removeRegion(region)
+        }
     }
 
     @Test

@@ -6,10 +6,17 @@ import com.imyvm.iwg.domain.WorldGeoGeographicOrientation
 import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoShape
 import net.minecraft.resources.Identifier
+import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
 
 class WorldGeoGeographicProfileSupportTest {
+    @AfterTest
+    fun tearDown() {
+        WorldGeoGeographicProfileSupport.clearForTest()
+    }
+
     @Test
     fun `overworld biome ids map to design categories`() {
         assertEquals(WorldGeoBiomeCategory.OCEAN, WorldGeoGeographicProfileSupport.classifyBiome(Identifier.parse("minecraft:river")))
@@ -79,6 +86,16 @@ class WorldGeoGeographicProfileSupportTest {
 
         assertEquals(WorldGeoGeographicAttributeKind.DIVERSE, kind)
         assertEquals(emptyList(), categories)
+    }
+
+    @Test
+    fun `cache status records invalidation reason`() {
+        WorldGeoGeographicProfileSupport.invalidateAll("test_reset")
+        val status = WorldGeoGeographicProfileSupport.cacheStatus()
+
+        assertEquals(0, status.cachedProfileCount)
+        assertEquals("test_reset", status.lastInvalidationReason)
+        assertNotNull(status.lastInvalidatedAtMillis)
     }
 
     @Test

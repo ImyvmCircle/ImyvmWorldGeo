@@ -1,5 +1,6 @@
 package com.imyvm.iwg.domain
 
+import com.imyvm.iwg.domain.component.GeoShapeType
 import net.minecraft.resources.Identifier
 
 enum class WorldGeoSpaceType {
@@ -27,5 +28,8 @@ data class WorldGeoSpaceSnapshot(
     val entryMessageEnabled: Boolean = true,
     val entryMessageConfigured: Boolean = false,
     val mapColorSuggestion: Int? = null,
-    val settingSummary: List<WorldGeoSettingSummary> = emptyList()
+    val settingSummary: List<WorldGeoSettingSummary> = emptyList(),
+    val displayName: String = name,
+    val shapeType: GeoShapeType? = null,
+    val shapeParameters: List<Int> = emptyList()
 )

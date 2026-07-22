@@ -61,7 +61,8 @@ object WorldGeoSpaceSupport {
             entryMessageEnabled = entryMessageEnabled(region),
             entryMessageConfigured = entryMessageConfigured(region),
             mapColorSuggestion = DynmapColorResolver.resolveColor(region),
-            settingSummary = settingSummaries(region, WorldGeoSettingVisibility.PUBLIC)
+            settingSummary = settingSummaries(region, WorldGeoSettingVisibility.PUBLIC),
+            displayName = region.name
         )
     }
 
@@ -88,7 +89,10 @@ object WorldGeoSpaceSupport {
             entryMessageEnabled = entryMessageEnabled(scope),
             entryMessageConfigured = entryMessageConfigured(scope),
             mapColorSuggestion = DynmapColorResolver.resolveColor(region),
-            settingSummary = settingSummaries(scope, WorldGeoSettingVisibility.PUBLIC)
+            settingSummary = settingSummaries(scope, WorldGeoSettingVisibility.PUBLIC),
+            displayName = scope.scopeName,
+            shapeType = scope.geoShape?.geoShapeType,
+            shapeParameters = immutableShapeParameters(scope.geoShape)
         )
     }
 
@@ -118,7 +122,10 @@ object WorldGeoSpaceSupport {
             entryMessageEnabled = true,
             entryMessageConfigured = subSpace.entryMessage != null,
             mapColorSuggestion = DynmapColorResolver.resolveColor(region),
-            settingSummary = settingSummaries(subSpace, WorldGeoSettingVisibility.PUBLIC)
+            settingSummary = settingSummaries(subSpace, WorldGeoSettingVisibility.PUBLIC),
+            displayName = subSpace.name,
+            shapeType = subSpace.geoShape.geoShapeType,
+            shapeParameters = immutableShapeParameters(subSpace.geoShape)
         )
     }
 
@@ -213,6 +220,9 @@ object WorldGeoSpaceSupport {
             )
         }
         .toList()
+
+    private fun immutableShapeParameters(shape: com.imyvm.iwg.domain.component.GeoShape?): List<Int> =
+        if (shape == null) emptyList() else Collections.unmodifiableList(shape.shapeParameter.toList())
 
     private fun settingType(setting: Setting): String = when (setting) {
         is PermissionSetting, is ExtensionPermissionSetting -> "PERMISSION"

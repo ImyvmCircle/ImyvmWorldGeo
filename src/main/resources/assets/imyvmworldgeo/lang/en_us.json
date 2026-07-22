@@ -493,8 +493,8 @@
   "interaction.meta.debug.test_period.stopped": "&aStopped test period mode. Natural period results are active again.",
   "interaction.meta.debug.test_period.invalid_weeks": "&cInvalid test period week count: &e{0}&c. Use a positive integer.",
   "interaction.meta.debug.space_snapshot": "&6Space snapshot&r\n&7Type: &e{0}&7  ID: &b{1}&7  Name: &b{2}&r\n&7Dimension: &e{3}&7  Area: &e{4}&r\n&7Parent Region: &b{5}:{6}&r\n&7Parent Scope: &b{7}:{8}&r\n&7Children: scopes=&e{9}&7 SubSpaces=&e{10}&r\n&7Tags: &f{11}&r\n&7Keyed tags: &f{12}&r\n&7Stats version: &e{13}&7  Biome: &e{14}&r\n&7Entry: enabled=&e{15}&7 configured=&e{16}&r\n&7Map color: &e{17}&r\n&7Settings: &f{18}",
-  "interaction.meta.debug.geography.header": "&6Geographic profile&r type=&e{0}&r id=&b{1}&r name=&b{2}&r dimension=&e{3}&r area=&e{4}&r attribute=&e{5}&r elevation=&e{6}&r orientation=&e{7}&r sampleWeight=&a{8}&r loadedChunks=&a{9}&7/&e{10}&r partial=&e{11}",
-  "interaction.meta.debug.geography.summary": "&7Category ratios: &f{0}&r\n&7Attribute kind: &e{1}&r  Dominant: &e{2}&r\n&7Details: &e{3} [page]",
+  "interaction.meta.debug.geography.header": "&6Geographic profile&r type=&e{0}&r id=&b{1}&r name=&b{2}&r dimension=&e{3}&r area=&e{4}&r attribute=&e{5}&r elevation=&e{6}&r orientation=&e{7}&r sampleWeight=&a{8}&r loadedChunks=&a{9}&7/&e{10}&r partial=&e{11}&r\n&7source=&e{12}&7 calculatedAt=&e{13}&7 lastInvalidation=&e{14}&7 @ &e{15}",
+  "interaction.meta.debug.geography.summary": "&7Category ratios: &f{0}&r\n&7Attribute kind: &e{1}&r  Dominant: &e{2}&r\n&7Details: &e{3} [page]\n&7No detail usually means non-overworld dimension, no loaded candidate chunks, or no sampleable shape.",
   "interaction.meta.debug.geography.detail.category": "&7- category &e{0}&7 weight=&e{1}&7 ratio=&e{2}",
   "interaction.meta.debug.geography.detail.biome": "&7- raw biome &f{0}&7 weight=&e{1}",
   "interaction.meta.debug.geography.detail_hint": "&7Details: &e{0} [page]",
@@ -528,5 +528,6 @@
   "interaction.meta.debug.behavior.typed.detail.block": "&7- block player=&b{0}&7 block=&f{1}&7 placed=&e{2}&7 broken=&e{3}&7 net=&e{4}",
   "interaction.meta.debug.behavior.typed.detail.combat": "&7- combat player=&b{0}&7 object=&f{1}&7 target=&f{2}&7 damage=&e{3}&7 kills=&e{4}&7 deaths=&e{5}&7 damaged=&e{6}",
   "interaction.meta.debug.behavior.typed.detail.residence": "&7- residence chunk=&b{0}&7 millis=&e{1}",
-  "interaction.meta.debug.behavior.typed.detail.online": "&7- online player=&b{0}&7 totalMs=&e{1}&7 afkMs=&e{2}&7 nonAfkMs=&e{3}"
+  "interaction.meta.debug.behavior.typed.detail.online": "&7- online player=&b{0}&7 totalMs=&e{1}&7 afkMs=&e{2}&7 nonAfkMs=&e{3}",
+  "interaction.meta.debug.behavior.typed.keys": "&7Statistic keys: online=&e{0}&7 afk=&e{1}&7 residence=&e{2}&7 damaged=&e{3}"
 }

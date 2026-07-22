@@ -2,6 +2,7 @@ package com.imyvm.iwg.entrypoint.register
 
 import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.application.region.permission.clearFlySessionState
 import com.imyvm.iwg.infra.BehaviorStatsStore
@@ -37,6 +38,7 @@ internal fun openRegionSession(worldRoot: Path) {
     EffectOverlayService.withScopeLifecycle {
         check(!RegionDatabase.hasActiveSession()) { "Region database session is already active" }
         EffectOverlayService.clearAll()
+        WorldGeoGeographicProfileSupport.invalidateAll("session_opened")
         RegionDatabase.bindSession(worldRoot)
         try {
             PeriodProcessingStore.bindSession(worldRoot)
@@ -54,6 +56,7 @@ internal fun openRegionSession(worldRoot: Path) {
 
 internal fun closeRegionSession() {
     EffectOverlayService.withScopeLifecycle {
+        WorldGeoGeographicProfileSupport.invalidateAll("session_closed")
         RegionDatabase.unbindSession()
         PeriodProcessingStore.unbindSession()
         TestPeriodModeStore.unbindSession()

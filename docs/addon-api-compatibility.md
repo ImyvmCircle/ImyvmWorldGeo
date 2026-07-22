@@ -169,12 +169,32 @@ PlayerInteractionApi.teleportPlayerToScopeAsAdministrator(player, region, scope)
 
 The administrator entry bypasses only accessibility. Both entries still require the exact live Region/Scope pair and enforce dimension availability, physical safety, bounded fallback, persistence, and rollback. The retained ordinary method descriptor is unchanged; unrestricted use of private teleport points is not retained as compatibility behavior.
 
+## R14 immutable space snapshot API
+
+Use `RegionDataApi.getSpaceSnapshot(type, id)` for unified Region, Scope, and SubSpace lookup by stable ID. Use `listScopeSnapshots(regionId)`, `listSubSpaceSnapshots(scopeId)`, and `getSubSpaceSnapshotByName(scopeId, name)` when addon code needs immutable menu or rule inputs without retaining live domain objects.
+
+`WorldGeoSpaceSnapshot` now includes `displayName`, `shapeType`, and copied `shapeParameters`. Region snapshots have no shape. Scope and SubSpace snapshots expose the current geometry as immutable values. Existing live-object methods such as `getRegionScopes`, `getRegionSubSpaces`, and `getSubSpaceById` remain available for compatibility and owner-explicit mutation flows, but new read-only addon code should prefer snapshots.
+
 ## R13 geographic profile API
 
 Use `RegionDataApi.getRegionGeographicProfile`, `getScopeGeographicProfile`, and
 `getSubSpaceGeographicProfile` when an addon needs geography for menus, lore,
 settlement inputs, or OP diagnostics. These methods return `WorldGeoGeographicProfileResult`
 so addons can handle unloaded dimensions and oversized scan ranges without parsing chat text.
+
+Use the snapshot methods when cache state matters:
+
+```kotlin
+RegionDataApi.getRegionGeographicProfileSnapshot(server, region)
+RegionDataApi.getScopeGeographicProfileSnapshot(server, region, scope)
+RegionDataApi.getSubSpaceGeographicProfileSnapshot(server, region, scope, subSpace)
+```
+
+`WorldGeoGeographicProfileSnapshot` reports whether the value was computed or read from cache,
+the calculation time, and the last cache invalidation reason. `RegionDataApi.getGeographicProfileCacheStatus()`
+reports global cache size and invalidation metadata. `RegionDataApi.refreshGeographicProfiles(server)`
+clears and warms the cache for current Region, Scope, and SubSpace objects. Region-data saves and
+server-session changes invalidate the cache; weekly natural-period transitions warm it again.
 
 `WorldGeoSpaceSnapshot.dominantBiomeId` remains available for compatibility. New code should
 prefer the profile result because it exposes the neutral geographic attribute, overworld biome

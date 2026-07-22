@@ -31,6 +31,11 @@ enum class WorldGeoGeographicOrientation(val key: String) {
     SOUTHWEST("southwest")
 }
 
+enum class WorldGeoGeographicProfileSource {
+    COMPUTED,
+    CACHED
+}
+
 sealed class WorldGeoGeographicProfileResult {
     data class Success(val profile: WorldGeoGeographicProfile) : WorldGeoGeographicProfileResult()
     data class ChunkLimitExceeded(
@@ -66,3 +71,18 @@ data class WorldGeoGeographicProfile(
     val isPartial: Boolean
         get() = loadedChunkCount < candidateChunkCount
 }
+
+
+data class WorldGeoGeographicProfileSnapshot(
+    val result: WorldGeoGeographicProfileResult,
+    val source: WorldGeoGeographicProfileSource,
+    val calculatedAtMillis: Long,
+    val lastInvalidatedAtMillis: Long?,
+    val lastInvalidationReason: String?
+)
+
+data class WorldGeoGeographicProfileCacheStatus(
+    val cachedProfileCount: Int,
+    val lastInvalidatedAtMillis: Long?,
+    val lastInvalidationReason: String?
+)

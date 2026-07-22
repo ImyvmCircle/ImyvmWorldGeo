@@ -6,7 +6,10 @@ import com.imyvm.iwg.domain.WorldGeoBiomeCategoryRatio
 import com.imyvm.iwg.domain.WorldGeoGeographicAttributeKind
 import com.imyvm.iwg.domain.WorldGeoGeographicOrientation
 import com.imyvm.iwg.domain.WorldGeoGeographicProfile
+import com.imyvm.iwg.domain.WorldGeoGeographicProfileCacheStatus
 import com.imyvm.iwg.domain.WorldGeoGeographicProfileResult
+import com.imyvm.iwg.domain.WorldGeoGeographicProfileSnapshot
+import com.imyvm.iwg.domain.WorldGeoGeographicProfileSource
 import com.imyvm.iwg.domain.WorldGeoSpaceType
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
@@ -28,13 +31,25 @@ object WorldGeoGeographicProfileSupport {
     private val OVERWORLD_ID = Identifier.parse("minecraft:overworld")
     private val NETHER_ID = Identifier.parse("minecraft:the_nether")
     private val END_ID = Identifier.parse("minecraft:the_end")
+    private val cache = linkedMapOf<ProfileCacheKey, CachedProfile>()
+    private var lastInvalidatedAtMillis: Long? = null
+    private var lastInvalidationReason: String? = null
 
-    fun profile(server: MinecraftServer, region: Region): WorldGeoGeographicProfileResult {
+    fun profile(server: MinecraftServer, region: Region): WorldGeoGeographicProfileResult =
+        profileSnapshot(server, region).result
+
+    fun profile(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoGeographicProfileResult =
+        profileSnapshot(server, region, scope).result
+
+    fun profile(server: MinecraftServer, region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoGeographicProfileResult =
+        profileSnapshot(server, region, scope, subSpace).result
+
+    fun profileSnapshot(server: MinecraftServer, region: Region): WorldGeoGeographicProfileSnapshot {
         val scope = region.scopes
             .filter { it.geoShape != null }
             .maxByOrNull { it.geoShape?.calculateArea() ?: 0.0 }
-            ?: return emptyProfile(WorldGeoSpaceType.REGION, region.numberID.toLong(), region.name, null)
-        return profileForShape(
+            ?: return computedSnapshot(emptyProfile(WorldGeoSpaceType.REGION, region.numberID.toLong(), region.name, null))
+        return cachedProfileForShape(
             server,
             WorldGeoSpaceType.REGION,
             region.numberID.toLong(),
@@ -44,19 +59,92 @@ object WorldGeoGeographicProfileSupport {
         )
     }
 
-    fun profile(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoGeographicProfileResult {
+    fun profileSnapshot(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoGeographicProfileSnapshot {
         require(region.containsScope(scope)) { "scope does not belong to region" }
         val shape = scope.geoShape
-            ?: return emptyProfile(WorldGeoSpaceType.GEOSCOPE, scope.requireAssignedScopeId().raw, scope.scopeName, scope.worldId)
-        return profileForShape(server, WorldGeoSpaceType.GEOSCOPE, scope.requireAssignedScopeId().raw, scope.scopeName, scope.worldId, shape)
+            ?: return computedSnapshot(emptyProfile(WorldGeoSpaceType.GEOSCOPE, scope.requireAssignedScopeId().raw, scope.scopeName, scope.worldId))
+        return cachedProfileForShape(server, WorldGeoSpaceType.GEOSCOPE, scope.requireAssignedScopeId().raw, scope.scopeName, scope.worldId, shape)
     }
 
-    fun profile(server: MinecraftServer, region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoGeographicProfileResult {
+    fun profileSnapshot(server: MinecraftServer, region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoGeographicProfileSnapshot {
         require(region.containsScope(scope)) { "scope does not belong to region" }
         require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
         require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace parent scope does not match" }
-        return profileForShape(server, WorldGeoSpaceType.SUBSPACE, subSpace.subSpaceId, subSpace.name, subSpace.worldId, subSpace.geoShape)
+        return cachedProfileForShape(server, WorldGeoSpaceType.SUBSPACE, subSpace.subSpaceId, subSpace.name, subSpace.worldId, subSpace.geoShape)
     }
+
+    @Synchronized
+    fun invalidateAll(reason: String) {
+        cache.clear()
+        lastInvalidatedAtMillis = System.currentTimeMillis()
+        lastInvalidationReason = reason
+    }
+
+    @Synchronized
+    fun cacheStatus(): WorldGeoGeographicProfileCacheStatus =
+        WorldGeoGeographicProfileCacheStatus(cache.size, lastInvalidatedAtMillis, lastInvalidationReason)
+
+    fun refreshAll(server: MinecraftServer, regions: List<Region>): Int {
+        invalidateAll("period_refresh")
+        var refreshed = 0
+        for (region in regions) {
+            if (profileSnapshot(server, region).result is WorldGeoGeographicProfileResult.Success) refreshed++
+            for (scope in region.scopes) {
+                if (profileSnapshot(server, region, scope).result is WorldGeoGeographicProfileResult.Success) refreshed++
+            }
+            for (subSpace in region.subSpaces) {
+                val scope = region.scopes.firstOrNull { it.requireAssignedScopeId() == subSpace.parentScopeId } ?: continue
+                if (profileSnapshot(server, region, scope, subSpace).result is WorldGeoGeographicProfileResult.Success) refreshed++
+            }
+        }
+        return refreshed
+    }
+
+    @Synchronized
+    internal fun clearForTest() {
+        cache.clear()
+        lastInvalidatedAtMillis = null
+        lastInvalidationReason = null
+    }
+
+    @Synchronized
+    private fun cachedProfileForShape(
+        server: MinecraftServer,
+        type: WorldGeoSpaceType,
+        id: Long,
+        name: String,
+        dimensionId: Identifier,
+        shape: GeoShape
+    ): WorldGeoGeographicProfileSnapshot {
+        val key = ProfileCacheKey(type, id, name, dimensionId, shape.geoShapeType, shape.shapeParameter)
+        val cached = cache[key]
+        if (cached != null) return WorldGeoGeographicProfileSnapshot(
+            cached.result,
+            WorldGeoGeographicProfileSource.CACHED,
+            cached.calculatedAtMillis,
+            lastInvalidatedAtMillis,
+            lastInvalidationReason
+        )
+        val calculatedAt = System.currentTimeMillis()
+        val result = profileForShape(server, type, id, name, dimensionId, shape)
+        if (result is WorldGeoGeographicProfileResult.Success) cache[key] = CachedProfile(result, calculatedAt)
+        return WorldGeoGeographicProfileSnapshot(
+            result,
+            WorldGeoGeographicProfileSource.COMPUTED,
+            calculatedAt,
+            lastInvalidatedAtMillis,
+            lastInvalidationReason
+        )
+    }
+
+    private fun computedSnapshot(result: WorldGeoGeographicProfileResult): WorldGeoGeographicProfileSnapshot =
+        WorldGeoGeographicProfileSnapshot(
+            result,
+            WorldGeoGeographicProfileSource.COMPUTED,
+            System.currentTimeMillis(),
+            lastInvalidatedAtMillis,
+            lastInvalidationReason
+        )
 
     internal fun classifyBiome(biomeId: Identifier): WorldGeoBiomeCategory {
         val path = biomeId.path
@@ -338,3 +426,18 @@ object WorldGeoGeographicProfileSupport {
     private fun packChunkPos(x: Int, z: Int): Long =
         (x.toLong() and 0xffffffffL) or ((z.toLong() and 0xffffffffL) shl 32)
 }
+
+
+private data class ProfileCacheKey(
+    val type: WorldGeoSpaceType,
+    val id: Long,
+    val name: String,
+    val dimensionId: Identifier,
+    val shapeType: GeoShapeType,
+    val shapeParameters: List<Int>
+)
+
+private data class CachedProfile(
+    val result: WorldGeoGeographicProfileResult.Success,
+    val calculatedAtMillis: Long
+)

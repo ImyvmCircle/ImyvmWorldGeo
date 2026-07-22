@@ -4,7 +4,10 @@ import com.imyvm.iwg.infra.LazyTicker
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
 import com.imyvm.iwg.infra.config.initializeConfigValidation
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
+import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
+import com.imyvm.iwg.domain.NaturalPeriodKind
+import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.event.registerPointSelection
@@ -32,7 +35,17 @@ ImyvmWorldGeo : ModInitializer {
 		registerDataLoadSave()
 
 		registerLazyTicker()
+		var refreshGeographicProfiles = false
+		WorldGeoPeriodTracker.registerCallback { transition ->
+			if (transition.kind == NaturalPeriodKind.WEEK) refreshGeographicProfiles = true
+		}
 		LazyTicker.registerTask { WorldGeoPeriodTracker.process() }
+		LazyTicker.registerTask { server ->
+			if (refreshGeographicProfiles) {
+				refreshGeographicProfiles = false
+				WorldGeoGeographicProfileSupport.refreshAll(server, RegionDatabase.getRegionList())
+			}
+		}
 		EffectOverlayService.register()
 		registerPlayerGeographyPair()
 		registerRegionEntryExit()
