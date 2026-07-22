@@ -45,12 +45,16 @@ fun registerBehaviorEventProducers() {
 }
 
 private fun recordEntityBehavior(type: WorldGeoBehaviorType, player: ServerPlayer, target: LivingEntity) {
+    val entityTypeId = BuiltInRegistries.ENTITY_TYPE.getKey(target.type).toString()
     recordPlayerBehavior(
         type,
         player,
         target.level(),
         target.blockPosition(),
-        objectId = BuiltInRegistries.ENTITY_TYPE.getKey(target.type).toString(),
-        targetId = target.uuid.toString()
+        objectId = entityTypeId,
+        targetId = normalizedCombatTargetId(entityTypeId, target.uuid.toString(), target is ServerPlayer)
     )
 }
+
+internal fun normalizedCombatTargetId(entityTypeId: String, targetUuid: String, targetIsPlayer: Boolean): String =
+    if (targetIsPlayer) targetUuid else entityTypeId

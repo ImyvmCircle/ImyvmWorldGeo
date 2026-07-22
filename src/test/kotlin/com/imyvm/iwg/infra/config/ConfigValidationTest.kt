@@ -24,11 +24,15 @@ class ConfigValidationTest {
     fun `runtime updates roll back invalid values`() {
         initializeConfigValidation()
         val oldTicker = CoreConfig.LAZY_TICKER_SECONDS.value
+        val oldBehaviorStatsLimit = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
         val oldEffect = EffectConfig.EFFECT_DURATION_SECONDS.value
         val oldFallbackRadius = TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
 
         assertFailsWith<IllegalArgumentException> { CoreConfig.LAZY_TICKER_SECONDS.setValue(0) }
         assertEquals(oldTicker, CoreConfig.LAZY_TICKER_SECONDS.value)
+
+        assertFailsWith<IllegalArgumentException> { CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(0) }
+        assertEquals(oldBehaviorStatsLimit, CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value)
 
         assertFailsWith<IllegalArgumentException> {
             EffectConfig.EFFECT_DURATION_SECONDS.setValue(CoreConfig.LAZY_TICKER_SECONDS.value)

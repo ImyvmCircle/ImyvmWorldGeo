@@ -21,4 +21,13 @@ object CoreConfig {
     ) { obj: Config, path: String? ->
         positiveInt(path, obj.getInt(path))
     }
+
+    @JvmField
+    val BEHAVIOR_STATS_MAX_ENTRY_COUNT = Option(
+        "core.behavior_stats.max_entry_count",
+        1_000_000,
+        "the maximum number of behavior stat entries retained before old periods are evicted."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
 }

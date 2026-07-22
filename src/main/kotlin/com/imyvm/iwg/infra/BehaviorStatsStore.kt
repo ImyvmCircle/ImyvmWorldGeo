@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.imyvm.iwg.ImyvmWorldGeo
+import com.imyvm.iwg.application.time.TestPeriodModeService
 import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
@@ -17,6 +18,7 @@ import com.imyvm.iwg.domain.WorldGeoPlayerOnlineTimeStats
 import com.imyvm.iwg.domain.WorldGeoResidenceStats
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.infra.config.CoreConfig
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
@@ -27,25 +29,27 @@ import java.util.UUID
 
 object BehaviorStatsStore {
     private const val FILE_NAME = "iwg_behavior_stats.json"
-    private const val MAX_ENTRY_COUNT = 100_000
     private const val RESIDENCE_CHUNK_PREFIX = "residence_chunk:"
     private const val ONLINE_OBJECT_ID = "online_millis"
     private const val AFK_OBJECT_ID = "afk_millis"
     private const val DAMAGED_OBJECT_ID = "damaged"
     private var sessionWorldRoot: Path? = null
     private val counts = linkedMapOf<BehaviorStatsKey, Long>()
+    private val warnedCapacityActions = linkedSetOf<String>()
 
     internal fun bindSession(worldRoot: Path) {
         check(sessionWorldRoot == null) { "Behavior stats store session is already active" }
         val root = worldRoot.toAbsolutePath().normalize()
         Files.createDirectories(root)
         counts.clear()
+        warnedCapacityActions.clear()
         counts.putAll(readStats(root.resolve(FILE_NAME)))
         sessionWorldRoot = root
     }
 
     internal fun unbindSession() {
         counts.clear()
+        warnedCapacityActions.clear()
         sessionWorldRoot = null
     }
 
@@ -80,6 +84,9 @@ object BehaviorStatsStore {
     private fun record(event: WorldGeoBehaviorEvent, count: Long) {
         val regionId = event.regionId ?: return
         val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC))
+        val currentBuckets = periodIds.mapTo(linkedSetOf()) { (periodKind, periodId) ->
+            PeriodBucket(periodKind, periodId)
+        }
         for ((periodKind, periodId) in periodIds) {
             val key = BehaviorStatsKey(
                 periodKind = periodKind,
@@ -92,8 +99,7 @@ object BehaviorStatsStore {
                 objectId = event.objectId,
                 targetId = event.targetId
             )
-            counts[key] = Math.addExact(counts[key] ?: 0L, count)
-            require(counts.size <= MAX_ENTRY_COUNT) { "behavior stats entry count exceeds $MAX_ENTRY_COUNT" }
+            recordKey(key, count, currentBuckets)
         }
     }
 
@@ -264,7 +270,6 @@ object BehaviorStatsStore {
         if (!Files.exists(path)) return emptyMap()
         try {
             val array = JsonParser.parseString(Files.readString(path)).asJsonArray
-            require(array.size() <= MAX_ENTRY_COUNT) { "too many behavior stats entries" }
             val result = linkedMapOf<BehaviorStatsKey, Long>()
             for (element in array) {
                 val obj = element.asJsonObject
@@ -283,7 +288,7 @@ object BehaviorStatsStore {
                 validateEntry(key, count)
                 result[key] = Math.addExact(result[key] ?: 0L, count)
             }
-            return result
+            return snapshotWithinCapacity(result, allowCurrentPeriodDrops = true)
         } catch (error: IllegalArgumentException) {
             throw IOException("Invalid behavior stats store", error)
         } catch (error: IllegalStateException) {
@@ -294,9 +299,9 @@ object BehaviorStatsStore {
     }
 
     internal fun writeStats(path: Path, stats: Map<BehaviorStatsKey, Long>) {
-        require(stats.size <= MAX_ENTRY_COUNT) { "too many behavior stats entries" }
+        val snapshot = snapshotWithinCapacity(stats, allowCurrentPeriodDrops = true)
         val array = JsonArray()
-        for ((key, count) in stats) {
+        for ((key, count) in snapshot) {
             validateEntry(key, count)
             val obj = JsonObject()
             obj.addProperty("periodKind", key.periodKind.name)
@@ -316,7 +321,125 @@ object BehaviorStatsStore {
 
     internal fun clearForTest() {
         counts.clear()
+        warnedCapacityActions.clear()
         sessionWorldRoot = null
+    }
+
+    private fun recordKey(
+        key: BehaviorStatsKey,
+        count: Long,
+        currentBuckets: Set<PeriodBucket>
+    ) {
+        val current = counts[key]
+        val nextCount = try {
+            Math.addExact(current ?: 0L, count)
+        } catch (error: ArithmeticException) {
+            warnOnce(
+                "overflow:${key.periodKind}:${key.periodId}:${key.behaviorType}",
+                "Dropped behavior stats update because count overflowed for ${key.behaviorType} in ${key.periodKind}:${key.periodId}."
+            )
+            return
+        }
+        if (current == null && counts.size >= maxEntryCount()) {
+            pruneToCapacity(
+                counts,
+                excludedBuckets = currentBuckets,
+                targetSize = maxEntryCount() - 1
+            )
+            if (counts.size >= maxEntryCount()) {
+                warnOnce(
+                    "drop:${key.periodKind}:${key.periodId}",
+                    "Dropped new behavior stats keys for ${key.periodKind}:${key.periodId} because the entry cap ${maxEntryCount()} is exhausted."
+                )
+                return
+            }
+        }
+        counts[key] = nextCount
+    }
+
+    private fun snapshotWithinCapacity(
+        stats: Map<BehaviorStatsKey, Long>,
+        allowCurrentPeriodDrops: Boolean
+    ): Map<BehaviorStatsKey, Long> {
+        if (stats.size <= maxEntryCount()) return stats
+        val snapshot = LinkedHashMap(stats)
+        pruneToCapacity(snapshot, emptySet(), maxEntryCount())
+        if (allowCurrentPeriodDrops && snapshot.size > maxEntryCount()) {
+            val dropCount = snapshot.size - maxEntryCount()
+            repeat(dropCount) {
+                val oldestKey = snapshot.entries.firstOrNull()?.key ?: return@repeat
+                snapshot.remove(oldestKey)
+            }
+            warnOnce(
+                "snapshot-drop:${maxEntryCount()}",
+                "Dropped $dropCount oldest behavior stats keys while trimming a snapshot to the entry cap ${maxEntryCount()}."
+            )
+        }
+        require(snapshot.size <= maxEntryCount()) { "too many behavior stats entries" }
+        return snapshot
+    }
+
+    private fun pruneToCapacity(
+        stats: MutableMap<BehaviorStatsKey, Long>,
+        excludedBuckets: Set<PeriodBucket>,
+        targetSize: Int
+    ) {
+        while (stats.size > targetSize) {
+            val bucket = oldestEvictableBucket(stats.keys, excludedBuckets) ?: return
+            val removed = removeBucket(stats, bucket)
+            if (removed == 0) return
+            warnOnce(
+                "evict:${bucket.kind}:${bucket.periodId}",
+                "Evicted $removed behavior stats keys from ${bucket.kind}:${bucket.periodId} to stay under the entry cap ${maxEntryCount()}."
+            )
+        }
+    }
+
+    private fun oldestEvictableBucket(
+        keys: Set<BehaviorStatsKey>,
+        excludedBuckets: Set<PeriodBucket>
+    ): PeriodBucket? = keys
+        .groupBy { it.periodKind }
+        .mapNotNull { (kind, entries) ->
+            val periods = entries.mapTo(linkedSetOf()) { it.periodId }
+            val oldestPeriod = periods
+                .asSequence()
+                .filter { PeriodBucket(kind, it) !in excludedBuckets }
+                .minWithOrNull(periodIdComparator(kind))
+                ?: return@mapNotNull null
+            CandidateBucket(PeriodBucket(kind, oldestPeriod), periods.size)
+        }
+        .maxByOrNull { it.periodCount }
+        ?.bucket
+
+    private fun removeBucket(stats: MutableMap<BehaviorStatsKey, Long>, bucket: PeriodBucket): Int {
+        val toRemove = stats.keys
+            .filter { it.periodKind == bucket.kind && it.periodId == bucket.periodId }
+            .toList()
+        toRemove.forEach(stats::remove)
+        return toRemove.size
+    }
+
+    private fun periodIdComparator(kind: NaturalPeriodKind): Comparator<String> = Comparator { left, right ->
+        comparePeriodIds(kind, left, right)
+    }
+
+    private fun comparePeriodIds(kind: NaturalPeriodKind, left: String, right: String): Int {
+        if (left == right) return 0
+        if (TestPeriodModeService.isTestPeriodId(left) && TestPeriodModeService.isTestPeriodId(right)) {
+            val leftIndex = left.substringAfterLast(':').toLongOrNull()
+            val rightIndex = right.substringAfterLast(':').toLongOrNull()
+            if (leftIndex != null && rightIndex != null) return leftIndex.compareTo(rightIndex)
+        }
+        return left.compareTo(right)
+    }
+
+    private fun maxEntryCount(): Int = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
+
+    private fun warnOnce(key: String, message: String) {
+        if (warnedCapacityActions.add(key)) {
+            ImyvmWorldGeo.logger.warn(message)
+        }
     }
 
     private fun BehaviorStatsKey.matches(query: WorldGeoBehaviorStatsQuery): Boolean =
@@ -370,4 +493,14 @@ internal data class BehaviorStatsKey(
     val playerUuid: UUID,
     val objectId: String?,
     val targetId: String? = null
+)
+
+private data class PeriodBucket(
+    val kind: NaturalPeriodKind,
+    val periodId: String
+)
+
+private data class CandidateBucket(
+    val bucket: PeriodBucket,
+    val periodCount: Int
 )

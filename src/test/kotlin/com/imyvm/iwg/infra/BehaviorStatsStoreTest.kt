@@ -7,6 +7,7 @@ import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.infra.config.CoreConfig
 import net.minecraft.resources.Identifier
 import java.io.IOException
 import java.nio.file.Files
@@ -21,6 +22,7 @@ class BehaviorStatsStoreTest {
     private val playerUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000001")
     private val targetPlayerUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val otherTargetUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000003")
+    private val defaultMaxEntryCount: Int = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
 
     @AfterTest
     fun tearDown() {
@@ -28,6 +30,7 @@ class BehaviorStatsStoreTest {
         WorldGeoPeriodTracker.resetForTest()
         TestPeriodModeStore.unbindSession()
         BehaviorStatsStore.clearForTest()
+        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(defaultMaxEntryCount)
     }
 
     @Test
@@ -232,6 +235,33 @@ class BehaviorStatsStoreTest {
         assertEquals(original, Files.readString(path))
     }
 
+    @Test
+    fun `evicts oldest hour period before dropping new stats keys`() = withTempDirectory { directory ->
+        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(5)
+        BehaviorStatsStore.bindSession(directory)
+
+        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_563_200_000L))
+        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_566_800_000L))
+        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_570_400_000L))
+
+        assertEquals(0, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7)).size)
+        assertEquals(1L, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T01", regionId = 7)).single().count)
+        assertEquals(1L, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T02", regionId = 7)).single().count)
+        assertEquals(3L, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.DAY, "2026-07-21", regionId = 7)).single().count)
+    }
+
+    @Test
+    fun `drops new current-period keys without throwing when cap is exhausted`() = withTempDirectory { directory ->
+        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(4)
+        BehaviorStatsStore.bindSession(directory)
+
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "first"))
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "second"))
+
+        assertEquals(1, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7)).size)
+        assertEquals(0, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, objectId = "second")).size)
+    }
+
     private fun event(type: WorldGeoBehaviorType, objectId: String?, targetId: String? = null) = WorldGeoBehaviorEvent(
         type = type,
         playerUuid = playerUuid,
@@ -250,6 +280,9 @@ class BehaviorStatsStoreTest {
         objectId = objectId,
         targetId = targetId
     )
+
+    private fun eventAt(type: WorldGeoBehaviorType, objectId: String?, unixMillis: Long, targetId: String? = null) = event(type, objectId, targetId)
+        .copy(unixMillis = unixMillis)
 
     private fun withTempDirectory(block: (Path) -> Unit) {
         val directory = Files.createTempDirectory("iwg-behavior-stats-test")

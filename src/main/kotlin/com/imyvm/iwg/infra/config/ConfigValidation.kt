@@ -17,6 +17,7 @@ private var validationInitialized = false
 private var revertingInvalidUpdate = false
 private val positiveOptions by lazy { listOf(
     CoreConfig.LAZY_TICKER_SECONDS,
+    CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT,
     EffectConfig.EFFECT_DURATION_SECONDS,
     SelectionConfig.SELECTION_MAX_POINTS,
     SelectionConfig.SELECTION_DISPLAY_LINE_STEP,
