@@ -85,6 +85,7 @@ object WorldGeoTimeService {
         NaturalPeriodKind.DAY -> LocalDate.parse(currentId).minusDays(1).toString()
         NaturalPeriodKind.WEEK -> formatWeek(parseWeekStart(currentId).minusWeeks(1))
         NaturalPeriodKind.MONTH -> YearMonth.parse(currentId).minusMonths(1).toString()
+        NaturalPeriodKind.YEAR -> (currentId.toInt() - 1).toString()
     }.let { if (it < firstPreviousId) firstPreviousId else it }
 
     private fun enumeratePeriodIds(kind: NaturalPeriodKind, previousId: String, currentId: String): List<String> = when (kind) {
@@ -110,6 +111,12 @@ object WorldGeoTimeService {
             YearMonth.parse(previousId),
             YearMonth.parse(currentId),
             { it.plusMonths(1) },
+            { it.toString() }
+        )
+        NaturalPeriodKind.YEAR -> enumerate(
+            previousId.toInt(),
+            currentId.toInt(),
+            { it + 1 },
             { it.toString() }
         )
     }
@@ -139,8 +146,14 @@ object WorldGeoTimeService {
         NaturalPeriodKind.HOUR to snapshot.naturalHour,
         NaturalPeriodKind.DAY to snapshot.naturalDay,
         NaturalPeriodKind.WEEK to snapshot.naturalWeek,
-        NaturalPeriodKind.MONTH to snapshot.naturalMonth
+        NaturalPeriodKind.MONTH to snapshot.naturalMonth,
+        NaturalPeriodKind.YEAR to snapshot.naturalYear.toString()
     )
+
+    fun getRealTimeSnapshot(zoneId: String): RealTimeSnapshot {
+        val instant = Clock.systemUTC().instant()
+        return realSnapshot(instant, ZoneId.of(zoneId))
+    }
 
     internal fun moonPhase(dayTime: Long): Int = Math.floorMod(Math.floorDiv(dayTime, TICKS_PER_DAY), 8L).toInt()
 

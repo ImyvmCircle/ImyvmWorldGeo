@@ -237,7 +237,7 @@ class BehaviorStatsStoreTest {
 
     @Test
     fun `evicts oldest hour period before dropping new stats keys`() = withTempDirectory { directory ->
-        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(5)
+        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(6)
         BehaviorStatsStore.bindSession(directory)
 
         BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_563_200_000L))

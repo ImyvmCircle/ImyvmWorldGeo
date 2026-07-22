@@ -85,7 +85,9 @@ internal fun recordSpaceBehavior(
             scopeName = scopeName,
             subSpaceId = subSpaceId,
             subSpaceName = subSpaceName,
-            spaceLevel = spaceLevel
+            spaceLevel = spaceLevel,
+            quantity = 1L,
+            source = "SPACE_TRANSITION"
         )
     )
 }

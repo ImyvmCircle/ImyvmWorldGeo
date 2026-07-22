@@ -23,6 +23,7 @@ enum class WorldGeoSpaceLevel {
 }
 
 data class WorldGeoBehaviorEvent(
+    val eventId: String = UUID.randomUUID().toString(),
     val type: WorldGeoBehaviorType,
     val playerUuid: UUID,
     val playerName: String,
@@ -39,5 +40,7 @@ data class WorldGeoBehaviorEvent(
     val subSpaceName: String? = null,
     val spaceLevel: WorldGeoSpaceLevel? = null,
     val objectId: String? = null,
-    val targetId: String? = null
+    val targetId: String? = null,
+    val quantity: Long = 1L,
+    val source: String = "BEHAVIOR"
 )

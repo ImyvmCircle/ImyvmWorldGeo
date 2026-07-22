@@ -103,11 +103,13 @@ object TestPeriodModeService {
         val dayLength = (weekLength / 7L).coerceAtLeast(1L)
         val hourLength = (dayLength / 24L).coerceAtLeast(1L)
         val monthLength = Math.multiplyExact(weekLength, 4L)
+        val yearLength = Math.multiplyExact(monthLength, 12L)
         return linkedMapOf(
             NaturalPeriodKind.HOUR to format("hour", elapsed, hourLength),
             NaturalPeriodKind.DAY to format("day", elapsed, dayLength),
             NaturalPeriodKind.WEEK to format("week", elapsed, weekLength),
-            NaturalPeriodKind.MONTH to format("month", elapsed, monthLength)
+            NaturalPeriodKind.MONTH to format("month", elapsed, monthLength),
+            NaturalPeriodKind.YEAR to format("year", elapsed, yearLength)
         )
     }
 
@@ -121,5 +123,6 @@ object TestPeriodModeService {
         NaturalPeriodKind.DAY -> "day"
         NaturalPeriodKind.WEEK -> "week"
         NaturalPeriodKind.MONTH -> "month"
+        NaturalPeriodKind.YEAR -> "year"
     }
 }

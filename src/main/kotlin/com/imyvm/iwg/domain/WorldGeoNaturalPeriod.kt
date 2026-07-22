@@ -4,7 +4,8 @@ enum class NaturalPeriodKind {
     HOUR,
     DAY,
     WEEK,
-    MONTH
+    MONTH,
+    YEAR
 }
 
 data class NaturalPeriodTransition(

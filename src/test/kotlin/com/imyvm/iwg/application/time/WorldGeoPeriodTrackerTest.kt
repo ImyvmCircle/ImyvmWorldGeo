@@ -127,7 +127,8 @@ class WorldGeoPeriodTrackerTest {
                 NaturalPeriodKind.HOUR to "2026-07-21T00",
                 NaturalPeriodKind.DAY to "2026-07-21",
                 NaturalPeriodKind.WEEK to "2026-W30",
-                NaturalPeriodKind.MONTH to "2026-07"
+                NaturalPeriodKind.MONTH to "2026-07",
+                NaturalPeriodKind.YEAR to "2026"
             ),
             PeriodProcessingStore.getProcessedPeriodIds()
         )

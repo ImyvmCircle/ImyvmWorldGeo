@@ -536,6 +536,9 @@ object RegionDataApi {
     fun getTimeSnapshot(level: ServerLevel): WorldGeoTimeSnapshot =
         WorldGeoTimeService.snapshot(level)
 
+    fun getRealTimeSnapshot(zoneId: String): RealTimeSnapshot =
+        WorldGeoTimeService.getRealTimeSnapshot(zoneId)
+
     fun getCurrentNaturalPeriodIds(): Map<NaturalPeriodKind, String> =
         WorldGeoPeriodTracker.currentPeriodIds()
 

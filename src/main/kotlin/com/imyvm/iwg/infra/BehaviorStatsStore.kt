@@ -54,7 +54,7 @@ object BehaviorStatsStore {
     }
 
     fun record(event: WorldGeoBehaviorEvent) {
-        record(event, 1L)
+        record(event, event.quantity)
     }
 
     fun recordResidenceMillis(
