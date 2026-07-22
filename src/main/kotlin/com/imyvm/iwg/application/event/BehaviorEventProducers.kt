@@ -1,6 +1,7 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.infra.BehaviorStatsStore
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.event.player.UseItemCallback
 import net.minecraft.core.registries.BuiltInRegistries
@@ -12,6 +13,13 @@ fun registerBehaviorEventProducers() {
     ServerLivingEntityEvents.ALLOW_DAMAGE.register { entity, source, _ ->
         val player = source.entity as? ServerPlayer ?: return@register true
         recordEntityBehavior(WorldGeoBehaviorType.ENTITY_DAMAGE, player, entity)
+        val damagedPlayer = entity as? ServerPlayer
+        if (damagedPlayer != null && damagedPlayer !== player) {
+            BehaviorStatsStore.recordDamagedPlayer(
+                playerBehaviorEvent(WorldGeoBehaviorType.ENTITY_DAMAGE, damagedPlayer, entity.level(), entity.blockPosition()),
+                player.uuid.toString()
+            )
+        }
         true
     }
 

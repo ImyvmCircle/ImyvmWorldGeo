@@ -192,6 +192,29 @@ class BehaviorStatsStoreTest {
     }
 
     @Test
+    fun `records runtime duration stats through controlled statistic keys`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        val event = event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "runtime")
+
+        BehaviorStatsStore.recordOnlineMillis(event, 5_000L)
+        BehaviorStatsStore.recordOnlineMillis(event, 2_000L, afk = true)
+        BehaviorStatsStore.recordResidenceMillis(event, 1, 2, 5_000L)
+        BehaviorStatsStore.recordDamagedPlayer(event, targetPlayerUuid.toString())
+
+        val online = BehaviorStatsStore.queryOnlineTime(NaturalPeriodKind.HOUR, "2026-07-21T00", 7, 7001, 9001, playerUuid)
+        val residence = BehaviorStatsStore.queryResidence(NaturalPeriodKind.HOUR, "2026-07-21T00", 7, 7001, 9001)
+        val combat = BehaviorStatsStore.queryEntityCombat(NaturalPeriodKind.HOUR, "2026-07-21T00", 7, 7001, 9001, null, targetPlayerUuid.toString())
+
+        assertEquals(5_000L, online.totalOnlineMillis)
+        assertEquals(2_000L, online.totalAfkMillis)
+        assertEquals(3_000L, online.totalNonAfkMillis)
+        assertEquals(5_000L, residence.totalResidenceMillis)
+        assertEquals(mapOf("1,2" to 5_000L), residence.chunkResidenceMillis)
+        assertEquals(1L, combat.damagedCount)
+        assertEquals(1L, combat.playerStats[playerUuid]?.damagedCount)
+    }
+
+    @Test
     fun `rejects malformed behavior stats file`() = withTempDirectory { directory ->
         Files.writeString(directory.resolve("iwg_behavior_stats.json"), "{}")
 

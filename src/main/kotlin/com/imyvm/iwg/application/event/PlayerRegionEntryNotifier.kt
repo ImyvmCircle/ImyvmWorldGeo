@@ -4,6 +4,7 @@ import com.imyvm.iwg.application.region.PlayerRegionChecker
 import com.imyvm.iwg.application.region.permission.helper.hasRegionPermission
 import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
 import com.imyvm.iwg.domain.WorldGeoSpaceLevel
 import com.imyvm.iwg.domain.component.GeoScope
@@ -13,6 +14,7 @@ import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitToggleSetting
 import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.SubSpace
+import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.EntryExitConfig.ENTRY_EXIT_REGION_DELAY_SECONDS
 import com.imyvm.iwg.infra.config.EntryExitConfig.REGION_ENTER_I18N_KEY
@@ -28,6 +30,8 @@ import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.network.chat.Component
 import java.util.UUID
+
+private const val AFK_THRESHOLD_MILLIS = 300_000L
 
 object PlayerRegionEntryExitTracker {
 
@@ -46,6 +50,7 @@ object PlayerRegionEntryExitTracker {
                 continue
             }
 
+            recordSampledDurations(player, previous.location, previous.sampledAtMillis, now)
             val transition = calculateLocationTransition(
                 previous,
                 current,
@@ -53,7 +58,7 @@ object PlayerRegionEntryExitTracker {
                 ENTRY_EXIT_REGION_DELAY_SECONDS.value * 1000L
             )
             applyTransition(player, transition, now)
-            playerStates[uuid] = transition.state
+            playerStates[uuid] = transition.state.copy(sampledAtMillis = now)
         }
 
         playerStates.keys.retainAll(allCurrent.keys)
@@ -64,6 +69,7 @@ object PlayerRegionEntryExitTracker {
         val uuid = player.uuid
         val now = System.currentTimeMillis()
         val state = playerStates.remove(uuid) ?: return
+        recordSampledDurations(player, state.location, state.sampledAtMillis, now)
         val region = state.location.region
         val startedAt = state.stayStartedAt
         if (region != null && startedAt != null) {
@@ -79,7 +85,7 @@ object PlayerRegionEntryExitTracker {
             if (region != null && startedAt != null) {
                 addStayDuration(region, uuid, startedAt, now)
             }
-            state.copy(stayStartedAt = null)
+            state.copy(stayStartedAt = null, sampledAtMillis = now)
         }
     }
 
@@ -191,6 +197,48 @@ object PlayerRegionEntryExitTracker {
         if (delta > 0L) {
             RegionDatabase.addRegionStayDuration(region, uuid, delta)
         }
+    }
+
+    private fun recordSampledDurations(player: ServerPlayer, location: PlayerLocation, startedAt: Long, endedAt: Long) {
+        if (location.region == null) return
+        val millis = endedAt - startedAt
+        if (millis <= 0L) return
+        val event = sampledDurationEvent(player, location, endedAt)
+        val chunk = player.blockPosition()
+        BehaviorStatsStore.recordOnlineMillis(event, millis)
+        val afkMillis = afkDurationMillis(player, startedAt, endedAt)
+        if (afkMillis > 0L) BehaviorStatsStore.recordOnlineMillis(event, afkMillis, afk = true)
+        BehaviorStatsStore.recordResidenceMillis(event, chunk.x shr 4, chunk.z shr 4, millis)
+    }
+
+    private fun afkDurationMillis(player: ServerPlayer, startedAt: Long, endedAt: Long): Long {
+        val idleStart = Math.addExact(player.lastActionTime, AFK_THRESHOLD_MILLIS)
+        return (endedAt - maxOf(startedAt, idleStart)).coerceAtLeast(0L)
+    }
+
+    private fun sampledDurationEvent(player: ServerPlayer, location: PlayerLocation, unixMillis: Long): WorldGeoBehaviorEvent {
+        val pos = player.blockPosition()
+        return WorldGeoBehaviorEvent(
+            type = WorldGeoBehaviorType.ITEM_USE,
+            playerUuid = player.uuid,
+            playerName = player.scoreboardName,
+            dimensionId = player.level().dimension().identifier(),
+            x = pos.x,
+            y = pos.y,
+            z = pos.z,
+            unixMillis = unixMillis,
+            regionId = location.region?.numberID,
+            regionName = location.region?.name,
+            scopeId = location.scope?.assignedScopeIdOrNull?.raw,
+            scopeName = location.scope?.scopeName,
+            subSpaceId = location.subSpace?.subSpaceId,
+            subSpaceName = location.subSpace?.name,
+            spaceLevel = when {
+                location.subSpace != null -> WorldGeoSpaceLevel.SUBSPACE
+                location.scope != null -> WorldGeoSpaceLevel.SCOPE
+                else -> WorldGeoSpaceLevel.REGION
+            }
+        )
     }
 
     private fun sendRegionExitTitle(player: ServerPlayer, region: Region) {

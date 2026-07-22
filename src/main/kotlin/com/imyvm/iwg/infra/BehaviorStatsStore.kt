@@ -53,6 +53,25 @@ object BehaviorStatsStore {
         record(event, 1L)
     }
 
+    fun recordResidenceMillis(
+        event: WorldGeoBehaviorEvent,
+        chunkX: Int,
+        chunkZ: Int,
+        millis: Long
+    ) {
+        require(millis > 0L) { "millis must be positive" }
+        record(event.copy(type = WorldGeoBehaviorType.SPACE_ENTER, objectId = "$RESIDENCE_CHUNK_PREFIX$chunkX,$chunkZ", targetId = null), millis)
+    }
+
+    fun recordOnlineMillis(event: WorldGeoBehaviorEvent, millis: Long, afk: Boolean = false) {
+        require(millis > 0L) { "millis must be positive" }
+        record(event.copy(type = WorldGeoBehaviorType.ITEM_USE, objectId = if (afk) AFK_OBJECT_ID else ONLINE_OBJECT_ID, targetId = null), millis)
+    }
+
+    fun recordDamagedPlayer(event: WorldGeoBehaviorEvent, attackerId: String?) {
+        record(event.copy(type = WorldGeoBehaviorType.ENTITY_DAMAGE, objectId = DAMAGED_OBJECT_ID, targetId = attackerId), 1L)
+    }
+
     internal fun recordDebugCount(event: WorldGeoBehaviorEvent, count: Long) {
         require(count > 0L) { "count must be positive" }
         record(event, count)

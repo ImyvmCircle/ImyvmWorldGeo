@@ -16,7 +16,8 @@ internal data class PlayerLocationState(
     val location: PlayerLocation,
     val pendingExit: PendingWildernessExit? = null,
     val scheduledEntryTitle: ScheduledEntryTitle? = null,
-    val stayStartedAt: Long? = null
+    val stayStartedAt: Long? = null,
+    val sampledAtMillis: Long = 0L
 )
 
 internal data class StayPeriod(val region: Region, val startedAt: Long, val endedAt: Long)
@@ -37,7 +38,8 @@ internal data class LocationTransition(
 
 internal fun initialPlayerLocationState(current: PlayerLocation, now: Long) = PlayerLocationState(
     location = current,
-    stayStartedAt = now.takeIf { current.region != null }
+    stayStartedAt = now.takeIf { current.region != null },
+    sampledAtMillis = now
 )
 
 internal fun calculateLocationTransition(
@@ -112,7 +114,7 @@ internal fun calculateLocationTransition(
     val regionChanged = previousRegion?.numberID != committedRegion?.numberID
 
     return LocationTransition(
-        state = PlayerLocationState(newLocation, pendingExit, scheduledTitle, stayStartedAt),
+        state = PlayerLocationState(newLocation, pendingExit, scheduledTitle, stayStartedAt, previous.sampledAtMillis),
         regionExit = regionExit,
         regionEntry = regionEntry,
         scopeExit = previousScoped.takeIf { scopeChanged },
