@@ -8,18 +8,18 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.food.FoodData;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(FoodData.class)
 public class NaturalRegenMixin {
 
-    @Redirect(method = "tick", at = @At(value = "INVOKE",
-            target = "Lnet/minecraft/server/level/ServerPlayer;heal(F)V"))
-    private void onHeal(ServerPlayer player, float amount) {
+    @Inject(method = "tick", at = @At(value = "INVOKE",
+            target = "Lnet/minecraft/server/level/ServerPlayer;heal(F)V"), cancellable = true)
+    private void onHeal(ServerPlayer player, float amount, CallbackInfo ci) {
         ServerLevel level = player.level();
         BlockPos pos = player.blockPosition();
         Boolean value = RuleHelper.getEffectiveRuleValueAt(level, pos, RuleKey.RPG_NATURAL_REGEN);
-        if (Boolean.FALSE.equals(value)) return;
-        player.heal(amount);
+        if (Boolean.FALSE.equals(value)) ci.cancel();
     }
 }

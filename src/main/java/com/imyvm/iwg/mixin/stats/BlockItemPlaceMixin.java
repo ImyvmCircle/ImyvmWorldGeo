@@ -19,7 +19,7 @@ public class BlockItemPlaceMixin {
         if (!cir.getReturnValue().consumesAction()) return;
         if (!(context.getPlayer() instanceof ServerPlayer player)) return;
 
-        BlockPos placedPos = context.getClickedPos();
+        BlockPos placedPos = context.getClickedPos().relative(context.getClickedFace());
         PlayerStatsRecorderKt.recordSuccessfulBlockPlacement(player, context.getLevel(), placedPos);
     }
 }

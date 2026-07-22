@@ -119,6 +119,7 @@ object RegionDatabase {
     private const val DB_V1_SENTINEL: Int = -1
     private const val DB_V2_SENTINEL: Int = -2
     private const val MAX_COLLECTION_SIZE = 100_000
+    private var dimensionIndex: MutableMap<net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>, MutableList<Pair<Region, GeoScope>>> = linkedMapOf()
     private val gson = Gson()
     private val regionPlayerStats: MutableMap<Int, RegionPlayerStatsLedger> = mutableMapOf()
     internal var onSave: (() -> Unit)? = null
@@ -200,6 +201,7 @@ object RegionDatabase {
             regionPlayerStats.clear()
             regionPlayerStats.putAll(loadedStats)
             sessionWorldRoot = normalizedRoot
+            rebuildDimensionIndex()
         } catch (error: Throwable) {
             unbindSession()
             throw error
@@ -210,6 +212,7 @@ object RegionDatabase {
         regions.clear()
         regionPlayerStats.clear()
         sessionWorldRoot = null
+        dimensionIndex.clear()
     }
 
     @Deprecated("RegionDatabase lifecycle is managed by the Minecraft server")
@@ -267,6 +270,7 @@ object RegionDatabase {
         require(region.scopes.none { it.requireAssignedScopeId() in existingScopeIds }) { "duplicate scope id" }
         require(region.subSpaces.none { it.subSpaceId in existingSubSpaceIds }) { "duplicate subspace id" }
         regions.add(region)
+        dimensionIndex.clear()
     }
 
     fun removeRegion(regionToDelete: Region) {
@@ -421,17 +425,11 @@ object RegionDatabase {
     }
 
     fun getRegionAndScopeAt(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? {
-        val server = world.server
-        for (region in regions) {
-            for (scope in region.scopes) {
-                if (server?.let { scope.getWorld(it) } == world) {
-                    val geoShape = scope.geoShape
-                    if (geoShape != null) {
-                        if (geoShape.containsPoint(x, z)) {
-                            return Pair(region, scope)
-                        }
-                    }
-                }
+        val candidates = dimensionIndex[world.dimension()] ?: return null
+        for ((region, scope) in candidates) {
+            val geoShape = scope.geoShape
+            if (geoShape != null && geoShape.containsPoint(x, z)) {
+                return Pair(region, scope)
             }
         }
         return null
@@ -750,7 +748,7 @@ object RegionDatabase {
     }
 
     private fun saveSettings(stream: DataOutputStream, settings: List<Setting>) {
-        stream.writeInt(checkedCount(settings.size, "settings"))
+        stream.writeInt(-checkedCount(settings.size, "settings"))
         settings.forEach { setting ->
             when (setting) {
                 is PermissionSetting -> savePermissionSetting(stream, setting)
@@ -765,16 +763,18 @@ object RegionDatabase {
     }
 
     private fun loadSettings(stream: DataInputStream): MutableList<Setting> {
-        val count = checkedCount(stream.readInt(), "settings")
+        val raw = stream.readInt()
+        val (isNameBased, count) = if (raw < 0) Pair(true, -raw) else Pair(false, raw)
+        checkedCount(count, "settings")
         val list = mutableListOf<Setting>()
         repeat(count) {
             val type = stream.readInt()
             val setting = when (type) {
-                0 -> loadPermissionSetting(stream)
-                1 -> loadEffectSetting(stream)
-                2 -> loadRuleSetting(stream)
-                3 -> loadEntryExitToggleSetting(stream)
-                4 -> loadEntryExitMessageSetting(stream)
+                0 -> if (isNameBased) loadPermissionSettingName(stream) else loadPermissionSettingOrdinal(stream)
+                1 -> if (isNameBased) loadEffectSettingName(stream) else loadEffectSettingOrdinal(stream)
+                2 -> if (isNameBased) loadRuleSettingName(stream) else loadRuleSettingOrdinal(stream)
+                3 -> if (isNameBased) loadEntryExitToggleSettingName(stream) else loadEntryExitToggleSettingOrdinal(stream)
+                4 -> if (isNameBased) loadEntryExitMessageSettingName(stream) else loadEntryExitMessageSettingOrdinal(stream)
                 5 -> loadExtensionPermissionSetting(stream)
                 6 -> loadExtensionRuleSetting(stream)
                 else -> throw IOException("Unknown setting type")
@@ -786,13 +786,21 @@ object RegionDatabase {
 
     private fun savePermissionSetting(stream: DataOutputStream, setting: PermissionSetting) {
         stream.writeInt(0)
-        stream.writeInt(setting.key.ordinal)
+        stream.writeUTF(setting.key.name)
         stream.writeBoolean(setting.value)
         stream.writeUTF(setting.playerUUID?.toString() ?: "")
     }
 
-    private fun loadPermissionSetting(stream: DataInputStream): PermissionSetting {
+    private fun loadPermissionSettingOrdinal(stream: DataInputStream): PermissionSetting {
         val key = readEnum(stream, PermissionKey.entries, "permission key")
+        val value = stream.readBoolean()
+        val uuidStr = stream.readUTF()
+        val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
+        return PermissionSetting(key, value, uuid)
+    }
+
+    private fun loadPermissionSettingName(stream: DataInputStream): PermissionSetting {
+        val key = loadEnumByName(stream, PermissionKey.entries, "permission key")
         val value = stream.readBoolean()
         val uuidStr = stream.readUTF()
         val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
@@ -816,13 +824,21 @@ object RegionDatabase {
 
     private fun saveEffectSetting(stream: DataOutputStream, setting: EffectSetting) {
         stream.writeInt(1)
-        stream.writeInt(setting.key.ordinal)
+        stream.writeUTF(setting.key.name)
         stream.writeInt(setting.value)
         stream.writeUTF(setting.playerUUID?.toString() ?: "")
     }
 
-    private fun loadEffectSetting(stream: DataInputStream): EffectSetting {
+    private fun loadEffectSettingOrdinal(stream: DataInputStream): EffectSetting {
         val key = readEnum(stream, EffectKey.entries, "effect key")
+        val value = stream.readInt()
+        val uuidStr = stream.readUTF()
+        val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
+        return EffectSetting(key, value, uuid)
+    }
+
+    private fun loadEffectSettingName(stream: DataInputStream): EffectSetting {
+        val key = loadEnumByName(stream, EffectKey.entries, "effect key")
         val value = stream.readInt()
         val uuidStr = stream.readUTF()
         val uuid = if (uuidStr.isNotEmpty()) UUID.fromString(uuidStr) else null
@@ -832,12 +848,18 @@ object RegionDatabase {
 
     private fun saveRuleSetting(stream: DataOutputStream, setting: RuleSetting) {
         stream.writeInt(2)
-        stream.writeInt(setting.key.ordinal)
+        stream.writeUTF(setting.key.name)
         stream.writeBoolean(setting.value)
     }
 
-    private fun loadRuleSetting(stream: DataInputStream): RuleSetting {
+    private fun loadRuleSettingOrdinal(stream: DataInputStream): RuleSetting {
         val key = readEnum(stream, RuleKey.entries, "rule key")
+        val value = stream.readBoolean()
+        return RuleSetting(key, value)
+    }
+
+    private fun loadRuleSettingName(stream: DataInputStream): RuleSetting {
+        val key = loadEnumByName(stream, RuleKey.entries, "rule key")
         val value = stream.readBoolean()
         return RuleSetting(key, value)
     }
@@ -856,24 +878,36 @@ object RegionDatabase {
 
     private fun saveEntryExitToggleSetting(stream: DataOutputStream, setting: EntryExitToggleSetting) {
         stream.writeInt(3)
-        stream.writeInt(setting.key.ordinal)
+        stream.writeUTF(setting.key.name)
         stream.writeBoolean(setting.value)
     }
 
-    private fun loadEntryExitToggleSetting(stream: DataInputStream): EntryExitToggleSetting {
+    private fun loadEntryExitToggleSettingOrdinal(stream: DataInputStream): EntryExitToggleSetting {
         val key = readEnum(stream, EntryExitToggleKey.entries, "entry/exit toggle key")
+        val value = stream.readBoolean()
+        return EntryExitToggleSetting(key, value)
+    }
+
+    private fun loadEntryExitToggleSettingName(stream: DataInputStream): EntryExitToggleSetting {
+        val key = loadEnumByName(stream, EntryExitToggleKey.entries, "entry/exit toggle key")
         val value = stream.readBoolean()
         return EntryExitToggleSetting(key, value)
     }
 
     private fun saveEntryExitMessageSetting(stream: DataOutputStream, setting: EntryExitMessageSetting) {
         stream.writeInt(4)
-        stream.writeInt(setting.key.ordinal)
+        stream.writeUTF(setting.key.name)
         stream.writeUTF(setting.value)
     }
 
-    private fun loadEntryExitMessageSetting(stream: DataInputStream): EntryExitMessageSetting {
+    private fun loadEntryExitMessageSettingOrdinal(stream: DataInputStream): EntryExitMessageSetting {
         val key = readEnum(stream, EntryExitMessageKey.entries, "entry/exit message key")
+        val value = stream.readUTF()
+        return EntryExitMessageSetting(key, value)
+    }
+
+    private fun loadEntryExitMessageSettingName(stream: DataInputStream): EntryExitMessageSetting {
+        val key = loadEnumByName(stream, EntryExitMessageKey.entries, "entry/exit message key")
         val value = stream.readUTF()
         return EntryExitMessageSetting(key, value)
     }
@@ -1071,6 +1105,19 @@ object RegionDatabase {
         atomicWriteText(path, gson.toJson(root))
     }
 
+    private fun rebuildDimensionIndex() {
+        dimensionIndex.clear()
+        for (region in regions) {
+            for (scope in region.scopes) {
+                if (scope.geoShape == null) continue
+                val key = net.minecraft.resources.ResourceKey.create(
+                    net.minecraft.core.registries.Registries.DIMENSION, scope.worldId
+                )
+                dimensionIndex.getOrPut(key) { mutableListOf() }.add(region to scope)
+            }
+        }
+    }
+
     private fun checkedCount(value: Int, label: String): Int {
         if (value !in 0..MAX_COLLECTION_SIZE) {
             throw IOException("Invalid $label count: $value")
@@ -1091,6 +1138,12 @@ object RegionDatabase {
     private fun <T> readEnum(stream: DataInputStream, entries: List<T>, label: String): T {
         val ordinal = stream.readInt()
         return entries.getOrNull(ordinal) ?: throw IOException("Invalid $label ordinal: $ordinal")
+    }
+
+    private inline fun <reified T : Enum<T>> loadEnumByName(stream: DataInputStream, entries: List<T>, label: String): T {
+        val name = stream.readUTF()
+        return entries.firstOrNull { (it as Enum<*>).name == name }
+            ?: throw IOException("Invalid $label name: $name")
     }
 
     private fun atomicWriteText(path: Path, value: String) {

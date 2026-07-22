@@ -11,7 +11,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.Redirect;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Mixin(FireBlock.class)
@@ -25,11 +24,11 @@ public class FireSpreadMixin {
         }
     }
 
-    @Redirect(method = "tick", at = @At(value = "INVOKE",
+    @Inject(method = "tick", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/level/ServerLevel;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z",
-            ordinal = 1))
-    private boolean onPlaceNewFire(ServerLevel world, BlockPos pos, BlockState state, int flags) {
+            ordinal = 1), cancellable = true)
+    private void onPlaceNewFire(ServerLevel world, BlockPos pos, BlockState state, int flags, CallbackInfo ci) {
         Boolean value = RuleHelper.getEffectiveRuleValueAt(world, pos, RuleKey.RPG_FIRE_SPREAD);
-        return !Boolean.FALSE.equals(value) && world.setBlock(pos, state, flags);
+        if (Boolean.FALSE.equals(value)) ci.cancel();
     }
 }
