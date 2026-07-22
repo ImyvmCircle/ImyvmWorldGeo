@@ -1,7 +1,9 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.region.PlayerRegionChecker
 import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
@@ -31,6 +33,7 @@ import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
+import com.imyvm.iwg.util.text.Translator
 import net.minecraft.core.BlockPos
 import net.minecraft.network.chat.Component
 import net.minecraft.server.MinecraftServer
@@ -493,6 +496,40 @@ object RegionDataApi {
         message: Component
     ): Int = WorldGeoSpaceSupport.sendMessage(server, region, scope, subSpace, message)
 
+    fun sendRegionSpaceMessage(server: MinecraftServer, region: Region, messageKey: String, vararg args: Any): Int {
+        val component = Translator.tr(messageKey, *args)
+        if (component == null) {
+            ImyvmWorldGeo.logger.error("sendRegionSpaceMessage: translation key '$messageKey' returned null, not sending")
+            return 0
+        }
+        return sendRegionSpaceMessage(server, region, component)
+    }
+
+    fun sendScopeSpaceMessage(server: MinecraftServer, region: Region, scope: GeoScope, messageKey: String, vararg args: Any): Int {
+        val component = Translator.tr(messageKey, *args)
+        if (component == null) {
+            ImyvmWorldGeo.logger.error("sendScopeSpaceMessage: translation key '$messageKey' returned null, not sending")
+            return 0
+        }
+        return sendScopeSpaceMessage(server, region, scope, component)
+    }
+
+    fun sendSubSpaceMessage(
+        server: MinecraftServer,
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace,
+        messageKey: String,
+        vararg args: Any
+    ): Int {
+        val component = Translator.tr(messageKey, *args)
+        if (component == null) {
+            ImyvmWorldGeo.logger.error("sendSubSpaceMessage: translation key '$messageKey' returned null, not sending")
+            return 0
+        }
+        return sendSubSpaceMessage(server, region, scope, subSpace, component)
+    }
+
     fun getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectRegionStats(server, region)
 
@@ -603,6 +640,59 @@ object RegionDataApi {
 
     fun getRegionPlayerStats(region: Region): RegionPlayerStats =
         RegionDatabase.getRegionPlayerStats(region)
+
+    // --- Player enumeration in space ---
+
+    fun listPlayersInRegion(server: MinecraftServer, region: Region): List<UUID> {
+        val cached = PlayerRegionChecker.getAllRegionScopesWithPlayers()
+        val onlineUUIDs = server.playerList.players.map { it.uuid }.toSet()
+        val fromCache = cached.filterKeys { it in onlineUUIDs }
+            .filter { it.value.first?.numberID == region.numberID }
+            .keys.toList()
+        val cachedUUIDs = fromCache.toSet()
+        val resolved = onlineUUIDs.filterNot { it in cachedUUIDs }.mapNotNull { uuid ->
+            val player = server.playerList.getPlayer(uuid) ?: return@mapNotNull null
+            val resolved = RegionDatabase.getRegionScopeSubSpaceAt(player.level(), player.blockX, player.blockZ)
+            if (resolved?.first?.numberID == region.numberID) uuid else null
+        }
+        return fromCache + resolved
+    }
+
+    fun listPlayersInScope(server: MinecraftServer, region: Region, scope: GeoScope): List<UUID> {
+        val scopeId = scope.requireAssignedScopeId()
+        val cached = PlayerRegionChecker.getAllRegionScopesWithPlayers()
+        val onlineUUIDs = server.playerList.players.map { it.uuid }.toSet()
+        val fromCache = cached.filterKeys { it in onlineUUIDs }
+            .filter { it.value.second?.assignedScopeIdOrNull == scopeId }
+            .keys.toList()
+        val cachedUUIDs = fromCache.toSet()
+        val resolved = onlineUUIDs.filterNot { it in cachedUUIDs }.mapNotNull { uuid ->
+            val player = server.playerList.getPlayer(uuid) ?: return@mapNotNull null
+            val resolved = RegionDatabase.getRegionScopeSubSpaceAt(player.level(), player.blockX, player.blockZ)
+            if (resolved?.second?.assignedScopeIdOrNull == scopeId) uuid else null
+        }
+        return fromCache + resolved
+    }
+
+    fun listPlayersInSubSpace(
+        server: MinecraftServer,
+        region: Region,
+        scope: GeoScope,
+        subSpace: SubSpace
+    ): List<UUID> {
+        val cached = PlayerRegionChecker.getAllRegionScopesWithPlayers()
+        val onlineUUIDs = server.playerList.players.map { it.uuid }.toSet()
+        val fromCache = cached.filterKeys { it in onlineUUIDs }
+            .filter { it.value.third?.subSpaceId == subSpace.subSpaceId }
+            .keys.toList()
+        val cachedUUIDs = fromCache.toSet()
+        val resolved = onlineUUIDs.filterNot { it in cachedUUIDs }.mapNotNull { uuid ->
+            val player = server.playerList.getPlayer(uuid) ?: return@mapNotNull null
+            val resolved = RegionDatabase.getRegionScopeSubSpaceAt(player.level(), player.blockX, player.blockZ)
+            if (resolved?.third?.subSpaceId == subSpace.subSpaceId) uuid else null
+        }
+        return fromCache + resolved
+    }
 
     fun getRegionEntryExitToggle(region: Region): Boolean =
         region.settingStore.entryExitToggle(EntryExitToggleKey.ENTRY_EXIT_MESSAGE_ENABLED) ?: true

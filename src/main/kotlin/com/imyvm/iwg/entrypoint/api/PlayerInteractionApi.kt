@@ -1,5 +1,6 @@
 package com.imyvm.iwg.inter.api
 
+import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.application.interaction.scope.onReplacingScopeShape
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
@@ -212,6 +213,56 @@ object PlayerInteractionApi {
     fun queryRegionPlayerStats(player: ServerPlayer, region: Region) =
         onQueryRegionPlayerStats(player, region, true)
     fun toggleActionBar(player: ServerPlayer) = onToggleActionBar(player)
+
+    fun toggleLocationActionBar(player: ServerPlayer) = onToggleActionBar(player)
+    fun setLocationActionBarVisible(player: ServerPlayer, visible: Boolean) {
+        if (visible) {
+            ImyvmWorldGeo.locationActionBarEnabledPlayers.add(player.uuid)
+        } else {
+            ImyvmWorldGeo.locationActionBarEnabledPlayers.remove(player.uuid)
+        }
+    }
+    fun isLocationActionBarVisible(player: ServerPlayer): Boolean =
+        ImyvmWorldGeo.locationActionBarEnabledPlayers.contains(player.uuid)
+
+    fun createRegion(player: ServerPlayer, name: String, idMark: Int = 0, shape: GeoShape): Int =
+        if (onTryingRegionCreationWithShape(player, name, idMark, shape) != null) 1 else 0
+
+    fun createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0, shape: GeoShape): Region? =
+        onTryingRegionCreationWithShape(player, name, idMark, shape)
+
+    fun addScope(player: ServerPlayer, region: Region, name: String, shape: GeoShape): Int =
+        if (onTryingScopeCreationWithShape(player, region, name, shape) != null) 1 else 0
+
+    fun createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String, shape: GeoShape): Pair<Region, GeoScope>? {
+        val scope = onTryingScopeCreationWithShape(player, region, name, shape) ?: return null
+        return Pair(region, scope)
+    }
+
+    fun openSpaceDebugView(player: ServerPlayer, region: Region): Int {
+        val server = player.level().server
+        if (server.playerList.isOp(net.minecraft.server.players.NameAndId(player.gameProfile))) {
+            return onDebugRegionSpaceSnapshot(player, region)
+        }
+        return 0
+    }
+
+    fun openSpaceDebugView(player: ServerPlayer, region: Region, scope: GeoScope): Int {
+        val server = player.level().server
+        if (server.playerList.isOp(net.minecraft.server.players.NameAndId(player.gameProfile))) {
+            return onDebugScopeSpaceSnapshot(player, region, scope)
+        }
+        return 0
+    }
+
+    fun openSpaceDebugView(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
+        val server = player.level().server
+        if (server.playerList.isOp(net.minecraft.server.players.NameAndId(player.gameProfile))) {
+            return onDebugSubSpaceSnapshot(player, region, parentScope, subSpace)
+        }
+        return 0
+    }
+
     fun estimateRegionArea(player: ServerPlayer, shapeTypeName: String, customPositions: List<BlockPos>? = null) = onEstimateRegionArea(player, shapeTypeName, customPositions)
     fun estimateScopeAreaChange(player: ServerPlayer, region: Region, scopeName: String, customPositions: List<BlockPos>? = null) = onEstimateScopeAreaChange(player, region, scopeName, customPositions)
 

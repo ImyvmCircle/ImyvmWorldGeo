@@ -89,6 +89,35 @@ object RegionFactory {
         return createGeoShape(selectedPositions, shapeType, existingScope.worldId, existingScope)
     }
 
+    fun createRegionFromShape(
+        name: String,
+        numberID: Int,
+        player: ServerPlayer,
+        shape: GeoShape
+    ): Result<Region, CreationError> {
+        val worldId = player.level().dimension().identifier()
+        validateGeoShapeSize(shape)?.let { return Result.Err(it) }
+        validateGeoShapePlacement(shape, worldId, null)?.let { return Result.Err(it) }
+
+        val mainScope = GeoScope("main_scope", worldId, getTeleportPoint(player, shape), false, shape)
+        mainScope.assignScopeId(
+            AssignedScopeId.require(ScopeId(generateNewScopeIdRaw(numberID, parseMarkFromRegionId(numberID))))
+        )
+        val newRegion = Region(name, numberID, mutableListOf(mainScope))
+        return Result.Ok(newRegion)
+    }
+
+    fun createScopeFromShape(
+        scopeName: String,
+        player: ServerPlayer,
+        shape: GeoShape
+    ): Result<GeoScope, CreationError> {
+        val worldId = player.level().dimension().identifier()
+        validateGeoShapeSize(shape)?.let { return Result.Err(it) }
+        validateGeoShapePlacement(shape, worldId, null)?.let { return Result.Err(it) }
+        return Result.Ok(GeoScope(scopeName, worldId, getTeleportPoint(player, shape), false, shape))
+    }
+
     @Deprecated("Use createScopeForPlayer or recreateScope")
     fun createScope(
         scopeName: String,

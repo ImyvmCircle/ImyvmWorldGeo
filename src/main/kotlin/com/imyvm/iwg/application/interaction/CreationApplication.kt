@@ -13,6 +13,7 @@ import com.imyvm.iwg.util.text.Translator
 import com.imyvm.iwg.application.region.generateNewRegionId
 import com.imyvm.iwg.application.region.RegionIdCapacityExceededException
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.ScopeIdCapacityExceededException
 import com.imyvm.iwg.domain.component.SelectionState
@@ -61,6 +62,68 @@ fun onTryingRegionCreationWithReturn(
         }
         is Result.Err -> {
             errorMessage(creationResult.error, shapeType).forEach { player.sendSystemMessage(it) }
+            null
+        }
+    }
+}
+
+fun onTryingRegionCreationWithShape(
+    player: ServerPlayer,
+    regionName: String,
+    idMark: Int,
+    shape: GeoShape
+): Region? {
+    val name = validateNameCommon(player, regionName, type = NameType.REGION, autoFill = false) ?: return null
+
+    val creationResult = try {
+        tryRegionCreationFromShape(player, name, idMark, shape)
+    } catch (_: RegionIdCapacityExceededException) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
+        return null
+    }
+    return when (creationResult) {
+        is Result.Ok -> {
+            val saved = handleRegionCreateSuccess(player, creationResult, notify = true)
+            creationResult.value.takeIf { saved }
+        }
+        is Result.Err -> {
+            errorMessage(creationResult.error, shape.geoShapeType).forEach { player.sendSystemMessage(it) }
+            null
+        }
+    }
+}
+
+fun onTryingScopeCreationWithShape(
+    player: ServerPlayer,
+    region: Region,
+    scopeName: String,
+    shape: GeoShape
+): GeoScope? {
+    RegionDatabase.requireCanonicalRegion(region)
+
+    val name = validateNameCommon(player, scopeName, type = NameType.SCOPE, autoFill = false, regionForScope = region) ?: return null
+
+    return when (val result = RegionFactory.createScopeFromShape(name, player, shape)) {
+        is Result.Ok -> {
+            val newScope = result.value
+            try {
+                newScope.assignScopeId(RegionDatabase.nextScopeIdForNewScope(region))
+            } catch (_: ScopeIdCapacityExceededException) {
+                player.sendSystemMessage(Translator.tr("interaction.meta.scope.create.error.id_capacity")!!)
+                return null
+            }
+            region.addScopeFromOwner(newScope)
+            if (!saveRegionData(player)) {
+                region.removeScopeFromOwner(newScope)
+                return null
+            }
+            player.sendSystemMessage(
+                Translator.tr("interaction.meta.scope.add.success", newScope.scopeName, region.name)!!
+            )
+            newScope
+        }
+        is Result.Err -> {
+            errorMessage(result.error, shape.geoShapeType).forEach { player.sendSystemMessage(it) }
             null
         }
     }
@@ -160,6 +223,16 @@ private fun tryRegionCreation(
         check(mainScope != null && mainScope.assignedScopeIdOrNull != null)
     }
     return regionResult
+}
+
+private fun tryRegionCreationFromShape(
+    player: ServerPlayer,
+    regionName: String,
+    idMark: Int,
+    shape: GeoShape
+): Result<Region, CreationError> {
+    val newID = generateNewRegionId(idMark)
+    return RegionFactory.createRegionFromShape(regionName, newID, player, shape)
 }
 
 private fun tryScopeCreation(
