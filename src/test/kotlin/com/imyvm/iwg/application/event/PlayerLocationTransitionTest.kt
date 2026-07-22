@@ -125,6 +125,40 @@ class PlayerLocationTransitionTest {
     }
 
     @Test
+    fun `subspace transition payload snapshots immutable from and to states`() {
+        val ownerScope = GeoScope(
+            "owner-scope",
+            Identifier.parse("minecraft:overworld"),
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(30, 30)),
+            scopeId = com.imyvm.iwg.domain.component.ScopeId(
+                com.imyvm.iwg.domain.component.generateCompatScopeIdRaw(7, 1)
+            )
+        )
+        val sub = SubSpace(
+            1L,
+            "room",
+            ownerScope.requireAssignedScopeId(),
+            Identifier.parse("minecraft:overworld"),
+            GeoShape.rectangle(GeoPoint(5, 5), GeoPoint(10, 10))
+        )
+        val ownerRegion = Region("region", 7, mutableListOf(ownerScope), subSpaces = mutableListOf(sub))
+
+        val payload = buildSubSpaceTransitionPayload(
+            java.util.UUID.fromString("00000000-0000-0000-0000-000000000001"),
+            "tester",
+            ScopedPlayerLocation(ownerRegion, ownerScope, sub),
+            null,
+            20
+        )
+
+        assertEquals(1L, payload?.from?.id)
+        assertEquals("room", payload?.from?.name)
+        assertEquals(null, payload?.to)
+        assertEquals(20L, payload?.gameTimeMillis)
+    }
+
+    @Test
     fun `entry from confirmed wilderness is immediate`() {
         val wilderness = PlayerLocationState(PlayerLocation(null, null))
         val entered = calculateLocationTransition(wilderness, PlayerLocation(regionA, scopeA), 20, 1_000)

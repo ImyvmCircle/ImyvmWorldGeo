@@ -510,6 +510,10 @@ object RegionDataApi {
         WorldGeoBehaviorEventBus.registerCallback { callback.accept(it) }
     }
 
+    fun registerSubSpaceTransitionCallback(callback: Consumer<WorldGeoSubSpaceTransition>) {
+        com.imyvm.iwg.application.event.SubSpaceTransitionEvent.registerCallback { callback.accept(it) }
+    }
+
     fun getRecentBehaviorEvents(): List<WorldGeoBehaviorEvent> =
         WorldGeoBehaviorEventBus.getRecentEvents()
 

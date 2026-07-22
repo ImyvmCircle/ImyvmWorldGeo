@@ -232,6 +232,11 @@ WorldGeo implementation packages.
 
 `SubSpace` is a child space owned by a persisted `GeoScope`. Addons read SubSpace data through `RegionDataApi.getRegionSubSpaces`, `getSubSpaceById`, `getSubSpaceByName`, `getRegionScopeSubSpaceByLocation`, and `resolveSubSpaceAtEntity`. Existing Region and Scope location queries keep their descriptors and continue to return Region and Scope pairs.
 
+`RegionDataApi.registerSubSpaceTransitionCallback(Consumer<WorldGeoSubSpaceTransition>)` subscribes addon code
+to SubSpace enter and exit transitions. The callback receives immutable `WorldGeoSpaceSnapshot` endpoints plus
+the player UUID, player name, and server-time stamp. Delivery uses the same bounded asynchronous queue as the
+other addon callbacks; queue overflow drops the newest payload with a server warning.
+
 Supported mutations run through `PlayerInteractionApi.createSubSpace`, `createAndGetSubSpace`, `deleteSubSpace`, `renameSubSpace`, `replaceSubSpaceShape`, SubSpace tag methods, and SubSpace setting methods. The Region, parent Scope, and SubSpace arguments have to be exact live database objects. Detached copies, mismatched parent scopes, duplicate names, duplicate IDs, cross-dimension shapes, and shapes outside the parent Scope fail before persistence.
 
 SubSpace settings resolve before Scope settings and Region settings. Personal settings in the same container resolve before global settings. Built-in permission parent inheritance keeps its existing behavior. Extension permission and rule keys remain exact-match keys.

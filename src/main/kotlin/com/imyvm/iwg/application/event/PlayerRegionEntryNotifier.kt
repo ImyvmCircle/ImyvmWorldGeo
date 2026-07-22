@@ -3,10 +3,12 @@ package com.imyvm.iwg.application.event
 import com.imyvm.iwg.application.region.PlayerRegionChecker
 import com.imyvm.iwg.application.region.permission.helper.hasRegionPermission
 import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
+import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
 import com.imyvm.iwg.domain.WorldGeoSpaceLevel
+import com.imyvm.iwg.domain.WorldGeoSubSpaceTransition
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.EntryExitMessageSetting
@@ -132,6 +134,8 @@ object PlayerRegionEntryExitTracker {
                 now
             )
         }
+        buildSubSpaceTransitionPayload(player.uuid, player.scoreboardName, transition.subSpaceExit, transition.subSpaceEntry, now)
+            ?.let(SubSpaceTransitionEvent::publish)
     }
 
     private fun recordRegionSpaceEvent(type: WorldGeoBehaviorType, player: ServerPlayer, region: Region, now: Long) {
@@ -338,4 +342,17 @@ object PlayerRegionEntryExitTracker {
             }
         }
     }
+}
+
+internal fun buildSubSpaceTransitionPayload(
+    playerUuid: UUID,
+    playerName: String,
+    from: ScopedPlayerLocation?,
+    to: ScopedPlayerLocation?,
+    gameTimeMillis: Long
+): WorldGeoSubSpaceTransition? {
+    val fromSnapshot = from?.subSpace?.let { WorldGeoSpaceSupport.snapshot(from.region, from.scope, it) }
+    val toSnapshot = to?.subSpace?.let { WorldGeoSpaceSupport.snapshot(to.region, to.scope, it) }
+    if (fromSnapshot == null && toSnapshot == null) return null
+    return WorldGeoSubSpaceTransition(playerUuid, playerName, fromSnapshot, toSnapshot, gameTimeMillis)
 }
