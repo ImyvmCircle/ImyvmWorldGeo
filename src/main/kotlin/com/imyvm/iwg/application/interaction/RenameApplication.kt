@@ -20,7 +20,7 @@ fun onRegionRename(player: ServerPlayer, region: Region, newName: String): Int {
     return try {
         RegionDatabase.renameRegion(region, normalizedName)
         if (!saveRegionData(player)) {
-            region.name = oldName
+            region.renameTo(oldName)
             return 0
         }
         player.sendSystemMessage(Translator.tr("interaction.meta.rename.success", oldName, normalizedName)!!)
@@ -58,9 +58,9 @@ fun onScopeRename(
         }
     }
 
-    targetRegion.renameScope(existingScope, normalizedName)
+    targetRegion.renameScopeFromOwner(existingScope, normalizedName)
     if (!saveRegionData(player)) {
-        targetRegion.renameScope(existingScope, oldName)
+        targetRegion.renameScopeFromOwner(existingScope, oldName)
         return 0
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.scope.rename.success", scopeName, normalizedName, targetRegion.name)!!)

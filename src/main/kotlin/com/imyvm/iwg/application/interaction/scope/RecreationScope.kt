@@ -103,14 +103,14 @@ internal fun replaceScopeGeometryAndSave(
     save: () -> Boolean
 ): Boolean {
     val oldShape = scope.geoShape
-    region.replaceScopeGeometry(scope, newShape)
+    region.replaceScopeGeometryFromOwner(scope, newShape)
     return try {
         if (save()) true else {
-            region.replaceScopeGeometry(scope, oldShape)
+            region.replaceScopeGeometryFromOwner(scope, oldShape)
             false
         }
     } catch (error: Exception) {
-        region.replaceScopeGeometry(scope, oldShape)
+        region.replaceScopeGeometryFromOwner(scope, oldShape)
         throw error
     }
 }

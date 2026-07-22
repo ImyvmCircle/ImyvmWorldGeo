@@ -49,7 +49,7 @@ class RegionFactorySubSpaceTest {
     fun `subspace rectangle must not overlap sibling subspaces`() {
         val scope = scope()
         val region = Region("region", 7, mutableListOf(scope))
-        region.addSubSpace(
+        region.addSubSpaceFromOwner(
             SubSpace(
                 1,
                 "plot",
@@ -76,7 +76,7 @@ class RegionFactorySubSpaceTest {
             scope.worldId,
             GeoShape.rectangle(GeoPoint(20, 20), GeoPoint(50, 50))
         )
-        region.addSubSpace(subSpace)
+        region.addSubSpaceFromOwner(subSpace)
         val points = listOf(BlockPos(20, 0, 20), BlockPos(50, 0, 50))
 
         val result = RegionFactory.createSubSpaceShape(points, GeoShapeType.RECTANGLE, region, scope, subSpace)

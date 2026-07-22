@@ -34,9 +34,9 @@ fun onScopeDelete(player: ServerPlayer, region: Region, scopeName: String){
     val existingScope = getScopeOrNotify(player, region, scopeName) ?: return
     if (!checkScopeSize(player, region)) return
     val deleted = EffectOverlayService.withScopeLifecycle {
-        val index = region.removeScope(existingScope)
+        val index = region.removeScopeFromOwner(existingScope)
         if (!saveRegionData(player)) {
-            region.restoreScope(index, existingScope)
+            region.restoreScopeFromOwner(index, existingScope)
             false
         } else {
             EffectOverlayService.clearScope(existingScope.requireAssignedScopeId())

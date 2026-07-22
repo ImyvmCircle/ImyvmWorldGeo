@@ -32,7 +32,7 @@ class RegionDataApiTest {
         val region = Region("region", 1, mutableListOf(first))
 
         val snapshot = RegionDataApi.getRegionScopes(region)
-        region.addScope(scope("second", 2))
+        region.addScopeFromOwner(scope("second", 2))
 
         assertEquals(listOf(first), snapshot)
     }

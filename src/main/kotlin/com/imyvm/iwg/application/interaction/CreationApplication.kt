@@ -211,9 +211,9 @@ private fun handleScopeCreateSuccess(
             return false
         }
     }
-    region.addScope(newScope)
+    region.addScopeFromOwner(newScope)
     if (!saveRegionData(player)) {
-        region.removeScope(newScope)
+        region.removeScopeFromOwner(newScope)
         return false
     }
 

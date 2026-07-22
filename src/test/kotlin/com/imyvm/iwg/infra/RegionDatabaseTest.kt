@@ -24,7 +24,7 @@ class RegionDatabaseTest {
         val firstRoot = directory.resolve("first")
         val secondRoot = directory.resolve("second")
         val region = sessionRegion().apply {
-            showOnDynmap = false
+            setDynmapVisibility(false)
             scopes.single().setDynmapVisibility(false)
         }
         val player = UUID.randomUUID()
@@ -197,7 +197,7 @@ class RegionDatabaseTest {
         )
         val region = Region("region", 7, mutableListOf(scope))
         region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
-        region.recordScopeOwnership(ScopeOwnershipEntry(scopeId.raw, 6, 7, 1234))
+        region.recordScopeOwnershipFromOwner(ScopeOwnershipEntry(scopeId.raw, 6, 7, 1234))
 
         RegionDatabase.writeRegions(path, listOf(region))
         val loaded = RegionDatabase.readRegions(path).single()
@@ -618,10 +618,10 @@ class RegionDatabaseTest {
         val path = directory.resolve("duplicate-history-owner.db")
         val historyScopeId = generateCompatScopeIdRaw(9, 0)
         val first = regionWithScope("first", 7).apply {
-            recordScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 7, 10))
+            recordScopeOwnershipFromOwner(ScopeOwnershipEntry(historyScopeId, 6, 7, 10))
         }
         val second = regionWithScope("second", 8).apply {
-            recordScopeOwnership(ScopeOwnershipEntry(historyScopeId, 6, 8, 10))
+            recordScopeOwnershipFromOwner(ScopeOwnershipEntry(historyScopeId, 6, 8, 10))
         }
 
         assertFailsWith<IllegalArgumentException> { RegionDatabase.writeRegions(path, listOf(first, second)) }

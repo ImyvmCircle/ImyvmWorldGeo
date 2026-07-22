@@ -31,7 +31,7 @@ class Region(
     geometryScope: MutableList<GeoScope>,
     settings: MutableList<Setting> = mutableListOf(),
     subSpaces: MutableList<SubSpace> = mutableListOf(),
-    var showOnDynmap: Boolean = true,
+    showOnDynmap: Boolean = true,
     ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
 ) {
     constructor(
@@ -43,11 +43,8 @@ class Region(
         ownershipHistoryByScope: MutableMap<Long, MutableList<ScopeOwnershipEntry>> = mutableMapOf()
     ) : this(name, numberID, geometryScope, settings, mutableListOf(), showOnDynmap, ownershipHistoryByScope)
 
-    var name: String = name
-        set(value) {
-            require(isValidGeoName(value)) { "invalid region name" }
-            field = value
-        }
+    private var currentName: String = name
+    private var currentShowOnDynmap: Boolean = showOnDynmap
 
     private val stableNumberId = numberID.also { require(it > 0) { "region id must be positive" } }
     private val mutableScopes = mutableListOf<GeoScope>()
@@ -66,6 +63,20 @@ class Region(
     var numberID: Int
         get() = stableNumberId
         set(value) = require(value == stableNumberId) { "region id cannot be changed" }
+
+    /** Binary-compatible property for existing addons. Renaming is controlled by the owning database. */
+    var name: String
+    get() = currentName
+    set(value) {
+        require(value == currentName) { "region name must be changed through its owning database" }
+    }
+
+    /** Binary-compatible property. Use supported interaction operations to change Dynmap visibility. */
+    var showOnDynmap: Boolean
+    get() = currentShowOnDynmap
+    set(value) {
+        require(value == currentShowOnDynmap) { "Dynmap visibility must be changed through the application boundary" }
+    }
 
     internal val scopes: List<GeoScope>
         get() = mutableScopes
@@ -114,11 +125,19 @@ class Region(
     fun containsSubSpace(subSpace: SubSpace): Boolean = mutableSubSpaces.any { it === subSpace }
 
     fun addScope(scope: GeoScope) {
+        error("scope must be added through the application boundary")
+    }
+
+    internal fun addScopeFromOwner(scope: GeoScope) {
         validateScope(scope, mutableScopes)
         mutableScopes.add(scope)
     }
 
     fun removeScope(scope: GeoScope): Int {
+        error("scope must be removed through the application boundary")
+    }
+
+    internal fun removeScopeFromOwner(scope: GeoScope): Int {
         val index = mutableScopes.indexOfFirst { it === scope }
         require(index >= 0) { "scope does not belong to region" }
         require(mutableSubSpaces.none { it.parentScopeId == scope.requireAssignedScopeId() }) { "scope has subspaces" }
@@ -127,6 +146,10 @@ class Region(
     }
 
     fun restoreScope(index: Int, scope: GeoScope) {
+        error("scope must be restored through the application boundary")
+    }
+
+    internal fun restoreScopeFromOwner(index: Int, scope: GeoScope) {
         validateScope(scope, mutableScopes)
         mutableScopes.add(index.coerceIn(0, mutableScopes.size), scope)
     }
@@ -134,11 +157,19 @@ class Region(
     internal fun restoreScopes(scopes: List<GeoScope>) = replaceScopes(scopes)
 
     fun addSubSpace(subSpace: SubSpace) {
+        error("subspace must be added through the application boundary")
+    }
+
+    internal fun addSubSpaceFromOwner(subSpace: SubSpace) {
         validateSubSpace(subSpace, mutableSubSpaces)
         mutableSubSpaces.add(subSpace)
     }
 
     fun removeSubSpace(subSpace: SubSpace): Int {
+        error("subspace must be removed through the application boundary")
+    }
+
+    internal fun removeSubSpaceFromOwner(subSpace: SubSpace): Int {
         val index = mutableSubSpaces.indexOfFirst { it === subSpace }
         require(index >= 0) { "subspace does not belong to region" }
         mutableSubSpaces.removeAt(index)
@@ -146,6 +177,10 @@ class Region(
     }
 
     fun restoreSubSpace(index: Int, subSpace: SubSpace) {
+        error("subspace must be restored through the application boundary")
+    }
+
+    internal fun restoreSubSpaceFromOwner(index: Int, subSpace: SubSpace) {
         validateSubSpace(subSpace, mutableSubSpaces)
         mutableSubSpaces.add(index.coerceIn(0, mutableSubSpaces.size), subSpace)
     }
@@ -163,6 +198,10 @@ class Region(
     }
 
     fun renameScope(scope: GeoScope, newName: String) {
+        error("scope name must be changed through the application boundary")
+    }
+
+    internal fun renameScopeFromOwner(scope: GeoScope, newName: String) {
         require(containsScope(scope)) { "scope does not belong to region" }
         require(mutableScopes.none { it !== scope && it.scopeName.equals(newName, ignoreCase = true) }) {
             "duplicate scope name"
@@ -171,6 +210,10 @@ class Region(
     }
 
     fun renameSubSpace(subSpace: SubSpace, newName: String) {
+        error("subspace name must be changed through the application boundary")
+    }
+
+    internal fun renameSubSpaceFromOwner(subSpace: SubSpace, newName: String) {
         require(containsSubSpace(subSpace)) { "subspace does not belong to region" }
         require(mutableSubSpaces.none { it !== subSpace && it.name.equals(newName, ignoreCase = true) }) {
             "duplicate subspace name"
@@ -179,6 +222,10 @@ class Region(
     }
 
     fun replaceScopeGeometry(scope: GeoScope, shape: GeoShape?) {
+        error("scope geometry must be changed through the application boundary")
+    }
+
+    internal fun replaceScopeGeometryFromOwner(scope: GeoScope, shape: GeoShape?) {
         require(containsScope(scope)) { "scope does not belong to region" }
         val oldShape = scope.geoShape
         scope.replaceGeometry(shape)
@@ -193,6 +240,10 @@ class Region(
     }
 
     fun replaceSubSpaceGeometry(subSpace: SubSpace, shape: GeoShape) {
+        error("subspace geometry must be changed through the application boundary")
+    }
+
+    internal fun replaceSubSpaceGeometryFromOwner(subSpace: SubSpace, shape: GeoShape) {
         require(containsSubSpace(subSpace)) { "subspace does not belong to region" }
         val oldShape = subSpace.geoShape
         subSpace.replaceGeometry(shape)
@@ -205,10 +256,23 @@ class Region(
     }
 
     fun recordScopeOwnership(entry: ScopeOwnershipEntry) {
+        error("scope ownership must be recorded through the owning database")
+    }
+
+    internal fun recordScopeOwnershipFromOwner(entry: ScopeOwnershipEntry) {
         require(entry.toRegionNumberId == numberID) { "ownership entry targets another region" }
         val updated = mutableOwnershipHistory[entry.scopeId].orEmpty() + entry
         validateOwnershipChain(entry.scopeId, updated)
         mutableOwnershipHistory[entry.scopeId] = updated.toMutableList()
+    }
+
+    internal fun renameTo(newName: String) {
+        require(isValidGeoName(newName)) { "invalid region name" }
+        currentName = newName
+    }
+
+    internal fun setDynmapVisibility(value: Boolean) {
+        currentShowOnDynmap = value
     }
 
     internal fun ownershipHistory(scopeId: AssignedScopeId): List<ScopeOwnershipEntry> =

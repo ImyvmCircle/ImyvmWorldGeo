@@ -107,9 +107,9 @@ fun onSubSpaceCreation(
         keyedTags = keyedTags
     )
     return try {
-        region.addSubSpace(subSpace)
+        region.addSubSpaceFromOwner(subSpace)
         if (!saveRegionData(player)) {
-            region.removeSubSpace(subSpace)
+            region.removeSubSpaceFromOwner(subSpace)
             null
         } else subSpace
     } catch (error: IllegalArgumentException) {
@@ -120,9 +120,9 @@ fun onSubSpaceCreation(
 
 fun onSubSpaceDelete(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
     RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
-    val index = region.removeSubSpace(subSpace)
+    val index = region.removeSubSpaceFromOwner(subSpace)
     if (!saveRegionData(player)) {
-        region.restoreSubSpace(index, subSpace)
+        region.restoreSubSpaceFromOwner(index, subSpace)
         return 0
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.subspace.delete.success", subSpace.name, parentScope.scopeName, region.name)!!)
@@ -133,9 +133,9 @@ fun onSubSpaceRename(player: ServerPlayer, region: Region, parentScope: GeoScope
     RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
     val oldName = subSpace.name
     return try {
-        region.renameSubSpace(subSpace, newName)
+        region.renameSubSpaceFromOwner(subSpace, newName)
         if (!saveRegionData(player)) {
-            region.renameSubSpace(subSpace, oldName)
+            region.renameSubSpaceFromOwner(subSpace, oldName)
             0
         } else {
             player.sendSystemMessage(Translator.tr("interaction.meta.subspace.rename.success", oldName, newName, parentScope.scopeName, region.name)!!)
@@ -157,9 +157,9 @@ fun onReplacingSubSpaceShape(
     RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
     val oldShape = subSpace.geoShape
     return try {
-        region.replaceSubSpaceGeometry(subSpace, newShape)
+        region.replaceSubSpaceGeometryFromOwner(subSpace, newShape)
         if (!saveRegionData(player)) {
-            region.replaceSubSpaceGeometry(subSpace, oldShape)
+            region.replaceSubSpaceGeometryFromOwner(subSpace, oldShape)
             0
         } else 1
     } catch (error: IllegalArgumentException) {

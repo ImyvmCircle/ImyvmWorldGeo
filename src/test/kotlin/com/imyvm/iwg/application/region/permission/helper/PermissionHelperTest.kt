@@ -130,7 +130,7 @@ class PermissionHelperTest {
             parentScope.worldId,
             GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
         )
-        parentRegion.addSubSpace(subSpace)
+        parentRegion.addSubSpaceFromOwner(subSpace)
         parentRegion.settingStore.put(PermissionSetting(PermissionKey.FLY, false))
         parentScope.settingStore.put(PermissionSetting(PermissionKey.BUILD, false))
         subSpace.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
@@ -202,7 +202,7 @@ class PermissionHelperTest {
             parentScope.worldId,
             GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
         )
-        parentRegion.addSubSpace(subSpace)
+        parentRegion.addSubSpaceFromOwner(subSpace)
         parentRegion.settingStore.put(PermissionSetting(PermissionKey.PVP, true, player))
         parentScope.settingStore.put(PermissionSetting(PermissionKey.PVP, true))
         subSpace.settingStore.put(PermissionSetting(PermissionKey.PVP, false, player))

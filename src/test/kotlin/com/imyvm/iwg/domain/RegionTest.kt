@@ -28,7 +28,8 @@ class RegionTest {
         assertFailsWith<IllegalArgumentException> { Region("region", 7, mutableListOf()) }
 
         val region = Region("region", 7, mutableListOf(scope("main", 1)))
-        assertFailsWith<IllegalArgumentException> { region.name = "region_" }
+        assertFailsWith<IllegalArgumentException> { region.renameTo("region_") }
+        assertFailsWith<IllegalArgumentException> { region.name = "other" }
         assertFailsWith<IllegalArgumentException> { region.geometryScope = mutableListOf() }
         assertEquals("region", region.name)
         assertEquals(1, region.scopes.size)
@@ -101,7 +102,7 @@ class RegionTest {
     fun `legacy scope and ownership collections are detached snapshots`() {
         val scope = scope("main", 1)
         val region = Region("region", 7, mutableListOf(scope))
-        region.recordScopeOwnership(ScopeOwnershipEntry(scope.scopeId.raw, 6, 7, 10))
+        region.recordScopeOwnershipFromOwner(ScopeOwnershipEntry(scope.scopeId.raw, 6, 7, 10))
 
         region.geometryScope.clear()
         region.ownershipHistoryByScope.getValue(scope.scopeId.raw).clear()
@@ -114,8 +115,8 @@ class RegionTest {
     fun `region rejects duplicate scope names and assigned ids`() {
         val region = Region("region", 7, mutableListOf(scope("main", 1)))
 
-        assertFailsWith<IllegalArgumentException> { region.addScope(scope("MAIN", 2)) }
-        assertFailsWith<IllegalArgumentException> { region.addScope(scope("other", 1)) }
+        assertFailsWith<IllegalArgumentException> { region.addScopeFromOwner(scope("MAIN", 2)) }
+        assertFailsWith<IllegalArgumentException> { region.addScopeFromOwner(scope("other", 1)) }
     }
 
     @Test
@@ -144,8 +145,8 @@ class RegionTest {
         val second = scope("second", 2)
         val region = Region("region", 7, mutableListOf(first, second))
 
-        val index = region.removeScope(first)
-        region.restoreScope(index, first)
+        val index = region.removeScopeFromOwner(first)
+        region.restoreScopeFromOwner(index, first)
 
         assertEquals(listOf(first, second), region.scopes)
     }
@@ -168,11 +169,11 @@ class RegionTest {
             GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
         )
 
-        region.addSubSpace(inside)
+        region.addSubSpaceFromOwner(inside)
 
         assertEquals(listOf(inside), region.subSpaces)
         assertFailsWith<IllegalArgumentException> {
-            region.addSubSpace(
+            region.addSubSpaceFromOwner(
                 SubSpace(
                     2,
                     "outside",
@@ -183,7 +184,7 @@ class RegionTest {
             )
         }
         assertFailsWith<IllegalArgumentException> {
-            region.addSubSpace(
+            region.addSubSpaceFromOwner(
                 SubSpace(
                     3,
                     "wideCircle",
@@ -193,7 +194,7 @@ class RegionTest {
                 )
             )
         }
-        assertFailsWith<IllegalArgumentException> { region.removeScope(main) }
+        assertFailsWith<IllegalArgumentException> { region.removeScopeFromOwner(main) }
     }
 
     @Test
@@ -213,10 +214,10 @@ class RegionTest {
             main.worldId,
             GeoShape.rectangle(GeoPoint(10, 10), GeoPoint(40, 40))
         )
-        region.addSubSpace(first)
+        region.addSubSpaceFromOwner(first)
 
         assertFailsWith<IllegalArgumentException> {
-            region.addSubSpace(
+            region.addSubSpaceFromOwner(
                 SubSpace(
                     2,
                     "second",
@@ -226,7 +227,7 @@ class RegionTest {
                 )
             )
         }
-        region.addSubSpace(
+        region.addSubSpaceFromOwner(
             SubSpace(
                 3,
                 "third",
@@ -236,8 +237,34 @@ class RegionTest {
             )
         )
         assertFailsWith<IllegalArgumentException> {
-            region.replaceSubSpaceGeometry(first, GeoShape.rectangle(GeoPoint(30, 30), GeoPoint(70, 70)))
+            region.replaceSubSpaceGeometryFromOwner(first, GeoShape.rectangle(GeoPoint(30, 30), GeoPoint(70, 70)))
         }
+    }
+
+    @Test
+    fun `public region mutators fail fast outside owner boundaries`() {
+        val main = scope("main", 1)
+        val region = Region("region", 7, mutableListOf(main))
+        val subSpace = SubSpace(
+            1,
+            "plot",
+            main.requireAssignedScopeId(),
+            main.worldId,
+            GeoShape.rectangle(GeoPoint(1, 1), GeoPoint(2, 2))
+        )
+
+        assertFailsWith<IllegalStateException> { region.addScope(scope("other", 2)) }
+        assertFailsWith<IllegalStateException> { region.removeScope(main) }
+        assertFailsWith<IllegalStateException> { region.restoreScope(0, main) }
+        assertFailsWith<IllegalStateException> { region.addSubSpace(subSpace) }
+        assertFailsWith<IllegalStateException> { region.removeSubSpace(subSpace) }
+        assertFailsWith<IllegalStateException> { region.restoreSubSpace(0, subSpace) }
+        assertFailsWith<IllegalStateException> { region.renameScope(main, "other") }
+        assertFailsWith<IllegalStateException> { region.renameSubSpace(subSpace, "other") }
+        assertFailsWith<IllegalStateException> { region.replaceScopeGeometry(main, null) }
+        assertFailsWith<IllegalStateException> { region.replaceSubSpaceGeometry(subSpace, subSpace.geoShape) }
+        assertFailsWith<IllegalStateException> { region.recordScopeOwnership(ScopeOwnershipEntry(main.scopeId.raw, 6, 7, 10)) }
+        assertFailsWith<IllegalArgumentException> { region.showOnDynmap = false }
     }
 
     private fun scope(name: String, id: Long) = GeoScope(

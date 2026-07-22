@@ -7,9 +7,9 @@ import net.minecraft.server.level.ServerPlayer
 
 fun onTogglingRegionDynmap(player: ServerPlayer, region: Region) {
     val oldValue = region.showOnDynmap
-    region.showOnDynmap = !oldValue
+    region.setDynmapVisibility(!oldValue)
     if (!saveRegionData(player)) {
-        region.showOnDynmap = oldValue
+        region.setDynmapVisibility(oldValue)
         return
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.region.dynmap.toggle", region.name, region.showOnDynmap)!!)

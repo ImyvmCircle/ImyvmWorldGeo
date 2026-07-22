@@ -33,6 +33,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `Region.geometryScope` / `Region.ownershipHistoryByScope` | 26.2-1.5.2 | `RegionDataApi` for reads; supported interaction APIs for writes | Compatibility surface | No removal scheduled | Constructor, getter, and setter descriptors remain; getters return detached snapshots |
 | `GeoShape.geoShapeType` / `GeoShape.shapeParameter` | 26.2-1.5.2 | Use the named `GeoShape` factories and `PlayerInteractionApi.replaceScopeShape` | Compatibility surface | No removal scheduled | Raw constructor, getter, and setter descriptors remain; the getter returns a detached snapshot and state-changing setter calls fail fast |
 | Mutable `GeoScope` state properties | 26.2-1.5.2 | `RegionDataApi` for reads; supported Region and interaction operations for writes | Compatibility surface | No removal scheduled | Constructor and property accessor descriptors remain; uncontrolled state changes through legacy setters are rejected |
+| Mutable `Region` state properties and child mutation methods | Unreleased | `RegionDataApi` for reads; `PlayerInteractionApi` for supported Region/Scope/SubSpace writes | Compatibility surface | No removal scheduled | JVM setters and child mutation methods remain linkable, but direct live-object writes now fail fast; Dynmap visibility and ownership history stay server-owned internals |
 | `ScopeId` compatibility encoding | 26.2-1.5.2 | `RegionDataApi.parseScopeId` and ScopeId query methods | Compatible encoding fix | No removal scheduled | Existing raw IDs remain parseable; newly migrated legacy scopes use a marker bit and full local index without changing the persisted `Long` field |
 | `ScopeId` query and overlay methods | 26.2-1.5.2 | `AssignedScopeId` and the corresponding `RegionDataApi` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; `GeoScope` constructor and scopeId getter/setter descriptors remain |
 | `Setting` / `BaseKey` | Not scheduled | Typed permission/rule/effect keys through supported APIs | Compatibility surface | No removal scheduled | Existing classes and JVM methods remain; unknown setting subclasses are rejected by persistence |
@@ -63,6 +64,31 @@ Extension permission and rule keys must be registered through `RegionDataApi` be
 ## R10 Region collection migration
 
 Do not mutate `Region.geometryScope` or `Region.ownershipHistoryByScope` directly. Their getters now return detached compatibility snapshots, so collection mutations do not change the Region. Read scopes through `RegionDataApi.getRegionScopes(region)` and perform supported mutations through `PlayerInteractionApi`.
+
+## R15 Region live mutation migration
+
+`Region` keeps its JVM-linkable setters and child mutation methods for compatibility, but direct writes through a live Region are no longer a supported addon path. `region.name = ...`, `region.showOnDynmap = ...`, `region.addScope(...)`, `region.removeScope(...)`, `region.restoreScope(...)`, `region.addSubSpace(...)`, `region.removeSubSpace(...)`, `region.restoreSubSpace(...)`, `region.renameScope(...)`, `region.renameSubSpace(...)`, `region.replaceScopeGeometry(...)`, `region.replaceSubSpaceGeometry(...)`, and `region.recordScopeOwnership(...)` now fail fast instead of mutating the live Region.
+
+Resolve the current live objects through `RegionDataApi`, then cross the supported write boundary through `PlayerInteractionApi`:
+
+```kotlin
+val liveRegion = RegionDataApi.getRegion(staleRegion.numberID) ?: return
+val liveScope = RegionDataApi.getScopeByAssignedId(scopeId)
+    ?.takeIf { (owner, _) -> owner === liveRegion }
+    ?.second
+    ?: return
+val liveSubSpace = RegionDataApi.getSubSpaceById(subSpaceId)
+    ?.takeIf { (owner, scope, _) -> owner === liveRegion && scope === liveScope }
+    ?.third
+    ?: return
+
+PlayerInteractionApi.renameRegion(player, liveRegion, "NewName")
+PlayerInteractionApi.addScope(player, liveRegion, "Annex")
+PlayerInteractionApi.replaceScopeShape(player, liveRegion, liveScope, rectangle)
+PlayerInteractionApi.renameSubSpace(player, liveRegion, liveScope, liveSubSpace, "Plot-A")
+```
+
+Dynmap visibility and ownership history stay server-owned internals. Addon code should treat those fields as read-only facts.
 
 ## R11 Scope identity migration
 

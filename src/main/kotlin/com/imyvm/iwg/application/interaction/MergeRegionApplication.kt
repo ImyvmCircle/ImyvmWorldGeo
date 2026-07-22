@@ -30,9 +30,9 @@ fun onRegionMerge(
         for (scope in sourceScopes) {
             val resolvedName = resolveTransferScopeName(scope.scopeName, targetRegion)
             if (!resolvedName.equals(scope.scopeName, ignoreCase = false)) renamedCount++
-            sourceRegion.removeScope(scope)
+            sourceRegion.removeScopeFromOwner(scope)
             scope.renameTo(resolvedName)
-            targetRegion.addScope(scope)
+            targetRegion.addScopeFromOwner(scope)
         }
 
         val mergedHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }

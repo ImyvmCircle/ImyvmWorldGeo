@@ -343,11 +343,11 @@ object RegionDatabase {
         if (isDuplicate) {
             throw IllegalArgumentException("A region with the name '$newName' already exists.")
         }
-        region.name = newName
+        region.renameTo(newName)
     }
 
     fun getRegionList(): List<Region> {
-        return regions
+        return regions.toList()
     }
 
     fun getRegionPlayerStats(region: Region): RegionPlayerStats =
@@ -524,7 +524,7 @@ object RegionDatabase {
         changedAtMillis: Long
     ) {
         val entry = ScopeOwnershipEntry(scopeId.raw, fromRegion.numberID, toRegion.numberID, changedAtMillis)
-        toRegion.recordScopeOwnership(entry)
+        toRegion.recordScopeOwnershipFromOwner(entry)
     }
 
     fun getScopeOwnershipHistory(scopeId: ScopeId): List<ScopeOwnershipEntry> {
@@ -984,7 +984,7 @@ object RegionDatabase {
         val loaded = if (Files.exists(path)) readDynmapVisibility(path) else emptyMap()
         for (region in loadedRegions) {
             val visibility = loaded[region.numberID]
-            region.showOnDynmap = visibility?.showOnDynmap ?: true
+            region.setDynmapVisibility(visibility?.showOnDynmap ?: true)
             for (scope in region.scopes) {
                 scope.setDynmapVisibility(visibility?.scopes?.get(scope.scopeName) ?: true)
             }

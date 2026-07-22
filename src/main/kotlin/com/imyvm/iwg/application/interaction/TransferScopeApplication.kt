@@ -29,7 +29,7 @@ fun onScopeTransfer(
     val originalName = scope.scopeName
     val resolvedName = resolveTransferScopeName(originalName, targetRegion)
     val nameChanged = !resolvedName.equals(originalName, ignoreCase = false)
-    val sourceIndex = sourceRegion.removeScope(scope)
+    val sourceIndex = sourceRegion.removeScopeFromOwner(scope)
     val originalSourceHistory = sourceRegion.ownershipHistorySnapshot()
     val originalTargetHistory = targetRegion.ownershipHistorySnapshot()
 
@@ -37,7 +37,7 @@ fun onScopeTransfer(
     try {
         val scopeId = scope.requireAssignedScopeId()
         scope.renameTo(resolvedName)
-        targetRegion.addScope(scope)
+        targetRegion.addScopeFromOwner(scope)
         val newSourceHistory = originalSourceHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
         val newTargetHistory = originalTargetHistory.mapValuesTo(mutableMapOf()) { it.value.toMutableList() }
         newSourceHistory.remove(scopeId)?.let { previousEntries ->
@@ -54,17 +54,17 @@ fun onScopeTransfer(
         sourceRegion.replaceOwnershipHistory(newSourceHistory)
         targetRegion.replaceOwnershipHistory(newTargetHistory)
     } catch (error: IllegalArgumentException) {
-        if (targetRegion.containsScope(scope)) targetRegion.removeScope(scope)
+        if (targetRegion.containsScope(scope)) targetRegion.removeScopeFromOwner(scope)
         scope.renameTo(originalName)
-        sourceRegion.restoreScope(sourceIndex, scope)
+        sourceRegion.restoreScopeFromOwner(sourceIndex, scope)
         sourceRegion.replaceOwnershipHistory(originalSourceHistory)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)
         throw error
     }
     if (!saveRegionData(player)) {
-        targetRegion.removeScope(scope)
+        targetRegion.removeScopeFromOwner(scope)
         scope.renameTo(originalName)
-        sourceRegion.restoreScope(sourceIndex, scope)
+        sourceRegion.restoreScopeFromOwner(sourceIndex, scope)
         sourceRegion.replaceOwnershipHistory(originalSourceHistory)
         targetRegion.replaceOwnershipHistory(originalTargetHistory)
         return 0
