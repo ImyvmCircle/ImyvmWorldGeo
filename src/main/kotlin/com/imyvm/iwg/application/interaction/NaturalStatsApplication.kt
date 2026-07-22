@@ -7,6 +7,9 @@ import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.RegionNaturalStats
 import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.domain.RegionPlayerStats
+import com.imyvm.iwg.domain.WorldGeoSpaceType
+import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.chat.Component
@@ -16,6 +19,7 @@ import java.util.Locale
 
 private const val SUMMARY_ITEM_LIMIT = 8
 private const val DETAIL_ITEM_LIMIT = 20
+private const val DEBUG_GEOGRAPHY_PAGE_SIZE = 5
 
 fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, categoryName: String?, isApi: Boolean): Int {
     val category = NaturalStatsCategory.fromName(categoryName)
@@ -63,6 +67,209 @@ fun onQueryRegionNaturalStats(player: ServerPlayer, region: Region, category: Na
 
 fun onQueryRegionPlayerStats(player: ServerPlayer, region: Region, isApi: Boolean): Int =
     sendPlayerStatsMessages(player, region, RegionDatabase.getRegionPlayerStats(region), isApi)
+
+fun onDebugGeographyRegion(player: ServerPlayer, region: Region): Int {
+    RegionDatabase.requireCanonicalRegion(region)
+    return sendDebugGeographyOverview(
+        player,
+        WorldGeoSpaceType.REGION.name,
+        region.numberID.toString(),
+        region.name,
+        region.calculateTotalArea(),
+        RegionNaturalStatsCollector.collectRegionStats(player.level().server, region),
+        "/imyvmWorldGeo debug geography region ${region.numberID} detail"
+    )
+}
+
+fun onDebugGeographyRegionDetail(player: ServerPlayer, region: Region, pageRaw: String?): Int {
+    RegionDatabase.requireCanonicalRegion(region)
+    return sendDebugGeographyDetail(
+        player,
+        WorldGeoSpaceType.REGION.name,
+        region.numberID.toString(),
+        RegionNaturalStatsCollector.collectRegionStats(player.level().server, region),
+        pageRaw
+    )
+}
+
+fun onDebugGeographyScope(player: ServerPlayer, region: Region, scope: GeoScope): Int {
+    RegionDatabase.requireCanonicalScope(region, scope)
+    return sendDebugGeographyOverview(
+        player,
+        WorldGeoSpaceType.GEOSCOPE.name,
+        scope.requireAssignedScopeId().raw.toString(),
+        scope.scopeName,
+        scope.geoShape?.calculateArea(),
+        RegionNaturalStatsCollector.collectScopeStats(player.level().server, scope),
+        "/imyvmWorldGeo debug geography scope ${region.numberID} ${scope.scopeName} detail"
+    )
+}
+
+fun onDebugGeographyScopeDetail(player: ServerPlayer, region: Region, scope: GeoScope, pageRaw: String?): Int {
+    RegionDatabase.requireCanonicalScope(region, scope)
+    return sendDebugGeographyDetail(
+        player,
+        WorldGeoSpaceType.GEOSCOPE.name,
+        scope.requireAssignedScopeId().raw.toString(),
+        RegionNaturalStatsCollector.collectScopeStats(player.level().server, scope),
+        pageRaw
+    )
+}
+
+fun onDebugGeographySubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
+    RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
+    return sendDebugGeographyOverview(
+        player,
+        WorldGeoSpaceType.SUBSPACE.name,
+        subSpace.subSpaceId.toString(),
+        subSpace.name,
+        subSpace.geoShape.calculateArea(),
+        RegionNaturalStatsCollector.collectSubSpaceStats(player.level().server, subSpace),
+        "/imyvmWorldGeo debug geography subspace ${region.numberID} ${subSpace.name} detail"
+    )
+}
+
+fun onDebugGeographySubSpaceDetail(
+    player: ServerPlayer,
+    region: Region,
+    parentScope: GeoScope,
+    subSpace: SubSpace,
+    pageRaw: String?
+): Int {
+    RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
+    return sendDebugGeographyDetail(
+        player,
+        WorldGeoSpaceType.SUBSPACE.name,
+        subSpace.subSpaceId.toString(),
+        RegionNaturalStatsCollector.collectSubSpaceStats(player.level().server, subSpace),
+        pageRaw
+    )
+}
+
+private fun sendDebugGeographyOverview(
+    player: ServerPlayer,
+    type: String,
+    id: String,
+    name: String,
+    area: Double?,
+    result: RegionNaturalStatsResult,
+    detailCommand: String
+): Int = when (result) {
+    is RegionNaturalStatsResult.ChunkLimitExceeded -> {
+        player.sendSystemMessage(
+            Translator.tr(
+                "interaction.meta.stats.error.chunk_limit",
+                result.dimensionId,
+                result.candidateChunkCount,
+                result.limit
+            )!!
+        )
+        0
+    }
+
+    is RegionNaturalStatsResult.DimensionUnavailable -> {
+        player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId)!!)
+        0
+    }
+
+    is RegionNaturalStatsResult.Success -> {
+        val stats = result.stats
+        player.sendSystemMessage(
+            Translator.tr(
+                "interaction.meta.debug.geography.header",
+                type,
+                id,
+                name,
+                stats.dimensionStats.keys.joinToString(", ").ifBlank { "-" },
+                area?.let { String.format(Locale.ROOT, "%.2f", it) } ?: "-",
+                dominantBiome(stats)?.toString() ?: "-",
+                stats.sampledColumnCount,
+                stats.loadedChunkCount,
+                stats.candidateChunkCount,
+                stats.isPartial
+            )!!
+        )
+        player.sendSystemMessage(
+            Translator.tr(
+                "interaction.meta.debug.geography.summary",
+                formatDistributionMap(stats.biomeCounts, stats.sampledColumnCount, SUMMARY_ITEM_LIMIT),
+                formatDistributionMap(stats.surfaceBlockCounts, stats.sampledColumnCount, SUMMARY_ITEM_LIMIT),
+                formatCountMap(stats.structureCounts, SUMMARY_ITEM_LIMIT),
+                formatDifficulty(stats.averageLocalDifficulty)
+            )!!
+        )
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.geography.detail_hint", detailCommand)!!)
+        1
+    }
+}
+
+private fun sendDebugGeographyDetail(
+    player: ServerPlayer,
+    type: String,
+    id: String,
+    result: RegionNaturalStatsResult,
+    pageRaw: String?
+): Int = when (result) {
+    is RegionNaturalStatsResult.ChunkLimitExceeded -> {
+        player.sendSystemMessage(
+            Translator.tr(
+                "interaction.meta.stats.error.chunk_limit",
+                result.dimensionId,
+                result.candidateChunkCount,
+                result.limit
+            )!!
+        )
+        0
+    }
+
+    is RegionNaturalStatsResult.DimensionUnavailable -> {
+        player.sendSystemMessage(Translator.tr("interaction.meta.stats.error.dimension_unavailable", result.dimensionId)!!)
+        0
+    }
+
+    is RegionNaturalStatsResult.Success -> {
+        val lines = buildDebugGeographyDetailLines(result.stats)
+        if (lines.isEmpty()) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.debug.geography.detail.empty", type, id)!!)
+            return 0
+        }
+        val totalPages = ((lines.size + DEBUG_GEOGRAPHY_PAGE_SIZE - 1) / DEBUG_GEOGRAPHY_PAGE_SIZE).coerceAtLeast(1)
+        val page = (pageRaw?.toIntOrNull() ?: 1).coerceIn(1, totalPages)
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.geography.detail.header", type, id, page, totalPages, lines.size)!!)
+        lines.drop((page - 1) * DEBUG_GEOGRAPHY_PAGE_SIZE).take(DEBUG_GEOGRAPHY_PAGE_SIZE).forEach(player::sendSystemMessage)
+        lines.size
+    }
+}
+
+private fun buildDebugGeographyDetailLines(stats: RegionNaturalStats): List<Component> = buildList {
+    stats.dimensionStats.forEach { (dimensionId, dimensionStats) ->
+        add(
+            Translator.tr(
+                "interaction.meta.debug.geography.detail.dimension",
+                dimensionId,
+                dimensionStats.sampledColumnCount,
+                dimensionStats.loadedChunkCount,
+                dimensionStats.candidateChunkCount,
+                formatDifficulty(dimensionStats.averageLocalDifficulty)
+            )!!
+        )
+    }
+    addDebugDistributionLines("biome", stats.biomeCounts, stats.sampledColumnCount)
+    addDebugDistributionLines("surface", stats.surfaceBlockCounts, stats.sampledColumnCount)
+    stats.structureCounts.forEach { (structureId, count) ->
+        add(Translator.tr("interaction.meta.debug.geography.detail.count", "structure", structureId, count)!!)
+    }
+}
+
+private fun MutableList<Component>.addDebugDistributionLines(label: String, values: Map<Identifier, Int>, total: Int) {
+    values.forEach { (key, count) ->
+        val percent = if (total <= 0) "0.0%" else String.format(Locale.ROOT, "%.1f%%", count.toDouble() * 100.0 / total)
+        add(Translator.tr("interaction.meta.debug.geography.detail.distribution", label, key, count, percent)!!)
+    }
+}
+
+private fun dominantBiome(stats: RegionNaturalStats): Identifier? =
+    stats.biomeCounts.maxByOrNull { it.value }?.key
 
 private fun sendStatsMessages(
     player: ServerPlayer,

@@ -7,6 +7,7 @@ import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.util.geo.getBoundingBox
 import net.minecraft.core.BlockPos
 import net.minecraft.core.registries.BuiltInRegistries
@@ -25,6 +26,12 @@ object RegionNaturalStatsCollector {
 
     fun collectScopeStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         collectRegionStatsFromScopes(server, listOf(scope))
+
+    fun collectSubSpaceStats(server: MinecraftServer, subSpace: SubSpace): RegionNaturalStatsResult =
+        collectRegionStatsFromScopes(
+            server,
+            listOf(GeoScope("subspaceSample", subSpace.worldId, null, geoShape = subSpace.geoShape))
+        )
 
     private fun collectRegionStatsFromScopes(server: MinecraftServer, scopes: List<GeoScope>): RegionNaturalStatsResult {
         val dimensionEntries = scopes

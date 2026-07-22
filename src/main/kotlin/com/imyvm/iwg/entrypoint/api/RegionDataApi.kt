@@ -369,11 +369,20 @@ object RegionDataApi {
     fun getRegionSpaceSnapshot(region: Region): WorldGeoSpaceSnapshot =
         WorldGeoSpaceSupport.snapshot(region)
 
+    fun getRegionSpaceSnapshot(server: MinecraftServer, region: Region): WorldGeoSpaceSnapshot =
+        WorldGeoSpaceSupport.snapshot(server, region)
+
     fun getScopeSpaceSnapshot(region: Region, scope: GeoScope): WorldGeoSpaceSnapshot =
         WorldGeoSpaceSupport.snapshot(region, scope)
 
+    fun getScopeSpaceSnapshot(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoSpaceSnapshot =
+        WorldGeoSpaceSupport.snapshot(server, region, scope)
+
     fun getSubSpaceSnapshot(region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot =
         WorldGeoSpaceSupport.snapshot(region, scope, subSpace)
+
+    fun getSubSpaceSnapshot(server: MinecraftServer, region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot =
+        WorldGeoSpaceSupport.snapshot(server, region, scope, subSpace)
 
     fun listRegionSettingSummaries(
         region: Region,
@@ -515,6 +524,9 @@ object RegionDataApi {
 
     fun getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult =
         RegionNaturalStatsCollector.collectScopeStats(server, scope)
+
+    fun getSubSpaceNaturalStats(server: MinecraftServer, subSpace: SubSpace): RegionNaturalStatsResult =
+        RegionNaturalStatsCollector.collectSubSpaceStats(server, subSpace)
 
     fun getRegionPlayerStats(region: Region): RegionPlayerStats =
         RegionDatabase.getRegionPlayerStats(region)

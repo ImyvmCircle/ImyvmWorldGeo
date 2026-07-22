@@ -681,6 +681,56 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             .then(literal("subspace").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).executes { runDebugSubSpaceSnapshot(it) })))
                     )
                     .then(
+                        literal("geography")
+                            .then(
+                                literal("region")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runDebugGeographyRegion(it) }
+                                            .then(
+                                                literal("detail")
+                                                    .executes { runDebugGeographyRegionDetail(it) }
+                                                    .then(argument("page", StringArgumentType.word()).executes { runDebugGeographyRegionDetail(it) })
+                                            )
+                                    )
+                            )
+                            .then(
+                                literal("scope")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("scopeName", StringArgumentType.string())
+                                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                                    .executes { runDebugGeographyScope(it) }
+                                                    .then(
+                                                        literal("detail")
+                                                            .executes { runDebugGeographyScopeDetail(it) }
+                                                            .then(argument("page", StringArgumentType.word()).executes { runDebugGeographyScopeDetail(it) })
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                literal("subspace")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("subSpaceName", StringArgumentType.string())
+                                                    .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                                    .executes { runDebugGeographySubSpace(it) }
+                                                    .then(
+                                                        literal("detail")
+                                                            .executes { runDebugGeographySubSpaceDetail(it) }
+                                                            .then(argument("page", StringArgumentType.word()).executes { runDebugGeographySubSpaceDetail(it) })
+                                                    )
+                                            )
+                                    )
+                            )
+                    )
+                    .then(
                         literal("settingSummaries")
                             .then(literal("region").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).executes { runDebugRegionSettingSummaries(it) }))
                             .then(literal("scope").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("scopeName", StringArgumentType.string()).suggests(SCOPE_NAME_SUGGESTION_PROVIDER).executes { runDebugScopeSettingSummaries(it) })))
@@ -1324,6 +1374,36 @@ private fun runDebugScopeSpaceSnapshot(context: CommandContext<CommandSourceStac
 private fun runDebugSubSpaceSnapshot(context: CommandContext<CommandSourceStack>): Int {
     val target = getSubSpaceTarget(context) ?: return 0
     return onDebugSubSpaceSnapshot(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runDebugGeographyRegion(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region -> onDebugGeographyRegion(player, region) }
+}
+
+private fun runDebugGeographyRegionDetail(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region -> onDebugGeographyRegionDetail(player, region, getOptionalArgument(context, "page")) }
+}
+
+private fun runDebugGeographyScope(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return onDebugGeographyScope(player, region, scope)
+}
+
+private fun runDebugGeographyScopeDetail(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    return onDebugGeographyScopeDetail(player, region, scope, getOptionalArgument(context, "page"))
+}
+
+private fun runDebugGeographySubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onDebugGeographySubSpace(target.player, target.region, target.scope, target.subSpace)
+}
+
+private fun runDebugGeographySubSpaceDetail(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    return onDebugGeographySubSpaceDetail(target.player, target.region, target.scope, target.subSpace, getOptionalArgument(context, "page"))
 }
 
 private fun runDebugRegionSettingSummaries(context: CommandContext<CommandSourceStack>): Int {

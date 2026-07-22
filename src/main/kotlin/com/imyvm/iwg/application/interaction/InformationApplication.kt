@@ -115,6 +115,7 @@ fun onHelp(player: ServerPlayer, pageRaw: String? = null): Int {
         "debug.space_here",
         "debug.time",
         "debug.behavior",
+        "debug.geography",
         "debug.region",
         "debug.scope",
         "debug.subspace",

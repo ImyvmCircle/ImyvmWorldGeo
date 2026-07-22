@@ -257,26 +257,26 @@ fun onDebugCurrentSpaceSnapshot(player: ServerPlayer): Int {
     }
     val (region, scope, subSpace) = resolved
     val snapshot = if (subSpace == null) {
-        WorldGeoSpaceSupport.snapshot(region, scope)
+        WorldGeoSpaceSupport.snapshot(player.level().server, region, scope)
     } else {
-        WorldGeoSpaceSupport.snapshot(region, scope, subSpace)
+        WorldGeoSpaceSupport.snapshot(player.level().server, region, scope, subSpace)
     }
     sendDebugSnapshot(player, snapshot)
     return 1
 }
 
 fun onDebugRegionSpaceSnapshot(player: ServerPlayer, region: Region): Int {
-    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(region))
+    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(player.level().server, region))
     return 1
 }
 
 fun onDebugScopeSpaceSnapshot(player: ServerPlayer, region: Region, scope: GeoScope): Int {
-    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(region, scope))
+    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(player.level().server, region, scope))
     return 1
 }
 
 fun onDebugSubSpaceSnapshot(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
-    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(region, parentScope, subSpace))
+    sendDebugSnapshot(player, WorldGeoSpaceSupport.snapshot(player.level().server, region, parentScope, subSpace))
     return 1
 }
 

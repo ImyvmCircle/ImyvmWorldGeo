@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.space
 
+import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
 import com.imyvm.iwg.domain.Region
+import com.imyvm.iwg.domain.RegionNaturalStatsResult
 import com.imyvm.iwg.domain.WorldGeoSettingSummary
 import com.imyvm.iwg.domain.WorldGeoSettingVisibility
 import com.imyvm.iwg.domain.WorldGeoSpaceSnapshot
@@ -28,7 +30,18 @@ import java.util.Collections
 private const val SPACE_STATS_VERSION = 1L
 
 object WorldGeoSpaceSupport {
-    fun snapshot(region: Region): WorldGeoSpaceSnapshot {
+    fun snapshot(server: MinecraftServer, region: Region): WorldGeoSpaceSnapshot =
+        snapshot(region, dominantBiomeId(RegionNaturalStatsCollector.collectRegionStats(server, region)))
+
+    fun snapshot(server: MinecraftServer, region: Region, scope: GeoScope): WorldGeoSpaceSnapshot =
+        snapshot(region, scope, dominantBiomeId(RegionNaturalStatsCollector.collectScopeStats(server, scope)))
+
+    fun snapshot(server: MinecraftServer, region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot =
+        snapshot(region, scope, subSpace, dominantBiomeId(RegionNaturalStatsCollector.collectSubSpaceStats(server, subSpace)))
+
+    fun snapshot(region: Region): WorldGeoSpaceSnapshot = snapshot(region, null)
+
+    private fun snapshot(region: Region, dominantBiomeId: Identifier?): WorldGeoSpaceSnapshot {
         return WorldGeoSpaceSnapshot(
             type = WorldGeoSpaceType.REGION,
             id = region.numberID.toLong(),
@@ -44,7 +57,7 @@ object WorldGeoSpaceSupport {
             stringTags = emptySet(),
             keyedTags = emptyMap(),
             statsVersion = SPACE_STATS_VERSION,
-            dominantBiomeId = null,
+            dominantBiomeId = dominantBiomeId,
             entryMessageEnabled = entryMessageEnabled(region),
             entryMessageConfigured = entryMessageConfigured(region),
             mapColorSuggestion = DynmapColorResolver.resolveColor(region),
@@ -52,7 +65,9 @@ object WorldGeoSpaceSupport {
         )
     }
 
-    fun snapshot(region: Region, scope: GeoScope): WorldGeoSpaceSnapshot {
+    fun snapshot(region: Region, scope: GeoScope): WorldGeoSpaceSnapshot = snapshot(region, scope, null)
+
+    private fun snapshot(region: Region, scope: GeoScope, dominantBiomeId: Identifier?): WorldGeoSpaceSnapshot {
         require(region.containsScope(scope)) { "scope does not belong to region" }
         return WorldGeoSpaceSnapshot(
             type = WorldGeoSpaceType.GEOSCOPE,
@@ -69,7 +84,7 @@ object WorldGeoSpaceSupport {
             stringTags = emptySet(),
             keyedTags = emptyMap(),
             statsVersion = SPACE_STATS_VERSION,
-            dominantBiomeId = null,
+            dominantBiomeId = dominantBiomeId,
             entryMessageEnabled = entryMessageEnabled(scope),
             entryMessageConfigured = entryMessageConfigured(scope),
             mapColorSuggestion = DynmapColorResolver.resolveColor(region),
@@ -77,7 +92,10 @@ object WorldGeoSpaceSupport {
         )
     }
 
-    fun snapshot(region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot {
+    fun snapshot(region: Region, scope: GeoScope, subSpace: SubSpace): WorldGeoSpaceSnapshot =
+        snapshot(region, scope, subSpace, dominantBiomeId(subSpace.keyedTags))
+
+    private fun snapshot(region: Region, scope: GeoScope, subSpace: SubSpace, dominantBiomeId: Identifier?): WorldGeoSpaceSnapshot {
         require(region.containsScope(scope)) { "scope does not belong to region" }
         require(region.containsSubSpace(subSpace)) { "subspace does not belong to region" }
         require(subSpace.parentScopeId == scope.requireAssignedScopeId()) { "subspace parent scope does not match" }
@@ -96,7 +114,7 @@ object WorldGeoSpaceSupport {
             stringTags = Collections.unmodifiableSet(linkedSetOf<String>().also { it.addAll(subSpace.stringTags) }),
             keyedTags = Collections.unmodifiableMap(linkedMapOf<String, String>().also { it.putAll(subSpace.keyedTags) }),
             statsVersion = SPACE_STATS_VERSION,
-            dominantBiomeId = dominantBiomeId(subSpace.keyedTags),
+            dominantBiomeId = dominantBiomeId,
             entryMessageEnabled = true,
             entryMessageConfigured = subSpace.entryMessage != null,
             mapColorSuggestion = DynmapColorResolver.resolveColor(region),
@@ -166,6 +184,10 @@ object WorldGeoSpaceSupport {
     private fun entryMessageConfigured(scope: GeoScope): Boolean =
         scope.settingStore.entryExitMessage(EntryExitMessageKey.ENTER_MESSAGE) != null ||
             scope.settingStore.entryExitMessage(EntryExitMessageKey.EXIT_MESSAGE) != null
+
+
+    private fun dominantBiomeId(result: RegionNaturalStatsResult): Identifier? =
+        (result as? RegionNaturalStatsResult.Success)?.stats?.biomeCounts?.maxByOrNull { it.value }?.key
 
     private fun dominantBiomeId(tags: Map<String, String>): Identifier? {
         val raw = tags["worldgeo:dominant_biome"] ?: tags["dominant_biome"] ?: return null
