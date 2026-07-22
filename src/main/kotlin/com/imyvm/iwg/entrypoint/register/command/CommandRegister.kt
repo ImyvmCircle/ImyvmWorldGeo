@@ -18,6 +18,12 @@ import com.mojang.brigadier.arguments.StringArgumentType
 import net.minecraft.commands.Commands.literal
 import net.minecraft.commands.Commands.argument
 import net.minecraft.commands.CommandSourceStack
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
 import net.minecraft.server.level.ServerPlayer
 
 fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
@@ -69,7 +75,8 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .executes { runDeleteRegion(it) }
+                            .executes { runConfirmDeleteRegion(it) }
+                            .then(literal("confirm").executes { runDeleteRegion(it) })
                     )
             )
             .then(
@@ -106,13 +113,26 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             .then(
                                 argument("scopeName", StringArgumentType.string())
                                     .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runDeleteScope(it) }
+                                    .executes { runConfirmDeleteScope(it, "deleteScope") }
+                                    .then(literal("confirm").executes { runDeleteScope(it) })
                             )
                     )
             )
             .then(
                 literal("scope")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
+                    .then(
+                        literal("create")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .executes { runAddScope(it) }
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .executes { runAddScope(it) }
+                                    )
+                            )
+                    )
                     .then(
                         literal("add")
                             .then(
@@ -126,6 +146,18 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                     )
                     .then(
+                        literal("select")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runStartSelectForModify(it) }
+                                    )
+                            )
+                    )
+                    .then(
                         literal("delete")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
@@ -133,7 +165,20 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .then(
                                         argument("scopeName", StringArgumentType.string())
                                             .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runDeleteScope(it) }
+                                            .executes { runConfirmDeleteScope(it, "scope delete") }
+                                            .then(literal("confirm").executes { runDeleteScope(it) })
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("replaceShape")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runModifyScope(it) }
                                     )
                             )
                     )
@@ -485,7 +530,8 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                     .then(
                                         argument("subSpaceName", StringArgumentType.string())
                                             .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runDeleteSubSpace(it) }
+                                            .executes { runConfirmDeleteSubSpace(it) }
+                                            .then(literal("confirm").executes { runDeleteSubSpace(it) })
                                     )
                             )
                     )
@@ -696,7 +742,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
             )
             .then(literal("list").executes { runListRegions(it) })
             .then(literal("toggle").executes { runToggleActionBar(it) })
-            .then(literal("help").executes { runHelp(it) })
+            .then(literal("help").executes { runHelp(it) }.then(argument("page", StringArgumentType.word()).executes { runHelp(it) }))
     )
 }
 
@@ -751,6 +797,14 @@ private fun runCreateRegion(context: CommandContext<CommandSourceStack>): Int {
     return onRegionCreation(player, nameArg, null, idMark = 0)
 }
 
+private fun runConfirmDeleteRegion(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val command = "/imyvmWorldGeo delete ${commandArgument(regionIdentifier)} confirm"
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.delete.confirm.region", regionIdentifier)!!)
+    player.sendSystemMessage(confirmDeleteButton(command))
+    return 1
+}
+
 private fun runDeleteRegion(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     return identifierHandler(regionIdentifier, player) { regionToDelete -> onRegionDelete(player, regionToDelete) }
@@ -766,6 +820,15 @@ private fun runAddScope(context: CommandContext<CommandSourceStack>): Int {
     val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
     val scopeNameArg = getOptionalArgument(context, "scopeName")
     return identifierHandler(regionIdentifier, player) { regionToAddScope -> onScopeCreation(player, regionToAddScope, scopeNameArg, null)}
+}
+
+private fun runConfirmDeleteScope(context: CommandContext<CommandSourceStack>, commandPrefix: String): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val command = "/imyvmWorldGeo $commandPrefix ${commandArgument(regionIdentifier)} ${commandArgument(scopeName)} confirm"
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.delete.confirm.scope", scopeName, regionIdentifier)!!)
+    player.sendSystemMessage(confirmDeleteButton(command))
+    return 1
 }
 
 private fun runDeleteScope(context: CommandContext<CommandSourceStack>): Int {
@@ -972,7 +1035,18 @@ private fun runToggleActionBar(context: CommandContext<CommandSourceStack>): Int
 
 private fun runHelp(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    return onHelp(player)
+    return onHelp(player, getOptionalArgument(context, "page"))
+}
+
+private fun commandArgument(value: String): String = StringArgumentType.escapeIfRequired(value)
+
+private fun confirmDeleteButton(command: String): Component {
+    return Translator.tr("interaction.meta.command.delete.confirm.button", command)!!.copy().setStyle(
+        Style.EMPTY
+            .withColor(TextColor.fromLegacyFormat(ChatFormatting.RED))
+            .withClickEvent(ClickEvent.RunCommand(command))
+            .withHoverEvent(HoverEvent.ShowText(Translator.tr("interaction.meta.command.delete.confirm.hover", command)!!))
+    )
 }
 
 private fun runStartSelectForModify(context: CommandContext<CommandSourceStack>): Int {
@@ -1034,6 +1108,15 @@ private fun runCreateSubSpace(context: CommandContext<CommandSourceStack>): Int 
     val subSpaceName = context.getArgument("subSpaceName", String::class.java)
     val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, player) ?: return 0 }
     return onSubSpaceCreationFromSelection(player, region, scope, subSpaceName, shapeType)
+}
+
+private fun runConfirmDeleteSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    val subSpaceName = context.getArgument("subSpaceName", String::class.java)
+    val command = "/imyvmWorldGeo subspace delete ${commandArgument(regionIdentifier)} ${commandArgument(subSpaceName)} confirm"
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.delete.confirm.subspace", subSpaceName, regionIdentifier)!!)
+    player.sendSystemMessage(confirmDeleteButton(command))
+    return 1
 }
 
 private fun runDeleteSubSpace(context: CommandContext<CommandSourceStack>): Int {

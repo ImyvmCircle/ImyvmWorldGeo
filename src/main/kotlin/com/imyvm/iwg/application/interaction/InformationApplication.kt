@@ -5,6 +5,12 @@ import com.imyvm.iwg.application.selection.display.displayRegionScopeBoundariesF
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.util.text.Translator
+import net.minecraft.ChatFormatting
+import net.minecraft.network.chat.ClickEvent
+import net.minecraft.network.chat.Component
+import net.minecraft.network.chat.HoverEvent
+import net.minecraft.network.chat.Style
+import net.minecraft.network.chat.TextColor
 import net.minecraft.server.level.ServerPlayer
 
 fun onQueryRegion(player: ServerPlayer, region: Region, isApi: Boolean) : Int{
@@ -53,14 +59,16 @@ fun onToggleActionBar(player: ServerPlayer): Int {
     return 1
 }
 
-fun onHelp(player: ServerPlayer): Int {
-    val helpOrder = listOf(
-        "header",
+private const val HELP_PAGE_SIZE = 10
 
+fun onHelp(player: ServerPlayer, pageRaw: String? = null): Int {
+    val helpOrder = listOf(
         // Selection
         "selection.start",
         "selection.stop",
         "selection.reset",
+        "selection.shape",
+        "selection.modify_scope",
 
         // Region
         "region.create",
@@ -69,8 +77,10 @@ fun onHelp(player: ServerPlayer): Int {
         "region.merge",
 
         // Scopes
-        "scope.add",
-        "scope.modify",
+        "scope.select",
+        "scope.create",
+        "scope.replace_shape",
+        "scope.rename",
         "scope.delete",
         "scope.transfer",
 
@@ -122,9 +132,42 @@ fun onHelp(player: ServerPlayer): Int {
         "dynmap.toggle_scope"
     )
 
-    Translator.trBase("interaction.meta.command.help", helpOrder).forEach { line ->
+    val totalPages = ((helpOrder.size + HELP_PAGE_SIZE - 1) / HELP_PAGE_SIZE).coerceAtLeast(1)
+    val page = (pageRaw?.toIntOrNull() ?: 1).coerceIn(1, totalPages)
+    val pageKeys = helpOrder.drop((page - 1) * HELP_PAGE_SIZE).take(HELP_PAGE_SIZE)
+
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.help.header")!!)
+    player.sendSystemMessage(Translator.tr("interaction.meta.command.help.page", page, totalPages)!!)
+    Translator.trBase("interaction.meta.command.help", pageKeys).forEach { line ->
         player.sendSystemMessage(line)
     }
+    player.sendSystemMessage(buildHelpNavigation(page, totalPages))
 
     return 1
+}
+
+private fun buildHelpNavigation(page: Int, totalPages: Int): Component {
+    val message = Component.literal("")
+    if (page > 1) {
+        message.append(helpButton("interaction.meta.command.help.previous", page - 1))
+    } else {
+        message.append(Translator.tr("interaction.meta.command.help.previous.disabled")!!)
+    }
+    message.append(Component.literal(" "))
+    if (page < totalPages) {
+        message.append(helpButton("interaction.meta.command.help.next", page + 1))
+    } else {
+        message.append(Translator.tr("interaction.meta.command.help.next.disabled")!!)
+    }
+    return message
+}
+
+private fun helpButton(key: String, page: Int): Component {
+    val command = "/imyvmWorldGeo help $page"
+    return Translator.tr(key)!!.copy().setStyle(
+        Style.EMPTY
+            .withColor(TextColor.fromLegacyFormat(ChatFormatting.YELLOW))
+            .withClickEvent(ClickEvent.RunCommand(command))
+            .withHoverEvent(HoverEvent.ShowText(Translator.tr("interaction.meta.command.help.hover", command)!!))
+    )
 }
