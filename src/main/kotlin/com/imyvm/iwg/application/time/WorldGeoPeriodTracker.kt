@@ -4,11 +4,13 @@ import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.NaturalPeriodTransition
 import com.imyvm.iwg.infra.PeriodProcessingStore
+import com.imyvm.iwg.infra.TestPeriodModeStore
 import java.time.Clock
 
 object WorldGeoPeriodTracker {
     private val callbacks = mutableListOf<(NaturalPeriodTransition) -> Unit>()
-    private var lastPeriodIds: Map<NaturalPeriodKind, String>? = null
+    private var lastProductionPeriodIds: Map<NaturalPeriodKind, String>? = null
+    private var lastTestPeriodIds: Map<NaturalPeriodKind, String>? = null
 
     fun registerCallback(callback: (NaturalPeriodTransition) -> Unit) {
         callbacks.add(callback)
@@ -23,10 +25,41 @@ object WorldGeoPeriodTracker {
         return transitions.size
     }
 
+    fun resumeNaturalWithoutBackfill(clock: Clock = Clock.systemUTC()) {
+        val current = WorldGeoTimeService.naturalPeriodIds(clock)
+        lastTestPeriodIds = null
+        lastProductionPeriodIds = current
+        PeriodProcessingStore.replaceProcessedPeriodIds(current)
+    }
+
     fun process(clock: Clock = Clock.systemUTC()) {
-        val current = currentPeriodIds(clock)
-        val previous = lastPeriodIds ?: PeriodProcessingStore.getProcessedPeriodIds().takeIf { it.isNotEmpty() }
-        lastPeriodIds = current
+        val hadTestMode = TestPeriodModeStore.currentState() != null
+        val testState = TestPeriodModeService.activeState(clock)
+        if (testState != null) {
+            val current = TestPeriodModeService.currentPeriodIds(clock) ?: return
+            val previous = lastTestPeriodIds ?: TestPeriodModeStore.getProcessedPeriodIds().takeIf { it.isNotEmpty() }
+            lastTestPeriodIds = current
+            lastProductionPeriodIds = WorldGeoTimeService.naturalPeriodIds(clock)
+            if (previous == null) {
+                TestPeriodModeStore.replaceProcessedPeriodIds(current)
+                return
+            }
+            val unixMillis = clock.millis()
+            for ((kind, currentId) in current) {
+                val previousId = previous[kind] ?: continue
+                WorldGeoTimeService.missedPeriodTransitions(kind, previousId, currentId, unixMillis).forEach(::emit)
+            }
+            TestPeriodModeStore.replaceProcessedPeriodIds(current)
+            return
+        }
+        val current = WorldGeoTimeService.naturalPeriodIds(clock)
+        if (hadTestMode) {
+            resumeNaturalWithoutBackfill(clock)
+            TestPeriodModeStore.clear()
+            return
+        }
+        val previous = lastProductionPeriodIds ?: PeriodProcessingStore.getProcessedPeriodIds().takeIf { it.isNotEmpty() }
+        lastProductionPeriodIds = current
         if (previous == null) {
             PeriodProcessingStore.replaceProcessedPeriodIds(current)
             return
@@ -40,7 +73,8 @@ object WorldGeoPeriodTracker {
     }
 
     internal fun resetForTest() {
-        lastPeriodIds = null
+        lastProductionPeriodIds = null
+        lastTestPeriodIds = null
         callbacks.clear()
     }
 

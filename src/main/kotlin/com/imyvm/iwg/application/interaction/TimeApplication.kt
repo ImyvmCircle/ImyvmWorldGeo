@@ -2,7 +2,7 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.application.time.WorldGeoTimeService
-import com.imyvm.iwg.application.time.WorldGeoTestPeriodTracker
+import com.imyvm.iwg.application.time.TestPeriodModeService
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -51,38 +51,50 @@ fun onDebugPeriodEmit(player: ServerPlayer, periodKindName: String, previousId: 
 }
 
 
-fun onDebugTestPeriodStatus(player: ServerPlayer): Int {
-    val ids = WorldGeoTestPeriodTracker.status()
-    player.sendSystemMessage(
-        Translator.tr(
-            "interaction.meta.debug.test_period.status",
-            ids[NaturalPeriodKind.HOUR] ?: "-",
-            ids[NaturalPeriodKind.DAY] ?: "-",
-            ids[NaturalPeriodKind.WEEK] ?: "-",
-            ids[NaturalPeriodKind.MONTH] ?: "-"
-        )!!
-    )
-    return 1
-}
 
-fun onDebugTestPeriodReset(player: ServerPlayer): Int {
-    WorldGeoTestPeriodTracker.reset()
-    player.sendSystemMessage(Translator.tr("interaction.meta.debug.test_period.reset")!!)
-    return 1
-}
-
-fun onDebugTestPeriodTick(player: ServerPlayer): Int {
-    val count = WorldGeoTestPeriodTracker.process()
-    player.sendSystemMessage(Translator.tr("interaction.meta.debug.test_period.tick", count)!!)
-    return count
-}
-
-fun onDebugTestPeriodEmit(player: ServerPlayer, periodKindName: String, previousId: String, currentId: String): Int {
-    val periodKind = runCatching { enumValueOf<NaturalPeriodKind>(periodKindName.uppercase()) }.getOrNull() ?: run {
-        player.sendSystemMessage(Translator.tr("interaction.meta.debug.period.invalid_kind", periodKindName)!!)
+fun onDebugTestPeriodStart(player: ServerPlayer, weekCountRaw: String?): Int {
+    val weekCount = weekCountRaw?.toIntOrNull() ?: TestPeriodModeService.DEFAULT_WEEK_COUNT
+    if (weekCount <= 0) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.test_period.invalid_weeks", weekCountRaw ?: "")!!)
         return 0
     }
-    val count = WorldGeoTestPeriodTracker.emitMissedForDebug(periodKind, previousId, currentId)
-    player.sendSystemMessage(Translator.tr("interaction.meta.debug.test_period.emit", periodKind.name, previousId, currentId, count)!!)
-    return count
+    val status = TestPeriodModeService.start(weekCount)
+    sendTestPeriodStatus(player, "interaction.meta.debug.test_period.started", status)
+    return 1
+}
+
+fun onDebugTestPeriodStop(player: ServerPlayer): Int {
+    TestPeriodModeService.stop()
+    WorldGeoPeriodTracker.resumeNaturalWithoutBackfill()
+    player.sendSystemMessage(Translator.tr("interaction.meta.debug.test_period.stopped")!!)
+    return 1
+}
+
+fun onDebugTestPeriodStatus(player: ServerPlayer): Int {
+    val status = TestPeriodModeService.status()
+    if (!status.active) {
+        player.sendSystemMessage(
+            Translator.tr("interaction.meta.debug.test_period.inactive", status.weekLengthSeconds, TestPeriodModeService.DEFAULT_WEEK_COUNT)!!
+        )
+        return 0
+    }
+    sendTestPeriodStatus(player, "interaction.meta.debug.test_period.status", status)
+    return 1
+}
+
+private fun sendTestPeriodStatus(player: ServerPlayer, key: String, status: com.imyvm.iwg.application.time.TestPeriodModeStatus) {
+    player.sendSystemMessage(
+        Translator.tr(
+            key,
+            status.weekLengthSeconds,
+            status.startedAtMillis?.let { TestPeriodModeService.formatStartedAt(it, WorldGeoTimeService.DEFAULT_ZONE) } ?: "-",
+            TestPeriodModeService.formatDuration(status.remainingMillis),
+            status.currentWeek,
+            status.weekCount,
+            status.periodIds[NaturalPeriodKind.HOUR] ?: "-",
+            status.periodIds[NaturalPeriodKind.DAY] ?: "-",
+            status.periodIds[NaturalPeriodKind.WEEK] ?: "-",
+            status.periodIds[NaturalPeriodKind.MONTH] ?: "-"
+        )!!
+    )
 }

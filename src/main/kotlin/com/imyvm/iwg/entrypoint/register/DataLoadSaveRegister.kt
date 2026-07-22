@@ -7,7 +7,7 @@ import com.imyvm.iwg.application.region.permission.clearFlySessionState
 import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.PeriodProcessingStore
 import com.imyvm.iwg.infra.RegionDatabase
-import com.imyvm.iwg.infra.TestPeriodProcessingStore
+import com.imyvm.iwg.infra.TestPeriodModeStore
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.world.level.storage.LevelResource
 import java.nio.file.Path
@@ -20,7 +20,7 @@ fun registerDataLoadSave(){
         saveForShutdown("player region durations") { PlayerRegionEntryExitTracker.flushAllDurations() }
         saveForShutdown("region database") { RegionDatabase.saveForShutdown() }
         saveForShutdown("period processing store") { PeriodProcessingStore.save() }
-        saveForShutdown("test period processing store") { TestPeriodProcessingStore.save() }
+        saveForShutdown("test period processing store") { TestPeriodModeStore.save() }
         saveForShutdown("behavior stats store") { BehaviorStatsStore.save() }
     }
     ServerLifecycleEvents.SERVER_STOPPED.register { _ ->
@@ -40,11 +40,11 @@ internal fun openRegionSession(worldRoot: Path) {
         RegionDatabase.bindSession(worldRoot)
         try {
             PeriodProcessingStore.bindSession(worldRoot)
-            TestPeriodProcessingStore.bindSession(worldRoot)
+            TestPeriodModeStore.bindSession(worldRoot)
             BehaviorStatsStore.bindSession(worldRoot)
         } catch (error: Throwable) {
             PeriodProcessingStore.unbindSession()
-            TestPeriodProcessingStore.unbindSession()
+            TestPeriodModeStore.unbindSession()
             BehaviorStatsStore.unbindSession()
             RegionDatabase.unbindSession()
             throw error
@@ -56,7 +56,7 @@ internal fun closeRegionSession() {
     EffectOverlayService.withScopeLifecycle {
         RegionDatabase.unbindSession()
         PeriodProcessingStore.unbindSession()
-        TestPeriodProcessingStore.unbindSession()
+        TestPeriodModeStore.unbindSession()
         BehaviorStatsStore.unbindSession()
         EffectOverlayService.clearAll()
     }

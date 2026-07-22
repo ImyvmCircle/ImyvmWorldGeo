@@ -20,7 +20,8 @@ private val positiveOptions by lazy { listOf(
     EffectConfig.EFFECT_DURATION_SECONDS,
     SelectionConfig.SELECTION_MAX_POINTS,
     SelectionConfig.SELECTION_DISPLAY_LINE_STEP,
-    SelectionConfig.SELECTION_DISPLAY_PILLAR_STEP
+    SelectionConfig.SELECTION_DISPLAY_PILLAR_STEP,
+    TestPeriodConfig.TEST_WEEK_LENGTH_SECONDS
 ) }
 @Suppress("DEPRECATION")
 private val nonNegativeOptions by lazy { listOf(

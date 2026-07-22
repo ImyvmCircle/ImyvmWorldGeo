@@ -60,6 +60,9 @@ object WorldGeoTimeService {
     }
 
     fun currentNaturalPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
+        TestPeriodModeService.currentPeriodIds(clock) ?: naturalPeriodIds(clock)
+
+    internal fun naturalPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
         naturalPeriodIds(realSnapshot(clock.instant(), DEFAULT_ZONE))
 
     internal fun missedPeriodTransitions(
@@ -69,6 +72,9 @@ object WorldGeoTimeService {
         unixMillis: Long
     ): List<NaturalPeriodTransition> {
         if (previousId == currentId) return emptyList()
+        if (TestPeriodModeService.isTestPeriodId(previousId) || TestPeriodModeService.isTestPeriodId(currentId)) {
+            return TestPeriodModeService.missedPeriodTransitions(kind, previousId, currentId, unixMillis)
+        }
         return runCatching { enumeratePeriodIds(kind, previousId, currentId) }
             .getOrElse { listOf(currentId) }
             .map { nextId -> NaturalPeriodTransition(kind, previousIdFor(kind, previousId, nextId), nextId, unixMillis) }

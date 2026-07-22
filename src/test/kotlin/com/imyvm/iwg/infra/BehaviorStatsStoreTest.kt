@@ -1,8 +1,8 @@
 package com.imyvm.iwg.infra
 
 import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
-import com.imyvm.iwg.application.time.WorldGeoTestPeriodService
-import com.imyvm.iwg.application.time.WorldGeoTestPeriodTracker
+import com.imyvm.iwg.application.time.TestPeriodModeService
+import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
@@ -23,8 +23,8 @@ class BehaviorStatsStoreTest {
     @AfterTest
     fun tearDown() {
         WorldGeoBehaviorEventBus.clearForTest()
-        WorldGeoTestPeriodTracker.resetForTest()
-        TestPeriodProcessingStore.unbindSession()
+        WorldGeoPeriodTracker.resetForTest()
+        TestPeriodModeStore.unbindSession()
         BehaviorStatsStore.clearForTest()
     }
 
@@ -65,21 +65,21 @@ class BehaviorStatsStoreTest {
     }
 
     @Test
-    fun `records independent test period stats after test tracker initializes`() = withTempDirectory { directory ->
-        TestPeriodProcessingStore.bindSession(directory)
+    fun `records behavior stats against active test mode periods`() = withTempDirectory { directory ->
+        TestPeriodModeStore.bindSession(directory)
         BehaviorStatsStore.bindSession(directory)
+        val clock = java.time.Clock.fixed(java.time.Instant.ofEpochMilli(event(WorldGeoBehaviorType.DEBUG_TEST, "id").unixMillis), java.time.ZoneOffset.UTC)
 
-        val testWeekId = WorldGeoTestPeriodService.periodIds(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "id").unixMillis)[NaturalPeriodKind.WEEK]!!
         BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "before"))
         assertEquals(
             0,
-            BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.WEEK, testWeekId, regionId = 7)).size
+            BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.WEEK, "test:week:0", regionId = 7)).size
         )
 
-        WorldGeoTestPeriodTracker.process(java.time.Clock.fixed(java.time.Instant.ofEpochMilli(0L), java.time.ZoneOffset.UTC))
+        TestPeriodModeService.start(clock = clock)
         BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "after"))
 
-        val entries = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.WEEK, testWeekId, regionId = 7))
+        val entries = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.WEEK, "test:week:0", regionId = 7))
         assertEquals(1, entries.size)
         assertEquals("after", entries.single().objectId)
     }
