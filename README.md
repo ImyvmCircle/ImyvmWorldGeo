@@ -1,34 +1,16 @@
-# IMYVMWorldGeo 26.2 1.5.2
+# IMYVMWorldGeo 26.2 1.5.4
 
 ## Changelog
 
 ### 1.5.x
 
-This major version (1.5.x) extends RPG setting items and infrastructure APIs.
+The 1.5.x line expands WorldGeo from region settings into a neutral infrastructure layer for addons. It adds RPG permission and rule keys, namespaced extension settings, stable Scope IDs, ownership history, SubSpace, neutral time and behavior events, periodic statistics, and menu-facing space snapshots.
 
-#### 1.5.2
+#### 1.5.4
 
-- chore: update the Minecraft and Fabric target to 26.2.
-
-#### 1.5.1
-
-- feat: add `/imyvmWorldGeo stats` and RegionDataApi natural-stat queries for structure counts, average local difficulty, surface block counts, and biome distribution inside loaded chunks of a region.
-- feat: add persistent region player statistics for entry count, stay duration, death count, block place count, and block break count, queryable through `/imyvmWorldGeo stats <regionIdentifier> players` and RegionDataApi.
-- feat: add stable `ScopeId` (Long-encoded) carrying scope creation time and the founded-in region numberID; persisted alongside each `GeoScope` so scope identity survives renames and cross-region transfers.
-- feat: add scope ownership history recording each cross-region scope transfer; queryable through `RegionDataApi.getScopeOwnershipHistory(scopeId)`.
-- feat: add `ScopeTransitionEvent` and `RegionTransitionEvent` for downstream listeners to react to player crossings without duplicating the entry/exit tracker.
-- feat: add `EffectOverlayService` and `RegionDataApi.applyTimedEffectOverlay / clearTimedEffectOverlay / queryOverlay` for short-lived scope-scoped effect overlays merged into the effect resolution chain at priority `personal > overlay > scope global > region global`.
-- feat: add `RegionDataApi.resolveScopeAtEntity`, `getEffectiveEffectsForScope`, and `getEffectiveRulesForScope` for scope-level effect/rule queries that do not require a player UUID.
-- feat: reserve `idMark = 1` for ImyvmWorldGeo-Adventure regions and `idMark = 2` for ImyvmCommunity regions, enabling addon-side mutual exclusion through `parseMarkFromRegionId`.
-
-
-#### 1.5.0
-
-- feat: add several RPG permissions for common survival interactions, covering item pickup, bow/crossbow use, vehicle mounting, eating/drinking, and fishing.
-- feat: add RPG rules `RPG_NATURAL_REGEN`, `RPG_FIRE_SPREAD`, and `RPG_HUNGER` for region-based survival pacing control.
-- feat: add namespaced boolean extension permission/rule registration so addon-defined setting keys can be managed through the same setting commands and RegionDataApi without hard-coding them into core enums.
-- lang: use immersive denial messages and restricted-area entry notifications for RPG-restricted areas.
-
+- feat: add typed statistics queries for block deltas, residence time, entity combat, and online or AFK time on top of the persisted behavior statistics store.
+- fix: enumerate every missed natural period on restart so hour, day, week, and month subscribers can backfill skipped settlement cycles without receiving duplicate current-period callbacks.
+- feat: extend space snapshots with dominant-biome hints, entry-message state, map color suggestions, and inline public setting summaries for addon menu lore and detail pages.
 
 ## Introduction
 

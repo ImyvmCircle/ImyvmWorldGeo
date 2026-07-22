@@ -207,8 +207,8 @@ entrypoint `/imyvmWorldGeo debug time` prints the same facts for live-server deb
 identifiers. `RegionDataApi.registerNaturalPeriodTransitionCallback(Consumer<NaturalPeriodTransition>)`
 registers a callback for hour/day/week/month changes detected by the WorldGeo lazy ticker. WorldGeo records
 last processed period IDs in `iwg_periods.json`; after restart, the first lazy tick compares persisted IDs with
-current IDs and emits missed boundary callbacks. Business-level settlement retry queues remain a later V2
-statistics concern.
+current IDs and emits each missed boundary in order. Addons can use the previous/current period pair as their
+idempotency key for backfill settlement.
 
 `RegionDataApi.registerBehaviorEventCallback(Consumer<WorldGeoBehaviorEvent>)` subscribes addons to neutral
 WorldGeo behavior facts. `RegionDataApi.getRecentBehaviorEvents()` and `RegionDataApi.getRecentBehaviorEvents(Int)` return the latest in-memory debug window.
@@ -218,15 +218,18 @@ interaction, item use, Region/Scope/SubSpace enter and exit, and the server-oper
 
 `RegionDataApi.queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and the explicit-parameter overload return
 persisted neutral behavior counts from `iwg_behavior_stats.json`. WorldGeo aggregates behavior facts by natural
-hour/day/week/month, behavior type, Region, Scope, SubSpace, player UUID, and object ID. The server-operator
-command `/imyvmWorldGeo debug behavior stats` shows current-hour behavior totals at the executing player''s current
-space for in-game validation. The stats store uses the server data session, strict malformed-input rejection, and
-atomic writes matching the Region database persistence model.
+hour/day/week/month, behavior type, Region, Scope, SubSpace, player UUID, and object ID. Version 26.2-1.5.4 adds
+`queryBlockDelta`, `queryResidence`, `queryEntityCombat`, and `queryOnlineTime` as typed read models over the same
+store. The typed results expose placed and broken block totals, net player contribution, chunk residence millis,
+combat counts, and online or AFK millis without adding Community or Adventure semantics to WorldGeo. The
+server-operator command `/imyvmWorldGeo debug behavior stats` shows current-hour behavior totals at the executing
+player's current space for in-game validation. The stats store uses the server data session, strict malformed-input
+rejection, and atomic writes matching the Region database persistence model.
 
 
 ## V3 space support API
 
-`RegionDataApi.getRegionSpaceSnapshot`, `getScopeSpaceSnapshot`, and `getSubSpaceSnapshot` return immutable neutral snapshots for Region, GeoScope, and SubSpace. Snapshots include identity, name, dimension when the space has one, area, parent links, child counts, SubSpace tags, and a WorldGeo stats-version marker. They do not expose mutable live domain objects.
+`RegionDataApi.getRegionSpaceSnapshot`, `getScopeSpaceSnapshot`, and `getSubSpaceSnapshot` return immutable neutral snapshots for Region, GeoScope, and SubSpace. Snapshots include identity, name, dimension when the space has one, area, parent links, child counts, SubSpace tags, entry-message state, a dominant-biome hint when present, map color suggestion, inline public setting summaries, and a WorldGeo stats-version marker. They do not expose mutable live domain objects.
 
 `RegionDataApi.listRegionSettingSummaries`, `listScopeSettingSummaries`, and `listSubSpaceSettingSummaries` use `WorldGeoSettingVisibility`. WorldGeo defines only `PUBLIC` and `OP_DEBUG`; Community, Adventure, or other addons must map their own manager roles before choosing one of those visibility levels. `PUBLIC` excludes personal settings. `OP_DEBUG` returns complete per-space setting summaries for server-operator diagnostics.
 
