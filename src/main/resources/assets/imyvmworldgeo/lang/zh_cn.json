@@ -511,5 +511,15 @@
   "interaction.meta.debug.test_period.status": "&6测试周期模式已启用&r\n&7配置：&e{0}&7=&e{1}&7秒；默认周数=&e{2}&r\n&7虚拟长度：小时=&e{3}&7秒 日=&e{4}&7秒 周=&e{5}&7秒 月=&e{6}&7秒&r\n&7开始时间：&e{7}&r\n&7剩余时间：&e{8}&r\n&7当前测试周：&e{9}&7/&e{10}&r\n&7周期ID：HOUR=&e{11}&7 DAY=&e{12}&7 WEEK=&e{13}&7 MONTH=&e{14}&r",
   "interaction.meta.debug.test_period.inactive": "&7测试周期模式未启用。配置的测试周长度：&e{0}&7秒。默认运行长度：&e{1}&7周。",
   "interaction.meta.debug.test_period.stopped": "&a已停止测试周期模式。真实自然周期结果重新生效。",
-  "interaction.meta.debug.test_period.invalid_weeks": "&c无效测试周期周数：&e{0}&c。请使用正整数。"
+  "interaction.meta.debug.test_period.invalid_weeks": "&c无效测试周期周数：&e{0}&c。请使用正整数。",
+  "interaction.meta.debug.behavior.stats.detail_hint": "&7详情：&e/imyvmWorldGeo debug behavior stats detail [page]",
+  "interaction.meta.debug.behavior.typed.detail_hint": "&7详情：&e/imyvmWorldGeo debug behavior typedStats {0} {1} detail [page]",
+  "interaction.meta.debug.behavior.detail.empty": "&7当前位置在周期 &e{0}:{1}&7 没有行为明细。",
+  "interaction.meta.debug.behavior.stats.detail.header": "&6原始行为明细&r 周期=&e{0}:{1}&r 页码=&e{2}&7/&e{3}&r 条目=&e{4}",
+  "interaction.meta.debug.behavior.stats.detail.line": "&7- &e{0}&7 玩家=&b{1}&7 对象=&f{2}&7 目标=&f{3}&7 次数=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.header": "&6类型化行为明细&r 周期=&e{0}:{1}&r 页码=&e{2}&7/&e{3}&r 条目=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.block": "&7- 方块 玩家=&b{0}&7 方块=&f{1}&7 放置=&e{2}&7 破坏=&e{3}&7 净值=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.combat": "&7- 战斗 玩家=&b{0}&7 对象=&f{1}&7 目标=&f{2}&7 伤害=&e{3}&7 击杀=&e{4}&7 死亡=&e{5}&7 被伤害=&e{6}",
+  "interaction.meta.debug.behavior.typed.detail.residence": "&7- 栖息 区块=&b{0}&7 毫秒=&e{1}",
+  "interaction.meta.debug.behavior.typed.detail.online": "&7- 在线 玩家=&b{0}&7 总毫秒=&e{1}&7 AFK毫秒=&e{2}&7 非AFK毫秒=&e{3}"
 }

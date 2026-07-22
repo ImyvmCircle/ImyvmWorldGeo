@@ -623,11 +623,35 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                         literal("behavior")
                             .then(literal("emit").executes { runDebugBehaviorEmit(it) })
                             .then(literal("recent").executes { runDebugBehaviorRecent(it) })
-                            .then(literal("stats").executes { runDebugBehaviorStats(it) })
+                            .then(
+                                literal("stats")
+                                    .executes { runDebugBehaviorStats(it) }
+                                    .then(
+                                        literal("detail")
+                                            .executes { runDebugBehaviorStatsDetail(it) }
+                                            .then(argument("page", StringArgumentType.word()).executes { runDebugBehaviorStatsDetail(it) })
+                                    )
+                            )
                             .then(
                                 literal("typedStats")
                                     .executes { runDebugBehaviorTypedStats(it) }
-                                    .then(argument("periodKind", StringArgumentType.word()).then(argument("periodId", StringArgumentType.string()).executes { runDebugBehaviorTypedStatsForPeriod(it) }))
+                                    .then(
+                                        literal("detail")
+                                            .executes { runDebugBehaviorTypedStatsDetail(it) }
+                                            .then(argument("page", StringArgumentType.word()).executes { runDebugBehaviorTypedStatsDetail(it) })
+                                    )
+                                    .then(
+                                        argument("periodKind", StringArgumentType.word())
+                                            .then(
+                                                argument("periodId", StringArgumentType.string())
+                                                    .executes { runDebugBehaviorTypedStatsForPeriod(it) }
+                                                    .then(
+                                                        literal("detail")
+                                                            .executes { runDebugBehaviorTypedStatsForPeriodDetail(it) }
+                                                            .then(argument("page", StringArgumentType.word()).executes { runDebugBehaviorTypedStatsForPeriodDetail(it) })
+                                                    )
+                                            )
+                                    )
                             )
                             .then(
                                 literal("seed")
@@ -1202,9 +1226,19 @@ private fun runDebugBehaviorStats(context: CommandContext<CommandSourceStack>): 
     return onDebugBehaviorStats(player)
 }
 
+private fun runDebugBehaviorStatsDetail(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugBehaviorStatsDetail(player, getOptionalArgument(context, "page"))
+}
+
 private fun runDebugBehaviorTypedStats(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
     return onDebugBehaviorTypedStats(player)
+}
+
+private fun runDebugBehaviorTypedStatsDetail(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugBehaviorTypedStatsDetail(player, null, null, getOptionalArgument(context, "page"))
 }
 
 private fun runDebugBehaviorTypedStatsForPeriod(context: CommandContext<CommandSourceStack>): Int {
@@ -1212,6 +1246,13 @@ private fun runDebugBehaviorTypedStatsForPeriod(context: CommandContext<CommandS
     val periodKind = context.getArgument("periodKind", String::class.java)
     val periodId = context.getArgument("periodId", String::class.java)
     return onDebugBehaviorTypedStats(player, periodKind, periodId)
+}
+
+private fun runDebugBehaviorTypedStatsForPeriodDetail(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val periodKind = context.getArgument("periodKind", String::class.java)
+    val periodId = context.getArgument("periodId", String::class.java)
+    return onDebugBehaviorTypedStatsDetail(player, periodKind, periodId, getOptionalArgument(context, "page"))
 }
 
 private fun runDebugBehaviorSeed(context: CommandContext<CommandSourceStack>): Int {

@@ -511,5 +511,15 @@
   "interaction.meta.command.help.scope.create": "§d/imyvmWorldGeo scope create <§bregionIdentifier§d> [§bscopeName§d]\n  §fCreate a new scope in the region from the current selection. Shape is inferred from selection state.\n  §7Aliases: /imyvmWorldGeo scope add, /imyvmWorldGeo addScope.",
   "interaction.meta.command.help.scope.select": "§d/imyvmWorldGeo scope select <§bregionIdentifier§d> <§bscopeName§d>\n  §fStart a scope-modification selection, matching the subspace select format.\n  §7Legacy alias: /imyvmWorldGeo select modifyScope.",
   "interaction.meta.command.help.scope.replace_shape": "§d/imyvmWorldGeo scope replaceShape <§bregionIdentifier§d> <§bscopeName§d>\n  §fReplace or adjust the scope geometry from the current modification selection.\n  §7Aliases: /imyvmWorldGeo scope modify, /imyvmWorldGeo modifyScope.",
-  "interaction.meta.command.help.scope.rename": "§d/imyvmWorldGeo scope rename <§bregionIdentifier§d> <§bscopeName§d> <§bnewName§d>\n  §fRename a scope.\n  §7Legacy alias: /imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> <newName>."
+  "interaction.meta.command.help.scope.rename": "§d/imyvmWorldGeo scope rename <§bregionIdentifier§d> <§bscopeName§d> <§bnewName§d>\n  §fRename a scope.\n  §7Legacy alias: /imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> <newName>.",
+  "interaction.meta.debug.behavior.stats.detail_hint": "&7Details: &e/imyvmWorldGeo debug behavior stats detail [page]",
+  "interaction.meta.debug.behavior.typed.detail_hint": "&7Details: &e/imyvmWorldGeo debug behavior typedStats {0} {1} detail [page]",
+  "interaction.meta.debug.behavior.detail.empty": "&7No behavior detail entries for period &e{0}:{1}&7 at the current space.",
+  "interaction.meta.debug.behavior.stats.detail.header": "&6Raw behavior details&r period=&e{0}:{1}&r page=&e{2}&7/&e{3}&r entries=&e{4}",
+  "interaction.meta.debug.behavior.stats.detail.line": "&7- &e{0}&7 player=&b{1}&7 object=&f{2}&7 target=&f{3}&7 count=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.header": "&6Typed behavior details&r period=&e{0}:{1}&r page=&e{2}&7/&e{3}&r entries=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.block": "&7- block player=&b{0}&7 block=&f{1}&7 placed=&e{2}&7 broken=&e{3}&7 net=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.combat": "&7- combat player=&b{0}&7 object=&f{1}&7 target=&f{2}&7 damage=&e{3}&7 kills=&e{4}&7 deaths=&e{5}&7 damaged=&e{6}",
+  "interaction.meta.debug.behavior.typed.detail.residence": "&7- residence chunk=&b{0}&7 millis=&e{1}",
+  "interaction.meta.debug.behavior.typed.detail.online": "&7- online player=&b{0}&7 totalMs=&e{1}&7 afkMs=&e{2}&7 nonAfkMs=&e{3}"
 }
