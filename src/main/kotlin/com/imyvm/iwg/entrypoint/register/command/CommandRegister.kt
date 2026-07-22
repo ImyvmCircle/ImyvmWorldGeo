@@ -592,6 +592,13 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                         literal("period")
                             .then(literal("emit").then(argument("periodKind", StringArgumentType.word()).then(argument("previousId", StringArgumentType.string()).then(argument("currentId", StringArgumentType.string()).executes { runDebugPeriodEmit(it) }))))
                     )
+                    .then(
+                        literal("testPeriod")
+                            .then(literal("status").executes { runDebugTestPeriodStatus(it) })
+                            .then(literal("reset").executes { runDebugTestPeriodReset(it) })
+                            .then(literal("tick").executes { runDebugTestPeriodTick(it) })
+                            .then(literal("emit").then(argument("periodKind", StringArgumentType.word()).then(argument("previousId", StringArgumentType.string()).then(argument("currentId", StringArgumentType.string()).executes { runDebugTestPeriodEmit(it) }))))
+                    )
                     .then(literal("validateSubspaces").executes { runValidateSubSpaces(it) })
                     .then(
                         literal("spaceSnapshot")
@@ -1135,6 +1142,29 @@ private fun runDebugPeriodEmit(context: CommandContext<CommandSourceStack>): Int
     val previousId = context.getArgument("previousId", String::class.java)
     val currentId = context.getArgument("currentId", String::class.java)
     return onDebugPeriodEmit(player, periodKind, previousId, currentId)
+}
+
+private fun runDebugTestPeriodStatus(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugTestPeriodStatus(player)
+}
+
+private fun runDebugTestPeriodReset(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugTestPeriodReset(player)
+}
+
+private fun runDebugTestPeriodTick(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    return onDebugTestPeriodTick(player)
+}
+
+private fun runDebugTestPeriodEmit(context: CommandContext<CommandSourceStack>): Int {
+    val player = context.source.player ?: return 0
+    val periodKind = context.getArgument("periodKind", String::class.java)
+    val previousId = context.getArgument("previousId", String::class.java)
+    val currentId = context.getArgument("currentId", String::class.java)
+    return onDebugTestPeriodEmit(player, periodKind, previousId, currentId)
 }
 
 private fun runValidateSubSpaces(context: CommandContext<CommandSourceStack>): Int {

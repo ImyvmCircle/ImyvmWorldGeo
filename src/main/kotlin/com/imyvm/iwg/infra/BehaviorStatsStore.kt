@@ -5,6 +5,7 @@ import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.time.WorldGeoTimeService
+import com.imyvm.iwg.application.time.WorldGeoTestPeriodTracker
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
@@ -59,7 +60,8 @@ object BehaviorStatsStore {
 
     private fun record(event: WorldGeoBehaviorEvent, count: Long) {
         val regionId = event.regionId ?: return
-        val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC))
+        val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC)) +
+            WorldGeoTestPeriodTracker.activePeriodIdsForEvent(event.unixMillis)
         for ((periodKind, periodId) in periodIds) {
             val key = BehaviorStatsKey(
                 periodKind = periodKind,
