@@ -8,6 +8,10 @@ The 1.5.x line expands WorldGeo from region settings into a neutral infrastructu
 
 #### 1.5.5
 
+- feat: land the V1-V3 WorldGeo infrastructure path for SubSpace, neutral time, behavior events, periodic stats, geography snapshots, setting summaries, space messages, and OP debug views.
+- feat: add typed statistics queries for block deltas, residence time, entity combat, and online or AFK time on top of the persisted behavior statistics store.
+- feat: extend space snapshots with dominant-biome hints, entry-message state, map color suggestions, shape type, copied shape parameters, and inline public setting summaries for addon menu lore and detail pages.
+- fix: enumerate every missed natural period on restart so hour, day, week, month, and year subscribers can backfill skipped settlement cycles without receiving duplicate current-period callbacks.
 - feat: add `listPlayersInRegion`/`Scope`/`SubSpace` to `RegionDataApi` with cache and instant-resolution fallback.
 - feat: add `toggleLocationActionBar`, `setLocationActionBarVisible`, `isLocationActionBarVisible` to `PlayerInteractionApi`.
 - feat: add messageKey+args overloads for `sendRegionSpaceMessage`, `sendScopeSpaceMessage`, `sendSubSpaceMessage`.
@@ -16,12 +20,6 @@ The 1.5.x line expands WorldGeo from region settings into a neutral infrastructu
 - feat: add `eventId`, `quantity`, and `source` fields to `WorldGeoBehaviorEvent` with safe defaults.
 - feat: add `YEAR` to `NaturalPeriodKind` with full enumeration, backfill, and test-mode support.
 - feat: add `getRealTimeSnapshot(zoneId)` to `RegionDataApi` for configurable timezone queries.
-
-#### 1.5.4
-
-- feat: add typed statistics queries for block deltas, residence time, entity combat, and online or AFK time on top of the persisted behavior statistics store.
-- fix: enumerate every missed natural period on restart so hour, day, week, and month subscribers can backfill skipped settlement cycles without receiving duplicate current-period callbacks.
-- feat: extend space snapshots with dominant-biome hints, entry-message state, map color suggestions, and inline public setting summaries for addon menu lore and detail pages.
 
 ## Introduction
 
@@ -34,7 +32,7 @@ This mod is **server-side only** and requires the following environment:
 
 - **Minecraft Version:** 26.2
 - **Fabric Loader Version:** 0.19.3 (or compatible with Minecraft 26.2)
-- **Java Version:** 25  
+- **Java Version:** 25
 - **IMYVM Hoki Mod Version:** 1.1.6
 
 **Optional:**
@@ -264,8 +262,8 @@ Each region and each scope has a `showOnDynmap` flag (default: `true`). The regi
 
 ## Usage
 
-- This mod provides region and scope management commands for server. All commands are executed on the server side and require the player to have the appropriate permissions.  
-- For extensions, apis are provided in `src/main/kotlin/com/imyvm/iwg/inter/api` folder.
+- This mod provides region and scope management commands for server. All commands are executed on the server side and require the player to have the appropriate permissions.
+- For extensions, APIs are exposed from package `com.imyvm.iwg.inter.api`; source files are under `src/main/kotlin/com/imyvm/iwg/entrypoint/api`.
 
 > For detailed commands and API usage, see the `Command` and `API` sections in this README.
 
@@ -279,379 +277,231 @@ which allows extension mods to enrich and build features based on defined region
 
 ### Player Interaction API
 
-Handles player-triggered actions related to regions and their scopes.
+`PlayerInteractionApi` handles player-driven mutations and player-facing utility actions. These methods must be called with canonical `Region`, `GeoScope`, and `SubSpace` objects from `RegionDatabase` or `RegionDataApi`; detached copies are rejected by the application boundary.
 
-#### Functions:
-- `startSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null)`  
-  Starts selection mode for the player. Optionally sets a shape hint.
+Selection and shape editing:
 
-- `stopSelection(player: ServerPlayerEntity)`  
-  Stops selection mode for the player.
+- `startSelection(player: ServerPlayer, shapeType: GeoShapeType? = null)` starts a normal creation selection.
+- `stopSelection(player: ServerPlayer)` stops selection mode.
+- `resetSelection(player: ServerPlayer, shapeType: GeoShapeType? = null)` clears selected points and optionally updates the shape hint.
+- `setSelectionShape(player: ServerPlayer, shapeType: GeoShapeType)` changes the shape hint for the current creation selection.
+- `startSelectionForModify(player: ServerPlayer, scope: GeoScope)` starts selection mode locked to one live Scope.
+- `modifyScope(player: ServerPlayer, region: Region, scopeName: String)` applies the current modification selection to a Scope.
+- `replaceScopeShape(player: ServerPlayer, region: Region, scope: GeoScope, newShape: GeoShape)` replaces a live Scope shape after ownership, size, intersection, persistence, and SubSpace-containment checks.
 
-- `resetSelection(player: ServerPlayerEntity, shapeType: GeoShapeType? = null)`  
-  Resets the player's selected positions. Optionally updates the shape hint.
+Region and Scope mutations:
 
-- `setSelectionShape(player: ServerPlayerEntity, shapeType: GeoShapeType)`  
-  Changes the shape hint for the current selection. Fails if in scope-modification mode.
+- `createRegion(player: ServerPlayer, name: String?, idMark: Int = 0)` creates a Region from the player's selection.
+- `createAndGetRegion(player: ServerPlayer, name: String?, idMark: Int = 0): Region?` creates a Region from selection and returns it.
+- `createRegion(player: ServerPlayer, name: String, idMark: Int = 0, shape: GeoShape): Int` creates a Region directly from an immutable shape.
+- `createAndGetRegion(player: ServerPlayer, name: String, idMark: Int = 0, shape: GeoShape): Region?` creates and returns a Region directly from an immutable shape.
+- `deleteRegion(player: ServerPlayer, region: Region)` deletes a Region after persistence succeeds.
+- `renameRegion(player: ServerPlayer, region: Region, newName: String)` renames a Region.
+- `addScope(player: ServerPlayer, region: Region, name: String?)` creates a Scope from the player's selection.
+- `createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String?): Pair<Region, GeoScope>?` creates a Scope from selection and returns it with its Region.
+- `addScope(player: ServerPlayer, region: Region, name: String, shape: GeoShape): Int` creates a Scope directly from an immutable shape.
+- `createAndGetRegionScopePair(player: ServerPlayer, region: Region, name: String, shape: GeoShape): Pair<Region, GeoScope>?` creates and returns a Scope directly from an immutable shape.
+- `deleteScope(player: ServerPlayer, region: Region, scopeName: String)` deletes a Scope by name.
+- `renameScope(player: ServerPlayer, region: Region, oldName: String, newName: String)` renames a Scope.
+- `transferScope(player: ServerPlayer, sourceRegion: Region, scopeName: String, targetRegion: Region)` transfers a Scope between Regions, with automatic name suffixing on target conflicts.
+- `mergeRegion(player: ServerPlayer, sourceRegion: Region, targetRegion: Region)` moves all Scopes into the target Region and deletes the source Region.
 
-- `startSelectionForModify(player: ServerPlayerEntity, scope: GeoScope)`  
-  Starts selection mode locked to scope-modification for the given scope.
+SubSpace mutations:
 
-- `createRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
-  Creates a region with an optional name, shape, and ID marker. `idMark` must be from `0` to `9`. If shapeTypeName is null, shape is inferred from selection state.
+- `createSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, name: String, shape: GeoShape, entryMessage: String? = null, stringTags: Set<String> = emptySet(), keyedTags: Map<String, String> = emptyMap()): Int` creates a SubSpace under a Scope.
+- `createAndGetSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, name: String, shape: GeoShape, entryMessage: String? = null, stringTags: Set<String> = emptySet(), keyedTags: Map<String, String> = emptyMap()): SubSpace?` creates and returns a SubSpace.
+- `deleteSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int` deletes a SubSpace.
+- `renameSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newName: String): Int` renames a SubSpace.
+- `replaceSubSpaceShape(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newShape: GeoShape): Int` replaces a SubSpace shape after parent containment and sibling conflict checks.
+- `addSubSpaceStringTag`, `removeSubSpaceStringTag`, `putSubSpaceKeyedTag`, and `removeSubSpaceKeyedTag` mutate SubSpace tags and persist or roll back the change.
 
-- `createAndGetRegion(player: ServerPlayerEntity, name: String?, shapeTypeName: String? = null, idMark: Int = 0)`  
-  Creates a region and returns the created region.
+Settings, teleport, and display:
 
-- `deleteRegion(player: ServerPlayerEntity, region: Region)`  
-  Deletes a specified region.
-
-- `renameRegion(player: ServerPlayerEntity, region: Region, newName: String)`  
-  Renames a region.
-
-- `addScope(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?)`  
-  Adds a scope to a region with an optional name and shape.
-
-- `createAndGetRegionScopePair(player: ServerPlayerEntity, region: Region, name: String?, shapeTypeName: String?)`  
-  Creates a scope for a region and returns the region-scope pair.
-
-- `deleteScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
-  Deletes a scope from a region.
-
-- `renameScope(player: ServerPlayerEntity, region: Region, oldName: String, newName: String)`  
-  Renames a scope within a region.
-
-- `transferScope(player: ServerPlayerEntity, sourceRegion: Region, scopeName: String, targetRegion: Region)`  
-  Transfers a scope from one region to another. If a scope with the same name already exists in the target region, the scope is automatically renamed by appending a numeric suffix.
-
-- `mergeRegion(player: ServerPlayerEntity, sourceRegion: Region, targetRegion: Region)`  
-  Merges one region into another: all scopes are moved to the target (with automatic renaming on conflict). The source region's overall settings are discarded. The source region is deleted afterward.
-
-- `addTeleportPoint(player: ServerPlayer, targetRegion: Region, scope: GeoScope, x: Int, y: Int, z: Int)`
-  Adds a teleport point with a given location.
-
-- `addTeleportPoint(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
-  Adds a teleport point at the player's current location.
-
-- `resetTeleportPoint(player: ServerPlayer, region: Region, scope: GeoScope)`
-  Resets the teleport point of a scope.
-
-- `getTeleportPoint(scope: GeoScope)`
-  Retrieves the teleport point of a scope.
-
-- `toggleTeleportPointAccessibility(player: ServerPlayer, region: Region, scope: GeoScope)`
-  Toggles the access permission of a scope's teleport point and persists the change. The scope must belong to the supplied region.
-
-- `teleportPlayerToScope(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
-  Teleports a player only when the scope's teleport point is publicly accessible.
-
-- `teleportPlayerToScopeAsAdministrator(player: ServerPlayer, targetRegion: Region, scope: GeoScope)`
-  Bypasses teleport-point accessibility for administrative use. Ownership, dimension, and physical safety checks still apply.
-
-- `modifyScope(player: ServerPlayerEntity, region: Region, scopeName: String)`  
-  Modifies the properties of a scope.
-
-- `replaceScopeShape(player: ServerPlayerEntity, region: Region, scope: GeoScope, newShape: GeoShape)`
-  Replaces a live scope's geometry with an immutable shape of the same type. The operation validates
-  ownership, configured size limits, and intersections, persists the change, and restores the old
-  shape if saving fails.
-
-- `addSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?, targetPlayerStr: String?)`  
-  Adds a setting to a region.
-
-- `addSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?, targetPlayerStr: String?)`  
-  Adds a setting to a scope within a region.
-
-- `removeSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, targetPlayerStr: String?)`  
-  Removes a setting from a region.
-
-- `removeSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?)`  
-  Removes a setting from a scope within a region.
-
-- `getPermissionValueRegion(player: ServerPlayerEntity, region: Region?, scopeName: String? , targetPlayerNameStr: String?, keyString: String)`
-  Retrieves the permission value of a setting.
-
-- `getRuleValueRegion(region: Region?, keyString: String): Boolean?`
-  Retrieves the explicitly set rule value for a region. Returns `null` if the rule is not explicitly set.
-
-- `getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean?`
-  Retrieves the explicitly set rule value for a specific scope within a region. Returns `null` if the rule is not explicitly set.
-
-- `addEntryExitSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String, valueString: String?)`  
-  Adds an entry-exit setting to a region (`ENTER_ENABLED`, `EXIT_ENABLED`, `ENTER_MESSAGE`, or `EXIT_MESSAGE`).
-
-- `addEntryExitSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String, valueString: String?)`  
-  Adds an entry-exit setting to a scope within a region.
-
-- `removeEntryExitSettingRegion(player: ServerPlayerEntity, region: Region, keyString: String)`  
-  Removes an entry-exit setting from a region.
-
-- `removeEntryExitSettingScope(player: ServerPlayerEntity, region: Region, scopeName: String, keyString: String)`  
-  Removes an entry-exit setting from a scope within a region.
-
-- `queryRegionInfo(player: ServerPlayerEntity, region: Region)`  
-  Queries detailed information about a region.
-
-- `queryRegionNaturalStats(player: ServerPlayerEntity, region: Region, categoryName: String? = null)`  
-  Queries region statistics. `categoryName` accepts `all`, `structures`, `difficulty`, `surface`, `biomes`, or `players`. The `players` category returns the region's persistent aggregated player statistics.
-
-- `queryRegionPlayerStats(player: ServerPlayerEntity, region: Region)`  
-  Queries the same persistent aggregated player statistics as `queryRegionNaturalStats(..., "players")`.
-
-- `toggleActionBar(player: ServerPlayerEntity)`
-  Toggles the action bar display for regions for the player. When enabling, scopes with a shape in the player's current world have their boundaries immediately rendered using a bounded best-effort visual effect. Very large or numerous boundaries are sampled within one fixed per-player render budget. Scope boundaries continue to be rendered while the player is in selection mode; if the player is modifying a specific scope, that scope's boundary is rendered in orange and other scope boundaries use any remaining budget.
-
-- `estimateRegionArea(player: ServerPlayerEntity, shapeTypeName: String, customPositions: List<BlockPos>? = null)`  
-  Estimates the area of a region to be created based on selected points and shape type.  
-  Returns `AreaEstimationResult` with either the estimated area or an error if the configuration is invalid.  
-  If `customPositions` is null, uses the player's current selected positions.
-
-- `estimateScopeAreaChange(player: ServerPlayerEntity, region: Region, scopeName: String, customPositions: List<BlockPos>? = null)`  
-  Estimates the area change (delta) when modifying an existing scope.  
-  Returns `AreaEstimationResult` with the area change value (positive for increase, negative for decrease) or an error.  
-  If `customPositions` is null, uses the player's current selected positions.
-
----
+- `addSettingRegion`, `addSettingScope`, `addSettingSubSpace`, `removeSettingRegion`, `removeSettingScope`, and `removeSettingSubSpace` mutate settings through the controlled persistence path.
+- `getDefaultPermissionValue`, `getRegionPermissionValue`, `getRegionPlayerPermissionValue`, `getScopePermissionValue`, `getScopePlayerPermissionValue`, and the deprecated `getPermissionValueRegion` read effective permission values for command-style callers.
+- `getRuleValueRegion(region: Region?, keyString: String): Boolean?` and `getRuleValueScope(region: Region?, scopeName: String, keyString: String): Boolean?` read explicitly set rule values for Region or Scope targets.
+- `addTeleportPoint`, `resetTeleportPoint`, `getTeleportPoint`, `teleportPlayerToScope`, `teleportPlayerToScopeAsAdministrator`, and `toggleTeleportPointAccessibility` manage Scope teleport points.
+- `toggleActionBar(player: ServerPlayer)` toggles the legacy location action bar.
+- `toggleLocationActionBar(player: ServerPlayer)`, `setLocationActionBarVisible(player: ServerPlayer, visible: Boolean)`, and `isLocationActionBarVisible(player: ServerPlayer): Boolean` expose the V3 location action-bar API.
+- `openSpaceDebugView(player: ServerPlayer, region: Region)`, `openSpaceDebugView(player: ServerPlayer, region: Region, scope: GeoScope)`, and `openSpaceDebugView(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace)` send OP-only neutral space debug output.
+- `queryRegionInfo`, `queryRegionNaturalStats`, and `queryRegionPlayerStats` send player-facing Region information and stats messages.
+- `estimateRegionArea` and `estimateScopeAreaChange` return area-estimation results for the current or supplied point list.
+- `addEntryExitSettingRegion`, `addEntryExitSettingScope`, `removeEntryExitSettingRegion`, and `removeEntryExitSettingScope` are convenience wrappers for Region and Scope entry-exit settings.
 
 ### Region Data API
 
-Provides access to region data and database operations for extension functions.
+`RegionDataApi` is the supported read/query API for addons. Legacy object-returning methods still return live domain objects for compatibility, but mutable domain writes are guarded and new integrations should prefer snapshot and controlled mutation APIs.
 
-- `registerExtensionPermissionKey(key: String, defaultValue: Boolean = true)`  
-  Registers a namespaced boolean extension permission key such as `adventure:anchor_use`.
+Extension settings:
 
-- `registerExtensionRuleKey(key: String, defaultValue: Boolean = true)`  
-  Registers a namespaced boolean extension rule key.
+- `registerExtensionPermissionKey(key: String, defaultValue: Boolean = true)` registers a namespaced boolean extension permission key.
+- `registerExtensionRuleKey(key: String, defaultValue: Boolean = true)` registers a namespaced boolean extension rule key.
+- `getRegisteredExtensionPermissionKeys(): List<String>` and `getRegisteredExtensionRuleKeys(): List<String>` return registered extension keys.
 
-- `getRegisteredExtensionPermissionKeys(): List<String>`  
-  Returns all currently registered extension permission keys.
+Region, Scope, and SubSpace lookup:
 
-- `getRegisteredExtensionRuleKeys(): List<String>`  
-  Returns all currently registered extension rule keys.
+- `getRegion(id: Int): Region?`, `getRegionByName(name: String): Region?`, `getRegionList(): List<Region>`, and `getRegionListFiltered(idMark: Int): List<Region>` return Region objects for legacy-compatible callers.
+- `getRegionFoundingTime(region: Region): Long` and `getRegionAge(region: Region): Long` read Region ID-derived time facts.
+- `getRegionScopes(region: Region): List<GeoScope>` and `getRegionSubSpaces(region: Region): List<SubSpace>` return detached lists of live child objects.
+- `getRegionScopePair`, `getRegionScopePairByLocation`, `getRegionScopeSubSpaceByLocation`, `resolveScopeAtEntity`, and `resolveSubSpaceAtEntity` resolve spaces by name, ID, position, or entity coordinates.
+- `getSubSpaceById(subSpaceId: Long): Triple<Region, GeoScope, SubSpace>?` and `getSubSpaceByName(region: Region, name: String): Pair<GeoScope, SubSpace>?` resolve canonical SubSpace objects.
+- `parseAssignedScopeId`, `getScopeByAssignedId`, `getAssignedScopeIdOrNull`, `getScopeFoundingTimeOrNull`, `getScopeFoundedInRegionNumberId`, and `getAssignedScopeOwnershipHistory` expose stable Scope ID and ownership-history facts. Deprecated `ScopeId` wrappers remain for binary compatibility.
 
-- `getRegion(id: Int): Region?`  
-  Retrieves a region by its numeric ID.
+Snapshot and menu-support reads:
 
-- `getRegionByName(name: String): Region?`  
-  Retrieves a region by its name. Returns `null` if no region with the given name exists.
+- `listScopeSnapshots(regionId: Int): List<WorldGeoSpaceSnapshot>` returns Scope snapshots under one Region.
+- `listSubSpaceSnapshots(scopeId: Long): List<WorldGeoSpaceSnapshot>` returns SubSpace snapshots under one Scope.
+- `getSpaceSnapshot(type: WorldGeoSpaceType, id: Long): WorldGeoSpaceSnapshot?` resolves Region, Scope, or SubSpace snapshots by stable ID.
+- `getRegionSpaceSnapshot`, `getScopeSpaceSnapshot`, and `getSubSpaceSnapshot` return immutable neutral snapshots. Server-taking overloads include dominant-biome data from the natural geography scanner.
+- `WorldGeoSpaceSnapshot` contains type, stable ID, display name, dimension, area, parent IDs and names, child counts, SubSpace tags, stats version, dominant biome hint, entry-message state, map color suggestion, PUBLIC setting summaries, shape type, and copied shape parameters.
+- `listRegionSettingSummaries`, `listScopeSettingSummaries`, and `listSubSpaceSettingSummaries` return `WorldGeoSettingSummary` entries filtered by `WorldGeoSettingVisibility.PUBLIC` or `OP_DEBUG`.
+- `sendRegionSpaceMessage`, `sendScopeSpaceMessage`, and `sendSubSpaceMessage` broadcast to online players currently resolved inside a Region, Scope, or SubSpace. Each target has a `Component` overload and a `messageKey, vararg args` overload that resolves text through `Translator.tr`; missing translation keys log an error and send nothing.
+- `listPlayersInRegion(server, region)`, `listPlayersInScope(server, region, scope)`, and `listPlayersInSubSpace(server, region, scope, subSpace)` return online player UUIDs using the location cache with instant coordinate-resolution fallback.
 
-- `getRegionList(): List<Region>`  
-  Retrieves the list of all regions.
+Settings and effects:
 
-- `getRegionListFiltered(idMark: Int): List<Region>`  
-  Retrieves a filtered list of regions based on an ID mark from `0` to `9`. Other values fail fast.
+- Explicit permission methods cover default, Region global, Region player, Scope global, Scope player, SubSpace global, and SubSpace player queries for built-in `PermissionKey` values.
+- Extension permission methods mirror the same target levels and require prior key registration.
+- Rule methods cover default, Region, Scope, and SubSpace queries for built-in `RuleKey` values.
+- `getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String)` resolves registered extension rules for Region or Scope targets.
+- Effect methods cover Region, Scope, and SubSpace effect values and active effect maps.
+- Timed effect overlay methods include `createTimedEffectOverlay`, `applyTimedEffectOverlay`, `clearTimedEffectOverlay`, `queryOverlay`, and `queryActiveOverlays`; deprecated `ScopeId` overloads remain for compatibility where present.
+- Deprecated nullable dispatchers remain as delegating compatibility entry points and are documented in `docs/addon-api-compatibility.md`.
+- `getRegionGlobalSettings`, `getRegionPersonalSettings`, `getScopeGlobalSettings`, and `getScopePersonalSettings` remain as legacy setting-list reads.
 
-- `getRegionFoundingTime(region: Region): Long`  
-  Gets the founding time of a region.
+Time, events, and statistics:
 
-- `getRegionAge(region: Region): Long`  
-  Returns the elapsed time in milliseconds since the region was created. Note that the precision is 1 hour due to the encoding of the founding time in the region ID.
+- `getTimeSnapshot(level: ServerLevel): WorldGeoTimeSnapshot` returns game time and the default real-time snapshot.
+- `getRealTimeSnapshot(zoneId: String): RealTimeSnapshot` returns real-time facts for any valid Java `ZoneId` string.
+- `getCurrentNaturalPeriodIds(): Map<NaturalPeriodKind, String>` returns current `HOUR`, `DAY`, `WEEK`, `MONTH`, and `YEAR` IDs.
+- `registerNaturalPeriodTransitionCallback`, `registerBehaviorEventCallback`, and `registerSubSpaceTransitionCallback` register bounded asynchronous addon callbacks.
+- `getRecentBehaviorEvents()` and `getRecentBehaviorEvents(limit: Int)` expose the in-memory behavior debug window.
+- `WorldGeoBehaviorEvent` contains event ID, behavior type, player UUID and name, dimension, coordinates, UNIX time, Region, Scope, SubSpace, space level, object ID, target ID, quantity, and source.
+- `queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and explicit overloads return persisted neutral behavior counts filtered by period, space, player, behavior type, object ID, and target ID.
+- `queryBlockDelta`, `queryResidence`, `queryEntityCombat`, and `queryOnlineTime` return typed statistics for block net delta, chunk residence millis, combat facts, and online or AFK millis.
 
-- `getRegionScopes(region: Region): List<GeoScope>`  
-  Retrieves the list of scopes within a region.
+Natural geography and player stats:
 
-- `getRegionScopePair(region: Region, scopeName: String): Pair<Region, GeoScope?>`  
-  Retrieves the region-scope pair based on the region and scope name.
-
-- `getRegionScopePair(regionId: Int, scopeName: String): Pair<Region?, GeoScope?>`  
-  Retrieves the region-scope pair by region ID and scope name.
-
-- `getRegionScopePairByLocation(world: World, x: Int, z: Int): Pair<Region, GeoScope>?`  
-  Retrieves the region-scope pair in a world by coordinates.
-
-- `getRegionScopePairByLocation(world: World, blockPos: BlockPos): Pair<Region, GeoScope>?`  
-  Retrieves the region-scope pair in a world by block position.
-
-- `inquireTeleportPointAccessibility(scope: GeoScope)`
-  Inquires the access permission of a scope's teleport point.
-
-- `getScopeTeleportPoint(scope: GeoScope): BlockPos?`  
-  Retrieves the teleport point coordinates of a scope. Returns `null` if no teleport point is set.
-
-- `getScopeShape(scope: GeoScope): Region.Companion.GeoShape?`  
-  Retrieves the shape of a scope.
-
-- `getScopeArea(scope: GeoScope): Double?`  
-  Retrieves the area of a scope.
-
-- `getRegionArea(region: Region): Double`  
-  Calculates the total area of a region.
-
-- `getRegionGlobalSettings(region: Region): List<Setting>`  
-  Retrieves the global settings for a region.
-
-- `getRegionGlobalSettingsByType(region: Region, settingTypes: SettingTypes): List<Setting>`  
-  Retrieves the global settings by type for a region.
-
-- `getRegionPersonalSettings(region: Region, playerUUID: UUID): List<Setting>`  
-  Retrieves the personal settings for a region for a specific playerUUID.
-
-- `getRegionPersonalSettingsByType(region: Region, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
-  Retrieves the personal settings by type for a region for a specific playerUUID.
-
-- `getScopeGlobalSettings(scope: GeoScope): List<Setting>`  
-  Retrieves the global settings for a scope.
-
-- `getScopeGlobalSettingsByType(scope: GeoScope, settingTypes: SettingTypes): List<Setting>`  
-  Retrieves the global settings by type for a scope.
-
-- `getScopePersonalSettings(scope: GeoScope, playerUUID: UUID): List<Setting>`  
-  Retrieves the personal settings for a scope for a specific playerUUID.
-
-- `getScopePersonalSettingsByType(scope: GeoScope, playerUUID: UUID, settingTypes: SettingTypes): List<Setting>`  
-  Retrieves the personal settings by type for a scope for a specific playerUUID.
-
-- `getPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, permissionKey: PermissionKey): Boolean`
-  Retrieves the permission value of a setting for a region and scope.
-
-- `getExtensionPermissionValueRegion(region: Region?, scope: GeoScope?, playerUUID: UUID?, key: String): Boolean`
-  Retrieves the effective value of a registered namespaced extension permission key.
-
-- `getRuleValueForRegion(region: Region?, scope: GeoScope?, ruleKey: RuleKey): Boolean`
-  Retrieves the effective rule value for a region and optional scope. Returns the config default if the rule is not explicitly set.
-
-- `getExtensionRuleValueForRegion(region: Region?, scope: GeoScope?, key: String): Boolean`
-  Retrieves the effective value of a registered namespaced extension rule key.
-
-- `getEffectValueForRegion(region: Region?, scope: GeoScope?, playerUUID: UUID, effectKey: EffectKey): Int?`  
-  Retrieves the resolved effect amplifier for a specific player and effect key, considering scope and region settings in priority order. Returns `null` if the effect is not set.
-
-- `getActiveEffectsForRegion(region: Region, scope: GeoScope?, playerUUID: UUID): Map<EffectKey, Int>`  
-  Retrieves a map of all active effects and their amplifiers for a specific player in a region and optional scope.
-
-- `getRegionScopeCount(region: Region): Int`  
-  Returns the number of scopes in a region.
-
-- `getRegionNaturalStats(server: MinecraftServer, region: Region): RegionNaturalStatsResult`  
-  Retrieves natural statistics for a region, including structure counts, area-weighted average local difficulty, surface block counts, biome counts, and per-dimension breakdowns.
-
-- `getScopeNaturalStats(server: MinecraftServer, scope: GeoScope): RegionNaturalStatsResult`  
-  Retrieves the same natural statistics for a single scope.
-
-- `getRegionPlayerStats(region: Region): RegionPlayerStats`  
-  Retrieves the region's persistent aggregated player statistics, including tracked player count, entry count, stay duration, death count, block place count, and block break count.
+- `getRegionNaturalStats`, `getScopeNaturalStats`, and `getSubSpaceNaturalStats` return live natural scan results.
+- `getRegionGeographicProfile`, `getRegionGeographicProfileSnapshot`, `getScopeGeographicProfile`, `getScopeGeographicProfileSnapshot`, `getSubSpaceGeographicProfile`, and `getSubSpaceGeographicProfileSnapshot` expose geography profiles for Region, Scope, and SubSpace.
+- `getGeographicProfileCacheStatus()` and `refreshGeographicProfiles(server)` expose cache status and a manual refresh entry point.
+- `getRegionPlayerStats(region: Region): RegionPlayerStats` returns persistent cumulative Region activity totals.
 
 `RegionNaturalStatsResult` has three variants:
 
 1. `Success(stats: RegionNaturalStats)` for a completed scan.
-2. `ChunkLimitExceeded(dimensionId, candidateChunkCount, limit)` when the region's candidate chunk window exceeds the current hard limit.
+2. `ChunkLimitExceeded(dimensionId, candidateChunkCount, limit)` when candidate chunks exceed the configured scan limit.
 3. `DimensionUnavailable(dimensionId)` when the target dimension cannot be resolved from the running server.
 
-`RegionNaturalStats` reports loaded chunk count, candidate chunk count, sampled surface-column count, aggregate structure counts, aggregate surface block counts, aggregate biome counts, area-weighted average local difficulty, and per-dimension `DimensionNaturalStats` entries. Surface block counting samples the top non-air block of each in-region column. Average local difficulty is weighted by sampled column count, and each chunk now samples an actual in-region column so edge-only coverage does not pull difficulty from outside the region.
+`RegionPlayerStats` reports persistent cumulative player activity per Region. Entry counting is driven by confirmed Region transitions, stay duration is accumulated over time and flushed on disconnect or server stop, deaths are counted at the player's death position, and block place or break counts only record successful actions inside the Region.
 
-`RegionPlayerStats` reports persistent cumulative player activity per region. Entry counting is driven by confirmed region transitions, stay duration is accumulated over time and flushed on disconnect/server stop, deaths are counted at the player's death position, and block place/break counts only record successful actions inside the region.
+Entry-exit reads:
 
-- `getRegionEntryExitToggle(region: Region): Boolean`  
-  Returns whether entry-exit notifications are enabled for a region. Defaults to `true` if not set.
-
-- `getRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): String?`  
-  Retrieves the entry-exit message for a region. Returns `null` if not set.
-
-- `getScopeEntryExitToggle(scope: GeoScope): Boolean`  
-  Returns whether entry-exit notifications are enabled for a scope. Defaults to `true` if not set.
-
-- `getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String?`  
-  Retrieves the entry-exit message for a scope. Returns `null` if not set.
+- `getRegionEntryExitToggle(region: Region): Boolean` and `getScopeEntryExitToggle(scope: GeoScope): Boolean` return whether entry-exit notifications are enabled, defaulting to `true`.
+- `getRegionEntryExitMessage(region: Region, key: EntryExitMessageKey): String?` and `getScopeEntryExitMessage(scope: GeoScope, key: EntryExitMessageKey): String?` return configured messages or `null`.
 
 ### UtilApi
 
 Provides utility functions for region data to improve usability for extension mods.
 
-- `isSelectingPoints(playerExecutor: ServerPlayerEntity): Boolean`  
+- `isSelectingPoints(playerExecutor: ServerPlayer): Boolean`
   Checks if the player is in selection mode.
 
-- `isActionBarEnabled(playerExecutor: ServerPlayerEntity): Boolean`
+- `isActionBarEnabled(playerExecutor: ServerPlayer): Boolean`
   Checks if the action bar display is enabled for the player.
 
-- `getPlayerUUID(server: MinecraftServer, playerName: String): UUID?`  
+- `getPlayerUUID(server: MinecraftServer, playerName: String): UUID?`
   Retrieves the UUID of a player by their name.
 
-- `getPlayerUUID(player: ServerPlayerEntity, playerName: String): UUID?`
+- `getPlayerUUID(player: ServerPlayer, playerName: String): UUID?`
   Retrieves the UUID of a player by their name using a player entity.
 
 - `getPlayerName(server: MinecraftServer, uuid: UUID?): String`
   Retrieves the player name by their UUID.
 
-- `getPlayerName(player: ServerPlayerEntity, uuid: UUID?): String`
+- `getPlayerName(player: ServerPlayer, uuid: UUID?): String`
   Retrieves the player name by their UUID using a player entity.
 
-- `getPlayer(playerExecutor: ServerPlayerEntity, playerName: String): ServerPlayerEntity?`
+- `getPlayer(playerExecutor: ServerPlayer, playerName: String): ServerPlayer?`
   Retrieves the player entity by their name.
 
-- `getPlayer(server: MinecraftServer, playerName: String): ServerPlayerEntity?`
+- `getPlayer(server: MinecraftServer, playerName: String): ServerPlayer?`
   Retrieves the player entity by their name using the server instance.
 
-- `getPlayer(playerExecutor: ServerPlayerEntity, playerUuid: UUID): ServerPlayerEntity?`
+- `getPlayer(playerExecutor: ServerPlayer, playerUuid: UUID): ServerPlayer?`
   Retrieves the player entity by their UUID.
 
-- `getPlayer(server: MinecraftServer, playerUuid: UUID): ServerPlayerEntity?`
+- `getPlayer(server: MinecraftServer, playerUuid: UUID): ServerPlayer?`
   Retrieves the player entity by their UUID using the server instance.
 
 - `getPlayerProfile(server: MinecraftServer, playerName: String): GameProfile?`
   Retrieves the GameProfile of a player by their name.
 
-- `getPlayerProfile(playerExecutor: ServerPlayerEntity, playerName: String): GameProfile?`
+- `getPlayerProfile(playerExecutor: ServerPlayer, playerName: String): GameProfile?`
   Retrieves the GameProfile of a player by their name using a player entity to get server.
 
 - `getPlayerProfile(server: MinecraftServer, playerUuid: UUID): GameProfile?`
   Retrieves the GameProfile of a player by their UUID.
 
-- `getPlayerProfile(playerExecutor: ServerPlayerEntity, playerUuid: UUID): GameProfile?`
+- `getPlayerProfile(playerExecutor: ServerPlayer, playerUuid: UUID): GameProfile?`
   Retrieves the GameProfile of a player by their UUID using a player entity to get server.
 
 - `parseRegionFoundingTime(regionNumberId: Int): Long`
   Parses and retrieves the founding time of a region by its numeric ID.
 
+- `isValidName(name: String): Boolean`
+  Checks whether a Region, Scope, or SubSpace display name is accepted by the shared name validator.
+
 ## Commands
 
-- `/imyvmWorldGeo select start [shapeType]`  
+- `/imyvmWorldGeo select start [shapeType]`
   Start selecting positions with a command block. Right-click a block to add a point; left-click (on any block or in air) to undo the last point. Optionally provide a shape hint (rectangle, circle, polygon).
 
-- `/imyvmWorldGeo select stop`  
+- `/imyvmWorldGeo select stop`
   Stop selection mode.
 
-- `/imyvmWorldGeo select reset [shapeType]`  
+- `/imyvmWorldGeo select reset [shapeType]`
   Clear all selected points but keep selection mode active. Optionally update the shape hint.
 
-- `/imyvmWorldGeo select shape <shapeType>`  
+- `/imyvmWorldGeo select shape <shapeType>`
   Change the shape hint for the current selection. Cannot be used in scope-modification mode.
 
-- `/imyvmWorldGeo create [shapeType] [name]`  
-  Create a region of the given shape (rectangle, circle, polygon) from selected positions. If shapeType is omitted, the shape is inferred from the selection state.  
+- `/imyvmWorldGeo create [shapeType] [name]`
+  Create a region of the given shape (rectangle, circle, polygon) from selected positions. If shapeType is omitted, the shape is inferred from the selection state.
   Optionally give it a name.
 
-- `/imyvmWorldGeo delete <regionIdentifier>`  
+- `/imyvmWorldGeo delete <regionIdentifier>`
   Delete a region by its ID or name.
 
-- `/imyvmWorldGeo rename <regionIdentifier> <newName>`  
+- `/imyvmWorldGeo rename <regionIdentifier> <newName>`
   Rename an existing region.
 
-- `/imyvmWorldGeo addScope [shapeType] <regionIdentifier> [scopeName]`  
+- `/imyvmWorldGeo addScope [shapeType] <regionIdentifier> [scopeName]`
   Add a new scope to the region. If shapeType is omitted, the shape is inferred from the selection state. Optionally provide a scope name.
 
-- `/imyvmWorldGeo deleteScope <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo deleteScope <regionIdentifier> <scopeName>`
   Delete a scope from a region.
 
-- `/imyvmWorldGeo transferScope <regionIdentifier> <scopeName> <targetRegionIdentifier>`  
+- `/imyvmWorldGeo transferScope <regionIdentifier> <scopeName> <targetRegionIdentifier>`
   Transfer a scope from one region to another. If a scope with the same name already exists in the target region, the scope is automatically renamed by appending a numeric suffix (e.g., `scopeName1`, `scopeName2`).
 
-- `/imyvmWorldGeo mergeRegion <regionIdentifier> <targetRegionIdentifier>`  
+- `/imyvmWorldGeo mergeRegion <regionIdentifier> <targetRegionIdentifier>`
   Merge one region into another: all scopes are moved (with automatic renaming on conflict), the source region's overall settings are discarded, and the source region is deleted.
 
-- `/imyvmWorldGeo teleportPoint set [x] [y] [z]`  
+- `/imyvmWorldGeo teleportPoint set [x] [y] [z]`
   Set the teleport point for the current region and scope.
   - If `x`, `y`, and `z` are provided and valid, the teleport point will be set to the specified coordinates.
     - The adjective 'valid' means they are all numbers or '~', which represents the player's current coordinate on that axis,
       and it satisfies criteria for a safe teleport point physically.
   - If `x`, `y`, and `z` are omitted or invalid, the teleport point will default to the player's current position.
 
-- `/imyvmWorldGeo teleportPoint reset <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleportPoint reset <regionIdentifier> <scopeName>`
   Reset the teleport point for the specified region and scope.
   - If `regionIdentifier` and `scopeName` are provided and valid, the teleport point for the specified scope will be reset.
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be reset.
     - If player is not in any scope, an error message will be shown.
 
-- `/imyvmWorldGeo teleportPoint inquiry <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleportPoint inquiry <regionIdentifier> <scopeName>`
   Inquire about the teleport point for the specified region and scope.
   - If `regionIdentifier` and `scopeName` are provided and valid, the teleport point for the specified scope will be displayed.
   - If `regionIdentifier` and `scopeName` are omitted or invalid, the teleport point for the scope the player is currently in will be displayed.
@@ -663,50 +513,50 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo teleportPoint teleport <regionIdentifier> <scopeName>`
   Administrator-only teleport that bypasses teleport-point accessibility while retaining target safety checks.
 
-- `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`
   Toggle the accessibility of the teleport point for the specified region and scope.
 
-- `/imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> [newName]`  
+- `/imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> [newName]`
   Modify a scope's properties or rename it.
 
-- `/imyvmWorldGeo setting add <regionIdentifier> <key> <value> [playerName]`  
-  Add a setting to a region, optionally for a specific player.  
+- `/imyvmWorldGeo setting add <regionIdentifier> <key> <value> [playerName]`
+  Add a setting to a region, optionally for a specific player.
   Entry-exit keys (`ENTER_ENABLED`, `EXIT_ENABLED`, `ENTER_MESSAGE`, `EXIT_MESSAGE`) do not support personal player assignment.
 
-- `/imyvmWorldGeo setting remove <regionIdentifier> <key> [playerName]`  
+- `/imyvmWorldGeo setting remove <regionIdentifier> <key> [playerName]`
   Remove a setting from a region, optionally for a specific player.
 
-- `/imyvmWorldGeo setting queryValue <regionIdentifier> <key> [playerName]`  
+- `/imyvmWorldGeo setting queryValue <regionIdentifier> <key> [playerName]`
   Query the value of a setting in a region, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope add <regionIdentifier> <scopeName> <key> <value> [playerName]`  
+- `/imyvmWorldGeo settingScope add <regionIdentifier> <scopeName> <key> <value> [playerName]`
   Add a setting to a specific scope of a region, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope remove <regionIdentifier> <scopeName> <key> [playerName]`  
+- `/imyvmWorldGeo settingScope remove <regionIdentifier> <scopeName> <key> [playerName]`
   Remove a setting from a specific scope, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope queryValue <regionIdentifier> <scopeName> <key> [playerName]`  
+- `/imyvmWorldGeo settingScope queryValue <regionIdentifier> <scopeName> <key> [playerName]`
   Query the value of a setting in a specific scope, optionally for a specific player.
 
-- `/imyvmWorldGeo dynmapToggle <regionIdentifier>`  
+- `/imyvmWorldGeo dynmapToggle <regionIdentifier>`
   Toggle the region's visibility on the dynamic map. When a region is hidden, all its scopes are hidden regardless of their individual settings.
 
-- `/imyvmWorldGeo dynmapToggleScope <regionIdentifier> <scopeName>`  
+- `/imyvmWorldGeo dynmapToggleScope <regionIdentifier> <scopeName>`
   Toggle a scope's visibility on the dynamic map. Has no effect if the region itself is hidden.
 
-- `/imyvmWorldGeo query <regionIdentifier>`  
+- `/imyvmWorldGeo query <regionIdentifier>`
   Show detailed information about a region.
 
-- `/imyvmWorldGeo stats <regionIdentifier> [category]`  
+- `/imyvmWorldGeo stats <regionIdentifier> [category]`
   Query region statistics. `category` accepts `all`, `structures`, `difficulty`, `surface`, `biomes`, or `players`. Natural-stat scans only read loaded chunks, report loaded/candidate chunk coverage, count structures by anchored start chunk, sample the top non-air block for each in-region column, and calculate average local difficulty from in-region sampled columns. The `players` category returns persistent aggregated entry count, stay duration, death count, block place count, and block break count.
 
-- `/imyvmWorldGeo list`  
+- `/imyvmWorldGeo list`
   List all regions.
 
-- `/imyvmWorldGeo toggle`  
+- `/imyvmWorldGeo toggle`
   Toggle the action bar display for regions. When enabling, current-world scope boundaries are rendered on a bounded best-effort basis. Very large or numerous boundaries are sampled within one fixed per-player render budget. Scope boundaries remain visible while in selection mode; the scope being modified is highlighted in orange and other scopes use any remaining budget.
 
-- `/imyvmWorldGeo help`  
+- `/imyvmWorldGeo help`
   Show the help message.
 
 ## Acknowledgements

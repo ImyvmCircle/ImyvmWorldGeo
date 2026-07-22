@@ -27,7 +27,7 @@ public class FireSpreadMixin {
     @Inject(method = "tick", at = @At(value = "INVOKE",
             target = "Lnet/minecraft/server/level/ServerLevel;setBlock(Lnet/minecraft/core/BlockPos;Lnet/minecraft/world/level/block/state/BlockState;I)Z",
             ordinal = 1), cancellable = true)
-    private void onPlaceNewFire(ServerLevel world, BlockPos pos, BlockState state, int flags, CallbackInfo ci) {
+    private void onPlaceNewFire(BlockState state, ServerLevel world, BlockPos pos, RandomSource random, CallbackInfo ci) {
         Boolean value = RuleHelper.getEffectiveRuleValueAt(world, pos, RuleKey.RPG_FIRE_SPREAD);
         if (Boolean.FALSE.equals(value)) ci.cancel();
     }

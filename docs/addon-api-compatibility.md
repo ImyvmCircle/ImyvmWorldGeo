@@ -299,7 +299,7 @@ server thread.
 
 `RegionDataApi.queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and the explicit-parameter overload return
 persisted neutral behavior counts from `iwg_behavior_stats.json`. WorldGeo aggregates behavior facts by natural
-hour/day/week/month, behavior type, Region, Scope, SubSpace, player UUID, and object ID. Version 26.2-1.5.4 adds
+hour/day/week/month/year, behavior type, Region, Scope, SubSpace, player UUID, and object ID. Version 26.2-1.5.5 adds
 `queryBlockDelta`, `queryResidence`, `queryEntityCombat`, and `queryOnlineTime` as typed read models over the same
 store. The typed results expose placed and broken block totals, net player contribution, chunk residence millis,
 combat counts, and online or AFK millis without adding Community or Adventure semantics to WorldGeo. The
