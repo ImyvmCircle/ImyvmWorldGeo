@@ -1,6 +1,8 @@
 package com.imyvm.iwg.application.selection.display
 
 import com.imyvm.iwg.application.region.updateRectangleBounds
+import com.imyvm.iwg.domain.component.GeoPoint
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.util.geo.GeometrySizeLimits
@@ -57,6 +59,44 @@ fun evaluateModifyCircleCenter(oldCenter: BlockPos, newCenter: BlockPos, existin
     if (oldCenter.x != existingParams[0] || oldCenter.z != existingParams[1]) return null
     val radius = existingParams[2]
     return evaluatedCircle(newCenter.x, newCenter.z, radius.toDouble(), regionGeometrySizeLimits)
+}
+
+internal fun evaluateModifiedShape(geometry: com.imyvm.iwg.domain.component.ShapeGeometry, selectedPoints: List<BlockPos>): GeoShape? = when (geometry) {
+    is com.imyvm.iwg.domain.component.RectangleGeometry -> if (selectedPoints.size == 1) {
+        evaluateModifyRectangle(selectedPoints[0], listOf(geometry.west, geometry.north, geometry.east, geometry.south))
+            ?.let { GeoShape.rectangle(GeoPoint(it[0], it[1]), GeoPoint(it[2], it[3])) }
+    } else null
+    is com.imyvm.iwg.domain.component.CircleGeometry -> when (selectedPoints.size) {
+        1 -> evaluateModifyCircleRadius(selectedPoints[0], listOf(geometry.centerX, geometry.centerZ, geometry.radius))
+            ?.let { GeoShape.circle(GeoPoint(it[0], it[1]), it[2]) }
+        2 -> evaluateModifyCircleCenter(selectedPoints[0], selectedPoints[1], listOf(geometry.centerX, geometry.centerZ, geometry.radius))
+            ?.let { GeoShape.circle(GeoPoint(it[0], it[1]), it[2]) }
+        else -> null
+    }
+    is com.imyvm.iwg.domain.component.PolygonGeometry -> when (selectedPoints.size) {
+        1 -> {
+            val existing = List(geometry.vertexCount) { index -> BlockPos(geometry.x(index), 0, geometry.z(index)) }
+            val point = selectedPoints[0]
+            val polygon = if (existing.any { it.x == point.x && it.z == point.z }) {
+                existing.filterNot { it.x == point.x && it.z == point.z }
+            } else {
+                evaluateModifyPolygonInsert(point, existing)
+            }
+            polygon?.takeIf { it.size >= 3 }?.let { GeoShape.polygon(it.map { vertex -> GeoPoint(vertex.x, vertex.z) }) }
+        }
+        2 -> {
+            val existing = List(geometry.vertexCount) { index -> BlockPos(geometry.x(index), 0, geometry.z(index)) }
+            evaluateModifyPolygonReplace(selectedPoints[0], selectedPoints[1], existing)
+                ?.let { GeoShape.polygon(it.map { vertex -> GeoPoint(vertex.x, vertex.z) }) }
+        }
+        3 -> {
+            val existing = List(geometry.vertexCount) { index -> BlockPos(geometry.x(index), 0, geometry.z(index)) }
+            evaluateModifyPolygonExplicitInsert(selectedPoints[0], selectedPoints[1], selectedPoints[2], existing)
+                ?.let { GeoShape.polygon(it.map { vertex -> GeoPoint(vertex.x, vertex.z) }) }
+        }
+        else -> null
+    }
+    com.imyvm.iwg.domain.component.UnknownGeometry -> null
 }
 
 fun evaluateModifyPolygonInsert(newPoint: BlockPos, existingPoints: List<BlockPos>): List<BlockPos>? {

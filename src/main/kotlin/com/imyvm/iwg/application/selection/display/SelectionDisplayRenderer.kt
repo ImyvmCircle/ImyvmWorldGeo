@@ -130,9 +130,10 @@ private fun displayForPlayer(
     for (point in points) emitPillar(player, point.x, point.z, session)
 
     if (points.isEmpty()) {
-        val shape = state.hypotheticalShape
-        if (shape is HypotheticalShape.ModifyExisting) {
-            displayModifyingScope(player, shape.scope, session)
+        when (val shape = state.hypotheticalShape) {
+            is HypotheticalShape.ModifyExisting -> displayModifyingScope(player, shape.scope, session)
+            is HypotheticalShape.ModifySubSpace -> displayModifyingScope(player, shape.asDisplayScope(), session)
+            else -> Unit
         }
         commitPillars(player, session)
         return
@@ -140,7 +141,7 @@ private fun displayForPlayer(
 
     when (val shape = state.hypotheticalShape) {
         is HypotheticalShape.ModifyExisting -> displayForModifyExisting(player, points, shape.scope, session)
-        is HypotheticalShape.ModifySubSpace -> displayForModifySubSpace(player, points, state.getEffectiveShapeType(), shape, session)
+        is HypotheticalShape.ModifySubSpace -> displayForModifyExisting(player, points, shape.asDisplayScope(), session)
         is HypotheticalShape.SubSpace -> displayForSubSpaceShape(player, points, state.getEffectiveShapeType(), shape.regionName, shape.parentScope, session)
         is HypotheticalShape.Normal -> displayForCreationShape(player, state, points, shape.shapeType, session)
         null -> displayForCreationShape(player, state, points, state.getEffectiveShapeType(), session)
@@ -193,17 +194,6 @@ private fun displayForSubSpaceShape(
         GeoShapeType.POLYGON -> emitClosedBoundary(player, points.size, { points[it].x }, { points[it].z }, BoundaryStyle.SUBSPACE, session)
         GeoShapeType.UNKNOWN -> Unit
     }
-}
-
-private fun displayForModifySubSpace(
-    player: ServerPlayer,
-    points: List<BlockPos>,
-    shapeType: GeoShapeType,
-    target: HypotheticalShape.ModifySubSpace,
-    session: SelectionDisplaySession
-) {
-    displaySubSpace(player, target.subSpace, session)
-    displayForSubSpaceShape(player, points, shapeType, target.regionName, target.parentScope, session)
 }
 
 private fun displayForShape(
@@ -524,3 +514,10 @@ private fun displayModifyPolygonPreview(
         }
     }
 }
+
+private fun HypotheticalShape.ModifySubSpace.asDisplayScope(): GeoScope = GeoScope(
+    subSpace.name,
+    subSpace.worldId,
+    null,
+    geoShape = subSpace.geoShape
+)

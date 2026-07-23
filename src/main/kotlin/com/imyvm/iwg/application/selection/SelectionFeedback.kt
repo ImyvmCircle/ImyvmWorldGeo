@@ -43,24 +43,50 @@ internal const val MAX_DISPLAYED_SELECTION_POINTS = 12
 private data class AutoSubSpaceTarget(val region: Region, val scope: GeoScope)
 private data class SubSpaceSelectionTarget(val regionName: String, val parentScope: GeoScope, val subSpace: SubSpace? = null)
 
+private fun buildModifySubSpaceMessage(
+    msg: StringBuilder,
+    state: SelectionState,
+    eventPos: BlockPos,
+    target: HypotheticalShape.ModifySubSpace,
+    isUndo: Boolean
+) {
+    val banner = Translator.raw(
+        "selection.feedback.modify_subspace.header",
+        target.subSpace.name,
+        target.parentScope.scopeName,
+        target.regionName
+    )?.toString().orEmpty()
+    val extraWarning = buildSubSpaceValidationWarning(
+        state.getEffectiveShapeType(),
+        state.points,
+        SubSpaceSelectionTarget(target.regionName, target.parentScope, target.subSpace)
+    )
+    buildModifyMessage(msg, state, eventPos, target.asDisplayScope(), isUndo, banner, extraWarning)
+}
+
+private fun HypotheticalShape.ModifySubSpace.asDisplayScope(): GeoScope = GeoScope(
+    subSpace.name,
+    subSpace.worldId,
+    null,
+    geoShape = subSpace.geoShape
+)
+
 fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
-    val shape = state.hypotheticalShape
-    if (shape is HypotheticalShape.ModifyExisting) {
-        buildModifyMessage(msg, state, addedPos, shape.scope, isUndo = false)
-    } else {
-        buildNormalMessage(msg, state, addedPos, isUndo = false)
+    when (val shape = state.hypotheticalShape) {
+        is HypotheticalShape.ModifyExisting -> buildModifyMessage(msg, state, addedPos, shape.scope, isUndo = false)
+        is HypotheticalShape.ModifySubSpace -> buildModifySubSpaceMessage(msg, state, addedPos, shape, isUndo = false)
+        else -> buildNormalMessage(msg, state, addedPos, isUndo = false)
     }
     return TextParser.parse(msg.toString())
 }
 
 fun buildPointUndoMessage(state: SelectionState, removedPos: BlockPos): Component {
     val msg = StringBuilder()
-    val shape = state.hypotheticalShape
-    if (shape is HypotheticalShape.ModifyExisting) {
-        buildModifyMessage(msg, state, removedPos, shape.scope, isUndo = true)
-    } else {
-        buildNormalMessage(msg, state, removedPos, isUndo = true)
+    when (val shape = state.hypotheticalShape) {
+        is HypotheticalShape.ModifyExisting -> buildModifyMessage(msg, state, removedPos, shape.scope, isUndo = true)
+        is HypotheticalShape.ModifySubSpace -> buildModifySubSpaceMessage(msg, state, removedPos, shape, isUndo = true)
+        else -> buildNormalMessage(msg, state, removedPos, isUndo = true)
     }
     return TextParser.parse(msg.toString())
 }
@@ -478,13 +504,17 @@ private fun validatePolygonPoints(points: List<BlockPos>): String {
     }
 }
 
-private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventPos: BlockPos, scope: GeoScope, isUndo: Boolean) {
+private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventPos: BlockPos, scope: GeoScope, isUndo: Boolean, bannerRaw: String = "", extraWarningRaw: String = "") {
     val geometry = scope.geoShape?.typedGeometry ?: UnknownGeometry
     val oldPoints = extractScopePoints(geometry)
     val shapeType = geometry.type
     val newPoints = state.points
 
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
+    if (bannerRaw.isNotEmpty()) {
+        msg.append("\n")
+        msg.append(bannerRaw)
+    }
     msg.append("\n")
     appendExistingScopePoints(msg, scope.scopeName, shapeType, oldPoints)
 
@@ -506,6 +536,12 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
     appendModifyShapeParameterBlock(msg, shapeType, scope)
     msg.append("\n")
     appendModifyGuidance(msg, geometry, newPoints, scope, oldPoints)
+
+    val warningRaw = extraWarningRaw
+    if (warningRaw.isNotEmpty()) {
+        msg.append("\n")
+        msg.append(warningRaw)
+    }
 
     val particleNote = Translator.raw("selection.feedback.particles.modify") ?: ""
     if (particleNote.isNotEmpty()) {

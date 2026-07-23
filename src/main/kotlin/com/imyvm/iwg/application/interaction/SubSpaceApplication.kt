@@ -5,6 +5,7 @@ import com.imyvm.iwg.application.interaction.helper.subSpaceErrorMessage
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
+import com.imyvm.iwg.application.selection.display.evaluateModifiedShape
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.domain.Region
@@ -65,24 +66,22 @@ fun onSubSpaceShapeReplacementFromSelection(
         return 0
     }
     val state = getSubSpaceModifySelection(player, subSpace) ?: return 0
-    val resolvedShapeType = shapeType ?: state.getEffectiveShapeType()
-    return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope, subSpace)) {
-        is Result.Ok -> {
-            val replaced = onReplacingSubSpaceShape(player, region, parentScope, subSpace, result.value)
-            if (replaced == 1) {
-                clearSelectionDisplay(player)
-                clearPlayerSelection(player.uuid)
-                player.sendSystemMessage(
-                    Translator.tr("interaction.meta.subspace.shape_replace.success", subSpace.name, parentScope.scopeName, region.name)!!
-                )
-            }
-            replaced
-        }
-        is Result.Err -> {
-            subSpaceErrorMessage(result.error, resolvedShapeType).forEach(player::sendSystemMessage)
-            0
-        }
+    val existingGeometry = subSpace.geoShape.typedGeometry
+    val newShape = evaluateModifiedShape(existingGeometry, state.points) ?: return 0
+    val placementError = RegionFactory.validateSubSpaceShapePlacement(newShape, region, parentScope, subSpace)
+    if (placementError != null) {
+        subSpaceErrorMessage(placementError, newShape.geoShapeType).forEach(player::sendSystemMessage)
+        return 0
     }
+    val replaced = onReplacingSubSpaceShape(player, region, parentScope, subSpace, newShape)
+    if (replaced == 1) {
+        clearSelectionDisplay(player)
+        clearPlayerSelection(player.uuid)
+        player.sendSystemMessage(
+            Translator.tr("interaction.meta.subspace.shape_replace.success", subSpace.name, parentScope.scopeName, region.name)!!
+        )
+    }
+    return replaced
 }
 
 fun onSubSpaceCreation(

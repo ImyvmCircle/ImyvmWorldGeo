@@ -307,7 +307,7 @@ object RegionFactory {
             UnknownGeometry -> CreationError.InsufficientPoints
         }
 
-    private fun validateSubSpaceShapePlacement(
+    internal fun validateSubSpaceShapePlacement(
         geoShape: GeoShape,
         region: Region,
         parentScope: GeoScope,
