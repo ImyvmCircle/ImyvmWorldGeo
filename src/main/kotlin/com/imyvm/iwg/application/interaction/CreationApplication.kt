@@ -178,7 +178,7 @@ private fun getCreationSelectionOrNotify(player: ServerPlayer): SelectionState? 
         player.sendSystemMessage(Translator.tr("interaction.meta.select.not_in_mode")!!)
         return null
     }
-    if (!isCreationSelection(state)) {
+    if (!isRegionScopeCreationSelection(state)) {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.create_mode_required")!!)
         return null
     }

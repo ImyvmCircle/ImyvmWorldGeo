@@ -45,7 +45,8 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `RegionDataApi.sendRegionSpaceMessage` / `sendScopeSpaceMessage` / `sendSubSpaceMessage` `(messageKey, args)` overloads | — (new in 26.2-1.5.5) | — | New API | — | messageKey resolved via `Translator.tr`; `null` result logs an error and returns 0 |
 | `PlayerInteractionApi.openSpaceDebugView` | — (new in 26.2-1.5.5) | — | New API | — | Accepts Region/Scope/SubSpace; OP check via `PlayerList.isOp` |
 | `RegionDataApi.getSubSpaceGlobalSettings/getSubSpacePersonalSettings` and `ByType` overloads | — (new in 26.2-1.5.5) | — | New API | — | Completes raw SubSpace setting-list reads to match Region and Scope |
-| `PlayerInteractionApi.startSelectionForModifySubSpace` | — (new in 26.2-1.5.5) | — | New API | — | Starts a SubSpace shape selection for an existing canonical SubSpace; use `replaceSubSpaceShape` to commit a direct `GeoShape` replacement |
+| `PlayerInteractionApi.startSelectionForModifySubSpace` | — (new in 26.2-1.5.5) | — | New API | — | Starts a SubSpace shape selection for an existing canonical SubSpace |
+| `PlayerInteractionApi.modifySubSpace` | — (new in 26.2-1.5.5) | — | New API | — | Applies the current selection to replace an existing SubSpace shape; `replaceSubSpaceShape` remains the direct `GeoShape` replacement API |
 | `PlayerInteractionApi.createRegion/createAndGetRegion/addScope/createAndGetRegionScopePair` with `GeoShape` | — (new in 26.2-1.5.5) | — | New API | — | Direct shape creation bypasses selection session; existing selection-based methods unchanged |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
@@ -257,16 +258,19 @@ OP commands mirror the addon surface for live-server debugging. Use `subspace cr
 
 ## Selection API contract
 
-Call `PlayerInteractionApi` selection operations on the Minecraft server thread. A normal selection
-may create a Region or Scope, while a modification selection may modify only the exact live Scope it
-was started for. These modes are not interchangeable.
+Call `PlayerInteractionApi` selection operations on the Minecraft server thread. A player can have
+only one active selection mode at a time. Region/Scope creation, SubSpace creation, Scope
+modification, and SubSpace modification are separate modes; applying an operation from the wrong
+mode fails without mutation.
 
 `startSelectionForModify` accepts only an assigned canonical Scope currently owned by
-`RegionDatabase`, with a supported non-`UNKNOWN` shape, in the executing player's current dimension.
-Detached copies, orphaned or unassigned Scopes, cross-dimension targets, and attempts to apply a
-selection to another Scope fail without mutation. Disconnecting, changing dimension, or stopping the
-server clears transient selection state; deleting a Region or Scope clears selections that reference
-it only after the deletion is successfully persisted.
+`RegionDatabase`, with a supported non-`UNKNOWN` shape, in the executing player's current dimension,
+and provides shape-specific selection guidance for that Scope. `startSelectionForModifySubSpace`
+starts a separate selection mode bound to the exact live SubSpace being modified. Detached copies,
+orphaned or unassigned Scopes, cross-dimension targets, and mismatched modification targets fail
+before mutation. Disconnecting, changing dimension, or stopping the server clears transient selection
+state; deleting a Region or Scope clears selections that reference it only after the deletion is
+successfully persisted.
 
 ## V2-A time snapshot API
 

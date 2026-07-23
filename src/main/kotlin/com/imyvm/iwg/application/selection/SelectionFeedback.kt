@@ -4,13 +4,16 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.CircleGeometry
+import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.domain.component.PolygonGeometry
 import com.imyvm.iwg.domain.component.RectangleGeometry
 import com.imyvm.iwg.domain.component.SelectionState
 import com.imyvm.iwg.domain.component.ShapeGeometry
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.GeoConfig
@@ -21,6 +24,11 @@ import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.geo.isConvex
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
+import com.imyvm.iwg.application.selection.display.evaluateModifyCircleCenter
+import com.imyvm.iwg.application.selection.display.evaluateModifyCircleRadius
+import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonInsert
+import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonReplace
+import com.imyvm.iwg.application.selection.display.evaluateModifyRectangle
 import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonExplicitInsert
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
@@ -33,6 +41,7 @@ private const val MAX_DISPLAYED_EXISTING_POINTS = 8
 internal const val MAX_DISPLAYED_SELECTION_POINTS = 12
 
 private data class AutoSubSpaceTarget(val region: Region, val scope: GeoScope)
+private data class SubSpaceSelectionTarget(val regionName: String, val parentScope: GeoScope, val subSpace: SubSpace? = null)
 
 fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
@@ -69,7 +78,7 @@ fun buildModifyStartMessage(scope: GeoScope): Component {
     msg.append("\n")
     appendModifyShapeParameterBlock(msg, shapeType, scope)
     msg.append("\n")
-    appendModifyGuidance(msg, geometry, emptyList(), scope.scopeName, oldPoints)
+    appendModifyGuidance(msg, geometry, emptyList(), scope, oldPoints)
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
     return TextParser.parse(msg.toString())
@@ -81,14 +90,30 @@ private fun buildNormalMessage(msg: StringBuilder, state: SelectionState, eventP
     val points = state.points
     val count = points.size
     val effectiveShape = state.getEffectiveShapeType()
-    val subSpaceTarget = state.hypotheticalShape as? HypotheticalShape.SubSpace
+    val subSpaceTarget = state.toSubSpaceSelectionTarget()
     val autoTarget = if (subSpaceTarget == null) findAutoSubSpaceTarget(state, effectiveShape) else null
-    val effectiveSubSpaceTarget = subSpaceTarget ?: autoTarget?.toHypotheticalShape(effectiveShape)
+    val effectiveSubSpaceTarget = subSpaceTarget ?: autoTarget?.toSubSpaceSelectionTarget()
     val partialOverlap = if (subSpaceTarget == null && autoTarget == null) findPartialScopeOverlap(state, effectiveShape) else null
     val isAuto = state.hypotheticalShape == null
-    val isSubSpaceAuto = subSpaceTarget != null && subSpaceTarget.shapeType == null
+    val isSubSpaceAuto = when (val shape = state.hypotheticalShape) {
+        is HypotheticalShape.SubSpace -> shape.shapeType == null
+        is HypotheticalShape.ModifySubSpace -> shape.shapeType == null
+        else -> false
+    }
 
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
+    val modifySubSpaceTarget = state.hypotheticalShape as? HypotheticalShape.ModifySubSpace
+    if (modifySubSpaceTarget != null) {
+        msg.append("\n")
+        msg.append(
+            Translator.raw(
+                "selection.feedback.modify_subspace.header",
+                modifySubSpaceTarget.subSpace.name,
+                modifySubSpaceTarget.parentScope.scopeName,
+                modifySubSpaceTarget.regionName
+            ) ?: ""
+        )
+    }
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.all_points_header") ?: "")
     if (points.isEmpty()) {
@@ -169,7 +194,7 @@ private fun appendNormalGuidance(
     shape: GeoShapeType,
     isAuto: Boolean,
     count: Int,
-    subSpaceTarget: HypotheticalShape.SubSpace? = null
+    subSpaceTarget: SubSpaceSelectionTarget? = null
 ) {
     val guidanceRaw = if (subSpaceTarget == null) when {
         !isAuto && shape == GeoShapeType.CIRCLE -> when {
@@ -210,7 +235,7 @@ private fun subSpaceGuidanceRaw(
     shape: GeoShapeType,
     isAuto: Boolean,
     count: Int,
-    target: HypotheticalShape.SubSpace
+    target: SubSpaceSelectionTarget
 ): String {
     val limits = subSpaceGeometrySizeLimits
     return when {
@@ -279,15 +304,21 @@ private fun findPartialScopeOverlap(state: SelectionState, shape: GeoShapeType):
     return AutoSubSpaceTarget(region, scope)
 }
 
-private fun AutoSubSpaceTarget.toHypotheticalShape(shape: GeoShapeType): HypotheticalShape.SubSpace =
-    HypotheticalShape.SubSpace(region.name, scope, shape)
+private fun AutoSubSpaceTarget.toSubSpaceSelectionTarget(): SubSpaceSelectionTarget =
+    SubSpaceSelectionTarget(region.name, scope)
+
+private fun SelectionState.toSubSpaceSelectionTarget(): SubSpaceSelectionTarget? = when (val shape = hypotheticalShape) {
+    is HypotheticalShape.SubSpace -> SubSpaceSelectionTarget(shape.regionName, shape.parentScope)
+    is HypotheticalShape.ModifySubSpace -> SubSpaceSelectionTarget(shape.regionName, shape.parentScope, shape.subSpace)
+    else -> null
+}
 
 private fun buildAutoSubSpaceValidationWarning(
     shape: GeoShapeType,
     points: List<BlockPos>,
     target: AutoSubSpaceTarget
 ): String {
-    val subSpaceTarget = target.toHypotheticalShape(shape)
+    val subSpaceTarget = target.toSubSpaceSelectionTarget()
     val subSpaceWarning = buildSubSpaceValidationWarning(shape, points, subSpaceTarget)
     val onlySubSpace = Translator.raw(
         "selection.feedback.warn.only_subspace_possible",
@@ -310,7 +341,7 @@ private fun appendPartialOverlapWarning(base: String, target: AutoSubSpaceTarget
 private fun buildSubSpaceValidationWarning(
     shape: GeoShapeType,
     points: List<BlockPos>,
-    target: HypotheticalShape.SubSpace
+    target: SubSpaceSelectionTarget
 ): String {
     if (points.size < when (shape) {
             GeoShapeType.POLYGON -> 3
@@ -318,19 +349,19 @@ private fun buildSubSpaceValidationWarning(
             else -> Int.MAX_VALUE
         }
     ) return ""
-    val error = RegionFactory.validateSubSpaceSelection(
-        points,
-        shape,
-        com.imyvm.iwg.domain.Region(target.regionName, 1, mutableListOf(target.parentScope)),
-        target.parentScope
-    ) ?: return ""
+    val region = RegionDatabase.getRegionList().firstOrNull { it.name == target.regionName }
+    val error = if (region != null) {
+        RegionFactory.validateSubSpaceSelection(points, shape, region, target.parentScope, target.subSpace)
+    } else {
+        RegionFactory.validateSubSpaceSelection(points, shape, target.regionName, target.parentScope)
+    } ?: return ""
     return subSpaceSelectionWarningRaw(error, shape, target, points)
 }
 
 private fun subSpaceSelectionWarningRaw(
     error: CreationError,
     shape: GeoShapeType,
-    target: HypotheticalShape.SubSpace,
+    target: SubSpaceSelectionTarget,
     points: List<BlockPos>
 ): String {
     val limits = subSpaceGeometrySizeLimits
@@ -474,7 +505,7 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
     msg.append("\n")
     appendModifyShapeParameterBlock(msg, shapeType, scope)
     msg.append("\n")
-    appendModifyGuidance(msg, geometry, newPoints, scope.scopeName, oldPoints)
+    appendModifyGuidance(msg, geometry, newPoints, scope, oldPoints)
 
     val particleNote = Translator.raw("selection.feedback.particles.modify") ?: ""
     if (particleNote.isNotEmpty()) {
@@ -628,7 +659,7 @@ private fun appendModifyGuidance(
     msg: StringBuilder,
     geometry: ShapeGeometry,
     newPoints: List<BlockPos>,
-    scopeName: String,
+    scope: GeoScope,
     oldPoints: List<BlockPos>
 ) {
     val count = newPoints.size
@@ -640,7 +671,7 @@ private fun appendModifyGuidance(
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.circle.start",
-                    scopeName, existingRadius
+                    scope.scopeName, existingRadius
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -678,7 +709,7 @@ private fun appendModifyGuidance(
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.rect.start",
-                    scopeName, geometry.west, geometry.north, geometry.east, geometry.south
+                    scope.scopeName, geometry.west, geometry.north, geometry.east, geometry.south
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -698,7 +729,7 @@ private fun appendModifyGuidance(
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.polygon.start",
-                    scopeName, oldPoints.size
+                    scope.scopeName, oldPoints.size
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -759,15 +790,15 @@ private fun appendModifyGuidance(
     }
     if (guidanceRaw.isNotEmpty()) msg.append(guidanceRaw)
 
-    val warningRaw = buildModifyValidationWarning(geometry, newPoints)
+    val warningRaw = buildModifyValidationWarning(scope, geometry, newPoints, oldPoints)
     if (warningRaw.isNotEmpty()) {
         msg.append("\n")
         msg.append(warningRaw)
     }
 }
 
-private fun buildModifyValidationWarning(geometry: ShapeGeometry, newPoints: List<BlockPos>): String {
-    return when (geometry) {
+private fun buildModifyValidationWarning(scope: GeoScope, geometry: ShapeGeometry, newPoints: List<BlockPos>, oldPoints: List<BlockPos>): String {
+    val shapeWarning = when (geometry) {
         is CircleGeometry -> {
             if (newPoints.size < 1) return ""
             val cx = geometry.centerX
@@ -790,6 +821,41 @@ private fun buildModifyValidationWarning(geometry: ShapeGeometry, newPoints: Lis
         is PolygonGeometry -> ""
         else -> ""
     }
+    if (shapeWarning.isNotEmpty()) return shapeWarning
+    val newShape = buildModifiedScopeShape(geometry, newPoints, oldPoints) ?: return ""
+    val scopeId = scope.assignedScopeIdOrNull ?: return ""
+    val region = RegionDatabase.getRegionList().firstOrNull { candidate ->
+        candidate.scopes.any { it.requireAssignedScopeId() == scopeId }
+    } ?: return ""
+    val error = RegionFactory.validateScopeContainsSubSpaces(region, scope, newShape) ?: return ""
+    return subSpaceSelectionWarningRaw(error, newShape.geoShapeType, SubSpaceSelectionTarget(region.name, scope), emptyList())
+}
+
+private fun buildModifiedScopeShape(geometry: ShapeGeometry, newPoints: List<BlockPos>, oldPoints: List<BlockPos>): GeoShape? = when (geometry) {
+    is RectangleGeometry -> if (newPoints.size == 1) {
+        evaluateModifyRectangle(newPoints[0], listOf(geometry.west, geometry.north, geometry.east, geometry.south))
+            ?.let { GeoShape.rectangle(GeoPoint(it[0], it[1]), GeoPoint(it[2], it[3])) }
+    } else null
+    is CircleGeometry -> when (newPoints.size) {
+        1 -> evaluateModifyCircleRadius(newPoints[0], listOf(geometry.centerX, geometry.centerZ, geometry.radius))
+            ?.let { GeoShape.circle(GeoPoint(it[0], it[1]), it[2]) }
+        2 -> evaluateModifyCircleCenter(newPoints[0], newPoints[1], listOf(geometry.centerX, geometry.centerZ, geometry.radius))
+            ?.let { GeoShape.circle(GeoPoint(it[0], it[1]), it[2]) }
+        else -> null
+    }
+    is PolygonGeometry -> when (newPoints.size) {
+        1 -> {
+            val existing = oldPoints.any { it.x == newPoints[0].x && it.z == newPoints[0].z }
+            val polygon = if (existing) oldPoints.filterNot { it.x == newPoints[0].x && it.z == newPoints[0].z } else evaluateModifyPolygonInsert(newPoints[0], oldPoints)
+            polygon?.takeIf { it.size >= 3 }?.let { GeoShape.polygon(it.map { point -> GeoPoint(point.x, point.z) }) }
+        }
+        2 -> evaluateModifyPolygonReplace(newPoints[0], newPoints[1], oldPoints)
+            ?.let { GeoShape.polygon(it.map { point -> GeoPoint(point.x, point.z) }) }
+        3 -> evaluateModifyPolygonExplicitInsert(newPoints[0], newPoints[1], newPoints[2], oldPoints)
+            ?.let { GeoShape.polygon(it.map { point -> GeoPoint(point.x, point.z) }) }
+        else -> null
+    }
+    UnknownGeometry -> null
 }
 
 
@@ -800,13 +866,13 @@ private fun buildAutoSubSpaceParticleNote(
 ): String = buildSubSpaceParticleNote(
     shape,
     points,
-    target.toHypotheticalShape(shape)
+    target.toSubSpaceSelectionTarget()
 )
 
 private fun buildSubSpaceParticleNote(
     shape: GeoShapeType,
     points: List<BlockPos>,
-    target: HypotheticalShape.SubSpace
+    target: SubSpaceSelectionTarget
 ): String {
     val required = when (shape) {
         GeoShapeType.CIRCLE, GeoShapeType.RECTANGLE -> 2
@@ -814,13 +880,13 @@ private fun buildSubSpaceParticleNote(
         else -> Int.MAX_VALUE
     }
     if (points.size < required) return Translator.raw("selection.feedback.particles.pillar_only") ?: ""
-    return if (RegionFactory.validateSubSpaceSelection(
-            points,
-            shape,
-            target.regionName,
-            target.parentScope
-        ) == null
-    ) {
+    val region = RegionDatabase.getRegionList().firstOrNull { it.name == target.regionName }
+    val error = if (region != null) {
+        RegionFactory.validateSubSpaceSelection(points, shape, region, target.parentScope, target.subSpace)
+    } else {
+        RegionFactory.validateSubSpaceSelection(points, shape, target.regionName, target.parentScope)
+    }
+    return if (error == null) {
         Translator.raw("selection.feedback.particles.subspace_valid") ?: ""
     } else {
         Translator.raw("selection.feedback.particles.subspace_invalid") ?: ""
@@ -852,7 +918,7 @@ private fun appendShapeParameterBlock(
     msg: StringBuilder,
     effectiveShape: GeoShapeType,
     isAuto: Boolean,
-    subSpaceTarget: HypotheticalShape.SubSpace? = null
+    subSpaceTarget: SubSpaceSelectionTarget? = null
 ) {
     when {
         subSpaceTarget != null && isAuto -> msg.append(

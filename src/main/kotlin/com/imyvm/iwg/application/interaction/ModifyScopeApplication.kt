@@ -6,8 +6,8 @@ import com.imyvm.iwg.application.interaction.scope.shape.*
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.util.text.Translator
-import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
+import net.minecraft.server.level.ServerPlayer
 
 fun onModifyScope(
     player: ServerPlayer,

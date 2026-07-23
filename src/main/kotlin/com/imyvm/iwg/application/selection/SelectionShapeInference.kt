@@ -8,6 +8,7 @@ fun SelectionState.getEffectiveShapeType(): GeoShapeType {
     return when (val shape = hypotheticalShape) {
         is HypotheticalShape.Normal -> shape.shapeType
         is HypotheticalShape.SubSpace -> shape.shapeType ?: if (points.size <= 2) GeoShapeType.RECTANGLE else GeoShapeType.POLYGON
+        is HypotheticalShape.ModifySubSpace -> shape.shapeType ?: shape.subSpace.geoShape.geoShapeType
         is HypotheticalShape.ModifyExisting -> shape.scope.geoShape?.geoShapeType ?: GeoShapeType.RECTANGLE
         null -> if (points.size <= 2) GeoShapeType.RECTANGLE else GeoShapeType.POLYGON
     }

@@ -8,6 +8,7 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.domain.component.ScopeId
 import com.imyvm.iwg.domain.component.SelectionState
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
@@ -34,20 +35,42 @@ class SelectionApplicationTest {
         val second = assignedScope("second", 7, 2)
         val inferred = SelectionState()
         val fixed = SelectionState(hypotheticalShape = HypotheticalShape.Normal(GeoShapeType.CIRCLE))
-        val subSpace = SelectionState(hypotheticalShape = HypotheticalShape.SubSpace("region", first, null))
+        val subSpaceTarget = SubSpace(1, "plot", first.requireAssignedScopeId(), first.worldId, rectangle())
+        val subSpaceSelection = SelectionState(hypotheticalShape = HypotheticalShape.SubSpace("region", first, null))
+        val modifyingSubSpace = SelectionState(hypotheticalShape = HypotheticalShape.ModifySubSpace("region", first, subSpaceTarget, null))
         val modifying = SelectionState(hypotheticalShape = HypotheticalShape.ModifyExisting(first))
 
         assertTrue(isCreationSelection(inferred))
         assertTrue(isCreationSelection(fixed))
-        assertTrue(isCreationSelection(subSpace))
+        assertTrue(isCreationSelection(subSpaceSelection))
+        assertFalse(isCreationSelection(modifyingSubSpace))
         assertFalse(isCreationSelection(modifying))
-        assertFalse(isSubSpaceSelection(inferred))
-        assertFalse(isSubSpaceSelection(fixed))
-        assertTrue(isSubSpaceSelection(subSpace))
-        assertFalse(isSubSpaceSelection(modifying))
+        assertTrue(isRegionScopeCreationSelection(inferred))
+        assertTrue(isRegionScopeCreationSelection(fixed))
+        assertFalse(isRegionScopeCreationSelection(subSpaceSelection))
+        assertTrue(isSubSpaceCreationSelection(subSpaceSelection))
+        assertFalse(isSubSpaceCreationSelection(fixed))
+        assertTrue(isModifySubSpaceSelectionFor(modifyingSubSpace, subSpaceTarget))
+        assertFalse(isModifySubSpaceSelectionFor(subSpaceSelection, subSpaceTarget))
         assertTrue(isModifySelectionFor(modifying, first))
         assertFalse(isModifySelectionFor(modifying, second))
         assertFalse(isModifySelectionFor(inferred, first))
+    }
+
+    @Test
+    fun `subspace modification mode is not accepted by other selection modes`() {
+        val scope = assignedScope("scope", 7, 1)
+        val otherScope = assignedScope("other", 7, 2)
+        val subSpace = SubSpace(1, "plot", scope.requireAssignedScopeId(), scope.worldId, rectangle())
+        val otherSubSpace = SubSpace(2, "other", otherScope.requireAssignedScopeId(), otherScope.worldId, rectangle())
+        val state = SelectionState(hypotheticalShape = HypotheticalShape.ModifySubSpace("region", scope, subSpace, null))
+
+        assertFalse(isCreationSelection(state))
+        assertFalse(isRegionScopeCreationSelection(state))
+        assertFalse(isSubSpaceCreationSelection(state))
+        assertFalse(isModifySelectionFor(state, scope))
+        assertTrue(isModifySubSpaceSelectionFor(state, subSpace))
+        assertFalse(isModifySubSpaceSelectionFor(state, otherSubSpace))
     }
 
     @Test
@@ -129,10 +152,15 @@ class SelectionApplicationTest {
         ImyvmWorldGeo.pointSelectingPlayers[normalPlayer] = SelectionState()
         ImyvmWorldGeo.pointSelectingPlayers[clonePlayer] =
             SelectionState(hypotheticalShape = HypotheticalShape.ModifyExisting(firstScopeClone))
+        val subSpacePlayer = UUID.randomUUID()
+        val subSpace = SubSpace(1, "plot", firstScope.requireAssignedScopeId(), firstScope.worldId, rectangle())
+        ImyvmWorldGeo.pointSelectingPlayers[subSpacePlayer] =
+            SelectionState(hypotheticalShape = HypotheticalShape.ModifySubSpace("region", firstScope, subSpace, null))
 
         clearSelectionsReferencing(listOf(firstScope))
 
         assertFalse(ImyvmWorldGeo.pointSelectingPlayers.containsKey(firstPlayer))
+        assertFalse(ImyvmWorldGeo.pointSelectingPlayers.containsKey(subSpacePlayer))
         assertTrue(ImyvmWorldGeo.pointSelectingPlayers.containsKey(secondPlayer))
         assertTrue(ImyvmWorldGeo.pointSelectingPlayers.containsKey(normalPlayer))
         assertTrue(ImyvmWorldGeo.pointSelectingPlayers.containsKey(clonePlayer))

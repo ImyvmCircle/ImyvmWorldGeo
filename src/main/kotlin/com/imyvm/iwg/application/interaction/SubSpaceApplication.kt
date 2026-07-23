@@ -33,7 +33,7 @@ fun onSubSpaceCreationFromSelection(
         player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.wrong_world", parentScope.scopeName, region.name)!!)
         return 0
     }
-    val state = getCreationSelectionForSubSpace(player) ?: return 0
+    val state = getSubSpaceCreationSelection(player) ?: return 0
     val resolvedShapeType = shapeType ?: state.getEffectiveShapeType()
     return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope)) {
         is Result.Ok -> {
@@ -64,8 +64,8 @@ fun onSubSpaceShapeReplacementFromSelection(
         player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.wrong_world", parentScope.scopeName, region.name)!!)
         return 0
     }
-    val state = getCreationSelectionForSubSpace(player) ?: return 0
-    val resolvedShapeType = shapeType ?: subSpace.geoShape.geoShapeType
+    val state = getSubSpaceModifySelection(player, subSpace) ?: return 0
+    val resolvedShapeType = shapeType ?: state.getEffectiveShapeType()
     return when (val result = RegionFactory.createSubSpaceShape(state.points, resolvedShapeType, region, parentScope, subSpace)) {
         is Result.Ok -> {
             val replaced = onReplacingSubSpaceShape(player, region, parentScope, subSpace, result.value)
@@ -419,9 +419,12 @@ fun onRemovingSubSpaceKeyedTag(player: ServerPlayer, region: Region, parentScope
     return 1
 }
 
-private fun getCreationSelectionForSubSpace(player: ServerPlayer) =
-    ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
-        ?.takeIf(::isSubSpaceSelection)
-        .also {
-            if (it == null) player.sendSystemMessage(Translator.tr("interaction.meta.select.create_mode_required")!!)
-        }
+private fun getSubSpaceCreationSelection(player: ServerPlayer) =
+    ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.takeIf(::isSubSpaceCreationSelection).also {
+        if (it == null) player.sendSystemMessage(Translator.tr("interaction.meta.select.create_mode_required")!!)
+    }
+
+private fun getSubSpaceModifySelection(player: ServerPlayer, subSpace: SubSpace) =
+    ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.takeIf { isModifySubSpaceSelectionFor(it, subSpace) }.also {
+        if (it == null) player.sendSystemMessage(Translator.tr("interaction.meta.select.modify_subspace_required")!!)
+    }

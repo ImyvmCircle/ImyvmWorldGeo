@@ -1087,7 +1087,7 @@ private fun runStartSelectForSubSpace(context: CommandContext<CommandSourceStack
 private fun runStartSelectForSubSpaceModify(context: CommandContext<CommandSourceStack>): Int {
     val target = getSubSpaceTarget(context) ?: return 0
     val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, target.player) ?: return 0 }
-    return onStartSelectionForSubSpace(target.player, target.region, target.scope, shapeType)
+    return onStartSelectionForModifySubSpace(target.player, target.region, target.scope, target.subSpace, shapeType)
 }
 
 private fun runCreateSubSpace(context: CommandContext<CommandSourceStack>): Int {

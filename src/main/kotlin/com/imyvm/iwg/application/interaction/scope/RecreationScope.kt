@@ -34,7 +34,11 @@ fun recreateScope(
 
     return when (newShape) {
         is Result.Ok -> {
-            if (replaceScopeGeometryAndSave(region, existingScope, newShape.value) { saveRegionData(player) }) {
+            val containmentError = RegionFactory.validateScopeContainsSubSpaces(region, existingScope, newShape.value)
+            if (containmentError != null) {
+                errorMessage(containmentError, shapeType).forEach(player::sendSystemMessage)
+                false
+            } else if (replaceScopeGeometryAndSave(region, existingScope, newShape.value) { saveRegionData(player) }) {
                 clearSelectionDisplay(player)
                 clearPlayerSelection(player.uuid)
                 true
@@ -88,6 +92,7 @@ internal fun replaceScopeShape(
     require(oldShape.geoShapeType == newShape.geoShapeType) { "scope shape type cannot be changed" }
 
     val error = RegionFactory.validateGeoShapePlacement(newShape, scope.worldId, scope, currentRegions)
+        ?: RegionFactory.validateScopeContainsSubSpaces(region, scope, newShape)
     if (error != null) return ScopeShapeReplacementResult.Rejected(error)
     return if (replaceScopeGeometryAndSave(region, scope, newShape, save)) {
         ScopeShapeReplacementResult.Success

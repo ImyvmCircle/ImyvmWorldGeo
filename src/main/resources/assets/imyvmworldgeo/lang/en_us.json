@@ -527,5 +527,9 @@
   "interaction.meta.debug.behavior.typed.detail.combat": "&7- combat player=&b{0}&7 object=&f{1}&7 target=&f{2}&7 damage=&e{3}&7 kills=&e{4}&7 deaths=&e{5}&7 damaged=&e{6}",
   "interaction.meta.debug.behavior.typed.detail.residence": "&7- residence chunk=&b{0}&7 millis=&e{1}",
   "interaction.meta.debug.behavior.typed.detail.online": "&7- online player=&b{0}&7 totalMs=&e{1}&7 afkMs=&e{2}&7 nonAfkMs=&e{3}",
-  "interaction.meta.debug.behavior.typed.keys": "&7Statistic keys: online=&e{0}&7 afk=&e{1}&7 residence=&e{2}&7 damaged=&e{3}"
+  "interaction.meta.debug.behavior.typed.keys": "&7Statistic keys: online=&e{0}&7 afk=&e{1}&7 residence=&e{2}&7 damaged=&e{3}",
+  "interaction.meta.select.start.modify_subspace": "&aSubSpace modify selection started for &b{0}&a (parent scope: &e{1}&a, region: &e{2}&a). Right-click a block with a nether star to add points, left-click to undo.",
+  "interaction.meta.select.start.modify_subspace.with_shape": "&a&e{3}&a SubSpace modify selection started for &b{0}&a (parent scope: &e{1}&a, region: &e{2}&a). Right-click a block with a nether star to add points, left-click to undo.",
+  "interaction.meta.select.modify_subspace_required": "&cCurrent selection is not bound to the requested SubSpace. Start a modify selection for that SubSpace first.",
+  "selection.feedback.modify_subspace.header": "&6Modifying SubSpace &b{0}&6 (parent scope: &e{1}&6, region: &e{2}&6)."
 }

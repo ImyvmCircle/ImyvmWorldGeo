@@ -7,6 +7,7 @@ import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
 import com.imyvm.iwg.domain.component.SelectionState
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.infra.RegionDatabase
@@ -21,10 +22,17 @@ internal enum class ModifySelectionTargetError {
 }
 
 internal fun isCreationSelection(state: SelectionState): Boolean =
-    state.hypotheticalShape !is HypotheticalShape.ModifyExisting
+    state.hypotheticalShape !is HypotheticalShape.ModifyExisting &&
+        state.hypotheticalShape !is HypotheticalShape.ModifySubSpace
 
-internal fun isSubSpaceSelection(state: SelectionState): Boolean =
+internal fun isRegionScopeCreationSelection(state: SelectionState): Boolean =
+    state.hypotheticalShape == null || state.hypotheticalShape is HypotheticalShape.Normal
+
+internal fun isSubSpaceCreationSelection(state: SelectionState): Boolean =
     state.hypotheticalShape is HypotheticalShape.SubSpace
+
+internal fun isModifySubSpaceSelectionFor(state: SelectionState, subSpace: SubSpace): Boolean =
+    (state.hypotheticalShape as? HypotheticalShape.ModifySubSpace)?.subSpace === subSpace
 
 internal fun isModifySelectionFor(state: SelectionState, scope: GeoScope): Boolean =
     (state.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope === scope
@@ -85,7 +93,11 @@ internal fun clearAllSelections() {
 internal fun clearSelectionsReferencing(scopes: Collection<GeoScope>) {
     if (scopes.isEmpty()) return
     for ((playerId, state) in ImyvmWorldGeo.pointSelectingPlayers) {
-        val target = (state.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope ?: continue
+        val target = when (val shape = state.hypotheticalShape) {
+            is HypotheticalShape.ModifyExisting -> shape.scope
+            is HypotheticalShape.ModifySubSpace -> shape.parentScope
+            else -> continue
+        }
         if (scopes.any { it === target }) {
             ImyvmWorldGeo.pointSelectingPlayers.remove(playerId, state)
         }
@@ -214,6 +226,43 @@ fun onStartSelectionForSubSpace(
         player.sendSystemMessage(Translator.tr("interaction.meta.select.start.subspace", region.name, parentScope.scopeName)!!)
     } else {
         player.sendSystemMessage(Translator.tr("interaction.meta.select.start.subspace.with_shape", region.name, parentScope.scopeName, shapeType.name)!!)
+    }
+    return 1
+}
+
+fun onStartSelectionForModifySubSpace(
+    player: ServerPlayer,
+    region: Region,
+    parentScope: GeoScope,
+    subSpace: SubSpace,
+    shapeType: GeoShapeType? = null
+): Int {
+    val playerUUID = player.uuid
+    if (ImyvmWorldGeo.pointSelectingPlayers[playerUUID] != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
+        return 0
+    }
+    if (shapeType == GeoShapeType.UNKNOWN) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.invalid_shape", shapeType.name)!!)
+        return 0
+    }
+    RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
+    if (player.level().dimension().identifier() != parentScope.worldId) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.wrong_world", parentScope.scopeName, region.name)!!)
+        return 0
+    }
+    val state = SelectionState(
+        hypotheticalShape = HypotheticalShape.ModifySubSpace(region.name, parentScope, subSpace, shapeType),
+        worldId = parentScope.worldId
+    )
+    if (ImyvmWorldGeo.pointSelectingPlayers.putIfAbsent(playerUUID, state) != null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.already")!!)
+        return 0
+    }
+    if (shapeType == null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.start.modify_subspace", subSpace.name, parentScope.scopeName, region.name)!!)
+    } else {
+        player.sendSystemMessage(Translator.tr("interaction.meta.select.start.modify_subspace.with_shape", subSpace.name, parentScope.scopeName, region.name, shapeType.name)!!)
     }
     return 1
 }

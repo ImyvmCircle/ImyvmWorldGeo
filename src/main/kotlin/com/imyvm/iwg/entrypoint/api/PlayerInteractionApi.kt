@@ -122,10 +122,15 @@ object PlayerInteractionApi {
         parentScope: GeoScope,
         subSpace: SubSpace,
         shapeType: GeoShapeType? = null
-    ): Int {
-        com.imyvm.iwg.infra.RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
-        return onStartSelectionForSubSpace(player, region, parentScope, shapeType)
-    }
+    ): Int = onStartSelectionForModifySubSpace(player, region, parentScope, subSpace, shapeType)
+
+    fun modifySubSpace(
+        player: ServerPlayer,
+        region: Region,
+        parentScope: GeoScope,
+        subSpace: SubSpace,
+        shapeType: GeoShapeType? = null
+    ) = onSubSpaceShapeReplacementFromSelection(player, region, parentScope, subSpace, shapeType)
 
     fun addSubSpaceStringTag(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, tag: String) =
         onAddingSubSpaceStringTag(player, region, parentScope, subSpace, tag)

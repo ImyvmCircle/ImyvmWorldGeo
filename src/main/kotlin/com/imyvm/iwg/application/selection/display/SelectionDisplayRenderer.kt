@@ -140,7 +140,8 @@ private fun displayForPlayer(
 
     when (val shape = state.hypotheticalShape) {
         is HypotheticalShape.ModifyExisting -> displayForModifyExisting(player, points, shape.scope, session)
-        is HypotheticalShape.SubSpace -> displayForSubSpaceShape(player, points, state.getEffectiveShapeType(), shape, session)
+        is HypotheticalShape.ModifySubSpace -> displayForModifySubSpace(player, points, state.getEffectiveShapeType(), shape, session)
+        is HypotheticalShape.SubSpace -> displayForSubSpaceShape(player, points, state.getEffectiveShapeType(), shape.regionName, shape.parentScope, session)
         is HypotheticalShape.Normal -> displayForCreationShape(player, state, points, shape.shapeType, session)
         null -> displayForCreationShape(player, state, points, state.getEffectiveShapeType(), session)
     }
@@ -157,7 +158,7 @@ private fun displayForCreationShape(
 ) {
     val subSpaceTarget = findAutoSubSpaceTarget(state, shapeType)
     if (subSpaceTarget != null) {
-        displayForSubSpaceShape(player, points, shapeType, subSpaceTarget, session)
+        displayForSubSpaceShape(player, points, shapeType, subSpaceTarget.regionName, subSpaceTarget.parentScope, session)
     } else {
         displayForShape(player, points, shapeType, session)
     }
@@ -182,22 +183,27 @@ private fun displayForSubSpaceShape(
     player: ServerPlayer,
     points: List<BlockPos>,
     shapeType: GeoShapeType,
-    target: HypotheticalShape.SubSpace,
+    regionName: String,
+    parentScope: GeoScope,
     session: SelectionDisplaySession
 ) {
-    if (RegionFactory.validateSubSpaceSelection(
-            points,
-            shapeType,
-            target.regionName,
-            target.parentScope
-        ) != null
-    ) return
     when (shapeType) {
-        GeoShapeType.CIRCLE -> displayCircleSelection(player, points, session, subSpaceGeometrySizeLimits)
-        GeoShapeType.RECTANGLE -> displayRectangleSelection(player, points, session, subSpaceGeometrySizeLimits)
-        GeoShapeType.POLYGON -> emitClosedBoundary(player, points.size, { points[it].x }, { points[it].z }, BoundaryStyle.SELECTION, session)
+        GeoShapeType.CIRCLE -> displayCircleSelection(player, points, session, subSpaceGeometrySizeLimits, BoundaryStyle.SUBSPACE)
+        GeoShapeType.RECTANGLE -> displayRectangleSelection(player, points, session, subSpaceGeometrySizeLimits, BoundaryStyle.SUBSPACE)
+        GeoShapeType.POLYGON -> emitClosedBoundary(player, points.size, { points[it].x }, { points[it].z }, BoundaryStyle.SUBSPACE, session)
         GeoShapeType.UNKNOWN -> Unit
     }
+}
+
+private fun displayForModifySubSpace(
+    player: ServerPlayer,
+    points: List<BlockPos>,
+    shapeType: GeoShapeType,
+    target: HypotheticalShape.ModifySubSpace,
+    session: SelectionDisplaySession
+) {
+    displaySubSpace(player, target.subSpace, session)
+    displayForSubSpaceShape(player, points, shapeType, target.regionName, target.parentScope, session)
 }
 
 private fun displayForShape(
@@ -218,20 +224,32 @@ private fun displayCircleSelection(
     player: ServerPlayer,
     points: List<BlockPos>,
     session: SelectionDisplaySession,
-    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits,
+    style: BoundaryStyle = BoundaryStyle.SELECTION
 ) {
     if (points.size < 2) return
     val params = evaluateCircleShape(points[0], points[1], limits) ?: return
     val lineSamples = maxOf(1, session.surfaceUnits / 4)
-    emitLineSurface(player, points[0], points[1], session, lineSamples)
-    drawCircleOutline(player, params[0], params[1], params[2], session)
+    when (style) {
+        BoundaryStyle.SELECTION -> emitLineSurface(player, points[0], points[1], session, lineSamples)
+        BoundaryStyle.ORIGINAL -> emitLineSurfaceOld(player, points[0], points[1], session, lineSamples)
+        BoundaryStyle.MODIFYING -> emitLineSurfaceModifying(player, points[0].x, points[0].z, points[1].x, points[1].z, session, lineSamples)
+        BoundaryStyle.SUBSPACE -> emitLineSurfaceSubSpace(player, points[0].x, points[0].z, points[1].x, points[1].z, session, lineSamples)
+    }
+    when (style) {
+        BoundaryStyle.SELECTION -> drawCircleOutline(player, params[0], params[1], params[2], session)
+        BoundaryStyle.ORIGINAL -> drawCircleOutlineOld(player, params[0], params[1], params[2], session)
+        BoundaryStyle.MODIFYING -> drawCircleOutlineModifying(player, params[0], params[1], params[2], session)
+        BoundaryStyle.SUBSPACE -> drawCircleOutlineSubSpace(player, params[0], params[1], params[2], session)
+    }
 }
 
 private fun displayRectangleSelection(
     player: ServerPlayer,
     points: List<BlockPos>,
     session: SelectionDisplaySession,
-    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits,
+    style: BoundaryStyle = BoundaryStyle.SELECTION
 ) {
     if (points.size < 2) return
     val params = evaluateRectangleShape(points[0], points[1], limits) ?: return
@@ -246,7 +264,7 @@ private fun displayRectangleSelection(
         BlockPos(west, 0, south)
     )
     corners.forEach { emitPillar(player, it.x, it.z, session) }
-    emitClosedBoundary(player, corners.size, { corners[it].x }, { corners[it].z }, BoundaryStyle.SELECTION, session)
+    emitClosedBoundary(player, corners.size, { corners[it].x }, { corners[it].z }, style, session)
 }
 
 private fun displayPolygonSelection(

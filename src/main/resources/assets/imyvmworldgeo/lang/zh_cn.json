@@ -526,5 +526,9 @@
   "interaction.meta.debug.behavior.typed.detail.residence": "&7- 栖息 区块=&b{0}&7 毫秒=&e{1}",
   "interaction.meta.debug.behavior.typed.detail.online": "&7- 在线 玩家=&b{0}&7 总毫秒=&e{1}&7 AFK毫秒=&e{2}&7 非AFK毫秒=&e{3}",
   "interaction.meta.debug.behavior.typed.keys": "&7统计键：在线=&e{0}&7 AFK=&e{1}&7 居住=&e{2}&7 受击=&e{3}",
-  "interaction.meta.command.help.scope.modify": "§d/imyvmWorldGeo scope modify select <§b境界标识符§d> <§b地方名称§d>\n  §f为已有地方启动几何修改选区。\n§d/imyvmWorldGeo scope modify <§b境界标识符§d> <§b地方名称§d>\n  §f将当前修改选区应用到该地方。"
+  "interaction.meta.command.help.scope.modify": "§d/imyvmWorldGeo scope modify select <§b境界标识符§d> <§b地方名称§d>\n  §f为已有地方启动几何修改选区。\n§d/imyvmWorldGeo scope modify <§b境界标识符§d> <§b地方名称§d>\n  §f将当前修改选区应用到该地方。",
+  "interaction.meta.select.start.modify_subspace": "&a已进入子空间修改选区模式，目标子空间：&b{0}&a（父地方：&e{1}&a，境界：&e{2}&a）。右键手持下界之星的方块以添加点，左键以撤销。",
+  "interaction.meta.select.start.modify_subspace.with_shape": "&a已进入 &e{3}&a 子空间修改选区模式，目标子空间：&b{0}&a（父地方：&e{1}&a，境界：&e{2}&a）。右键手持下界之星的方块以添加点，左键以撤销。",
+  "interaction.meta.select.modify_subspace_required": "&c当前选区未绑定到请求修改的子空间。请先为该子空间启动修改选区。",
+  "selection.feedback.modify_subspace.header": "&6正在修改子空间 &b{0}&6（父地方：&e{1}&6，境界：&e{2}&6）。"
 }

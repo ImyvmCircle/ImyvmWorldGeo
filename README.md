@@ -285,7 +285,7 @@ Selection and shape editing:
 - `resetSelection(player: ServerPlayer, shapeType: GeoShapeType? = null)` clears selected points and optionally updates the shape hint.
 - `setSelectionShape(player: ServerPlayer, shapeType: GeoShapeType)` changes the shape hint for the current creation selection.
 - `startSelectionForModify(player: ServerPlayer, scope: GeoScope)` starts selection mode locked to one live Scope.
-- `modifyScope(player: ServerPlayer, region: Region, scopeName: String)` applies the current modification selection to a Scope.
+- `modifyScope(player: ServerPlayer, region: Region, scopeName: String)` applies the current Scope modification selection to that exact Scope.
 - `replaceScopeShape(player: ServerPlayer, region: Region, scope: GeoScope, newShape: GeoShape)` replaces a live Scope shape after ownership, size, intersection, persistence, and SubSpace-containment checks.
 
 Region and Scope mutations:
@@ -313,6 +313,7 @@ SubSpace mutations:
 - `renameSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newName: String): Int` renames a SubSpace.
 - `replaceSubSpaceShape(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newShape: GeoShape): Int` replaces a SubSpace shape after parent containment and sibling conflict checks.
 - `startSelectionForModifySubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, shapeType: GeoShapeType? = null): Int` starts a SubSpace shape selection for an existing SubSpace after canonical ownership validation.
+- `modifySubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, shapeType: GeoShapeType? = null): Int` replaces an existing SubSpace shape from the current SubSpace modification selection.
 - `addSubSpaceStringTag`, `removeSubSpaceStringTag`, `putSubSpaceKeyedTag`, and `removeSubSpaceKeyedTag` mutate SubSpace tags and persist or roll back the change.
 
 Settings, teleport, and display:

@@ -6,6 +6,7 @@ import com.imyvm.iwg.domain.component.GeoPoint
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.ScopeId
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import net.minecraft.resources.Identifier
 import java.io.IOException
@@ -93,6 +94,35 @@ class ScopeShapeReplacementTest {
         )
         assertFalse(saved)
         assertSame(oldShape, scope.geoShape)
+    }
+
+    @Test
+    fun `replacement rejects scope shape that would orphan child subspaces`() {
+        val oldShape = rectangle(0, 0, 400, 400)
+        val scope = scope("scope", oldShape)
+        val region = Region("region", 1, mutableListOf(scope))
+        val subSpace = SubSpace(
+            1,
+            "plot",
+            scope.requireAssignedScopeId(),
+            scope.worldId,
+            rectangle(300, 300, 330, 330)
+        )
+        region.addSubSpaceFromOwner(subSpace)
+        var saved = false
+
+        val result = replaceScopeShape(region, scope, rectangle(0, 0, 220, 220), listOf(region)) {
+            saved = true
+            true
+        }
+
+        assertEquals(
+            ScopeShapeReplacementResult.Rejected(CreationError.SubSpaceOutsideParentScope("region", "scope")),
+            result
+        )
+        assertFalse(saved)
+        assertSame(oldShape, scope.geoShape)
+        assertSame(subSpace.geoShape, region.subSpaces.single().geoShape)
     }
 
     @Test

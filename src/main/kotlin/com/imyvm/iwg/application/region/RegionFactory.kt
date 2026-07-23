@@ -189,9 +189,10 @@ object RegionFactory {
         positions: List<BlockPos>,
         shapeType: GeoShapeType,
         region: Region,
-        parentScope: GeoScope
+        parentScope: GeoScope,
+        excludedSubSpace: SubSpace? = null
     ): CreationError? {
-        val result = createSubSpaceShape(positions, shapeType, region, parentScope)
+        val result = createSubSpaceShape(positions, shapeType, region, parentScope, excludedSubSpace)
         return (result as? Result.Err)?.error
     }
 
@@ -277,6 +278,17 @@ object RegionFactory {
             }
         val intersections = checkIntersection(geoShape, existingScopes)
         return intersections.takeIf { it.isNotEmpty() }?.let(CreationError::IntersectionBetweenScopes)
+    }
+
+    internal fun validateScopeContainsSubSpaces(
+        region: Region,
+        parentScope: GeoScope,
+        geoShape: GeoShape
+    ): CreationError? {
+        val parentScopeId = parentScope.requireAssignedScopeId()
+        return if (region.subSpaces.any { it.parentScopeId == parentScopeId && !it.geoShape.isContainedBy(geoShape) }) {
+            CreationError.SubSpaceOutsideParentScope(region.name, parentScope.scopeName)
+        } else null
     }
 
 
