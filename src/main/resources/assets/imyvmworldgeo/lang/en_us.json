@@ -478,6 +478,7 @@
   "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 count=&b{1}",
   "interaction.meta.debug.behavior.seed.invalid_type": "&cUnknown behavior type: &e{0}&c.",
   "interaction.meta.debug.behavior.seed.invalid_count": "&cInvalid debug count: &e{0}&c.",
+  "interaction.meta.debug.behavior.seed.no_scope": "&cCurrent scope has no assigned ID; cannot seed behavior stats.",
   "interaction.meta.debug.behavior.seed.success": "&aSeeded behavior stat type=&e{0}&a object=&b{1}&a count=&e{2}&a into current natural periods.",
   "interaction.meta.debug.behavior.typed.header": "&6Typed stats&r period=&e{0}:{1}&r region=&b{2}&r scope=&b{3}&r SubSpace=&b{4}",
   "interaction.meta.debug.behavior.typed.block": "&7block&r placed=&e{0}&r broken=&e{1}&r net=&e{2}&r players=&e{3}",

@@ -477,6 +477,7 @@
   "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 次数=&b{1}",
   "interaction.meta.debug.behavior.seed.invalid_type": "&c未知行为类型：&e{0}&c。",
   "interaction.meta.debug.behavior.seed.invalid_count": "&c无效调试数量：&e{0}&c。",
+  "interaction.meta.debug.behavior.seed.no_scope": "&c当前地方尚未分配 ID，无法注入行为统计。",
   "interaction.meta.debug.behavior.seed.success": "&a已向当前自然周期注入行为统计 type=&e{0}&a object=&b{1}&a count=&e{2}&a。",
   "interaction.meta.debug.behavior.typed.header": "&6类型化统计&r 周期=&e{0}:{1}&r 境界=&b{2}&r 地方=&b{3}&r 子空间=&b{4}",
   "interaction.meta.debug.behavior.typed.block": "&7方块&r 放置=&e{0}&r 破坏=&e{1}&r 净值=&e{2}&r 玩家数=&e{3}",

@@ -60,6 +60,10 @@ fun onDebugBehaviorSeed(player: ServerPlayer, typeName: String, objectId: String
         return 0
     }
     val target = currentBehaviorTarget(player) ?: return 0
+    if (target.scopeId == null) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.seed.no_scope")!!)
+        return 0
+    }
     val pos = player.blockPosition()
     val event = WorldGeoBehaviorEvent(
         type = type,
