@@ -22,9 +22,12 @@ import net.minecraft.network.chat.HoverEvent
 import net.minecraft.network.chat.Style
 import net.minecraft.network.chat.TextColor
 import net.minecraft.server.level.ServerPlayer
+import java.time.Instant
+import java.time.format.DateTimeFormatter
 import java.util.UUID
 
 private const val BEHAVIOR_CMD_BASE = "/imyvmWorldGeo debug behavior"
+private val EVENT_TIME_FMT: DateTimeFormatter = DateTimeFormatter.ofPattern("MM-dd HH:mm")
 
 fun onDebugBehaviorEmit(player: ServerPlayer): Int {
     val pos = player.blockPosition()
@@ -40,7 +43,7 @@ fun onDebugBehaviorRecent(player: ServerPlayer): Int {
     } else {
         player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.header", events.size)!!)
         for (event in events.takeLast(10)) {
-            player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.line", event.type.name, event.playerName, spaceName(event), event.x, event.y, event.z, event.objectId ?: "-", event.targetId ?: "-")!!)
+            player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.line", event.type.name, event.playerName, spaceName(event), event.x, event.y, event.z, event.objectId ?: "-", event.targetId ?: "-", formatEventTime(event.unixMillis))!!)
         }
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.debug.behavior.recent.memory_hint")!!)
@@ -133,6 +136,9 @@ internal fun behaviorTargetForSubSpace(region: Region, scope: GeoScope, subSpace
     subSpaceId = subSpace.subSpaceId,
     subSpaceName = subSpace.name
 )
+
+internal fun formatEventTime(unixMillis: Long): String =
+    Instant.ofEpochMilli(unixMillis).atZone(WorldGeoTimeService.DEFAULT_ZONE).format(EVENT_TIME_FMT)
 
 private fun spaceName(event: WorldGeoBehaviorEvent): String = when {
     event.subSpaceName != null -> "${event.regionName ?: "-"}/${event.scopeName ?: "-"}/${event.subSpaceName}"

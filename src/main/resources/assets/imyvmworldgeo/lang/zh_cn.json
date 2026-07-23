@@ -471,7 +471,7 @@
   "interaction.meta.debug.behavior.emit": "&a已为玩家 &b{0}&a 在 &e{1}&a,&e{2}&a,&e{3}&a 触发调试行为事件。",
   "interaction.meta.debug.behavior.none": "&c暂无最近的 WorldGeo 行为事件。",
   "interaction.meta.debug.behavior.header": "&6最近的 WorldGeo 行为事件：&e{0}",
-  "interaction.meta.debug.behavior.line": "&7- &e{0}&7 玩家=&b{1}&7 空间=&b{2}&7 坐标=&e{3}&7,&e{4}&7,&e{5}&7 对象=&f{6}&7 目标=&f{7}",
+  "interaction.meta.debug.behavior.line": "&7- &e{0}&7 &7[&e{8}&7]&r 玩家=&b{1}&7 空间=&b{2}&7 坐标=&e{3}&7,&e{4}&7,&e{5}&7 对象=&f{6}&7 目标=&f{7}",
   "interaction.meta.debug.behavior.stats.no_space": "&c当前位置没有可查询行为统计的境界、地方或子空间。",
   "interaction.meta.debug.behavior.stats.header": "&6行为统计&r 小时=&e{0}&r 境界=&b{1}&r 地方=&b{2}&r 子空间=&b{3}&r 总数=&e{4}",
   "interaction.meta.debug.behavior.stats.line": "&7- &e{0}&7 次数=&b{1}",
