@@ -163,18 +163,6 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                     )
                     .then(
-                        literal("select")
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runStartSelectForModify(it) }
-                                    )
-                            )
-                    )
-                    .then(
                         literal("delete")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
@@ -189,6 +177,18 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(
                         literal("modify")
+                            .then(
+                                literal("select")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("scopeName", StringArgumentType.string())
+                                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                                    .executes { runStartSelectForModify(it) }
+                                            )
+                                    )
+                            )
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -465,6 +465,23 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
                     .then(
                         literal("modify")
+                            .then(
+                                literal("select")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("subSpaceName", StringArgumentType.string())
+                                                    .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                                    .executes { runStartSelectForSubSpaceModify(it) }
+                                                    .then(
+                                                        argument("shapeType", StringArgumentType.word())
+                                                            .suggests(SHAPE_TYPE_SUGGESTION_PROVIDER)
+                                                            .executes { runStartSelectForSubSpaceModify(it) }
+                                                    )
+                                            )
+                                    )
+                            )
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -1065,6 +1082,12 @@ private fun runStartSelectForSubSpace(context: CommandContext<CommandSourceStack
     val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
     val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, player) ?: return 0 }
     return onStartSelectionForSubSpace(player, region, scope, shapeType)
+}
+
+private fun runStartSelectForSubSpaceModify(context: CommandContext<CommandSourceStack>): Int {
+    val target = getSubSpaceTarget(context) ?: return 0
+    val shapeType = getOptionalArgument(context, "shapeType")?.uppercase()?.let { parseShapeType(it, target.player) ?: return 0 }
+    return onStartSelectionForSubSpace(target.player, target.region, target.scope, shapeType)
 }
 
 private fun runCreateSubSpace(context: CommandContext<CommandSourceStack>): Int {

@@ -312,6 +312,7 @@ SubSpace mutations:
 - `deleteSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int` deletes a SubSpace.
 - `renameSubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newName: String): Int` renames a SubSpace.
 - `replaceSubSpaceShape(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, newShape: GeoShape): Int` replaces a SubSpace shape after parent containment and sibling conflict checks.
+- `startSelectionForModifySubSpace(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace, shapeType: GeoShapeType? = null): Int` starts a SubSpace shape selection for an existing SubSpace after canonical ownership validation.
 - `addSubSpaceStringTag`, `removeSubSpaceStringTag`, `putSubSpaceKeyedTag`, and `removeSubSpaceKeyedTag` mutate SubSpace tags and persist or roll back the change.
 
 Settings, teleport, and display:
@@ -515,8 +516,11 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`
   Toggle the accessibility of the teleport point for the specified region and scope.
 
+- `/imyvmWorldGeo scope modify select <regionIdentifier> <scopeName>`
+  Start a modification selection for an existing scope.
+
 - `/imyvmWorldGeo scope modify <regionIdentifier> <scopeName>`
-  Modify a scope geometry from the current modification selection.
+  Apply the current modification selection to that scope.
 
 - `/imyvmWorldGeo scope rename <regionIdentifier> <scopeName> <newName>`
   Rename a scope.
@@ -540,8 +544,11 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo scope setting queryValue <regionIdentifier> <scopeName> <key> [playerName]`
   Query the value of a setting in a specific scope, optionally for a specific player.
 
+- `/imyvmWorldGeo subspace modify select <regionIdentifier> <subSpaceName> [shapeType]`
+  Start a shape selection for an existing SubSpace.
+
 - `/imyvmWorldGeo subspace modify <regionIdentifier> <subSpaceName> [shapeType]`
-  Modify a SubSpace shape from the current SubSpace selection.
+  Apply the current SubSpace selection to that SubSpace.
 
 - `/imyvmWorldGeo subspace rename <regionIdentifier> <subSpaceName> <newName>`
   Rename a SubSpace.
