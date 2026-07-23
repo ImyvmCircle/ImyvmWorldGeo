@@ -20,6 +20,10 @@ The 1.5.x line expands WorldGeo from region settings into a neutral infrastructu
 - feat: add `eventId`, `quantity`, and `source` fields to `WorldGeoBehaviorEvent` with safe defaults.
 - feat: add `YEAR` to `NaturalPeriodKind` with full enumeration, backfill, and test-mode support.
 - feat: add `getRealTimeSnapshot(zoneId)` to `RegionDataApi` for configurable timezone queries.
+- fix: add `typedStats region/scope/subspace` OP debug commands for name-based persistent behavior stats queries after restart; add interactive page navigation and clickable detail hint; mark `recent` as in-memory-only.
+- fix: record BLOCK_PLACE with block type from item registry, resolving incorrect `minecraft:air` entries in persisted stats.
+- fix: enforce GeoScope as minimum boundary for behavior stats recording, dropping region-only events from the store.
+- feat: show UTC+8 timestamp (MM-dd HH:mm) per event in `behavior recent` output.
 
 ## Introduction
 
