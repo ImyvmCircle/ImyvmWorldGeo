@@ -531,5 +531,10 @@
   "interaction.meta.select.start.modify_subspace": "&aSubSpace modify selection started for &b{0}&a (parent scope: &e{1}&a, region: &e{2}&a). Right-click a block with a nether star to add points, left-click to undo.",
   "interaction.meta.select.start.modify_subspace.with_shape": "&a&e{3}&a SubSpace modify selection started for &b{0}&a (parent scope: &e{1}&a, region: &e{2}&a). Right-click a block with a nether star to add points, left-click to undo.",
   "interaction.meta.select.modify_subspace_required": "&cCurrent selection is not bound to the requested SubSpace. Start a modify selection for that SubSpace first.",
-  "selection.feedback.modify_subspace.header": "&6Modifying SubSpace &b{0}&6 (parent scope: &e{1}&6, region: &e{2}&6)."
+  "selection.feedback.modify_subspace.header": "&6Modifying SubSpace &b{0}&6 (parent scope: &e{1}&6, region: &e{2}&6).",
+  "selection.feedback.modify_subspace.warn.outside_parent_scope": "&cCurrent modified SubSpace preview is not fully inside scope &b{0}&c in region &b{1}&c.",
+  "selection.feedback.modify_subspace.warn.intersection": "&cCurrent modified SubSpace preview intersects another SubSpace under scope &b{0}&c in region &b{1}&c.",
+  "selection.feedback.modify_subspace.warn.rect.coincident": "&cCurrent modified SubSpace rectangle would collapse to zero width or height.",
+  "selection.feedback.modify_subspace.warn.circle.same_point": "&cCurrent modified SubSpace circle would have a radius of 0.",
+  "selection.feedback.modify_subspace.warn.rect.edge_too_short": "&cCurrent modified SubSpace rectangle edges must be at least &e{0}&c blocks long."
 }

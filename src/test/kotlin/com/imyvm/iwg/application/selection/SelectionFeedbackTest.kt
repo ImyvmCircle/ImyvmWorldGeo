@@ -148,6 +148,37 @@ class SelectionFeedbackTest {
     }
 
     @Test
+    fun `modify subspace feedback reports parent containment for modify preview`() {
+        val worldId = Identifier.parse("minecraft:overworld")
+        val scope = GeoScope(
+            "main",
+            worldId,
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(100, 100)),
+            scopeId = ScopeId(generateCompatScopeIdRaw(33, 0))
+        )
+        val region = Region("modifySub", 33, mutableListOf(scope))
+        val subSpace = com.imyvm.iwg.domain.component.SubSpace(
+            1,
+            "plot",
+            scope.requireAssignedScopeId(),
+            scope.worldId,
+            GeoShape.rectangle(GeoPoint(10, 10), GeoPoint(40, 40))
+        )
+        region.addSubSpaceFromOwner(subSpace)
+        RegionDatabase.addRegion(region)
+        try {
+            val points = mutableListOf(BlockPos(120, 0, 120))
+            val state = SelectionState(points, HypotheticalShape.ModifySubSpace(region.name, scope, subSpace, null), worldId)
+            val text = buildPointAddedMessage(state, points.last()).string
+
+            assertTrue(text.contains("修改子空间"), text)
+            assertTrue(text.contains("修改后的子空间预览没有完整包含"), text)
+        } finally {
+            RegionDatabase.removeRegion(region)
+        }
+    }
+
     fun `selection feedback bounds new point presentation`() {
         val points = (100 until 120).map { BlockPos(it, 0, it) }.toMutableList()
         val normalState = SelectionState(points, HypotheticalShape.Normal(GeoShapeType.POLYGON))

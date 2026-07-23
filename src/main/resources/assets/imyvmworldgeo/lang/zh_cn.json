@@ -530,5 +530,10 @@
   "interaction.meta.select.start.modify_subspace": "&a已进入子空间修改选区模式，目标子空间：&b{0}&a（父地方：&e{1}&a，境界：&e{2}&a）。右键手持下界之星的方块以添加点，左键以撤销。",
   "interaction.meta.select.start.modify_subspace.with_shape": "&a已进入 &e{3}&a 子空间修改选区模式，目标子空间：&b{0}&a（父地方：&e{1}&a，境界：&e{2}&a）。右键手持下界之星的方块以添加点，左键以撤销。",
   "interaction.meta.select.modify_subspace_required": "&c当前选区未绑定到请求修改的子空间。请先为该子空间启动修改选区。",
-  "selection.feedback.modify_subspace.header": "&6正在修改子空间 &b{0}&6（父地方：&e{1}&6，境界：&e{2}&6）。"
+  "selection.feedback.modify_subspace.header": "&6正在修改子空间 &b{0}&6（父地方：&e{1}&6，境界：&e{2}&6）。",
+  "selection.feedback.modify_subspace.warn.outside_parent_scope": "&c当前修改后的子空间预览没有完整包含在境界 &b{1}&c 的地方 &b{0}&c 内。",
+  "selection.feedback.modify_subspace.warn.intersection": "&c当前修改后的子空间预览与同一父地方下的其他子空间发生交叉（地方：&b{0}&c，境界：&b{1}&c）。",
+  "selection.feedback.modify_subspace.warn.rect.coincident": "&c当前修改后的子空间矩形会退化为零宽或零高。",
+  "selection.feedback.modify_subspace.warn.circle.same_point": "&c当前修改后的子空间圆形半径为 0。",
+  "selection.feedback.modify_subspace.warn.rect.edge_too_short": "&c当前修改后的子空间矩形边长不能小于 &e{0}&c。"
 }

@@ -24,12 +24,14 @@ import com.imyvm.iwg.util.geo.findNearestAdjacentPoints
 import com.imyvm.iwg.util.geo.isConvex
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import com.imyvm.iwg.domain.component.MAX_POLYGON_VERTICES
+import com.imyvm.iwg.application.selection.display.ModifiedShapeEvaluation
+import com.imyvm.iwg.application.selection.display.evaluateModifiedShapePreview
 import com.imyvm.iwg.application.selection.display.evaluateModifyCircleCenter
 import com.imyvm.iwg.application.selection.display.evaluateModifyCircleRadius
+import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonExplicitInsert
 import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonInsert
 import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonReplace
 import com.imyvm.iwg.application.selection.display.evaluateModifyRectangle
-import com.imyvm.iwg.application.selection.display.evaluateModifyPolygonExplicitInsert
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.network.chat.Component
@@ -56,25 +58,23 @@ private fun buildModifySubSpaceMessage(
         target.parentScope.scopeName,
         target.regionName
     )?.toString().orEmpty()
-    val extraWarning = buildSubSpaceValidationWarning(
-        state.getEffectiveShapeType(),
-        state.points,
-        SubSpaceSelectionTarget(target.regionName, target.parentScope, target.subSpace)
-    )
-    buildModifyMessage(msg, state, eventPos, target.asDisplayScope(), isUndo, banner, extraWarning)
+    val geometry = target.subSpace.geoShape.typedGeometry
+    val extraWarning = buildModifySubSpaceValidationWarning(state.points, target, geometry)
+    buildModifyMessage(msg, state, eventPos, target.subSpace.name, geometry, isUndo, banner, extraWarning)
 }
-
-private fun HypotheticalShape.ModifySubSpace.asDisplayScope(): GeoScope = GeoScope(
-    subSpace.name,
-    subSpace.worldId,
-    null,
-    geoShape = subSpace.geoShape
-)
 
 fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component {
     val msg = StringBuilder()
     when (val shape = state.hypotheticalShape) {
-        is HypotheticalShape.ModifyExisting -> buildModifyMessage(msg, state, addedPos, shape.scope, isUndo = false)
+        is HypotheticalShape.ModifyExisting -> buildModifyMessage(
+            msg,
+            state,
+            addedPos,
+            shape.scope.scopeName,
+            shape.scope.geoShape?.typedGeometry ?: UnknownGeometry,
+            isUndo = false,
+            scope = shape.scope
+        )
         is HypotheticalShape.ModifySubSpace -> buildModifySubSpaceMessage(msg, state, addedPos, shape, isUndo = false)
         else -> buildNormalMessage(msg, state, addedPos, isUndo = false)
     }
@@ -84,7 +84,15 @@ fun buildPointAddedMessage(state: SelectionState, addedPos: BlockPos): Component
 fun buildPointUndoMessage(state: SelectionState, removedPos: BlockPos): Component {
     val msg = StringBuilder()
     when (val shape = state.hypotheticalShape) {
-        is HypotheticalShape.ModifyExisting -> buildModifyMessage(msg, state, removedPos, shape.scope, isUndo = true)
+        is HypotheticalShape.ModifyExisting -> buildModifyMessage(
+            msg,
+            state,
+            removedPos,
+            shape.scope.scopeName,
+            shape.scope.geoShape?.typedGeometry ?: UnknownGeometry,
+            isUndo = true,
+            scope = shape.scope
+        )
         is HypotheticalShape.ModifySubSpace -> buildModifySubSpaceMessage(msg, state, removedPos, shape, isUndo = true)
         else -> buildNormalMessage(msg, state, removedPos, isUndo = true)
     }
@@ -102,9 +110,9 @@ fun buildModifyStartMessage(scope: GeoScope): Component {
     msg.append("\n")
     appendExistingScopePoints(msg, scope.scopeName, shapeType, oldPoints)
     msg.append("\n")
-    appendModifyShapeParameterBlock(msg, shapeType, scope)
+    appendModifyShapeParameterBlock(msg, shapeType, scope.scopeName)
     msg.append("\n")
-    appendModifyGuidance(msg, geometry, emptyList(), scope, oldPoints)
+    appendModifyGuidance(msg, geometry, emptyList(), scope.scopeName, oldPoints, scope)
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
     return TextParser.parse(msg.toString())
@@ -419,6 +427,69 @@ private fun subSpaceSelectionWarningRaw(
     }
 }
 
+private fun buildModifySubSpaceValidationWarning(
+    points: List<BlockPos>,
+    target: HypotheticalShape.ModifySubSpace,
+    geometry: ShapeGeometry
+): String {
+    return when (val evaluation = evaluateModifiedShapePreview(geometry, points, subSpaceGeometrySizeLimits)) {
+        ModifiedShapeEvaluation.Incomplete -> ""
+        is ModifiedShapeEvaluation.Invalid -> modifySubSpaceWarningRaw(evaluation.error, geometry.type, target)
+        is ModifiedShapeEvaluation.Valid -> modifySubSpaceWarningRaw(
+            RegionFactory.validateSubSpaceShapePlacement(evaluation.shape, requireNotNull(RegionDatabase.getRegionList().firstOrNull { it.name == target.regionName }), target.parentScope, target.subSpace),
+            geometry.type,
+            target
+        )
+    }
+}
+
+private fun modifySubSpaceWarningRaw(
+    error: CreationError?,
+    shape: GeoShapeType,
+    target: HypotheticalShape.ModifySubSpace
+): String {
+    if (error == null) return ""
+    val limits = subSpaceGeometrySizeLimits
+    return when (error) {
+        CreationError.UnderSizeLimit -> when (shape) {
+            GeoShapeType.RECTANGLE -> Translator.raw("selection.feedback.subspace.warn.rect.too_small", limits.minSideLength.toInt(), limits.minRectangleArea.toInt()) ?: ""
+            GeoShapeType.CIRCLE -> Translator.raw("selection.feedback.subspace.warn.circle.too_small", limits.minCircleRadius.toInt()) ?: ""
+            GeoShapeType.POLYGON -> Translator.raw("selection.feedback.subspace.warn.polygon.under_area", limits.minPolygonArea.toInt()) ?: ""
+            else -> ""
+        }
+        CreationError.UnderBoundingBoxLimit -> Translator.raw("selection.feedback.subspace.warn.polygon.under_span", limits.minPolygonSpan.toInt()) ?: ""
+        CreationError.EdgeTooShort -> when (shape) {
+            GeoShapeType.RECTANGLE -> Translator.raw("selection.feedback.modify_subspace.warn.rect.edge_too_short", limits.minSideLength.toInt()) ?: ""
+            GeoShapeType.POLYGON -> Translator.raw("selection.feedback.subspace.warn.polygon.edge_too_short", limits.minEdgeLength.toInt()) ?: ""
+            else -> ""
+        }
+        CreationError.AspectRatioInvalid -> Translator.raw(
+            "selection.feedback.warn.polygon.aspect_ratio",
+            String.format("%.2f", limits.minAspectRatio),
+            String.format("%.2f", 1.0 / limits.minAspectRatio)
+        ) ?: ""
+        CreationError.CoincidentPoints -> when (shape) {
+            GeoShapeType.RECTANGLE -> Translator.raw("selection.feedback.modify_subspace.warn.rect.coincident") ?: ""
+            GeoShapeType.CIRCLE -> Translator.raw("selection.feedback.modify_subspace.warn.circle.same_point") ?: ""
+            else -> ""
+        }
+        CreationError.DuplicatedPoints -> Translator.raw("selection.feedback.warn.polygon.duplicate") ?: ""
+        CreationError.NotConvex -> Translator.raw("selection.feedback.warn.polygon.not_convex") ?: ""
+        CreationError.PolygonVertexLimitExceeded -> Translator.raw("error.polygon_vertex_limit_exceeded", MAX_POLYGON_VERTICES) ?: ""
+        is CreationError.SubSpaceOutsideParentScope -> Translator.raw(
+            "selection.feedback.modify_subspace.warn.outside_parent_scope",
+            target.parentScope.scopeName,
+            target.regionName
+        ) ?: ""
+        is CreationError.IntersectionBetweenScopes -> Translator.raw(
+            "selection.feedback.modify_subspace.warn.intersection",
+            target.parentScope.scopeName,
+            target.regionName
+        ) ?: ""
+        else -> ""
+    }
+}
+
 private fun buildNormalValidationWarning(shape: GeoShapeType, isAuto: Boolean, points: List<BlockPos>): String {
     val effectiveShape = if (isAuto && points.size > 2) GeoShapeType.POLYGON else shape
     return when (effectiveShape) {
@@ -504,8 +575,17 @@ private fun validatePolygonPoints(points: List<BlockPos>): String {
     }
 }
 
-private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventPos: BlockPos, scope: GeoScope, isUndo: Boolean, bannerRaw: String = "", extraWarningRaw: String = "") {
-    val geometry = scope.geoShape?.typedGeometry ?: UnknownGeometry
+private fun buildModifyMessage(
+    msg: StringBuilder,
+    state: SelectionState,
+    eventPos: BlockPos,
+    targetName: String,
+    geometry: ShapeGeometry,
+    isUndo: Boolean,
+    bannerRaw: String = "",
+    extraWarningRaw: String = "",
+    scope: GeoScope? = null
+) {
     val oldPoints = extractScopePoints(geometry)
     val shapeType = geometry.type
     val newPoints = state.points
@@ -516,7 +596,7 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append(bannerRaw)
     }
     msg.append("\n")
-    appendExistingScopePoints(msg, scope.scopeName, shapeType, oldPoints)
+    appendExistingScopePoints(msg, targetName, shapeType, oldPoints)
 
     msg.append("\n")
     msg.append(Translator.raw("selection.feedback.modify.new_header") ?: "")
@@ -533,9 +613,9 @@ private fun buildModifyMessage(msg: StringBuilder, state: SelectionState, eventP
     }
 
     msg.append("\n")
-    appendModifyShapeParameterBlock(msg, shapeType, scope)
+    appendModifyShapeParameterBlock(msg, shapeType, targetName)
     msg.append("\n")
-    appendModifyGuidance(msg, geometry, newPoints, scope, oldPoints)
+    appendModifyGuidance(msg, geometry, newPoints, targetName, oldPoints, scope)
 
     val warningRaw = extraWarningRaw
     if (warningRaw.isNotEmpty()) {
@@ -695,8 +775,9 @@ private fun appendModifyGuidance(
     msg: StringBuilder,
     geometry: ShapeGeometry,
     newPoints: List<BlockPos>,
-    scope: GeoScope,
-    oldPoints: List<BlockPos>
+    scopeName: String,
+    oldPoints: List<BlockPos>,
+    scope: GeoScope? = null
 ) {
     val count = newPoints.size
     val guidanceRaw = when (geometry) {
@@ -707,7 +788,7 @@ private fun appendModifyGuidance(
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.circle.start",
-                    scope.scopeName, existingRadius
+                    scopeName, existingRadius
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -745,7 +826,7 @@ private fun appendModifyGuidance(
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.rect.start",
-                    scope.scopeName, geometry.west, geometry.north, geometry.east, geometry.south
+                    scopeName, geometry.west, geometry.north, geometry.east, geometry.south
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -765,7 +846,7 @@ private fun appendModifyGuidance(
             when {
                 count == 0 -> Translator.raw(
                     "selection.feedback.modify.guidance.polygon.start",
-                    scope.scopeName, oldPoints.size
+                    scopeName, oldPoints.size
                 ) ?: ""
                 count == 1 -> {
                     val pt = newPoints[0]
@@ -826,7 +907,7 @@ private fun appendModifyGuidance(
     }
     if (guidanceRaw.isNotEmpty()) msg.append(guidanceRaw)
 
-    val warningRaw = buildModifyValidationWarning(scope, geometry, newPoints, oldPoints)
+    val warningRaw = scope?.let { buildModifyValidationWarning(it, geometry, newPoints, oldPoints) }.orEmpty()
     if (warningRaw.isNotEmpty()) {
         msg.append("\n")
         msg.append(warningRaw)
@@ -978,8 +1059,8 @@ private fun appendShapeParameterBlock(
     }
 }
 
-private fun appendModifyShapeParameterBlock(msg: StringBuilder, shapeType: GeoShapeType, scope: GeoScope) {
-    msg.append(Translator.raw("selection.feedback.modify.shape.header", scope.scopeName, shapeType.name) ?: "")
+private fun appendModifyShapeParameterBlock(msg: StringBuilder, shapeType: GeoShapeType, scopeName: String) {
+    msg.append(Translator.raw("selection.feedback.modify.shape.header", scopeName, shapeType.name) ?: "")
     val pointsKey = when (shapeType) {
         GeoShapeType.CIRCLE -> "selection.feedback.modify.shape.points.circle"
         GeoShapeType.RECTANGLE -> "selection.feedback.modify.shape.points.rect"

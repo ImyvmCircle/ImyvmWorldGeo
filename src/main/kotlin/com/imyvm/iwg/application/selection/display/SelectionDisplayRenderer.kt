@@ -58,10 +58,9 @@ private fun displayActionBarScopes(
     player: ServerPlayer,
     session: SelectionDisplaySession
 ) {
-    val modifyingScope = (
-        ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape
-            as? HypotheticalShape.ModifyExisting
-        )?.scope
+    val hypotheticalShape = ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.hypotheticalShape
+    val modifyingScope = (hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope
+    val modifyingSubSpace = (hypotheticalShape as? HypotheticalShape.ModifySubSpace)?.subSpace
     val playerWorldId = player.level().dimension().identifier()
     val regions = RegionDatabase.getRegionList()
     displayRegionScopeCandidates(regions, session) { scope ->
@@ -132,7 +131,7 @@ private fun displayForPlayer(
     if (points.isEmpty()) {
         when (val shape = state.hypotheticalShape) {
             is HypotheticalShape.ModifyExisting -> displayModifyingScope(player, shape.scope, session)
-            is HypotheticalShape.ModifySubSpace -> displayModifyingScope(player, shape.asDisplayScope(), session)
+            is HypotheticalShape.ModifySubSpace -> displayModifyingGeometry(player, shape.subSpace.geoShape.typedGeometry, session)
             else -> Unit
         }
         commitPillars(player, session)
@@ -140,8 +139,8 @@ private fun displayForPlayer(
     }
 
     when (val shape = state.hypotheticalShape) {
-        is HypotheticalShape.ModifyExisting -> displayForModifyExisting(player, points, shape.scope, session)
-        is HypotheticalShape.ModifySubSpace -> displayForModifyExisting(player, points, shape.asDisplayScope(), session)
+        is HypotheticalShape.ModifyExisting -> displayForModifyExisting(player, points, shape.scope.geoShape?.typedGeometry ?: return, session)
+        is HypotheticalShape.ModifySubSpace -> displayForModifyExisting(player, points, shape.subSpace.geoShape.typedGeometry, session, subSpaceGeometrySizeLimits)
         is HypotheticalShape.SubSpace -> displayForSubSpaceShape(player, points, state.getEffectiveShapeType(), shape.regionName, shape.parentScope, session)
         is HypotheticalShape.Normal -> displayForCreationShape(player, state, points, shape.shapeType, session)
         null -> displayForCreationShape(player, state, points, state.getEffectiveShapeType(), session)
@@ -273,24 +272,27 @@ private fun displayPolygonSelection(
 private fun displayForModifyExisting(
     player: ServerPlayer,
     newPoints: List<BlockPos>,
-    scope: GeoScope,
-    session: SelectionDisplaySession
+    geometry: ShapeGeometry,
+    session: SelectionDisplaySession,
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits = com.imyvm.iwg.util.geo.regionGeometrySizeLimits
 ) {
-    displayModifyingScope(player, scope, session)
-    when (val geometry = scope.geoShape?.typedGeometry ?: return) {
+    displayModifyingGeometry(player, geometry, session)
+    when (geometry) {
         is RectangleGeometry -> displayModifyRectanglePreview(
             player,
             newPoints,
             listOf(geometry.west, geometry.north, geometry.east, geometry.south),
-            session
+            session,
+            limits
         )
         is CircleGeometry -> displayModifyCirclePreview(
             player,
             newPoints,
             listOf(geometry.centerX, geometry.centerZ, geometry.radius),
-            session
+            session,
+            limits
         )
-        is PolygonGeometry -> displayModifyPolygonPreview(player, newPoints, geometry, session)
+        is PolygonGeometry -> displayModifyPolygonPreview(player, newPoints, geometry, session, limits)
         UnknownGeometry -> Unit
     }
 }
@@ -342,7 +344,15 @@ private fun displayModifyingScope(
     scope: GeoScope,
     session: SelectionDisplaySession
 ) {
-    displayGeometry(player, scope.geoShape?.typedGeometry ?: return, BoundaryStyle.MODIFYING, session)
+    displayModifyingGeometry(player, scope.geoShape?.typedGeometry ?: return, session)
+}
+
+private fun displayModifyingGeometry(
+    player: ServerPlayer,
+    geometry: ShapeGeometry,
+    session: SelectionDisplaySession
+) {
+    displayGeometry(player, geometry, BoundaryStyle.MODIFYING, session)
 }
 
 fun displayOriginalScope(player: ServerPlayer, scope: GeoScope) {
@@ -440,10 +450,11 @@ private fun displayModifyRectanglePreview(
     player: ServerPlayer,
     newPoints: List<BlockPos>,
     existingParams: List<Int>,
-    session: SelectionDisplaySession
+    session: SelectionDisplaySession,
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits
 ) {
     if (newPoints.size != 1) return
-    val newParams = evaluateModifyRectangle(newPoints[0], existingParams) ?: return
+    val newParams = evaluateModifyRectangle(newPoints[0], existingParams, limits) ?: return
     val x = intArrayOf(newParams[0], newParams[2], newParams[2], newParams[0])
     val z = intArrayOf(newParams[1], newParams[1], newParams[3], newParams[3])
     for (index in x.indices) emitPillar(player, x[index], z[index], session)
@@ -454,7 +465,8 @@ private fun displayModifyCirclePreview(
     player: ServerPlayer,
     newPoints: List<BlockPos>,
     existingParams: List<Int>,
-    session: SelectionDisplaySession
+    session: SelectionDisplaySession,
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits
 ) {
     val centerX = existingParams[0]
     val centerZ = existingParams[1]
@@ -462,13 +474,13 @@ private fun displayModifyCirclePreview(
         1 -> {
             val point = newPoints[0]
             if (point.x == centerX && point.z == centerZ) return
-            val params = evaluateModifyCircleRadius(point, existingParams) ?: return
+            val params = evaluateModifyCircleRadius(point, existingParams, limits) ?: return
             drawCircleOutline(player, params[0], params[1], params[2], session)
         }
         2 -> {
             val oldCenter = newPoints[0]
             val newCenter = newPoints[1]
-            val params = evaluateModifyCircleCenter(oldCenter, newCenter, existingParams) ?: return
+            val params = evaluateModifyCircleCenter(oldCenter, newCenter, existingParams, limits) ?: return
             val circleSamples = maxOf(1, session.surfaceUnits * 3 / 4)
             drawCircleOutline(player, params[0], params[1], params[2], session, circleSamples)
             emitLineSurface(player, oldCenter, newCenter, session)
@@ -480,7 +492,8 @@ private fun displayModifyPolygonPreview(
     player: ServerPlayer,
     newPoints: List<BlockPos>,
     geometry: PolygonGeometry,
-    session: SelectionDisplaySession
+    session: SelectionDisplaySession,
+    limits: com.imyvm.iwg.util.geo.GeometrySizeLimits
 ) {
     if (!session.tryUseSurface(geometry.vertexCount)) return
     val existingVertices = List(geometry.vertexCount) { index ->
@@ -490,7 +503,7 @@ private fun displayModifyPolygonPreview(
         1 -> {
             val point = newPoints[0]
             if (existingVertices.any { it.x == point.x && it.z == point.z }) return
-            val polygon = evaluateModifyPolygonInsert(point, existingVertices) ?: return
+            val polygon = evaluateModifyPolygonInsert(point, existingVertices, limits) ?: return
             val index = polygon.indexOfFirst { it.x == point.x && it.z == point.z }
             if (index == -1) return
             emitLineSurface(player, polygon[(index - 1 + polygon.size) % polygon.size], point, session)
@@ -499,7 +512,7 @@ private fun displayModifyPolygonPreview(
         2 -> {
             val oldVertex = newPoints[0]
             val newVertex = newPoints[1]
-            val polygon = evaluateModifyPolygonReplace(oldVertex, newVertex, existingVertices) ?: return
+            val polygon = evaluateModifyPolygonReplace(oldVertex, newVertex, existingVertices, limits) ?: return
             emitClosedBoundary(player, polygon.size, { polygon[it].x }, { polygon[it].z }, BoundaryStyle.SELECTION, session)
             emitLineSurface(player, oldVertex, newVertex, session)
         }
@@ -508,16 +521,10 @@ private fun displayModifyPolygonPreview(
                 newPoints[0],
                 newPoints[1],
                 newPoints[2],
-                existingVertices
+                existingVertices,
+                limits
             ) ?: return
             emitClosedBoundary(player, polygon.size, { polygon[it].x }, { polygon[it].z }, BoundaryStyle.SELECTION, session)
         }
     }
 }
-
-private fun HypotheticalShape.ModifySubSpace.asDisplayScope(): GeoScope = GeoScope(
-    subSpace.name,
-    subSpace.worldId,
-    null,
-    geoShape = subSpace.geoShape
-)

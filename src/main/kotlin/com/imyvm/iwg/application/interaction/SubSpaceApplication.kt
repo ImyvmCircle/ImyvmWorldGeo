@@ -5,7 +5,8 @@ import com.imyvm.iwg.application.interaction.helper.subSpaceErrorMessage
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
-import com.imyvm.iwg.application.selection.display.evaluateModifiedShape
+import com.imyvm.iwg.application.selection.display.ModifiedShapeEvaluation
+import com.imyvm.iwg.application.selection.display.evaluateModifiedShapePreview
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.domain.Region
@@ -17,6 +18,7 @@ import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.util.geo.subSpaceGeometrySizeLimits
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
@@ -67,7 +69,18 @@ fun onSubSpaceShapeReplacementFromSelection(
     }
     val state = getSubSpaceModifySelection(player, subSpace) ?: return 0
     val existingGeometry = subSpace.geoShape.typedGeometry
-    val newShape = evaluateModifiedShape(existingGeometry, state.points) ?: return 0
+    val evaluation = evaluateModifiedShapePreview(existingGeometry, state.points, subSpaceGeometrySizeLimits)
+    val newShape = when (evaluation) {
+        ModifiedShapeEvaluation.Incomplete -> {
+            subSpaceErrorMessage(com.imyvm.iwg.domain.CreationError.InsufficientPoints, existingGeometry.type).forEach(player::sendSystemMessage)
+            return 0
+        }
+        is ModifiedShapeEvaluation.Invalid -> {
+            evaluation.error?.let { subSpaceErrorMessage(it, existingGeometry.type).forEach(player::sendSystemMessage) }
+            return 0
+        }
+        is ModifiedShapeEvaluation.Valid -> evaluation.shape
+    }
     val placementError = RegionFactory.validateSubSpaceShapePlacement(newShape, region, parentScope, subSpace)
     if (placementError != null) {
         subSpaceErrorMessage(placementError, newShape.geoShapeType).forEach(player::sendSystemMessage)
