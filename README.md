@@ -130,7 +130,6 @@ Rules control server-side gameplay mechanics within a region or scope. Unlike pe
 | DISPENSER | true | Controls whether dispensers can fire into the region. When set to false, any dispenser whose output face points into the region is blocked, including dispensers placed outside the region. |
 | PRESSURE_PLATE | true | Controls whether pressure plates inside the region can be activated. When set to false, entity collision with pressure plates in the region is suppressed. |
 | PISTON | true | Controls whether pistons can move blocks from or into the region or destroy blocks inside it. A denied source, destination, or destroy target cancels the move, including for pistons outside the region. |
-| RPG_NATURAL_REGEN | true | (RPG) Controls whether players naturally regenerate health inside the region. When set to false, the saturation-based heal from food is suppressed. |
 | RPG_FIRE_SPREAD | true | (RPG) Controls whether fire may burn or place fire at target blocks inside the region. Source fire still ages and extinguishes normally. |
 | RPG_HUNGER | true | (RPG) Controls whether hunger and exhaustion drain for players inside the region. When set to false, all food exhaustion calls are suppressed. |
 

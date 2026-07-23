@@ -119,6 +119,7 @@ object RegionDatabase {
     private const val DB_V1_SENTINEL: Int = -1
     private const val DB_V2_SENTINEL: Int = -2
     private const val MAX_COLLECTION_SIZE = 100_000
+    private const val DELETED_RULE_RPG_NATURAL_REGEN = "RPG_NATURAL_REGEN"
     private var dimensionIndex: MutableMap<net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>, MutableList<Pair<Region, GeoScope>>> = linkedMapOf()
     private val gson = Gson()
     private val regionPlayerStats: MutableMap<Int, RegionPlayerStatsLedger> = mutableMapOf()
@@ -779,7 +780,7 @@ object RegionDatabase {
                 6 -> loadExtensionRuleSetting(stream)
                 else -> throw IOException("Unknown setting type")
             }
-            list.add(setting)
+            setting?.let(list::add)
         }
         return list
     }
@@ -852,16 +853,28 @@ object RegionDatabase {
         stream.writeBoolean(setting.value)
     }
 
-    private fun loadRuleSettingOrdinal(stream: DataInputStream): RuleSetting {
-        val key = readEnum(stream, RuleKey.entries, "rule key")
+    private fun loadRuleSettingOrdinal(stream: DataInputStream): RuleSetting? {
+        val ordinal = stream.readInt()
         val value = stream.readBoolean()
+        val key = legacyRuleKeyByOrdinal(ordinal) ?: return null
         return RuleSetting(key, value)
     }
 
-    private fun loadRuleSettingName(stream: DataInputStream): RuleSetting {
-        val key = loadEnumByName(stream, RuleKey.entries, "rule key")
+    private fun loadRuleSettingName(stream: DataInputStream): RuleSetting? {
+        val name = stream.readUTF()
         val value = stream.readBoolean()
+        if (name == DELETED_RULE_RPG_NATURAL_REGEN) return null
+        val key = RuleKey.entries.firstOrNull { it.name == name }
+            ?: throw IOException("Invalid rule key name: $name")
         return RuleSetting(key, value)
+    }
+
+    private fun legacyRuleKeyByOrdinal(ordinal: Int): RuleKey? = when (ordinal) {
+        in 0..RuleKey.PISTON.ordinal -> RuleKey.entries[ordinal]
+        10 -> null
+        11 -> RuleKey.RPG_FIRE_SPREAD
+        12 -> RuleKey.RPG_HUNGER
+        else -> throw IOException("Invalid rule key ordinal: $ordinal")
     }
 
     private fun saveExtensionRuleSetting(stream: DataOutputStream, setting: ExtensionRuleSetting) {

@@ -277,6 +277,79 @@ class RegionDatabaseTest {
     }
 
     @Test
+    fun `drops deleted natural regen rule settings from name based region data`() = withTempDirectory { directory ->
+        val path = directory.resolve("deleted-rule-name.db")
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(
+                stream,
+                "region",
+                7,
+                generateCompatScopeIdRaw(7, 0),
+                writeRegionSettings = {
+                    it.writeInt(-3)
+                    it.writeInt(2)
+                    it.writeUTF("RPG_NATURAL_REGEN")
+                    it.writeBoolean(false)
+                    it.writeInt(2)
+                    it.writeUTF("RPG_FIRE_SPREAD")
+                    it.writeBoolean(false)
+                    it.writeInt(0)
+                    it.writeUTF(PermissionKey.PVP.name)
+                    it.writeBoolean(false)
+                    it.writeUTF("")
+                }
+            )
+        }
+
+        val settings = RegionDatabase.readRegions(path).single().settings
+        val rule = settings.filterIsInstance<RuleSetting>().single()
+        val permission = settings.filterIsInstance<PermissionSetting>().single()
+
+        assertEquals(RuleKey.RPG_FIRE_SPREAD, rule.key)
+        assertEquals(false, rule.value)
+        assertEquals(PermissionKey.PVP, permission.key)
+        assertEquals(false, permission.value)
+    }
+
+    @Test
+    fun `drops deleted natural regen ordinal without shifting later rule settings`() = withTempDirectory { directory ->
+        val path = directory.resolve("deleted-rule-ordinal.db")
+        DataOutputStream(Files.newOutputStream(path)).use { stream ->
+            stream.writeInt(-1)
+            stream.writeInt(1)
+            writeMinimalRegion(
+                stream,
+                "region",
+                7,
+                generateCompatScopeIdRaw(7, 0),
+                writeRegionSettings = {
+                    it.writeInt(3)
+                    it.writeInt(2)
+                    it.writeInt(10)
+                    it.writeBoolean(false)
+                    it.writeInt(2)
+                    it.writeInt(11)
+                    it.writeBoolean(false)
+                    it.writeInt(2)
+                    it.writeInt(12)
+                    it.writeBoolean(true)
+                }
+            )
+        }
+
+        val rules = RegionDatabase.readRegions(path).single().settings
+            .filterIsInstance<RuleSetting>()
+            .associate { it.key to it.value }
+
+        assertEquals(
+            mapOf(RuleKey.RPG_FIRE_SPREAD to false, RuleKey.RPG_HUNGER to true),
+            rules
+        )
+    }
+
+    @Test
     fun `rejects collection counts before allocation`() = withTempDirectory { directory ->
         val path = directory.resolve("regions.db")
         DataOutputStream(Files.newOutputStream(path)).use {

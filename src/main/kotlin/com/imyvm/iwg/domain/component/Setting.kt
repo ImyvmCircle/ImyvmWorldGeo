@@ -155,7 +155,6 @@ enum class RuleKey : RuleKeyLike {
     DISPENSER,
     PRESSURE_PLATE,
     PISTON,
-    RPG_NATURAL_REGEN,
     RPG_FIRE_SPREAD,
     RPG_HUNGER
 }
