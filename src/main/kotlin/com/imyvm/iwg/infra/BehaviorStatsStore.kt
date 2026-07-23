@@ -83,6 +83,29 @@ object BehaviorStatsStore {
 
     private fun record(event: WorldGeoBehaviorEvent, count: Long) {
         val regionId = event.regionId ?: return
+        val scopeId = event.scopeId ?: return
+        if (regionId <= 0) {
+            errorOnce(
+                "invalid-region:${event.type}:$regionId",
+                "Dropped behavior stats event with invalid region id: type=${event.type} regionId=$regionId scopeId=${event.scopeId} subSpaceId=${event.subSpaceId} playerUuid=${event.playerUuid} source=${event.source} pos=${event.x},${event.y},${event.z} dimension=${event.dimensionId}"
+            )
+            return
+        }
+        if (scopeId == 0L) {
+            errorOnce(
+                "invalid-scope:${event.type}:$scopeId",
+                "Dropped behavior stats event with invalid scope id: type=${event.type} regionId=$regionId scopeId=$scopeId subSpaceId=${event.subSpaceId} playerUuid=${event.playerUuid} source=${event.source} pos=${event.x},${event.y},${event.z} dimension=${event.dimensionId}"
+            )
+            return
+        }
+        val subSpaceId = event.subSpaceId
+        if (subSpaceId != null && subSpaceId <= 0L) {
+            errorOnce(
+                "invalid-subspace:${event.type}:$subSpaceId",
+                "Dropped behavior stats event with invalid subspace id: type=${event.type} regionId=$regionId scopeId=${event.scopeId} subSpaceId=$subSpaceId playerUuid=${event.playerUuid} source=${event.source} pos=${event.x},${event.y},${event.z} dimension=${event.dimensionId}"
+            )
+            return
+        }
         val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC))
         val currentBuckets = periodIds.mapTo(linkedSetOf()) { (periodKind, periodId) ->
             PeriodBucket(periodKind, periodId)
@@ -93,7 +116,7 @@ object BehaviorStatsStore {
                 periodId = periodId,
                 behaviorType = event.type,
                 regionId = regionId,
-                scopeId = event.scopeId,
+                scopeId = scopeId,
                 subSpaceId = event.subSpaceId,
                 playerUuid = event.playerUuid,
                 objectId = event.objectId,
@@ -301,7 +324,14 @@ object BehaviorStatsStore {
     internal fun writeStats(path: Path, stats: Map<BehaviorStatsKey, Long>) {
         val snapshot = snapshotWithinCapacity(stats, allowCurrentPeriodDrops = true)
         val array = JsonArray()
+        var skippedCount = 0
+        var firstSkipped: BehaviorStatsKey? = null
         for ((key, count) in snapshot) {
+            if (isKeyInvalid(key)) {
+                skippedCount++
+                if (firstSkipped == null) firstSkipped = key
+                continue
+            }
             validateEntry(key, count)
             val obj = JsonObject()
             obj.addProperty("periodKind", key.periodKind.name)
@@ -315,6 +345,12 @@ object BehaviorStatsStore {
             key.targetId?.let { obj.addProperty("targetId", it) }
             obj.addProperty("count", count)
             array.add(obj)
+        }
+        if (skippedCount > 0) {
+            val fk = firstSkipped!!
+            ImyvmWorldGeo.logger.error(
+                "Skipped $skippedCount invalid behavior stats key(s) during save. First: type=${fk.behaviorType} regionId=${fk.regionId} scopeId=${fk.scopeId} subSpaceId=${fk.subSpaceId}"
+            )
         }
         RegionDatabase.atomicWrite(path) { output -> output.write(array.toString().toByteArray(Charsets.UTF_8)) }
     }
@@ -442,6 +478,12 @@ object BehaviorStatsStore {
         }
     }
 
+    private fun errorOnce(key: String, message: String) {
+        if (warnedCapacityActions.add(key)) {
+            ImyvmWorldGeo.logger.error(message)
+        }
+    }
+
     private fun BehaviorStatsKey.matches(query: WorldGeoBehaviorStatsQuery): Boolean =
         periodKind == query.periodKind &&
             periodId == query.periodId &&
@@ -460,12 +502,20 @@ object BehaviorStatsStore {
     private fun validateEntry(key: BehaviorStatsKey, count: Long) {
         require(key.periodId.isNotBlank()) { "period id must not be blank" }
         require(key.regionId > 0) { "region id must be positive" }
-        require(key.scopeId == null || key.scopeId > 0L) { "scope id must be positive" }
+        require(key.scopeId == null || key.scopeId != 0L) { "scope id must not be zero" }
         require(key.subSpaceId == null || key.subSpaceId > 0L) { "subspace id must be positive" }
         require(key.objectId == null || key.objectId.isNotBlank()) { "object id must not be blank" }
         require(key.targetId == null || key.targetId.isNotBlank()) { "target id must not be blank" }
         require(count > 0L) { "count must be positive" }
     }
+
+    private fun isKeyInvalid(key: BehaviorStatsKey): Boolean =
+        key.periodId.isBlank() ||
+        key.regionId <= 0 ||
+        key.scopeId == 0L ||
+        (key.subSpaceId != null && key.subSpaceId <= 0L) ||
+        (key.objectId != null && key.objectId.isBlank()) ||
+        (key.targetId != null && key.targetId.isBlank())
 
     private inline fun <reified T : Enum<T>> enumValue(obj: JsonObject, name: String): T =
         enumValueOf(stringValue(obj, name))

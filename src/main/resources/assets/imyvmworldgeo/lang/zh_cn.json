@@ -467,7 +467,7 @@
   "selection.feedback.warn.scope_partial_overlap": "&c当前选区与境界 &b{1}&c 的地方 &b{0}&c 部分重叠。创建子空间时选区需完整位于该地方内；创建境界或地方时选区需完全避开该地方。",
   "notification.subspace.enter": "&a进入境界 &e{0}&a 的地方 &b{1}&a 下的子空间 &b{2}&a。",
   "notification.subspace.exit": "&7离开境界 &e{0}&7 的地方 &b{1}&7 下的子空间 &b{2}&7。",
-  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent|stats|typedStats|seed§6>\n  §f触发或注入调试行为事件，显示最近事件，或查询当前位置空间统计。",
+  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent|stats|typedStats|seed§6>\n  §f触发或注入调试行为事件，显示最近事件（内存队列），或按当前位置/境界/地方/子空间查询持久化统计。\n  typedStats region <境界> / scope <境界> <地方> / subspace <境界> <子空间> 可按名称直接查询。",
   "interaction.meta.debug.behavior.emit": "&a已为玩家 &b{0}&a 在 &e{1}&a,&e{2}&a,&e{3}&a 触发调试行为事件。",
   "interaction.meta.debug.behavior.none": "&c暂无最近的 WorldGeo 行为事件。",
   "interaction.meta.debug.behavior.header": "&6最近的 WorldGeo 行为事件：&e{0}",
@@ -517,10 +517,10 @@
   "interaction.meta.debug.test_period.invalid_weeks": "&c无效测试周期周数：&e{0}&c。请使用正整数。",
   "interaction.meta.debug.behavior.stats.detail_hint": "&7详情：&e/imyvmWorldGeo debug behavior stats detail [page]",
   "interaction.meta.debug.behavior.typed.detail_hint": "&7详情：&e/imyvmWorldGeo debug behavior typedStats {0} {1} detail [page]",
-  "interaction.meta.debug.behavior.detail.empty": "&7当前位置在周期 &e{0}:{1}&7 没有行为明细。",
-  "interaction.meta.debug.behavior.stats.detail.header": "&6原始行为明细&r 周期=&e{0}:{1}&r 页码=&e{2}&7/&e{3}&r 条目=&e{4}",
+  "interaction.meta.debug.behavior.detail.empty": "&7境界=&b{2}&7 地方=&b{3}&7 子空间=&b{4}&7 在周期 &e{0}:{1}&7 没有行为明细。",
+  "interaction.meta.debug.behavior.stats.detail.header": "&6原始行为明细&r 周期=&e{0}:{1}&r 境界=&b{2}&r 地方=&b{3}&r 子空间=&b{4}&r 页码=&e{5}&7/&e{6}&r 条目=&e{7}",
   "interaction.meta.debug.behavior.stats.detail.line": "&7- &e{0}&7 玩家=&b{1}&7 对象=&f{2}&7 目标=&f{3}&7 次数=&e{4}",
-  "interaction.meta.debug.behavior.typed.detail.header": "&6类型化行为明细&r 周期=&e{0}:{1}&r 页码=&e{2}&7/&e{3}&r 条目=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.header": "&6类型化行为明细&r 周期=&e{0}:{1}&r 境界=&b{2}&r 地方=&b{3}&r 子空间=&b{4}&r 页码=&e{5}&7/&e{6}&r 条目=&e{7}",
   "interaction.meta.debug.behavior.typed.detail.block": "&7- 方块 玩家=&b{0}&7 方块=&f{1}&7 放置=&e{2}&7 破坏=&e{3}&7 净值=&e{4}",
   "interaction.meta.debug.behavior.typed.detail.combat": "&7- 战斗 玩家=&b{0}&7 对象=&f{1}&7 目标=&f{2}&7 伤害=&e{3}&7 击杀=&e{4}&7 死亡=&e{5}&7 被伤害=&e{6}",
   "interaction.meta.debug.behavior.typed.detail.residence": "&7- 栖息 区块=&b{0}&7 毫秒=&e{1}",
@@ -535,5 +535,11 @@
   "selection.feedback.modify_subspace.warn.intersection": "&c当前修改后的子空间预览与同一父地方下的其他子空间发生交叉（地方：&b{0}&c，境界：&b{1}&c）。",
   "selection.feedback.modify_subspace.warn.rect.coincident": "&c当前修改后的子空间矩形会退化为零宽或零高。",
   "selection.feedback.modify_subspace.warn.circle.same_point": "&c当前修改后的子空间圆形半径为 0。",
-  "selection.feedback.modify_subspace.warn.rect.edge_too_short": "&c当前修改后的子空间矩形边长不能小于 &e{0}&c。"
+  "selection.feedback.modify_subspace.warn.rect.edge_too_short": "&c当前修改后的子空间矩形边长不能小于 &e{0}&c。",
+  "interaction.meta.debug.behavior.recent.memory_hint": "&7（内存调试队列，重启后清空。持久化统计请用 stats 或 typedStats。）",
+  "interaction.meta.debug.behavior.page.prev": "[◀]",
+  "interaction.meta.debug.behavior.page.next": "[▶]",
+  "interaction.meta.debug.behavior.page.prev.hover": "第 {0} 页",
+  "interaction.meta.debug.behavior.page.next.hover": "第 {0} 页"
+
 }

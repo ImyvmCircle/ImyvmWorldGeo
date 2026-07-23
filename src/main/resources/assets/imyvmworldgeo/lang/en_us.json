@@ -468,7 +468,7 @@
   "selection.feedback.warn.scope_partial_overlap": "&cCurrent selection partially overlaps scope &b{0}&c in region &b{1}&c. Move the selection fully inside that scope for SubSpace creation, or fully outside it for Region/Scope creation.",
   "notification.subspace.enter": "&aEntered SubSpace &b{2}&a under scope &b{1}&a in region &e{0}&a.",
   "notification.subspace.exit": "&7Left SubSpace &b{2}&7 under scope &b{1}&7 in region &e{0}&7.",
-  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent|stats|typedStats|seed§6>\n  §fEmit or seed debug behavior events, show recent events, or query current-space stats.",
+  "interaction.meta.command.help.debug.behavior": "§6/imyvmWorldGeo debug behavior <§bemit|recent|stats|typedStats|seed§6>\n  §fEmit or seed debug behavior events, show recent events (in-memory queue), or query persistent stats by current position or explicit name.\n  typedStats region <region> / scope <region> <scope> / subspace <region> <subspace> query by name.",
   "interaction.meta.debug.behavior.emit": "&aEmitted debug behavior event for player &b{0}&a at &e{1}&a,&e{2}&a,&e{3}&a.",
   "interaction.meta.debug.behavior.none": "&cNo recent WorldGeo behavior events.",
   "interaction.meta.debug.behavior.header": "&6Recent WorldGeo behavior events: &e{0}",
@@ -519,10 +519,10 @@
   "interaction.meta.command.help.scope.rename": "§d/imyvmWorldGeo scope rename <§bregionIdentifier§d> <§bscopeName§d> <§bnewName§d>\n  §fRename a scope.",
   "interaction.meta.debug.behavior.stats.detail_hint": "&7Details: &e/imyvmWorldGeo debug behavior stats detail [page]",
   "interaction.meta.debug.behavior.typed.detail_hint": "&7Details: &e/imyvmWorldGeo debug behavior typedStats {0} {1} detail [page]",
-  "interaction.meta.debug.behavior.detail.empty": "&7No behavior detail entries for period &e{0}:{1}&7 at the current space.",
-  "interaction.meta.debug.behavior.stats.detail.header": "&6Raw behavior details&r period=&e{0}:{1}&r page=&e{2}&7/&e{3}&r entries=&e{4}",
+  "interaction.meta.debug.behavior.detail.empty": "&7No behavior details for period &e{0}:{1}&7 at region=&b{2}&7 scope=&b{3}&7 SubSpace=&b{4}&7.",
+  "interaction.meta.debug.behavior.stats.detail.header": "&6Raw behavior details&r period=&e{0}:{1}&r region=&b{2}&r scope=&b{3}&r SubSpace=&b{4}&r page=&e{5}&7/&e{6}&r entries=&e{7}",
   "interaction.meta.debug.behavior.stats.detail.line": "&7- &e{0}&7 player=&b{1}&7 object=&f{2}&7 target=&f{3}&7 count=&e{4}",
-  "interaction.meta.debug.behavior.typed.detail.header": "&6Typed behavior details&r period=&e{0}:{1}&r page=&e{2}&7/&e{3}&r entries=&e{4}",
+  "interaction.meta.debug.behavior.typed.detail.header": "&6Typed behavior details&r period=&e{0}:{1}&r region=&b{2}&r scope=&b{3}&r SubSpace=&b{4}&r page=&e{5}&7/&e{6}&r entries=&e{7}",
   "interaction.meta.debug.behavior.typed.detail.block": "&7- block player=&b{0}&7 block=&f{1}&7 placed=&e{2}&7 broken=&e{3}&7 net=&e{4}",
   "interaction.meta.debug.behavior.typed.detail.combat": "&7- combat player=&b{0}&7 object=&f{1}&7 target=&f{2}&7 damage=&e{3}&7 kills=&e{4}&7 deaths=&e{5}&7 damaged=&e{6}",
   "interaction.meta.debug.behavior.typed.detail.residence": "&7- residence chunk=&b{0}&7 millis=&e{1}",
@@ -536,5 +536,11 @@
   "selection.feedback.modify_subspace.warn.intersection": "&cCurrent modified SubSpace preview intersects another SubSpace under scope &b{0}&c in region &b{1}&c.",
   "selection.feedback.modify_subspace.warn.rect.coincident": "&cCurrent modified SubSpace rectangle would collapse to zero width or height.",
   "selection.feedback.modify_subspace.warn.circle.same_point": "&cCurrent modified SubSpace circle would have a radius of 0.",
-  "selection.feedback.modify_subspace.warn.rect.edge_too_short": "&cCurrent modified SubSpace rectangle edges must be at least &e{0}&c blocks long."
+  "selection.feedback.modify_subspace.warn.rect.edge_too_short": "&cCurrent modified SubSpace rectangle edges must be at least &e{0}&c blocks long.",
+  "interaction.meta.debug.behavior.recent.memory_hint": "&7(In-memory debug queue; cleared on restart. Use stats or typedStats for persistent data.)",
+  "interaction.meta.debug.behavior.page.prev": "[◀]",
+  "interaction.meta.debug.behavior.page.next": "[▶]",
+  "interaction.meta.debug.behavior.page.prev.hover": "Page {0}",
+  "interaction.meta.debug.behavior.page.next.hover": "Page {0}"
+
 }

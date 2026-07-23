@@ -5,8 +5,10 @@ import com.imyvm.iwg.infra.RegionDatabase
 import net.fabricmc.fabric.api.entity.event.v1.ServerLivingEntityEvents
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents
 import net.minecraft.core.BlockPos
+import net.minecraft.core.Direction
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.world.level.Level
+import net.minecraft.world.level.block.Block
 import net.minecraft.world.level.block.state.BlockState
 
 fun registerPlayerStatsEvents() {
@@ -21,8 +23,8 @@ fun registerPlayerStatsEvents() {
     }
 }
 
-fun recordSuccessfulBlockPlacement(player: ServerPlayer, world: Level, pos: BlockPos) {
-    recordBlockBehavior(WorldGeoBehaviorType.BLOCK_PLACE, player, world, pos, world.getBlockState(pos))
+fun recordSuccessfulBlockPlacement(player: ServerPlayer, world: Level, pos: BlockPos, objectId: String) {
+    recordPlayerBehavior(WorldGeoBehaviorType.BLOCK_PLACE, player, world, pos, objectId = objectId)
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(world, pos.x, pos.z) ?: return
     RegionDatabase.incrementRegionBlockPlaceStat(regionAndScope.first, player.uuid)
 }
@@ -38,4 +40,19 @@ private fun recordPlayerDeath(player: ServerPlayer) {
     recordPlayerBehavior(WorldGeoBehaviorType.PLAYER_DEATH, player, player.level(), pos)
     val regionAndScope = RegionDatabase.getRegionAndScopeAt(player.level(), pos.x, pos.z) ?: return
     RegionDatabase.incrementRegionDeathStat(regionAndScope.first, player.uuid)
+}
+
+internal fun resolvePlacedBlockTarget(
+    clickedPos: BlockPos,
+    clickedFace: Direction,
+    clickedState: BlockState,
+    adjacentState: BlockState,
+    expectedBlock: Block
+): BlockPos {
+    val adjacentPos = clickedPos.relative(clickedFace)
+    return when {
+        adjacentState.`is`(expectedBlock) -> adjacentPos
+        clickedState.`is`(expectedBlock) -> clickedPos
+        else -> adjacentPos
+    }
 }

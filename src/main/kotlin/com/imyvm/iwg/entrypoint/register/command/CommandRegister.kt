@@ -588,6 +588,53 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                                     )
                                             )
                                     )
+                                    .then(
+                                        literal("region")
+                                            .then(
+                                                argument("regionIdentifier", StringArgumentType.string())
+                                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                                    .executes { runDebugBehaviorTypedStatsRegion(it) }
+                                                    .then(
+                                                        literal("detail")
+                                                            .executes { runDebugBehaviorTypedStatsDetailRegion(it) }
+                                                            .then(argument("page", StringArgumentType.word()).executes { runDebugBehaviorTypedStatsDetailRegion(it) })
+                                                    )
+                                            )
+                                    )
+                                    .then(
+                                        literal("scope")
+                                            .then(
+                                                argument("regionIdentifier", StringArgumentType.string())
+                                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                                    .then(
+                                                        argument("scopeName", StringArgumentType.string())
+                                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                                            .executes { runDebugBehaviorTypedStatsScope(it) }
+                                                            .then(
+                                                                literal("detail")
+                                                                    .executes { runDebugBehaviorTypedStatsDetailScope(it) }
+                                                                    .then(argument("page", StringArgumentType.word()).executes { runDebugBehaviorTypedStatsDetailScope(it) })
+                                                            )
+                                                    )
+                                            )
+                                    )
+                                    .then(
+                                        literal("subspace")
+                                            .then(
+                                                argument("regionIdentifier", StringArgumentType.string())
+                                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                                    .then(
+                                                        argument("subSpaceName", StringArgumentType.string())
+                                                            .suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER)
+                                                            .executes { runDebugBehaviorTypedStatsSubSpace(it) }
+                                                            .then(
+                                                                literal("detail")
+                                                                    .executes { runDebugBehaviorTypedStatsDetailSubSpace(it) }
+                                                                    .then(argument("page", StringArgumentType.word()).executes { runDebugBehaviorTypedStatsDetailSubSpace(it) })
+                                                            )
+                                                    )
+                                            )
+                                    )
                             )
                             .then(
                                 literal("seed")
@@ -1191,7 +1238,8 @@ private fun runDebugBehaviorStats(context: CommandContext<CommandSourceStack>): 
 
 private fun runDebugBehaviorStatsDetail(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    return onDebugBehaviorStatsDetail(player, getOptionalArgument(context, "page"))
+    return onDebugBehaviorStatsDetail(player, getOptionalArgument(context, "page"),
+        "/imyvmWorldGeo debug behavior stats detail")
 }
 
 private fun runDebugBehaviorTypedStats(context: CommandContext<CommandSourceStack>): Int {
@@ -1201,7 +1249,8 @@ private fun runDebugBehaviorTypedStats(context: CommandContext<CommandSourceStac
 
 private fun runDebugBehaviorTypedStatsDetail(context: CommandContext<CommandSourceStack>): Int {
     val player = context.source.player ?: return 0
-    return onDebugBehaviorTypedStatsDetail(player, null, null, getOptionalArgument(context, "page"))
+    return onDebugBehaviorTypedStatsDetail(player, null, null, getOptionalArgument(context, "page"),
+        "/imyvmWorldGeo debug behavior typedStats detail")
 }
 
 private fun runDebugBehaviorTypedStatsForPeriod(context: CommandContext<CommandSourceStack>): Int {
@@ -1215,7 +1264,8 @@ private fun runDebugBehaviorTypedStatsForPeriodDetail(context: CommandContext<Co
     val player = context.source.player ?: return 0
     val periodKind = context.getArgument("periodKind", String::class.java)
     val periodId = context.getArgument("periodId", String::class.java)
-    return onDebugBehaviorTypedStatsDetail(player, periodKind, periodId, getOptionalArgument(context, "page"))
+    return onDebugBehaviorTypedStatsDetail(player, periodKind, periodId, getOptionalArgument(context, "page"),
+        "/imyvmWorldGeo debug behavior typedStats $periodKind ${commandArgument(periodId)} detail")
 }
 
 private fun runDebugBehaviorSeed(context: CommandContext<CommandSourceStack>): Int {
@@ -1224,6 +1274,60 @@ private fun runDebugBehaviorSeed(context: CommandContext<CommandSourceStack>): I
     val objectId = context.getArgument("objectId", String::class.java)
     val count = context.getArgument("count", String::class.java)
     return onDebugBehaviorSeed(player, behaviorType, objectId, count)
+}
+
+private fun runDebugBehaviorTypedStatsRegion(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region ->
+        val target = behaviorTargetForRegion(region)
+        val cmdBase = "/imyvmWorldGeo debug behavior typedStats region ${commandArgument(regionIdentifier)}"
+        onDebugBehaviorTypedStats(player, target, cmdBase)
+    }
+}
+
+private fun runDebugBehaviorTypedStatsDetailRegion(context: CommandContext<CommandSourceStack>): Int {
+    val (player, regionIdentifier) = getPlayerRegionPair(context) ?: return 0
+    return identifierHandler(regionIdentifier, player) { region ->
+        val target = behaviorTargetForRegion(region)
+        val pageCmd = "/imyvmWorldGeo debug behavior typedStats region ${commandArgument(regionIdentifier)} detail"
+        onDebugBehaviorTypedStatsDetail(player, null, null, getOptionalArgument(context, "page"), target, pageCmd)
+    }
+}
+
+private fun runDebugBehaviorTypedStatsScope(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val target = behaviorTargetForScope(region, scope)
+    val cmdBase = "/imyvmWorldGeo debug behavior typedStats scope ${commandArgument(regionIdentifier)} ${commandArgument(scopeName)}"
+    return onDebugBehaviorTypedStats(player, target, cmdBase)
+}
+
+private fun runDebugBehaviorTypedStatsDetailScope(context: CommandContext<CommandSourceStack>): Int {
+    val (player, region, scope) = getExplicitPlayerRegionScope(context) ?: return 0
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val scopeName = context.getArgument("scopeName", String::class.java)
+    val target = behaviorTargetForScope(region, scope)
+    val pageCmd = "/imyvmWorldGeo debug behavior typedStats scope ${commandArgument(regionIdentifier)} ${commandArgument(scopeName)} detail"
+    return onDebugBehaviorTypedStatsDetail(player, null, null, getOptionalArgument(context, "page"), target, pageCmd)
+}
+
+private fun runDebugBehaviorTypedStatsSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val sst = getSubSpaceTarget(context) ?: return 0
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val subSpaceName = context.getArgument("subSpaceName", String::class.java)
+    val target = behaviorTargetForSubSpace(sst.region, sst.scope, sst.subSpace)
+    val cmdBase = "/imyvmWorldGeo debug behavior typedStats subspace ${commandArgument(regionIdentifier)} ${commandArgument(subSpaceName)}"
+    return onDebugBehaviorTypedStats(sst.player, target, cmdBase)
+}
+
+private fun runDebugBehaviorTypedStatsDetailSubSpace(context: CommandContext<CommandSourceStack>): Int {
+    val sst = getSubSpaceTarget(context) ?: return 0
+    val regionIdentifier = context.getArgument("regionIdentifier", String::class.java)
+    val subSpaceName = context.getArgument("subSpaceName", String::class.java)
+    val target = behaviorTargetForSubSpace(sst.region, sst.scope, sst.subSpace)
+    val pageCmd = "/imyvmWorldGeo debug behavior typedStats subspace ${commandArgument(regionIdentifier)} ${commandArgument(subSpaceName)} detail"
+    return onDebugBehaviorTypedStatsDetail(sst.player, null, null, getOptionalArgument(context, "page"), target, pageCmd)
 }
 
 private fun runDebugPeriodEmit(context: CommandContext<CommandSourceStack>): Int {

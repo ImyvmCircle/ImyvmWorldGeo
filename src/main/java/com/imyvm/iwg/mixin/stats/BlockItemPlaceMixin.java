@@ -2,6 +2,7 @@ package com.imyvm.iwg.mixin.stats;
 
 import com.imyvm.iwg.application.event.PlayerStatsRecorderKt;
 import net.minecraft.core.BlockPos;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionResult;
 import net.minecraft.world.item.BlockItem;
@@ -19,7 +20,15 @@ public class BlockItemPlaceMixin {
         if (!cir.getReturnValue().consumesAction()) return;
         if (!(context.getPlayer() instanceof ServerPlayer player)) return;
 
-        BlockPos placedPos = context.getClickedPos().relative(context.getClickedFace());
-        PlayerStatsRecorderKt.recordSuccessfulBlockPlacement(player, context.getLevel(), placedPos);
+        BlockPos clickedPos = context.getClickedPos();
+        BlockPos placedPos = PlayerStatsRecorderKt.resolvePlacedBlockTarget(
+                clickedPos,
+                context.getClickedFace(),
+                context.getLevel().getBlockState(clickedPos),
+                context.getLevel().getBlockState(clickedPos.relative(context.getClickedFace())),
+                ((BlockItem) (Object) this).getBlock()
+        );
+        String objectId = BuiltInRegistries.BLOCK.getKey(((BlockItem) (Object) this).getBlock()).toString();
+        PlayerStatsRecorderKt.recordSuccessfulBlockPlacement(player, context.getLevel(), placedPos, objectId);
     }
 }

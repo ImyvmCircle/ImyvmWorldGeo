@@ -262,7 +262,68 @@ class BehaviorStatsStoreTest {
         assertEquals(0, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, objectId = "second")).size)
     }
 
-    private fun event(type: WorldGeoBehaviorType, objectId: String?, targetId: String? = null) = WorldGeoBehaviorEvent(
+    @Test
+    fun `drops event with unassigned scope id without entering counts`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "test").copy(scopeId = 0L))
+        assertEquals(0, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7)).size)
+    }
+
+    @Test
+    fun `writeStats skips invalid key and preserves valid keys`() = withTempDirectory { directory ->
+        val path = directory.resolve("iwg_behavior_stats.json")
+        val validKey = BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.DEBUG_TEST, 7, null, null, playerUuid, "debug")
+        val invalidKey = BehaviorStatsKey(NaturalPeriodKind.HOUR, "2026-07-21T00", WorldGeoBehaviorType.DEBUG_TEST, 7, 0L, null, playerUuid, "debug")
+        BehaviorStatsStore.writeStats(path, mapOf(validKey to 3L, invalidKey to 2L))
+
+        BehaviorStatsStore.bindSession(directory)
+        val entries = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7))
+        assertEquals(1, entries.size)
+        assertEquals(3L, entries.single().count)
+    }
+
+    @Test
+    fun `records and saves event with valid negative scope id`() = withTempDirectory { directory ->
+        val negativeScopeId = -9124860055567730657L
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "scoped").copy(scopeId = negativeScopeId, subSpaceId = null))
+        BehaviorStatsStore.save()
+        BehaviorStatsStore.unbindSession()
+
+        BehaviorStatsStore.bindSession(directory)
+        val entries = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, scopeId = negativeScopeId))
+        assertEquals(1, entries.size)
+        assertEquals(1L, entries.single().count)
+    }
+
+    @Test
+    fun `region-level query finds scope records after restart`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.BLOCK_PLACE, objectId = "minecraft:stone"))
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.BLOCK_BREAK, objectId = "minecraft:dirt"))
+        BehaviorStatsStore.save()
+        BehaviorStatsStore.unbindSession()
+
+        BehaviorStatsStore.bindSession(directory)
+        val regionEntries = BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7)
+        )
+        assertEquals(2, regionEntries.size, "Region-level query should return all scope-level records")
+        assertEquals(1L, regionEntries.first { it.behaviorType == WorldGeoBehaviorType.BLOCK_PLACE }.count)
+        assertEquals(1L, regionEntries.first { it.behaviorType == WorldGeoBehaviorType.BLOCK_BREAK }.count)
+    }
+
+    @Test
+    fun `scope-only event is dropped and does not appear in region query`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "valid").copy(scopeId = 7001L, subSpaceId = null))
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "no-scope").copy(scopeId = null))
+        val entries = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7))
+        assertEquals(1, entries.size, "Null-scope event must be dropped by record()")
+        assertEquals("valid", entries.single().objectId)
+    }
+
+        private fun event(type: WorldGeoBehaviorType, objectId: String?, targetId: String? = null) = WorldGeoBehaviorEvent(
         type = type,
         playerUuid = playerUuid,
         playerName = "tester",
