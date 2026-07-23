@@ -12,6 +12,7 @@ import kotlin.math.hypot
 
 private val OLD_SCOPE_PARTICLE = DustParticleOptions((255 shl 24) or (51 shl 16) or (153 shl 8) or 255, 2.5f)
 private val MODIFYING_SCOPE_PARTICLE = DustParticleOptions((255 shl 24) or (255 shl 16) or (140 shl 8) or 0, 2.5f)
+private val SUBSPACE_PARTICLE = DustParticleOptions((255 shl 24) or (255 shl 16), 2.5f)
 
 internal fun emitLineSurface(
     player: ServerPlayer,
@@ -67,6 +68,16 @@ internal fun emitLineSurfaceModifying(
     maxSamples: Int = session.surfaceUnits
 ) = emitLineSurface(player, x1, z1, x2, z2, MODIFYING_SCOPE_PARTICLE, session, maxSamples)
 
+internal fun emitLineSurfaceSubSpace(
+    player: ServerPlayer,
+    x1: Int,
+    z1: Int,
+    x2: Int,
+    z2: Int,
+    session: SelectionDisplaySession,
+    maxSamples: Int = session.surfaceUnits
+) = emitLineSurface(player, x1, z1, x2, z2, SUBSPACE_PARTICLE, session, maxSamples)
+
 internal fun drawCircleOutline(
     player: ServerPlayer,
     centerX: Int,
@@ -93,6 +104,15 @@ internal fun drawCircleOutlineModifying(
     session: SelectionDisplaySession,
     maxSamples: Int = session.surfaceUnits
 ) = drawCircleOutline(player, centerX, centerZ, radius, MODIFYING_SCOPE_PARTICLE, session, maxSamples)
+
+internal fun drawCircleOutlineSubSpace(
+    player: ServerPlayer,
+    centerX: Int,
+    centerZ: Int,
+    radius: Int,
+    session: SelectionDisplaySession,
+    maxSamples: Int = session.surfaceUnits
+) = drawCircleOutline(player, centerX, centerZ, radius, SUBSPACE_PARTICLE, session, maxSamples)
 
 private fun emitLineSurface(
     player: ServerPlayer,

@@ -12,6 +12,7 @@ import com.imyvm.iwg.domain.component.PolygonGeometry
 import com.imyvm.iwg.domain.component.RectangleGeometry
 import com.imyvm.iwg.domain.component.SelectionState
 import com.imyvm.iwg.domain.component.ShapeGeometry
+import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.util.geo.checkPolygonSize
@@ -25,7 +26,8 @@ import net.minecraft.server.level.ServerPlayer
 private enum class BoundaryStyle {
     SELECTION,
     ORIGINAL,
-    MODIFYING
+    MODIFYING,
+    SUBSPACE
 }
 
 internal fun displaySelectionAndScopeBoundariesForAllPlayers(server: MinecraftServer) {
@@ -61,9 +63,15 @@ private fun displayActionBarScopes(
             as? HypotheticalShape.ModifyExisting
         )?.scope
     val playerWorldId = player.level().dimension().identifier()
-    displayRegionScopeCandidates(RegionDatabase.getRegionList(), session) { scope ->
+    val regions = RegionDatabase.getRegionList()
+    displayRegionScopeCandidates(regions, session) { scope ->
         if (scope !== modifyingScope && scope.geoShape != null && scope.worldId == playerWorldId) {
             displayOriginalScope(player, scope, session)
+        }
+    }
+    displayRegionSubSpaceCandidates(regions, session) { subSpace ->
+        if (subSpace.worldId == playerWorldId) {
+            displaySubSpace(player, subSpace, session)
         }
     }
     commitPillars(player, session)
@@ -93,6 +101,22 @@ internal fun displayRegionScopeCandidates(
         while (session.tryUseSurface()) {
             if (!scopeIterator.hasNext()) break
             display(scopeIterator.next())
+        }
+    }
+}
+
+internal fun displayRegionSubSpaceCandidates(
+    regions: Iterable<Region>,
+    session: SelectionDisplaySession,
+    display: (SubSpace) -> Unit
+) {
+    val regionIterator = regions.iterator()
+    while (session.tryUseSurface()) {
+        if (!regionIterator.hasNext()) return
+        val subSpaceIterator = regionIterator.next().subSpaces.iterator()
+        while (session.tryUseSurface()) {
+            if (!subSpaceIterator.hasNext()) break
+            display(subSpaceIterator.next())
         }
     }
 }
@@ -283,7 +307,20 @@ internal fun displayRegionScopeBoundariesForPlayer(player: ServerPlayer, regions
             displayOriginalScope(player, scope, session)
         }
     }
+    displayRegionSubSpaceCandidates(regions, session) { subSpace ->
+        if (subSpace.worldId == playerWorldId) {
+            displaySubSpace(player, subSpace, session)
+        }
+    }
     commitPillars(player, session)
+}
+
+private fun displaySubSpace(
+    player: ServerPlayer,
+    subSpace: SubSpace,
+    session: SelectionDisplaySession
+) {
+    displayGeometry(player, subSpace.geoShape.typedGeometry, BoundaryStyle.SUBSPACE, session)
 }
 
 fun displayModifyingScope(player: ServerPlayer, scope: GeoScope) {
@@ -334,6 +371,7 @@ private fun displayGeometry(
                 BoundaryStyle.SELECTION -> drawCircleOutline(player, geometry.centerX, geometry.centerZ, geometry.radius, session)
                 BoundaryStyle.ORIGINAL -> drawCircleOutlineOld(player, geometry.centerX, geometry.centerZ, geometry.radius, session)
                 BoundaryStyle.MODIFYING -> drawCircleOutlineModifying(player, geometry.centerX, geometry.centerZ, geometry.radius, session)
+                BoundaryStyle.SUBSPACE -> drawCircleOutlineSubSpace(player, geometry.centerX, geometry.centerZ, geometry.radius, session)
             }
         }
         is PolygonGeometry -> {
@@ -378,6 +416,7 @@ private fun emitClosedBoundary(
             BoundaryStyle.SELECTION -> emitLineSurface(player, x(edge), z(edge), x(next), z(next), session, maxSamples)
             BoundaryStyle.ORIGINAL -> emitLineSurfaceOld(player, x(edge), z(edge), x(next), z(next), session, maxSamples)
             BoundaryStyle.MODIFYING -> emitLineSurfaceModifying(player, x(edge), z(edge), x(next), z(next), session, maxSamples)
+            BoundaryStyle.SUBSPACE -> emitLineSurfaceSubSpace(player, x(edge), z(edge), x(next), z(next), session, maxSamples)
         }
         if (session.surfaceUnits == 0) return
     }
