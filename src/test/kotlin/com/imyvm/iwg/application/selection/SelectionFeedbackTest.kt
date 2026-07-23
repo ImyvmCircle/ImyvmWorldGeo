@@ -74,6 +74,30 @@ class SelectionFeedbackTest {
         assertTrue(outsideText.contains("没有完整包含"), outsideText)
     }
 
+    @Test
+    fun `explicit subspace selection does not report normal scope creation blockers`() {
+        val worldId = Identifier.parse("minecraft:overworld")
+        val scope = GeoScope(
+            "main",
+            worldId,
+            null,
+            geoShape = GeoShape.rectangle(GeoPoint(0, 0), GeoPoint(100, 100)),
+            scopeId = ScopeId(generateCompatScopeIdRaw(30, 0))
+        )
+        val region = Region("explicitSub", 30, mutableListOf(scope))
+        RegionDatabase.addRegion(region)
+        try {
+            val points = mutableListOf(BlockPos(10, 0, 10), BlockPos(25, 0, 40))
+            val state = SelectionState(points, HypotheticalShape.SubSpace(region.name, scope, null), worldId)
+            val text = buildPointAddedMessage(state, points.last()).string
+
+            assertTrue(text.contains("子空间"), text)
+            assertFalse(text.contains("只能创建子空间"), text)
+            assertFalse(text.contains("部分重叠"), text)
+        } finally {
+            RegionDatabase.removeRegion(region)
+        }
+    }
 
     @Test
     fun `normal selection inside existing scope uses subspace warning and limits`() {

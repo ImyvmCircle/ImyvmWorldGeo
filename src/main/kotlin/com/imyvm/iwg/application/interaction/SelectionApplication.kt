@@ -23,6 +23,9 @@ internal enum class ModifySelectionTargetError {
 internal fun isCreationSelection(state: SelectionState): Boolean =
     state.hypotheticalShape !is HypotheticalShape.ModifyExisting
 
+internal fun isSubSpaceSelection(state: SelectionState): Boolean =
+    state.hypotheticalShape is HypotheticalShape.SubSpace
+
 internal fun isModifySelectionFor(state: SelectionState, scope: GeoScope): Boolean =
     (state.hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope === scope
 

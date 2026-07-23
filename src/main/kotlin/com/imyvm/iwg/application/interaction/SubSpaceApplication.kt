@@ -420,6 +420,8 @@ fun onRemovingSubSpaceKeyedTag(player: ServerPlayer, region: Region, parentScope
 }
 
 private fun getCreationSelectionForSubSpace(player: ServerPlayer) =
-    ImyvmWorldGeo.pointSelectingPlayers[player.uuid]?.takeIf(::isCreationSelection).also {
-        if (it == null) player.sendSystemMessage(Translator.tr("interaction.meta.select.create_mode_required")!!)
-    }
+    ImyvmWorldGeo.pointSelectingPlayers[player.uuid]
+        ?.takeIf(::isSubSpaceSelection)
+        .also {
+            if (it == null) player.sendSystemMessage(Translator.tr("interaction.meta.select.create_mode_required")!!)
+        }

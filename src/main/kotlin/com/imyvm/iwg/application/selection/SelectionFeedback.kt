@@ -85,7 +85,8 @@ private fun buildNormalMessage(msg: StringBuilder, state: SelectionState, eventP
     val autoTarget = if (subSpaceTarget == null) findAutoSubSpaceTarget(state, effectiveShape) else null
     val effectiveSubSpaceTarget = subSpaceTarget ?: autoTarget?.toHypotheticalShape(effectiveShape)
     val partialOverlap = if (subSpaceTarget == null && autoTarget == null) findPartialScopeOverlap(state, effectiveShape) else null
-    val isAuto = state.hypotheticalShape == null || (subSpaceTarget != null && subSpaceTarget.shapeType == null)
+    val isAuto = state.hypotheticalShape == null
+    val isSubSpaceAuto = subSpaceTarget != null && subSpaceTarget.shapeType == null
 
     msg.append(Translator.raw("selection.feedback.separator") ?: "")
     msg.append("\n")
@@ -95,7 +96,7 @@ private fun buildNormalMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append(Translator.raw("selection.feedback.none") ?: "")
     } else {
         for ((idx, pt) in points.take(MAX_DISPLAYED_SELECTION_POINTS).withIndex()) {
-            val role = getNormalPointRole(effectiveShape, isAuto, idx, count)
+            val role = getNormalPointRole(effectiveShape, isAuto || isSubSpaceAuto, idx, count)
             msg.append("\n")
             msg.append(Translator.raw("selection.feedback.point_line", pt.x, pt.z, role) ?: "")
         }
@@ -103,9 +104,9 @@ private fun buildNormalMessage(msg: StringBuilder, state: SelectionState, eventP
     }
 
     msg.append("\n")
-    appendShapeParameterBlock(msg, effectiveShape, isAuto, effectiveSubSpaceTarget)
+    appendShapeParameterBlock(msg, effectiveShape, isAuto || isSubSpaceAuto, effectiveSubSpaceTarget)
     msg.append("\n")
-    appendNormalGuidance(msg, effectiveShape, isAuto, count, effectiveSubSpaceTarget)
+    appendNormalGuidance(msg, effectiveShape, isAuto || isSubSpaceAuto, count, effectiveSubSpaceTarget)
 
     val warning = when {
         subSpaceTarget != null -> buildSubSpaceValidationWarning(effectiveShape, points, subSpaceTarget)
@@ -132,7 +133,7 @@ private fun buildNormalMessage(msg: StringBuilder, state: SelectionState, eventP
         msg.append(Translator.raw("selection.feedback.header_undo", eventPos.x, eventPos.z) ?: "")
     } else {
         val pointIndex = count - 1
-        val roleRaw = getNormalPointRole(effectiveShape, isAuto, pointIndex, count)
+        val roleRaw = getNormalPointRole(effectiveShape, isAuto || isSubSpaceAuto, pointIndex, count)
         msg.append(Translator.raw("selection.feedback.header_added", eventPos.x, eventPos.z, roleRaw) ?: "")
     }
     msg.append("\n")
