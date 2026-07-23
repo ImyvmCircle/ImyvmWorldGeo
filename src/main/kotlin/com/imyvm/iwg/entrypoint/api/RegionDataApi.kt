@@ -200,6 +200,25 @@ object RegionDataApi {
     ): List<Setting> =
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
+    fun getSubSpaceGlobalSettings(subSpace: SubSpace): List<Setting> =
+        subSpace.settings.toSet().filter { !it.isPersonal }
+
+    fun getSubSpaceGlobalSettingsByType(
+        subSpace: SubSpace,
+        settingTypes: SettingTypes
+    ): List<Setting> =
+        filterSettingsByType(subSpace.settings, settingTypes, isPersonal = false)
+
+    fun getSubSpacePersonalSettings(subSpace: SubSpace, playerUUID: UUID): List<Setting> =
+        subSpace.settings.toSet().filter { it.isPersonal && it.playerUUID == playerUUID }
+
+    fun getSubSpacePersonalSettingsByType(
+        subSpace: SubSpace,
+        playerUUID: UUID,
+        settingTypes: SettingTypes
+    ): List<Setting> =
+        filterSettingsByType(subSpace.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
+
     fun getDefaultPermissionValue(permissionKey: PermissionKey): Boolean =
         getDefaultValueForPermission(permissionKey)
 

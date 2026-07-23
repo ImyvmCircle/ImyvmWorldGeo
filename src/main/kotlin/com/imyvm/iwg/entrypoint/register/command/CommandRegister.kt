@@ -46,19 +46,6 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                         literal("shape")
                             .then(argument("shapeType", StringArgumentType.word()).suggests(SHAPE_TYPE_SUGGESTION_PROVIDER).executes { runSetSelectionShape(it) })
                     )
-                    .then(
-                        literal("modifyScope")
-                            .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runStartSelectForModify(it) }
-                                    )
-                            )
-                    )
             )
             .then(
                 literal("create")
@@ -92,33 +79,6 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
-                literal("addScope")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        argument("regionIdentifier", StringArgumentType.string())
-                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .executes { runAddScope(it) }
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .executes { runAddScope(it) }
-                            )
-                    )
-            )
-            .then(
-                literal("deleteScope")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        argument("regionIdentifier", StringArgumentType.string())
-                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runConfirmDeleteScope(it, "deleteScope") }
-                                    .then(literal("confirm").executes { runDeleteScope(it) })
-                            )
-                    )
-            )
-            .then(
                 literal("scope")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
@@ -134,14 +94,71 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                     )
                     .then(
-                        literal("add")
+                        literal("setting")
                             .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runAddScope(it) }
+                                literal("add")
                                     .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .executes { runAddScope(it) }
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("scopeName", StringArgumentType.string())
+                                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                                    .then(
+                                                        argument("key", StringArgumentType.string())
+                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                            .then(
+                                                                argument("value", StringArgumentType.string())
+                                                                    .executes { runAddDeleteSetting(it) }
+                                                                    .then(
+                                                                        argument("playerName", StringArgumentType.string())
+                                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                                            .executes { runAddDeleteSetting(it) }
+                                                                    )
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                literal("remove")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("scopeName", StringArgumentType.string())
+                                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                                    .then(
+                                                        argument("key", StringArgumentType.string())
+                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                            .executes { runAddDeleteSetting(it) }
+                                                            .then(
+                                                                argument("playerName", StringArgumentType.string())
+                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                                    .executes { runAddDeleteSetting(it) }
+                                                            )
+                                                    )
+                                            )
+                                    )
+                            )
+                            .then(
+                                literal("queryValue")
+                                    .then(
+                                        argument("regionIdentifier", StringArgumentType.string())
+                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                            .then(
+                                                argument("scopeName", StringArgumentType.string())
+                                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                                    .then(
+                                                        argument("key", StringArgumentType.string())
+                                                            .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
+                                                            .executes { runQuerySettingValue(it) }
+                                                            .then(
+                                                                argument("playerName", StringArgumentType.string())
+                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
+                                                                    .executes { runQuerySettingValue(it) }
+                                                            )
+                                                    )
+                                            )
                                     )
                             )
                     )
@@ -171,18 +188,6 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                     )
                     .then(
-                        literal("replaceShape")
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runModifyScope(it) }
-                                    )
-                            )
-                    )
-                    .then(
                         literal("modify")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
@@ -206,6 +211,18 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                                 argument("newName", StringArgumentType.string())
                                                     .executes { runRenameScope(it) }
                                             )
+                                    )
+                            )
+                    )
+                    .then(
+                        literal("dynmapToggle")
+                            .then(
+                                argument("regionIdentifier", StringArgumentType.string())
+                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
+                                    .then(
+                                        argument("scopeName", StringArgumentType.string())
+                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
+                                            .executes { runToggleScopeDynmap(it) }
                                     )
                             )
                     )
@@ -308,40 +325,6 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
-                literal("modifyScope")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        argument("regionIdentifier", StringArgumentType.string())
-                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runModifyScope(it) }
-                                    .then(
-                                        argument("newName", StringArgumentType.string())
-                                            .executes { runRenameScope(it) }
-                                    )
-                            )
-                    )
-            )
-            .then(
-                literal("transferScope")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        argument("regionIdentifier", StringArgumentType.string())
-                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("targetRegionIdentifier", StringArgumentType.string())
-                                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                            .executes { runTransferScope(it) }
-                                    )
-                            )
-                    )
-            )
-            .then(
                 literal("mergeRegion")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
@@ -407,76 +390,6 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                                 argument("playerName", StringArgumentType.string())
                                                     .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
                                                     .executes { runQuerySettingValue(it) }
-                                            )
-                                    )
-                            )
-                    )
-            )
-            .then(
-                literal("settingScope")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        literal("add")
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .then(
-                                                argument("key", StringArgumentType.string())
-                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                                    .then(
-                                                        argument("value", StringArgumentType.string())
-                                                            .executes { runAddDeleteSetting(it) }
-                                                            .then(
-                                                                argument("playerName", StringArgumentType.string())
-                                                                    .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                                    .executes { runAddDeleteSetting(it) }
-                                                            )
-                                                    )
-                                            )
-                                    )
-                            )
-                    )
-                    .then(
-                        literal("remove")
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .then(
-                                                argument("key", StringArgumentType.string())
-                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                                    .executes { runAddDeleteSetting(it) }
-                                                    .then(
-                                                        argument("playerName", StringArgumentType.string())
-                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                            .executes { runAddDeleteSetting(it) }
-                                                    )
-                                            )
-                                    )
-                            )
-                    )
-                    .then(
-                        literal("queryValue")
-                            .then(
-                                argument("regionIdentifier", StringArgumentType.string())
-                                    .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                                    .then(
-                                        argument("scopeName", StringArgumentType.string())
-                                            .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                            .then(
-                                                argument("key", StringArgumentType.string())
-                                                    .suggests(SETTING_KEY_SUGGESTION_PROVIDER)
-                                                    .executes { runQuerySettingValue(it) }
-                                                    .then(
-                                                        argument("playerName", StringArgumentType.string())
-                                                            .suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER)
-                                                            .executes { runQuerySettingValue(it) }
-                                                    )
                                             )
                                     )
                             )
@@ -551,7 +464,7 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                             )
                     )
                     .then(
-                        literal("replaceShape")
+                        literal("modify")
                             .then(
                                 argument("regionIdentifier", StringArgumentType.string())
                                     .suggests(REGION_NAME_SUGGESTION_PROVIDER)
@@ -605,6 +518,12 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                                             .executes { runQuerySubSpace(it) }
                                     )
                             )
+                    )
+                    .then(
+                        literal("setting")
+                            .then(literal("add").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).then(argument("value", StringArgumentType.string()).executes { runAddDeleteSubSpaceSetting(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) }))))))
+                            .then(literal("remove").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) })))))
+                            .then(literal("queryValue").then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).executes { runQuerySubSpaceSettingValue(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runQuerySubSpaceSettingValue(it) })))))
                     )
                     .then(
                         literal("tag")
@@ -756,41 +675,12 @@ fun register(dispatcher: CommandDispatcher<CommandSourceStack>) {
                     )
             )
             .then(
-                literal("settingSubSpace")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        literal("add")
-                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).then(argument("value", StringArgumentType.string()).executes { runAddDeleteSubSpaceSetting(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) })))))
-                    )
-                    .then(
-                        literal("remove")
-                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runAddDeleteSubSpaceSetting(it) }))))
-                    )
-                    .then(
-                        literal("queryValue")
-                            .then(argument("regionIdentifier", StringArgumentType.string()).suggests(REGION_NAME_SUGGESTION_PROVIDER).then(argument("subSpaceName", StringArgumentType.string()).suggests(SUBSPACE_NAME_SUGGESTION_PROVIDER).then(argument("key", StringArgumentType.string()).suggests(SETTING_KEY_SUGGESTION_PROVIDER).executes { runQuerySubSpaceSettingValue(it) }.then(argument("playerName", StringArgumentType.string()).suggests(ONLINE_PLAYER_SUGGESTION_PROVIDER).executes { runQuerySubSpaceSettingValue(it) }))))
-                    )
-            )
-            .then(
                 literal("dynmapToggle")
                     .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
                     .then(
                         argument("regionIdentifier", StringArgumentType.string())
                             .suggests(REGION_NAME_SUGGESTION_PROVIDER)
                             .executes { runToggleRegionDynmap(it) }
-                    )
-            )
-            .then(
-                literal("dynmapToggleScope")
-                    .requires(MinecraftCommands.hasPermission(MinecraftCommands.LEVEL_GAMEMASTERS))
-                    .then(
-                        argument("regionIdentifier", StringArgumentType.string())
-                            .suggests(REGION_NAME_SUGGESTION_PROVIDER)
-                            .then(
-                                argument("scopeName", StringArgumentType.string())
-                                    .suggests(SCOPE_NAME_SUGGESTION_PROVIDER)
-                                    .executes { runToggleScopeDynmap(it) }
-                            )
                     )
             )
             .then(

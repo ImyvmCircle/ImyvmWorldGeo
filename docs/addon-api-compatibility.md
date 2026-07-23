@@ -44,6 +44,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `PlayerInteractionApi.setLocationActionBarVisible` / `isLocationActionBarVisible` / `toggleLocationActionBar` | — (new in 26.2-1.5.5) | — | New API | — | `toggleLocationActionBar` delegates to existing `toggleActionBar`; `set`/`is` operate directly |
 | `RegionDataApi.sendRegionSpaceMessage` / `sendScopeSpaceMessage` / `sendSubSpaceMessage` `(messageKey, args)` overloads | — (new in 26.2-1.5.5) | — | New API | — | messageKey resolved via `Translator.tr`; `null` result logs an error and returns 0 |
 | `PlayerInteractionApi.openSpaceDebugView` | — (new in 26.2-1.5.5) | — | New API | — | Accepts Region/Scope/SubSpace; OP check via `PlayerList.isOp` |
+| `RegionDataApi.getSubSpaceGlobalSettings/getSubSpacePersonalSettings` and `ByType` overloads | — (new in 26.2-1.5.5) | — | New API | — | Completes raw SubSpace setting-list reads to match Region and Scope |
 | `PlayerInteractionApi.createRegion/createAndGetRegion/addScope/createAndGetRegionScopePair` with `GeoShape` | — (new in 26.2-1.5.5) | — | New API | — | Direct shape creation bypasses selection session; existing selection-based methods unchanged |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
@@ -251,7 +252,7 @@ SubSpace settings resolve before Scope settings and Region settings. Personal se
 
 Persisted Region and Scope data written before the SubSpace format loads with an empty SubSpace list. New database records append SubSpace data after ownership history, preserving the Region, Scope, settings, and ownership block order.
 
-OP commands mirror the addon surface for live-server debugging. Use `subspace create`, `delete`, `rename`, `replaceShape`, `setEntryMessage`, `query`, `tag`, `settingSubSpace`, and `debug spaceHere` to inspect and mutate SubSpace state in-game.
+OP commands mirror the addon surface for live-server debugging. Use `subspace create`, `delete`, `rename`, `modify`, `setEntryMessage`, `query`, `tag`, `subspace setting`, and `debug spaceHere` to inspect and mutate SubSpace state in-game.
 
 ## Selection API contract
 

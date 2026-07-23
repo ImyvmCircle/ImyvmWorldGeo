@@ -142,7 +142,7 @@ The first version only supports two extension categories:
 1. extension permissions: boolean, can be global or personal
 2. extension rules: boolean, always global
 
-These keys must be registered by an addon through `RegionDataApi` before they can be used in commands or API queries. Once registered, they can be managed through the same `/imyvmWorldGeo setting` and `/imyvmWorldGeo settingScope` commands as built-in settings.
+These keys must be registered by an addon through `RegionDataApi` before they can be used in commands or API queries. Once registered, they can be managed through the same `/imyvmWorldGeo setting`, `/imyvmWorldGeo scope setting`, and `/imyvmWorldGeo subspace setting` commands as built-in settings.
 
 Resolution order:
 
@@ -475,13 +475,13 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo rename <regionIdentifier> <newName>`
   Rename an existing region.
 
-- `/imyvmWorldGeo addScope [shapeType] <regionIdentifier> [scopeName]`
-  Add a new scope to the region. If shapeType is omitted, the shape is inferred from the selection state. Optionally provide a scope name.
+- `/imyvmWorldGeo scope create <regionIdentifier> [scopeName]`
+  Create a new scope in the region from the current selection. The shape is inferred from the selection state. Optionally provide a scope name.
 
-- `/imyvmWorldGeo deleteScope <regionIdentifier> <scopeName>`
+- `/imyvmWorldGeo scope delete <regionIdentifier> <scopeName>`
   Delete a scope from a region.
 
-- `/imyvmWorldGeo transferScope <regionIdentifier> <scopeName> <targetRegionIdentifier>`
+- `/imyvmWorldGeo scope transfer <regionIdentifier> <scopeName> <targetRegionIdentifier>`
   Transfer a scope from one region to another. If a scope with the same name already exists in the target region, the scope is automatically renamed by appending a numeric suffix (e.g., `scopeName1`, `scopeName2`).
 
 - `/imyvmWorldGeo mergeRegion <regionIdentifier> <targetRegionIdentifier>`
@@ -515,8 +515,11 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo teleportPoint toggle <regionIdentifier> <scopeName>`
   Toggle the accessibility of the teleport point for the specified region and scope.
 
-- `/imyvmWorldGeo modifyScope <regionIdentifier> <scopeName> [newName]`
-  Modify a scope's properties or rename it.
+- `/imyvmWorldGeo scope modify <regionIdentifier> <scopeName>`
+  Modify a scope geometry from the current modification selection.
+
+- `/imyvmWorldGeo scope rename <regionIdentifier> <scopeName> <newName>`
+  Rename a scope.
 
 - `/imyvmWorldGeo setting add <regionIdentifier> <key> <value> [playerName]`
   Add a setting to a region, optionally for a specific player.
@@ -528,19 +531,34 @@ Provides utility functions for region data to improve usability for extension mo
 - `/imyvmWorldGeo setting queryValue <regionIdentifier> <key> [playerName]`
   Query the value of a setting in a region, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope add <regionIdentifier> <scopeName> <key> <value> [playerName]`
+- `/imyvmWorldGeo scope setting add <regionIdentifier> <scopeName> <key> <value> [playerName]`
   Add a setting to a specific scope of a region, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope remove <regionIdentifier> <scopeName> <key> [playerName]`
+- `/imyvmWorldGeo scope setting remove <regionIdentifier> <scopeName> <key> [playerName]`
   Remove a setting from a specific scope, optionally for a specific player.
 
-- `/imyvmWorldGeo settingScope queryValue <regionIdentifier> <scopeName> <key> [playerName]`
+- `/imyvmWorldGeo scope setting queryValue <regionIdentifier> <scopeName> <key> [playerName]`
   Query the value of a setting in a specific scope, optionally for a specific player.
+
+- `/imyvmWorldGeo subspace modify <regionIdentifier> <subSpaceName> [shapeType]`
+  Modify a SubSpace shape from the current SubSpace selection.
+
+- `/imyvmWorldGeo subspace rename <regionIdentifier> <subSpaceName> <newName>`
+  Rename a SubSpace.
+
+- `/imyvmWorldGeo subspace setting add <regionIdentifier> <subSpaceName> <key> <value> [playerName]`
+  Add a setting to a SubSpace, optionally for a specific player.
+
+- `/imyvmWorldGeo subspace setting remove <regionIdentifier> <subSpaceName> <key> [playerName]`
+  Remove a setting from a SubSpace, optionally for a specific player.
+
+- `/imyvmWorldGeo subspace setting queryValue <regionIdentifier> <subSpaceName> <key> [playerName]`
+  Query a setting value with SubSpace precedence, optionally for a specific player.
 
 - `/imyvmWorldGeo dynmapToggle <regionIdentifier>`
   Toggle the region's visibility on the dynamic map. When a region is hidden, all its scopes are hidden regardless of their individual settings.
 
-- `/imyvmWorldGeo dynmapToggleScope <regionIdentifier> <scopeName>`
+- `/imyvmWorldGeo scope dynmapToggle <regionIdentifier> <scopeName>`
   Toggle a scope's visibility on the dynamic map. Has no effect if the region itself is hidden.
 
 - `/imyvmWorldGeo query <regionIdentifier>`
