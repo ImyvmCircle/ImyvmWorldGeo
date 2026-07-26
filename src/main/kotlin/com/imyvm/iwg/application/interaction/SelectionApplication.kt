@@ -2,7 +2,6 @@ package com.imyvm.iwg.application.interaction
 
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.selection.buildModifyStartMessage
-import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.HypotheticalShape
@@ -116,7 +115,6 @@ fun onStartSelection(player: ServerPlayer, shapeType: GeoShapeType? = null): Int
 fun onStopSelection(player: ServerPlayer): Int {
     val playerUUID = player.uuid
     return if (clearPlayerSelection(playerUUID)) {
-        clearSelectionDisplay(player)
         player.sendSystemMessage(Translator.tr("interaction.meta.select.stop"))
         1
     } else {

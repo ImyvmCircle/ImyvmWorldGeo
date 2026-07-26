@@ -11,7 +11,6 @@ import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.RegionIdCapacityExceededException
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.application.region.generateNewRegionId
-import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
@@ -421,7 +420,6 @@ private fun createScopeFromSelection(
 }
 
 private fun clearSuccessfulCreationSelection(player: ServerPlayer) {
-    clearSelectionDisplay(player)
     clearPlayerSelection(player.uuid)
 }
 

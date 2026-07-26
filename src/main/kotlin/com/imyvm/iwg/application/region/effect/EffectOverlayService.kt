@@ -96,10 +96,17 @@ object EffectOverlayService {
         return snapshot.filter { it.startEpochMillis <= nowMillis && nowMillis < it.endEpochMillis }
     }
 
-    /** [nowMillis] is Unix epoch milliseconds. */
+    /**
+     * Legacy compatibility wrapper. [nowMillis] is Unix epoch milliseconds.
+     *
+     * Timed overlays are Scope-global; [playerUUID] does not affect resolution.
+     */
+    @Deprecated(
+        "Timed overlays are scope-global; use queryOverlay",
+        ReplaceWith("queryOverlay(scopeId, nowMillis)")
+    )
     @Suppress("UNUSED_PARAMETER")
     fun queryOverlayForPlayer(scopeId: ScopeId, playerUUID: UUID, nowMillis: Long = System.currentTimeMillis()): Map<EffectKey, Int> {
-        // Overlay is scope-global; per-player overlays would be added here when needed.
         return queryOverlay(scopeId, nowMillis)
     }
 

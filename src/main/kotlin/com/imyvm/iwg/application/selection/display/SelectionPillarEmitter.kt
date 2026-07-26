@@ -58,4 +58,11 @@ internal inline fun sampleVerticalCoordinates(
     return sampleCount
 }
 
+/**
+ * Legacy JVM compatibility wrapper.
+ *
+ * Already-sent selection particles cannot be withdrawn. Selection lifecycle cleanup is performed
+ * by removing the player's selection state, and the particles expire naturally on the client.
+ */
+@Deprecated("Selection particles expire naturally; clear the selection state instead")
 fun clearSelectionDisplay(@Suppress("UNUSED_PARAMETER") player: ServerPlayer) = Unit

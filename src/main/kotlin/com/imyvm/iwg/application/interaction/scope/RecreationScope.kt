@@ -5,7 +5,6 @@ import com.imyvm.iwg.application.interaction.helper.errorMessage
 import com.imyvm.iwg.application.interaction.saveRegionData
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
-import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
@@ -26,7 +25,6 @@ internal fun applyModifiedShape(
     is Result.Ok -> {
         when (val replacement = replaceScopeShape(region, scope, shapeResult.value) { saveRegionData(player) }) {
             ScopeShapeReplacementResult.Success -> {
-                clearSelectionDisplay(player)
                 clearPlayerSelection(player.uuid)
                 true
             }

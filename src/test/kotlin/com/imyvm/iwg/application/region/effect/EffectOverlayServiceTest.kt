@@ -9,6 +9,7 @@ import com.imyvm.iwg.domain.component.generateCompatScopeIdRaw
 import java.util.concurrent.CountDownLatch
 import java.util.concurrent.Executors
 import java.util.concurrent.TimeUnit
+import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -86,6 +87,23 @@ class EffectOverlayServiceTest {
         assertEquals(1, EffectOverlayService.queryActiveOverlays(scopeId, 19).size)
         assertTrue(EffectOverlayService.queryActiveOverlays(scopeId, 20).isEmpty())
         assertTrue(EffectOverlayService.queryOverlay(scopeId, 20).isEmpty())
+    }
+
+    @Suppress("DEPRECATION")
+    @Test
+    fun `legacy player query delegates to scope-global overlay resolution`() {
+        store(overlay())
+        val legacyScopeId = ScopeId(scopeId.raw)
+        val expected = EffectOverlayService.queryOverlay(legacyScopeId, 1)
+
+        assertEquals(
+            expected,
+            EffectOverlayService.queryOverlayForPlayer(legacyScopeId, UUID.randomUUID(), 1)
+        )
+        assertEquals(
+            expected,
+            EffectOverlayService.queryOverlayForPlayer(legacyScopeId, UUID.randomUUID(), 1)
+        )
     }
 
     @Test
