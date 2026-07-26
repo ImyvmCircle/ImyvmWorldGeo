@@ -83,16 +83,36 @@ internal fun <K> MutableMap<K, PlayerLocationState>.retargetStates(source: Regio
 
 internal data class StayPeriod(val region: Region, val startedAt: Long, val endedAt: Long)
 
+internal sealed interface RegionLocationChange {
+    data class Entered(val region: Region) : RegionLocationChange
+    data class Exited(val region: Region) : RegionLocationChange
+    data class Moved(val from: Region, val to: Region) : RegionLocationChange
+}
+
+internal sealed interface ScopeLocationChange {
+    data class Entered(val location: ScopedPlayerLocation) : ScopeLocationChange
+    data class Exited(val location: ScopedPlayerLocation) : ScopeLocationChange
+    data class Moved(
+        val from: ScopedPlayerLocation,
+        val to: ScopedPlayerLocation
+    ) : ScopeLocationChange
+}
+
+internal sealed interface LocationTransitionEffect {
+    data class RegionExitNotification(val region: Region) : LocationTransitionEffect
+    data class RegionEntryNotification(val region: Region) : LocationTransitionEffect
+    data class ScopeExitNotification(val location: ScopedPlayerLocation) : LocationTransitionEffect
+    data class ScopeEntryNotification(val location: ScopedPlayerLocation) : LocationTransitionEffect
+    data class EntryPermissionNotification(val target: EntryPermissionTarget) : LocationTransitionEffect
+    data class StayCompleted(val period: StayPeriod) : LocationTransitionEffect
+    data class RegionEntryIncrement(val region: Region) : LocationTransitionEffect
+    data class RegionChanged(val change: RegionLocationChange) : LocationTransitionEffect
+    data class ScopeChanged(val change: ScopeLocationChange) : LocationTransitionEffect
+}
+
 internal data class LocationTransition(
     val state: PlayerLocationState,
-    val regionExit: Region? = null,
-    val regionEntry: Region? = null,
-    val scopeExit: ScopedPlayerLocation? = null,
-    val scopeEntry: ScopedPlayerLocation? = null,
-    val completedStay: StayPeriod? = null,
-    val incrementEntry: Region? = null,
-    val regionEvent: Pair<Region?, Region?>? = null,
-    val scopeEvent: Pair<ScopedPlayerLocation?, ScopedPlayerLocation?>? = null
+    val effects: List<LocationTransitionEffect> = emptyList()
 )
 
 internal fun initialPlayerLocationState(current: PlayerLocation, now: Long) = PlayerLocationState(
@@ -112,10 +132,7 @@ internal fun calculateLocationTransition(
     var pendingExit = previous.pendingExit
     var scheduledTitle = previous.scheduledEntryTitle
     var stayStartedAt = previous.stayStartedAt
-    var regionExit: Region? = null
-    var regionEntry: Region? = null
     var completedStay: StayPeriod? = null
-    var incrementEntry: Region? = null
 
     if (sameRegion(currentRegion, previousRegion)) {
         if (pendingExit != null && currentRegion != null && stayStartedAt == null) {
@@ -126,17 +143,14 @@ internal fun calculateLocationTransition(
     } else if (pendingExit != null) {
         if (currentRegion == null) {
             if (now - pendingExit.startedAt >= wildernessDelayMs) {
-                regionExit = pendingExit.fromRegion
                 committedRegion = null
                 pendingExit = null
                 scheduledTitle = null
             }
         } else {
-            regionExit = pendingExit.fromRegion
             committedRegion = currentRegion
             pendingExit = null
             scheduledTitle = ScheduledEntryTitle(currentRegion, now)
-            incrementEntry = currentRegion
             stayStartedAt = now
         }
     } else if (currentRegion == null) {
@@ -147,15 +161,11 @@ internal fun calculateLocationTransition(
             scheduledTitle = null
         }
     } else {
-        if (previousRegion == null) {
-            regionEntry = currentRegion
-        } else {
-            regionExit = previousRegion
+        if (previousRegion != null) {
             completedStay = stayStartedAt?.let { StayPeriod(previousRegion, it, now) }
             scheduledTitle = ScheduledEntryTitle(currentRegion, now)
         }
         committedRegion = currentRegion
-        incrementEntry = currentRegion
         stayStartedAt = now
     }
 
@@ -166,23 +176,65 @@ internal fun calculateLocationTransition(
     val scopeChanged = previousScoped?.region?.numberID != currentScoped?.region?.numberID ||
         previousScoped?.scope !== currentScoped?.scope
     val regionChanged = previousRegion?.numberID != committedRegion?.numberID
+    val regionChange = when {
+        !regionChanged -> null
+        previousRegion == null -> RegionLocationChange.Entered(checkNotNull(committedRegion))
+        committedRegion == null -> RegionLocationChange.Exited(previousRegion)
+        else -> RegionLocationChange.Moved(previousRegion, committedRegion)
+    }
+    val scopeChange = when {
+        !scopeChanged -> null
+        previousScoped == null -> ScopeLocationChange.Entered(checkNotNull(currentScoped))
+        currentScoped == null -> ScopeLocationChange.Exited(previousScoped)
+        else -> ScopeLocationChange.Moved(previousScoped, currentScoped)
+    }
+    val incrementEntry = committedRegion.takeIf { regionChanged }
+    val permissionTarget = currentScoped
+        ?.takeIf { scopeChanged }
+        ?.let { EntryPermissionTarget.ScopeTarget(it.region, it.scope) }
+        ?: incrementEntry?.let { EntryPermissionTarget.RegionTarget(it) }
+    val hasEffects = regionChange != null ||
+        scopeChange != null ||
+        completedStay != null
+    val effects = if (hasEffects) {
+        buildList(9) {
+            previousRegion?.takeIf { regionChanged }?.let {
+                add(LocationTransitionEffect.RegionExitNotification(it))
+            }
+            committedRegion?.takeIf { regionChanged && previousRegion == null }?.let {
+                add(LocationTransitionEffect.RegionEntryNotification(it))
+            }
+            previousScoped?.takeIf { scopeChanged }?.let {
+                add(LocationTransitionEffect.ScopeExitNotification(it))
+            }
+            currentScoped?.takeIf { scopeChanged }?.let {
+                add(LocationTransitionEffect.ScopeEntryNotification(it))
+            }
+            permissionTarget?.let {
+                add(LocationTransitionEffect.EntryPermissionNotification(it))
+            }
+            completedStay?.let {
+                add(LocationTransitionEffect.StayCompleted(it))
+            }
+            incrementEntry?.let {
+                add(LocationTransitionEffect.RegionEntryIncrement(it))
+            }
+            regionChange?.let {
+                add(LocationTransitionEffect.RegionChanged(it))
+            }
+            scopeChange?.let {
+                add(LocationTransitionEffect.ScopeChanged(it))
+            }
+        }
+    } else {
+        emptyList()
+    }
 
     return LocationTransition(
         state = PlayerLocationState(newLocation, pendingExit, scheduledTitle, stayStartedAt),
-        regionExit = regionExit,
-        regionEntry = regionEntry,
-        scopeExit = previousScoped.takeIf { scopeChanged },
-        scopeEntry = currentScoped.takeIf { scopeChanged },
-        completedStay = completedStay,
-        incrementEntry = incrementEntry,
-        regionEvent = (previousRegion to committedRegion).takeIf { regionChanged },
-        scopeEvent = (previousScoped to currentScoped).takeIf { scopeChanged }
+        effects = effects
     )
 }
-
-internal fun LocationTransition.entryPermissionTarget(): EntryPermissionTarget? =
-    scopeEntry?.let { EntryPermissionTarget.ScopeTarget(it.region, it.scope) }
-        ?: incrementEntry?.let { EntryPermissionTarget.RegionTarget(it) }
 
 private fun sameRegion(left: Region?, right: Region?): Boolean = left?.numberID == right?.numberID
 

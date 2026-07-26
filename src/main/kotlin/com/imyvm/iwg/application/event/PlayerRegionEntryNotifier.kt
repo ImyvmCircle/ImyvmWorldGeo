@@ -115,23 +115,74 @@ object PlayerRegionEntryExitTracker {
 
     private fun applyTransition(player: ServerPlayer, transition: LocationTransition, now: Long) {
         val uuid = player.uuid
-        transition.regionExit?.let { sendRegionExitTitle(player, it) }
-        transition.regionEntry?.let { sendRegionEntryTitle(player, it) }
-        transition.scopeExit?.let { sendScopeExitMessage(player, it.region, it.scope) }
-        transition.scopeEntry?.let { sendScopeEntryMessage(player, it.region, it.scope) }
-        transition.entryPermissionTarget()?.let { sendRpgEntryNotifications(player, it) }
-        transition.completedStay?.let { addStayDuration(it.region, uuid, it.startedAt, it.endedAt) }
-        transition.incrementEntry?.let { RegionDatabase.recordRegionEntry(it, uuid) }
-        transition.regionEvent?.let { (from, to) ->
-            RegionTransitionEvent.EVENT.invoker().onTransition(player, from, to, now)
+        for (effect in transition.effects) {
+            when (effect) {
+                is LocationTransitionEffect.RegionExitNotification ->
+                    sendRegionExitTitle(player, effect.region)
+                is LocationTransitionEffect.RegionEntryNotification ->
+                    sendRegionEntryTitle(player, effect.region)
+                is LocationTransitionEffect.ScopeExitNotification ->
+                    sendScopeExitMessage(player, effect.location.region, effect.location.scope)
+                is LocationTransitionEffect.ScopeEntryNotification ->
+                    sendScopeEntryMessage(player, effect.location.region, effect.location.scope)
+                is LocationTransitionEffect.EntryPermissionNotification ->
+                    sendRpgEntryNotifications(player, effect.target)
+                is LocationTransitionEffect.StayCompleted -> {
+                    val period = effect.period
+                    addStayDuration(period.region, uuid, period.startedAt, period.endedAt)
+                }
+                is LocationTransitionEffect.RegionEntryIncrement ->
+                    RegionDatabase.recordRegionEntry(effect.region, uuid)
+                is LocationTransitionEffect.RegionChanged ->
+                    publishRegionTransition(player, effect.change, now)
+                is LocationTransitionEffect.ScopeChanged ->
+                    publishScopeTransition(player, effect.change, now)
+            }
         }
-        transition.scopeEvent?.let { (from, to) ->
-            ScopeTransitionEvent.EVENT.invoker().onTransition(
-                player,
-                from?.let { it.region to it.scope },
-                to?.let { it.region to it.scope },
-                now
-            )
+    }
+
+    private fun publishRegionTransition(
+        player: ServerPlayer,
+        change: RegionLocationChange,
+        now: Long
+    ) {
+        when (change) {
+            is RegionLocationChange.Entered ->
+                RegionTransitionEvent.EVENT.invoker().onTransition(player, null, change.region, now)
+            is RegionLocationChange.Exited ->
+                RegionTransitionEvent.EVENT.invoker().onTransition(player, change.region, null, now)
+            is RegionLocationChange.Moved ->
+                RegionTransitionEvent.EVENT.invoker().onTransition(player, change.from, change.to, now)
+        }
+    }
+
+    private fun publishScopeTransition(
+        player: ServerPlayer,
+        change: ScopeLocationChange,
+        now: Long
+    ) {
+        when (change) {
+            is ScopeLocationChange.Entered ->
+                ScopeTransitionEvent.EVENT.invoker().onTransition(
+                    player,
+                    null,
+                    change.location.region to change.location.scope,
+                    now
+                )
+            is ScopeLocationChange.Exited ->
+                ScopeTransitionEvent.EVENT.invoker().onTransition(
+                    player,
+                    change.location.region to change.location.scope,
+                    null,
+                    now
+                )
+            is ScopeLocationChange.Moved ->
+                ScopeTransitionEvent.EVENT.invoker().onTransition(
+                    player,
+                    change.from.region to change.from.scope,
+                    change.to.region to change.to.scope,
+                    now
+                )
         }
     }
 

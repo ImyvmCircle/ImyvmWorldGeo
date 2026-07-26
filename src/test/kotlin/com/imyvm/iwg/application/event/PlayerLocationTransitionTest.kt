@@ -33,15 +33,45 @@ class PlayerLocationTransitionTest {
     fun `direct region change keeps old scope paired with old region`() {
         val transition = calculateLocationTransition(state(regionA, scopeA, 10), PlayerLocation(regionB, scopeB), 30, 1_000)
 
-        assertSame(regionA, transition.scopeExit?.region)
-        assertSame(scopeA, transition.scopeExit?.scope)
-        assertSame(regionB, transition.scopeEntry?.region)
-        assertSame(scopeB, transition.scopeEntry?.scope)
-        assertEquals(regionA to regionB, transition.regionEvent)
-        assertEquals(StayPeriod(regionA, 10, 30), transition.completedStay)
-        val target = assertIs<EntryPermissionTarget.ScopeTarget>(transition.entryPermissionTarget())
+        val scopeExit = transition.singleEffect<LocationTransitionEffect.ScopeExitNotification>().location
+        val scopeEntry = transition.singleEffect<LocationTransitionEffect.ScopeEntryNotification>().location
+        assertSame(regionA, scopeExit.region)
+        assertSame(scopeA, scopeExit.scope)
+        assertSame(regionB, scopeEntry.region)
+        assertSame(scopeB, scopeEntry.scope)
+        assertEquals(
+            RegionLocationChange.Moved(regionA, regionB),
+            transition.singleEffect<LocationTransitionEffect.RegionChanged>().change
+        )
+        assertEquals(
+            StayPeriod(regionA, 10, 30),
+            transition.singleEffect<LocationTransitionEffect.StayCompleted>().period
+        )
+        assertEquals(
+            ScopeLocationChange.Moved(
+                ScopedPlayerLocation(regionA, scopeA),
+                ScopedPlayerLocation(regionB, scopeB)
+            ),
+            transition.singleEffect<LocationTransitionEffect.ScopeChanged>().change
+        )
+        val target = assertIs<EntryPermissionTarget.ScopeTarget>(
+            transition.singleEffect<LocationTransitionEffect.EntryPermissionNotification>().target
+        )
         assertSame(regionB, target.region)
         assertSame(scopeB, target.scope)
+        assertEquals(
+            listOf(
+                LocationTransitionEffect.RegionExitNotification::class,
+                LocationTransitionEffect.ScopeExitNotification::class,
+                LocationTransitionEffect.ScopeEntryNotification::class,
+                LocationTransitionEffect.EntryPermissionNotification::class,
+                LocationTransitionEffect.StayCompleted::class,
+                LocationTransitionEffect.RegionEntryIncrement::class,
+                LocationTransitionEffect.RegionChanged::class,
+                LocationTransitionEffect.ScopeChanged::class
+            ),
+            transition.effects.map { it::class }
+        )
     }
 
     @Test
@@ -54,14 +84,29 @@ class PlayerLocationTransitionTest {
     }
 
     @Test
+    fun `stable location reuses the empty effect list`() {
+        val transition = calculateLocationTransition(
+            state(regionA, scopeA, 10),
+            PlayerLocation(regionA, scopeA),
+            30,
+            1_000
+        )
+
+        assertSame(emptyList<LocationTransitionEffect>(), transition.effects)
+    }
+
+    @Test
     fun `brief wilderness visit is debounced and restarts stay on return`() {
         val left = calculateLocationTransition(state(regionA, scopeA, 0), PlayerLocation(null, null), 100, 1_000)
         val returned = calculateLocationTransition(left.state, PlayerLocation(regionA, scopeA), 500, 1_000)
 
-        assertNull(left.regionEvent)
+        assertNoEffect<LocationTransitionEffect.RegionChanged>(left)
         assertSame(regionA, left.state.location.region)
-        assertEquals(StayPeriod(regionA, 0, 100), left.completedStay)
-        assertNull(returned.regionEvent)
+        assertEquals(
+            StayPeriod(regionA, 0, 100),
+            left.singleEffect<LocationTransitionEffect.StayCompleted>().period
+        )
+        assertNoEffect<LocationTransitionEffect.RegionChanged>(returned)
         assertNull(returned.state.pendingExit)
         assertEquals(500, returned.state.stayStartedAt)
     }
@@ -71,8 +116,14 @@ class PlayerLocationTransitionTest {
         val left = calculateLocationTransition(state(regionA, scopeA, 0), PlayerLocation(null, null), 100, 1_000)
         val expired = calculateLocationTransition(left.state, PlayerLocation(null, null), 1_100, 1_000)
 
-        assertSame(regionA, expired.regionExit)
-        assertEquals(regionA to null, expired.regionEvent)
+        assertSame(
+            regionA,
+            expired.singleEffect<LocationTransitionEffect.RegionExitNotification>().region
+        )
+        assertEquals(
+            RegionLocationChange.Exited(regionA),
+            expired.singleEffect<LocationTransitionEffect.RegionChanged>().change
+        )
         assertNull(expired.state.location.region)
     }
 
@@ -81,10 +132,19 @@ class PlayerLocationTransitionTest {
         val left = calculateLocationTransition(state(regionA, scopeA, 0), PlayerLocation(null, null), 100, 1_000)
         val entered = calculateLocationTransition(left.state, PlayerLocation(regionB, scopeB), 200, 1_000)
 
-        assertSame(regionA, entered.regionExit)
+        assertSame(
+            regionA,
+            entered.singleEffect<LocationTransitionEffect.RegionExitNotification>().region
+        )
         assertSame(regionB, entered.state.scheduledEntryTitle?.region)
-        assertEquals(regionA to regionB, entered.regionEvent)
-        assertSame(regionB, entered.incrementEntry)
+        assertEquals(
+            RegionLocationChange.Moved(regionA, regionB),
+            entered.singleEffect<LocationTransitionEffect.RegionChanged>().change
+        )
+        assertSame(
+            regionB,
+            entered.singleEffect<LocationTransitionEffect.RegionEntryIncrement>().region
+        )
         assertEquals(200, entered.state.stayStartedAt)
     }
 
@@ -92,13 +152,17 @@ class PlayerLocationTransitionTest {
     fun `scope-only change leaves region stay untouched`() {
         val transition = calculateLocationTransition(state(regionA, scopeA, 10), PlayerLocation(regionA, scopeA2), 30, 1_000)
 
-        assertNull(transition.regionEvent)
-        assertNull(transition.completedStay)
-        assertSame(regionA, transition.scopeExit?.region)
-        assertSame(scopeA, transition.scopeExit?.scope)
-        assertSame(scopeA2, transition.scopeEntry?.scope)
+        assertNoEffect<LocationTransitionEffect.RegionChanged>(transition)
+        assertNoEffect<LocationTransitionEffect.StayCompleted>(transition)
+        val scopeExit = transition.singleEffect<LocationTransitionEffect.ScopeExitNotification>().location
+        val scopeEntry = transition.singleEffect<LocationTransitionEffect.ScopeEntryNotification>().location
+        assertSame(regionA, scopeExit.region)
+        assertSame(scopeA, scopeExit.scope)
+        assertSame(scopeA2, scopeEntry.scope)
         assertEquals(10, transition.state.stayStartedAt)
-        val target = assertIs<EntryPermissionTarget.ScopeTarget>(transition.entryPermissionTarget())
+        val target = assertIs<EntryPermissionTarget.ScopeTarget>(
+            transition.singleEffect<LocationTransitionEffect.EntryPermissionNotification>().target
+        )
         assertSame(scopeA2, target.scope)
     }
 
@@ -107,25 +171,44 @@ class PlayerLocationTransitionTest {
         val wilderness = PlayerLocationState(PlayerLocation(null, null))
         val entered = calculateLocationTransition(wilderness, PlayerLocation(regionA, scopeA), 20, 1_000)
 
-        assertSame(regionA, entered.regionEntry)
-        assertSame(regionA, entered.incrementEntry)
-        assertEquals(null to regionA, entered.regionEvent)
+        assertSame(
+            regionA,
+            entered.singleEffect<LocationTransitionEffect.RegionEntryNotification>().region
+        )
+        assertSame(
+            regionA,
+            entered.singleEffect<LocationTransitionEffect.RegionEntryIncrement>().region
+        )
+        assertEquals(
+            RegionLocationChange.Entered(regionA),
+            entered.singleEffect<LocationTransitionEffect.RegionChanged>().change
+        )
         assertEquals(20, entered.state.stayStartedAt)
-        val target = assertIs<EntryPermissionTarget.ScopeTarget>(entered.entryPermissionTarget())
+        val target = assertIs<EntryPermissionTarget.ScopeTarget>(
+            entered.singleEffect<LocationTransitionEffect.EntryPermissionNotification>().target
+        )
         assertSame(scopeA, target.scope)
     }
 
     @Test
     fun `region-only entry selects region and delayed title alone selects no permission target`() {
-        val state = PlayerLocationState(PlayerLocation(regionA, null))
-        val regionEntry = LocationTransition(state, incrementEntry = regionA)
-        val target = assertIs<EntryPermissionTarget.RegionTarget>(regionEntry.entryPermissionTarget())
+        val wilderness = PlayerLocationState(PlayerLocation(null, null))
+        val regionEntry = calculateLocationTransition(wilderness, PlayerLocation(regionA, null), 10, 1_000)
+        val target = assertIs<EntryPermissionTarget.RegionTarget>(
+            regionEntry.singleEffect<LocationTransitionEffect.EntryPermissionNotification>().target
+        )
         assertSame(regionA, target.region)
 
-        val delayedTitle = LocationTransition(
-            state.copy(scheduledEntryTitle = ScheduledEntryTitle(regionA, 10))
+        val delayedTitle = calculateLocationTransition(
+            PlayerLocationState(
+                PlayerLocation(regionA, null),
+                scheduledEntryTitle = ScheduledEntryTitle(regionA, 10)
+            ),
+            PlayerLocation(regionA, null),
+            20,
+            1_000
         )
-        assertNull(delayedTitle.entryPermissionTarget())
+        assertNoEffect<LocationTransitionEffect.EntryPermissionNotification>(delayedTitle)
     }
 
     @Test
@@ -227,6 +310,13 @@ class PlayerLocationTransitionTest {
         PlayerLocation(region, scope),
         stayStartedAt = startedAt
     )
+
+    private inline fun <reified T : LocationTransitionEffect> LocationTransition.singleEffect(): T =
+        effects.filterIsInstance<T>().single()
+
+    private inline fun <reified T : LocationTransitionEffect> assertNoEffect(transition: LocationTransition) {
+        assertEquals(emptyList(), transition.effects.filterIsInstance<T>())
+    }
 
     private fun scope(name: String, regionId: Int, index: Int) = GeoScope(
         name,
