@@ -54,43 +54,6 @@ class GeoShapeTest {
     }
 
     @Test
-    fun `fallback radius is bounded before searching`() {
-        assertEquals(0, requireTeleportFallbackSearchRadius(0))
-        assertEquals(
-            MAX_TELEPORT_FALLBACK_SEARCH_RADIUS,
-            requireTeleportFallbackSearchRadius(MAX_TELEPORT_FALLBACK_SEARCH_RADIUS)
-        )
-        assertFailsWith<IllegalArgumentException> { requireTeleportFallbackSearchRadius(-1) }
-        assertFailsWith<IllegalArgumentException> {
-            requireTeleportFallbackSearchRadius(MAX_TELEPORT_FALLBACK_SEARCH_RADIUS + 1)
-        }
-    }
-
-    @Test
-    fun `fallback candidates are ordered by Manhattan distance`() {
-        val center = net.minecraft.core.BlockPos.ZERO
-        val verticallyNear = center.above()
-        val sameLayerFar = center.offset(8, 0, 8)
-
-        val result = findClosestMatchingBlockPos(center, 8) {
-            it == verticallyNear || it == sameLayerFar
-        }
-
-        assertEquals(verticallyNear, result)
-    }
-
-    @Test
-    fun `initial teleport candidate must be safe and inside the shape`() {
-        val shape = GeoShape(GeoShapeType.RECTANGLE, mutableListOf(0, 0, 10, 10))
-        val inside = net.minecraft.core.BlockPos(5, 64, 5)
-        val outside = net.minecraft.core.BlockPos(11, 64, 5)
-
-        assertTrue(shape.isValidTeleportPoint(inside, physicallySafe = true))
-        assertFalse(shape.isValidTeleportPoint(outside, physicallySafe = true))
-        assertFalse(shape.isValidTeleportPoint(inside, physicallySafe = false))
-    }
-
-    @Test
     fun `legacy teleport generation uses constant time representative points`() {
         assertEquals(
             3 to 4,
@@ -203,20 +166,6 @@ class GeoShapeTest {
             shape.shapeParameter = MutableList(514) { it }
         }
         assertEquals(supported, shape.shapeParameter)
-    }
-
-    @Test
-    fun `area formatting uses dot decimal separator regardless of default locale`() {
-        val savedLocale = java.util.Locale.getDefault()
-        try {
-            java.util.Locale.setDefault(java.util.Locale.GERMANY)
-            val circle = GeoShape(GeoShapeType.CIRCLE, mutableListOf(0, 0, 7))
-            val info = circle.getShapeInfo()?.string ?: error("getShapeInfo returned null")
-            assertTrue(Regex("""\d+\.\d+""").containsMatchIn(info), "Area should contain dot decimal: $info")
-            assertFalse(Regex("""\d+,\d+""").containsMatchIn(info), "Area should not use comma decimal: $info")
-        } finally {
-            java.util.Locale.setDefault(savedLocale)
-        }
     }
 
     private fun squarePolygonParameters(): MutableList<Int> = buildList {

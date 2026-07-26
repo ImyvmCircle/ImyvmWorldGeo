@@ -1,30 +1,15 @@
 package com.imyvm.iwg.domain.component
 
-import com.imyvm.iwg.util.text.Translator
-import net.minecraft.world.phys.shapes.CollisionContext
+import com.imyvm.iwg.application.interaction.buildShapeInfoLine
+import com.imyvm.iwg.application.region.findNearestValidShapeTeleportPoint
+import com.imyvm.iwg.application.region.generateRepresentativeSurfacePoint
+import com.imyvm.iwg.application.region.isPhysicallySafeTeleportPosition
+import com.imyvm.iwg.application.region.isValidShapeTeleportPoint
+import com.imyvm.iwg.application.region.physicalTeleportSafetyFailureReasonKey
+import com.imyvm.iwg.application.region.shapeTeleportPointInvalidReasonKey
 import net.minecraft.network.chat.Component
 import net.minecraft.core.BlockPos
-import net.minecraft.core.Direction
-import net.minecraft.world.level.levelgen.Heightmap
 import net.minecraft.world.level.Level
-
-internal const val MAX_TELEPORT_FALLBACK_SEARCH_RADIUS = 8
-
-internal fun requireTeleportFallbackSearchRadius(searchRadius: Int): Int {
-    require(searchRadius in 0..MAX_TELEPORT_FALLBACK_SEARCH_RADIUS) {
-        "search radius must be between 0 and $MAX_TELEPORT_FALLBACK_SEARCH_RADIUS"
-    }
-    return searchRadius
-}
-
-internal fun findClosestMatchingBlockPos(
-    center: BlockPos,
-    searchRadius: Int,
-    matches: (BlockPos) -> Boolean
-): BlockPos? {
-    val radius = requireTeleportFallbackSearchRadius(searchRadius)
-    return BlockPos.findClosestMatch(center, radius, radius, matches).orElse(null)
-}
 
 /**
  * Immutable validated shape value.
@@ -60,16 +45,11 @@ class GeoShape(
             }
         }
 
-    fun getShapeInfo(): Component? {
-        val area = String.format(java.util.Locale.ROOT, "%.2f", calculateArea())
-
-        return when (val current = geometry) {
-            is CircleGeometry -> getCircleInfo(current, area)
-            is RectangleGeometry -> getRectangleInfo(current, area)
-            is PolygonGeometry -> getPolygonInfo(current, area)
-            UnknownGeometry -> Translator.tr("geo.shape.unknown.info", area)
-        }
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use PlayerInteractionApi.queryRegionInfo or RegionDataApi structured queries")
+    fun getShapeInfo(): Component? = buildShapeInfoLine(this)
 
     fun containsPoint(x: Int, y: Int): Boolean {
         return geometry.containsPoint(x, y)
@@ -80,79 +60,37 @@ class GeoShape(
     /**
      * Retained for JVM compatibility. Checks one deterministic representative surface position
      * and returns null when that position is unsafe; it does not scan the complete shape.
+     *
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
      */
-    fun generateTeleportPoint(world: Level): BlockPos? {
-        return geometry.representativePoint()?.let { generateSurfacePoint(world, it) }
-    }
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun generateTeleportPoint(world: Level): BlockPos? =
+        generateRepresentativeSurfacePoint(this, world)
 
-    fun certificateTeleportPoint(world: Level, pointToTest: BlockPos): Boolean {
-        return isValidTeleportPoint(world, pointToTest)
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun certificateTeleportPoint(world: Level, pointToTest: BlockPos): Boolean =
+        isValidShapeTeleportPoint(this, world, pointToTest)
 
-    fun getTeleportPointInvalidReasonKey(world: Level, pos: BlockPos): String? {
-        if (!this.containsPoint(pos.x, pos.z)) return "teleport_point.invalid.out_of_scope"
-        return getPhysicalSafetyFailureReasonKey(world, pos)
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun getTeleportPointInvalidReasonKey(world: Level, pos: BlockPos): String? =
+        shapeTeleportPointInvalidReasonKey(this, world, pos)
 
-    fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
-        return findClosestMatchingBlockPos(center, searchRadius) { candidate ->
-            candidate != center && isValidTeleportPoint(world, candidate)
-        }
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? =
+        findNearestValidShapeTeleportPoint(this, world, center, searchRadius)
 
     fun validateParameters() {
         // Construction and the compatibility setter replace the complete validated geometry atomically.
     }
-
-    private fun getCircleInfo(circle: CircleGeometry, area: String): Component? {
-        return Translator.tr(
-            "geo.shape.circle.info",
-            circle.centerX,
-            circle.centerZ,
-            circle.radius,
-            area
-        )
-    }
-
-    private fun getRectangleInfo(rectangle: RectangleGeometry, area: String): Component? {
-        return Translator.tr(
-            "geo.shape.rectangle.info",
-            rectangle.west,
-            rectangle.north,
-            rectangle.east,
-            rectangle.south,
-            area
-        )
-    }
-
-    private fun getPolygonInfo(polygon: PolygonGeometry, area: String): Component? {
-        val coords = buildString {
-            for (index in 0 until polygon.vertexCount) {
-                if (index > 0) append(", ")
-                append('(').append(polygon.x(index)).append(", ").append(polygon.z(index)).append(')')
-            }
-        }
-        return Translator.tr("geo.shape.polygon.info", coords, area)
-    }
-
-    private fun generateSurfacePoint(world: Level, point: Pair<Int, Int>): BlockPos? {
-        val x = point.first
-        val z = point.second
-        val topY = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
-        val candidatePos = BlockPos(x, topY, z)
-
-        if (isValidTeleportPoint(world, candidatePos)) {
-            return candidatePos
-        }
-        return null
-    }
-
-    private fun isValidTeleportPoint(world: Level, pos: BlockPos): Boolean {
-        return isValidTeleportPoint(pos, isPhysicalSafe(world, pos))
-    }
-
-    internal fun isValidTeleportPoint(pos: BlockPos, physicallySafe: Boolean): Boolean =
-        physicallySafe && containsPoint(pos.x, pos.z)
 
     companion object {
         /** Creates a structurally validated circle. Placement policy is checked by the owning Scope operation. */
@@ -187,45 +125,18 @@ class GeoShape(
             return GeoShape(GeoShapeType.POLYGON, parameters)
         }
 
-        fun isPhysicalSafe(world: Level, pos: BlockPos): Boolean {
-            val feetState = world.getBlockState(pos)
-            val headState = world.getBlockState(pos.above())
-            val groundState = world.getBlockState(pos.below())
+        /**
+         * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+         */
+        @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+        fun isPhysicalSafe(world: Level, pos: BlockPos): Boolean =
+            isPhysicallySafeTeleportPosition(world, pos)
 
-            val context = CollisionContext.empty()
-
-            if (!feetState.fluidState.isEmpty || !headState.fluidState.isEmpty) {
-                return false
-            }
-
-            if (!feetState.getCollisionShape(world, pos, context).isEmpty ||
-                !headState.getCollisionShape(world, pos.above(), context).isEmpty
-            ) {
-                return false
-            }
-
-            return groundState.isFaceSturdy(world, pos.below(), Direction.UP)
-        }
-
-        fun getPhysicalSafetyFailureReasonKey(world: Level, pos: BlockPos): String? {
-            val feetState = world.getBlockState(pos)
-            val headState = world.getBlockState(pos.above())
-            val groundState = world.getBlockState(pos.below())
-            val context = CollisionContext.empty()
-
-            if (!feetState.fluidState.isEmpty || !headState.fluidState.isEmpty) {
-                return "teleport_point.safety.liquid"
-            }
-            if (!feetState.getCollisionShape(world, pos, context).isEmpty) {
-                return "teleport_point.safety.feet_blocked"
-            }
-            if (!headState.getCollisionShape(world, pos.above(), context).isEmpty) {
-                return "teleport_point.safety.head_blocked"
-            }
-            if (!groundState.isFaceSturdy(world, pos.below(), Direction.UP)) {
-                return "teleport_point.safety.no_ground"
-            }
-            return null
-        }
+        /**
+         * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+         */
+        @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+        fun getPhysicalSafetyFailureReasonKey(world: Level, pos: BlockPos): String? =
+            physicalTeleportSafetyFailureReasonKey(world, pos)
     }
 }

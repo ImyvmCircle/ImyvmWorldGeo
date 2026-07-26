@@ -3,6 +3,9 @@ package com.imyvm.iwg.application.interaction
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.GeoScope
+import com.imyvm.iwg.application.region.findNearestValidScopeTeleportPoint
+import com.imyvm.iwg.application.region.resolveScopeWorld
+import com.imyvm.iwg.application.region.scopeTeleportPointInvalidReasonKey
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.config.TeleportConfig
 import com.imyvm.iwg.util.text.Translator
@@ -23,7 +26,7 @@ fun onAddingTeleportPoint(
     RegionDatabase.requireCanonicalScope(targetRegion, geoScope)
     val targetWorld = resolveScopeWorldOrReport(playerExecutor, targetRegion, geoScope) ?: return 0
     val teleportPoint = BlockPos(x, y, z)
-    val reasonKey = geoScope.getTeleportPointInvalidReasonKey(targetWorld, teleportPoint)
+    val reasonKey = scopeTeleportPointInvalidReasonKey(geoScope, targetWorld, teleportPoint)
 
     return if (reasonKey == null) {
         val oldPoint = geoScope.teleportPoint
@@ -122,7 +125,7 @@ private fun teleportPlayerToCanonicalScope(
         return 0
     }
 
-    val reasonKey = geoScope.getTeleportPointInvalidReasonKey(targetWorld, teleportPoint)
+    val reasonKey = scopeTeleportPointInvalidReasonKey(geoScope, targetWorld, teleportPoint)
     if (reasonKey == null) {
         playerExecutor.teleport(TeleportTransition(
             targetWorld,
@@ -137,7 +140,7 @@ private fun teleportPlayerToCanonicalScope(
     }
 
     val searchRadius = TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value
-    val fallback = geoScope.findNearestValidTeleportPoint(targetWorld, teleportPoint, searchRadius)
+    val fallback = findNearestValidScopeTeleportPoint(geoScope, targetWorld, teleportPoint, searchRadius)
 
     return if (fallback != null) {
         geoScope.updateTeleportPoint(fallback)
@@ -181,7 +184,7 @@ private fun resolveScopeWorldOrReport(
     player: ServerPlayer,
     region: Region,
     scope: GeoScope
-) = scope.getWorld(player.level().server).also { world ->
+) = resolveScopeWorld(scope, player.level().server).also { world ->
     if (world == null) {
         player.sendSystemMessage(Translator.tr(
             "interaction.meta.scope.teleport_point.dimension_unavailable",

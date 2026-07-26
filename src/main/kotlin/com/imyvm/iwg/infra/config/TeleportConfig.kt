@@ -1,9 +1,16 @@
 package com.imyvm.iwg.infra.config
 
 import com.imyvm.hoki.config.Option
-import com.imyvm.iwg.domain.component.MAX_TELEPORT_FALLBACK_SEARCH_RADIUS
-import com.imyvm.iwg.domain.component.requireTeleportFallbackSearchRadius
 import com.typesafe.config.Config
+
+internal const val MAX_TELEPORT_FALLBACK_SEARCH_RADIUS = 8
+
+internal fun requireTeleportFallbackSearchRadius(searchRadius: Int): Int {
+    require(searchRadius in 0..MAX_TELEPORT_FALLBACK_SEARCH_RADIUS) {
+        "search radius must be between 0 and $MAX_TELEPORT_FALLBACK_SEARCH_RADIUS"
+    }
+    return searchRadius
+}
 
 object TeleportConfig {
     @JvmField

@@ -133,10 +133,11 @@ object RegionFactory {
     ): BlockPos? {
         val playerWorld = playerExecutor.level()
         val playerPosition = playerExecutor.blockPosition()
-        return if (geoShape.certificateTeleportPoint(playerWorld, playerPosition)) {
+        return if (isValidShapeTeleportPoint(geoShape, playerWorld, playerPosition)) {
             playerPosition
         } else {
-            geoShape.findNearestValidTeleportPoint(
+            findNearestValidShapeTeleportPoint(
+                geoShape,
                 playerWorld,
                 playerPosition,
                 TeleportConfig.TELEPORT_POINT_FALLBACK_SEARCH_RADIUS.value

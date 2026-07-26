@@ -1,18 +1,12 @@
 package com.imyvm.iwg.domain
 
+import com.imyvm.iwg.application.interaction.buildRegionScopeInfoLines
+import com.imyvm.iwg.application.interaction.buildRegionSettingInfoLines
+import com.imyvm.iwg.application.interaction.formatLegacySettingInfoLines
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.AssignedScopeId
 import com.imyvm.iwg.domain.component.Setting
-import com.imyvm.iwg.domain.component.PermissionSetting
-import com.imyvm.iwg.domain.component.ExtensionPermissionSetting
-import com.imyvm.iwg.domain.component.EffectSetting
-import com.imyvm.iwg.domain.component.RuleSetting
-import com.imyvm.iwg.domain.component.ExtensionRuleSetting
-import com.imyvm.iwg.domain.component.EntryExitToggleSetting
-import com.imyvm.iwg.domain.component.EntryExitMessageSetting
 import com.imyvm.iwg.domain.component.isValidGeoName
-import com.imyvm.iwg.util.translator.resolvePlayerName
-import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.MinecraftServer
 import net.minecraft.network.chat.Component
 import java.util.Collections
@@ -27,73 +21,6 @@ internal data class ScopeRemovalReceipt(
     val scope: GeoScope,
     val index: Int
 )
-
-internal data class SettingPresentationKeys(
-    val header: String,
-    val globalHeader: String,
-    val personalHeader: String,
-    val permissionHeader: String,
-    val effectHeader: String,
-    val ruleHeader: String,
-    val entryExitHeader: String,
-    val item: String
-)
-
-private val REGION_SETTING_PRESENTATION_KEYS = SettingPresentationKeys(
-    header = "region.setting.header",
-    globalHeader = "region.setting.global.header",
-    personalHeader = "region.setting.personal.header",
-    permissionHeader = "region.setting.permission.header",
-    effectHeader = "region.setting.effect.header",
-    ruleHeader = "region.setting.rule.header",
-    entryExitHeader = "region.setting.entry_exit.header",
-    item = "region.setting.item"
-)
-
-private val SCOPE_SETTING_PRESENTATION_KEYS = SettingPresentationKeys(
-    header = "geo.scope.setting.header",
-    globalHeader = "geo.scope.setting.global.header",
-    personalHeader = "geo.scope.setting.personal.header",
-    permissionHeader = "geo.scope.setting.permission.header",
-    effectHeader = "geo.scope.setting.effect.header",
-    ruleHeader = "geo.scope.setting.rule.header",
-    entryExitHeader = "geo.scope.setting.entry_exit.header",
-    item = "geo.scope.setting.item"
-)
-
-internal sealed interface SettingPresentationTarget {
-    val keys: SettingPresentationKeys
-    fun translateHeader(): Component
-
-    data object RegionSettings : SettingPresentationTarget {
-        override val keys = REGION_SETTING_PRESENTATION_KEYS
-
-        override fun translateHeader(): Component = Translator.tr(keys.header)
-    }
-
-    data class ScopeSettings(val scopeName: String) : SettingPresentationTarget {
-        override val keys = SCOPE_SETTING_PRESENTATION_KEYS
-
-        override fun translateHeader(): Component = Translator.tr(keys.header, scopeName)
-    }
-}
-
-internal fun legacySettingPresentationTarget(key: String, scopeName: String?): SettingPresentationTarget =
-    when (key) {
-        "region.setting" -> {
-            require(scopeName == null) { "region setting presentation does not accept a scope name" }
-            SettingPresentationTarget.RegionSettings
-        }
-        "geo.scope.setting" -> SettingPresentationTarget.ScopeSettings(
-            requireNotNull(scopeName) { "scope setting presentation requires a scope name" }
-        )
-        else -> throw IllegalArgumentException("unsupported setting presentation key: $key")
-    }
-
-internal fun permissionSettingDisplayName(setting: PermissionSetting): String =
-    Translator.raw(setting.key.displayTranslationKey)
-
-internal fun permissionSettingDisplayName(setting: ExtensionPermissionSetting): String = setting.key.id
 
 class Region(
     name: String,
@@ -321,18 +248,19 @@ class Region(
         require(existing.none { it.requireAssignedScopeId() == scopeId }) { "duplicate scope id" }
     }
 
-    fun getScopeInfos(server: MinecraftServer): List<Component> {
-        val infos = mutableListOf<Component>()
-        mutableScopes.forEachIndexed { index, geoScope ->
-            geoScope.getScopeInfo(index)?.let { infos.add(it) }
-            infos.addAll(geoScope.getSettingInfos(server))
-        }
-        return infos
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use PlayerInteractionApi.queryRegionInfo or RegionDataApi structured queries")
+    fun getScopeInfos(server: MinecraftServer): List<Component> =
+        buildRegionScopeInfoLines(server, this)
 
-    fun getSettingInfos(server: MinecraftServer): List<Component> {
-        return formatSettingInfos(server, settings, SettingPresentationTarget.RegionSettings)
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use PlayerInteractionApi.queryRegionInfo or RegionDataApi structured queries")
+    fun getSettingInfos(server: MinecraftServer): List<Component> =
+        buildRegionSettingInfoLines(server, this)
 
     fun calculateTotalArea(): Double {
         var totalArea = 0.0
@@ -345,83 +273,17 @@ class Region(
     }
 
     companion object {
-        @Deprecated("Use the Region/GeoScope setting presentation entry points")
+        /**
+         * Compatibility-only reverse-layer delegate retained in its original JVM owner.
+         */
+        @Deprecated("Use PlayerInteractionApi.queryRegionInfo or RegionDataApi structured queries")
         fun formatSettings(
             server: MinecraftServer,
             settings: List<Setting>,
             key: String,
             scopeName: String? = null
         ): List<Component> {
-            return formatSettingInfos(server, settings, legacySettingPresentationTarget(key, scopeName))
-        }
-
-        internal fun formatSettingInfos(
-            server: MinecraftServer,
-            settings: List<Setting>,
-            target: SettingPresentationTarget
-        ): List<Component> {
-            if (settings.isEmpty()) return emptyList()
-
-            val result = mutableListOf<Component>()
-            val keys = target.keys
-
-            result.add(target.translateHeader())
-
-            val globalSettings = settings.filter { !it.isPersonal }
-            if (globalSettings.isNotEmpty()) {
-                result.add(Translator.tr(keys.globalHeader))
-                appendTypeGroups(result, globalSettings, keys)
-            }
-
-            settings.filter { it.isPersonal }
-                .groupBy { it.playerUUID }
-                .forEach { (uuid, playerSettings) ->
-                    val playerName = resolvePlayerName(server, uuid)
-                    result.add(Translator.tr(keys.personalHeader, playerName))
-                    appendTypeGroups(result, playerSettings, keys)
-                }
-
-            return result
-        }
-
-        private fun appendTypeGroups(
-            result: MutableList<Component>,
-            settings: List<Setting>,
-            keys: SettingPresentationKeys
-        ) {
-            val builtInPermissions = settings.filterIsInstance<PermissionSetting>()
-            val extensionPermissions = settings.filterIsInstance<ExtensionPermissionSetting>()
-            if (builtInPermissions.isNotEmpty() || extensionPermissions.isNotEmpty()) {
-                result.add(Translator.tr(keys.permissionHeader))
-                builtInPermissions.forEach { setting ->
-                    result.add(Translator.tr(keys.item, permissionSettingDisplayName(setting), setting.value))
-                }
-                extensionPermissions.forEach { setting ->
-                    result.add(Translator.tr(keys.item, permissionSettingDisplayName(setting), setting.value))
-                }
-            }
-
-            val effects = settings.filterIsInstance<EffectSetting>()
-            if (effects.isNotEmpty()) {
-                result.add(Translator.tr(keys.effectHeader))
-                effects.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
-            }
-
-            val rules = settings.filter { it is RuleSetting || it is ExtensionRuleSetting }
-            if (rules.isNotEmpty()) {
-                result.add(Translator.tr(keys.ruleHeader))
-                rules.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
-            }
-
-            val notifToggles = settings.filterIsInstance<EntryExitToggleSetting>()
-            val notifMessages = settings.filterIsInstance<EntryExitMessageSetting>()
-            if (notifToggles.isNotEmpty() || notifMessages.isNotEmpty()) {
-                result.add(Translator.tr(keys.entryExitHeader))
-                notifToggles.forEach { setting -> result.add(Translator.tr(keys.item, setting.key, setting.value)) }
-                notifMessages.forEach { setting ->
-                    result.add(Translator.tr(keys.item, setting.key, "&r\"${setting.value}\""))
-                }
-            }
+            return formatLegacySettingInfoLines(server, settings, key, scopeName)
         }
     }
 }

@@ -1,7 +1,6 @@
 package com.imyvm.iwg.infra.config
 
 import com.imyvm.hoki.config.Option
-import com.imyvm.iwg.domain.component.requireTeleportFallbackSearchRadius
 
 internal fun positiveInt(path: String?, value: Int): Int {
     require(value > 0) { "$path must be greater than 0" }

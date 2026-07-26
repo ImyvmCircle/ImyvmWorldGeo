@@ -70,8 +70,8 @@ fun onQueryRegion(player: ServerPlayer, region: Region, isApi: Boolean) : Int{
     )
 
     val server = player.level().server
-    region.getSettingInfos(server).forEach { info -> player.sendSystemMessage(info) }
-    region.getScopeInfos(server).forEach { info -> player.sendSystemMessage(info) }
+    buildRegionSettingInfoLines(server, region).forEach(player::sendSystemMessage)
+    buildRegionScopeInfoLines(server, region).forEach(player::sendSystemMessage)
     return 1
 }
 

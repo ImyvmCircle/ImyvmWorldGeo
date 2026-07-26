@@ -1,10 +1,11 @@
 package com.imyvm.iwg.domain.component
 
-import com.imyvm.iwg.domain.Region
-import com.imyvm.iwg.domain.SettingPresentationTarget
-import com.imyvm.iwg.util.text.Translator
-import net.minecraft.resources.ResourceKey
-import net.minecraft.core.registries.Registries
+import com.imyvm.iwg.application.interaction.buildScopeInfoLine
+import com.imyvm.iwg.application.interaction.buildScopeSettingInfoLines
+import com.imyvm.iwg.application.region.findNearestValidScopeTeleportPoint
+import com.imyvm.iwg.application.region.isValidScopeTeleportPoint
+import com.imyvm.iwg.application.region.resolveScopeWorld
+import com.imyvm.iwg.application.region.scopeTeleportPointInvalidReasonKey
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerLevel
 import net.minecraft.network.chat.Component
@@ -148,60 +149,45 @@ class GeoScope(
 
     internal fun settingsSnapshot(): List<Setting> = settingStore.toLegacyList()
 
-    fun getScopeInfo(index: Int): Component? {
-        val shapeInfoString = geoShape?.getShapeInfo()?.string ?: ""
-        val dimensionDisplay = getDimensionDisplayName()
-        val point = teleportPoint
-        return if (point == null) {
-            Translator.tr("geo.scope.info",
-                index,
-                scopeName,
-                shapeInfoString,
-                dimensionDisplay,
-                showOnDynmap)
-        } else {
-            Translator.tr("geo.scope.info.with_teleport_point",
-                index,
-                scopeName,
-                shapeInfoString,
-                isTeleportPointPublic,
-                point.x,
-                point.y,
-                point.z,
-                dimensionDisplay,
-                showOnDynmap)
-        }
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use PlayerInteractionApi.queryRegionInfo or RegionDataApi structured queries")
+    fun getScopeInfo(index: Int): Component? = buildScopeInfoLine(this, index)
 
-    private fun getDimensionDisplayName(): String {
-        val key = "geo.dimension.${worldId.namespace}.${worldId.path}"
-        return if (Translator.hasTranslation(key)) Translator.tr(key).string else worldId.toString()
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Resolve scope.worldId through the Minecraft server registry")
+    fun getWorld(server: MinecraftServer): ServerLevel? = resolveScopeWorld(this, server)
 
-    fun getWorld(server: MinecraftServer): ServerLevel? {
-        val registryKey = ResourceKey.create(Registries.DIMENSION, worldId)
-        return server.getLevel(registryKey)
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use PlayerInteractionApi.queryRegionInfo or RegionDataApi structured queries")
+    fun getSettingInfos(server: MinecraftServer): List<Component> =
+        buildScopeSettingInfoLines(server, this)
 
-    fun getSettingInfos(server: MinecraftServer): List<Component> {
-        return Region.formatSettingInfos(server, settings, SettingPresentationTarget.ScopeSettings(scopeName))
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun certificateTeleportPoint(world: Level, pointToTest: BlockPos?): Boolean =
+        isValidScopeTeleportPoint(this, world, pointToTest)
 
-    fun certificateTeleportPoint(world: Level, pointToTest: BlockPos?): Boolean {
-        if (pointToTest == null) return false
-        val shape = geoShape ?: return false
-        return shape.certificateTeleportPoint(world, pointToTest)
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun getTeleportPointInvalidReasonKey(world: Level, pointToTest: BlockPos?): String? =
+        scopeTeleportPointInvalidReasonKey(this, world, pointToTest)
 
-    fun getTeleportPointInvalidReasonKey(world: Level, pointToTest: BlockPos?): String? {
-        if (pointToTest == null) return "teleport_point.invalid.null_point"
-        val shape = geoShape ?: return "teleport_point.invalid.no_shape"
-        return shape.getTeleportPointInvalidReasonKey(world, pointToTest)
-    }
-
-    fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? {
-        return geoShape?.findNearestValidTeleportPoint(world, center, searchRadius)
-    }
+    /**
+     * Compatibility-only reverse-layer delegate. New code must use the application/API boundary.
+     */
+    @Deprecated("Use owner-explicit PlayerInteractionApi teleport operations")
+    fun findNearestValidTeleportPoint(world: Level, center: BlockPos, searchRadius: Int): BlockPos? =
+        findNearestValidScopeTeleportPoint(this, world, center, searchRadius)
 }
 
 private fun ScopeId.toIdentity(): ScopeIdentity = when (raw) {

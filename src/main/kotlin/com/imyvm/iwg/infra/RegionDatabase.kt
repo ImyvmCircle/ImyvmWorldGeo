@@ -461,10 +461,11 @@ object RegionDatabase {
     }
 
     fun getRegionAndScopeAt(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? {
-        val server = world.server
+        if (world.server == null) return null
+        val worldId = world.dimension().identifier()
         for (region in regions) {
             for (scope in region.scopes) {
-                if (server?.let { scope.getWorld(it) } == world) {
+                if (scope.worldId == worldId) {
                     val geoShape = scope.geoShape
                     if (geoShape != null) {
                         if (geoShape.containsPoint(x, z)) {

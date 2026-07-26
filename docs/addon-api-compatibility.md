@@ -49,7 +49,9 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `ScopeId` query and overlay methods | R11 (unreleased) | Kotlin: typed `AssignedScopeId` methods; Java: corresponding `RegionDataApi` `...Raw` methods | Deprecated | Two released versions, then maintainer review | Existing `ScopeId` methods remain and validate/delegate; typed value-class methods keep their JVM descriptors but are hidden from Java source with `@JvmSynthetic`; `GeoScope` constructor and scopeId getter/setter descriptors remain |
 | `TimedEffectOverlay.startTickMillis` / `endTickMillis` getters | B6-R5 (unreleased) | `startEpochMillis` / `endEpochMillis` | Deprecated | Two released versions, then maintainer review | Values have always been Unix epoch milliseconds; constructor, component, copy, and old getter descriptors remain |
 | `Setting` / `BaseKey` | Not scheduled | Typed permission/rule/effect keys through supported APIs | Compatibility surface | No removal scheduled | Existing classes and JVM methods remain; unknown setting subclasses are rejected by persistence |
-| `Region.Companion.formatSettings` | B7-R4 (unreleased) | `Region.getSettingInfos` or `GeoScope.getSettingInfos` | Deprecated domain presentation surface | Two released versions, then maintainer review | Existing JVM method/default bridge remain; the compatibility facade accepts only the historical Region and Scope key/name combinations |
+| `Region.Companion.formatSettings` | B7-R4 (unreleased) | `PlayerInteractionApi.queryRegionInfo` or structured `RegionDataApi` queries | Deprecated domain presentation surface | Two released versions, then maintainer review | Existing JVM method/default bridge remain; the compatibility facade accepts only the historical Region and Scope key/name combinations |
+| Region / GeoScope / GeoShape presentation helpers | B8.4 (unreleased) | `PlayerInteractionApi.queryRegionInfo` or structured `RegionDataApi` queries | Deprecated domain presentation surface | Two released versions, then maintainer review | Existing `getScopeInfos`, `getSettingInfos`, `getScopeInfo`, and `getShapeInfo` JVM descriptors remain and delegate to application presentation |
+| GeoScope / GeoShape world and teleport helpers | B8.4 (unreleased) | Owner-explicit `PlayerInteractionApi` teleport operations; resolve `scope.worldId` through the server registry for direct world access | Deprecated domain runtime surface | Two released versions, then maintainer review | Existing world lookup, validation, fallback, representative-point, and physical-safety JVM descriptors remain and delegate to application runtime logic |
 | `NaturalStatsCategory.translationSuffix` | B7-R4 (unreleased) | `NaturalStatsCategory.translationKey` | Deprecated | Two released versions, then maintainer review | Existing `getTranslationSuffix()` descriptor remains; complete required translation keys are now available directly |
 | `CommandArgumentGetterKt.getPosArgument` | B7-R2 (unreleased) | Minecraft `BlockPosArgument` | Deprecated implementation helper | Two released versions, then maintainer review | Existing JVM descriptor remains; production commands now use vanilla absolute, world-relative, and local-relative coordinate parsing |
 | `SelectionPillarEmitterKt.clearSelectionDisplay(ServerPlayer)` | B8.2 (unreleased) | No replacement; clear the selection state and allow already-sent particles to expire | Deprecated implementation helper | Two released versions, then maintainer review | Existing no-op JVM descriptor remains; production selection lifecycle no longer pretends client particles can be withdrawn |
@@ -120,14 +122,42 @@ val label = Translator.raw(NaturalStatsCategory.BIOMES.translationKey)
 
 `NaturalStatsCategory.translationSuffix` remains callable for binary compatibility, but new code should not prepend `interaction.meta.stats.category.` itself.
 
-The legacy `Region.formatSettings(server, settings, key, scopeName)` method remains linkable. Its arbitrary string and nullable-name protocol is not a supported extension point. Use the owning object to render its canonical setting presentation:
+The legacy `Region.formatSettings(server, settings, key, scopeName)` method remains linkable. Its arbitrary string and nullable-name protocol is not a supported extension point. Canonical player-facing Region information should be sent through the supported interaction API:
 
 ```kotlin
-val regionLines = region.getSettingInfos(server)
-val scopeLines = scope.getSettingInfos(server)
+PlayerInteractionApi.queryRegionInfo(player, region)
 ```
 
-The compatibility facade continues to accept `region.setting` without a Scope name and `geo.scope.setting` with a required Scope name. Other key/name combinations fail fast instead of probing arbitrary translation namespaces.
+Addons that build custom output should query Region, Scope, settings, shape, area, and teleport-point data through `RegionDataApi` and format those structured values themselves. `Region.getScopeInfos`, `Region.getSettingInfos`, `GeoScope.getScopeInfo`, `GeoScope.getSettingInfos`, and `GeoShape.getShapeInfo` remain linkable compatibility delegates, but are not the replacement API.
+
+The `formatSettings` compatibility facade continues to accept `region.setting` without a Scope name and `geo.scope.setting` with a required Scope name. Other key/name combinations fail fast instead of probing arbitrary translation namespaces.
+
+## B8.4 domain presentation and runtime migration
+
+Domain presentation helpers now delegate to application presentation solely for binary compatibility. New addon code should choose one supported path:
+
+```kotlin
+// Send the canonical complete presentation.
+PlayerInteractionApi.queryRegionInfo(player, region)
+
+// Read structured data for custom presentation.
+val scopes = RegionDataApi.getRegionScopes(region)
+val settings = RegionDataApi.getRegionGlobalSettings(region)
+val shape = RegionDataApi.getScopeShape(scope)
+```
+
+Teleport validation, fallback repair, persistence rollback, and player feedback remain one owner-explicit operation:
+
+```kotlin
+PlayerInteractionApi.teleportPlayerToScope(player, region, scope)
+```
+
+The legacy GeoScope and GeoShape validation/search helpers remain JVM-linkable but are compatibility surfaces, not independent mutation or policy APIs. For direct world access, resolve the immutable Scope dimension identifier through the server registry:
+
+```kotlin
+val key = ResourceKey.create(Registries.DIMENSION, scope.worldId)
+val world = server.getLevel(key)
+```
 
 ## B7 teleport coordinate migration
 
