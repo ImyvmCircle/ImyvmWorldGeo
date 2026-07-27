@@ -2,20 +2,22 @@ package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.interaction.*
 import com.imyvm.iwg.application.interaction.scope.onReplacingScopeShape
-import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveRegionGlobalPermissionValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveRegionPlayerPermissionValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveScopeGlobalPermissionValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveScopePlayerPermissionValue
+import com.imyvm.iwg.application.region.setting.defaultPermissionValue
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.ScopeNotFoundException
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
-import com.imyvm.iwg.domain.component.PermissionKey
 import com.imyvm.iwg.domain.component.PermissionKeyLike
 import com.imyvm.iwg.domain.component.RuleKeyLike
 import com.imyvm.iwg.domain.component.EffectKey
 import com.imyvm.iwg.domain.component.EntryExitToggleKey
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
 import com.imyvm.iwg.domain.component.SettingSubject
-import com.imyvm.iwg.domain.component.ExtensionSettingRegistry
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
 import com.imyvm.iwg.util.text.Translator
@@ -239,31 +241,37 @@ object PlayerInteractionApi {
     fun removeSettingRegion(player: ServerPlayer, region: Region, keyString: String, targetPlayerStr: String?) = removeRegionSetting(player, region, keyString, targetPlayerStr)
     @Deprecated("Use PlayerInteractionApi typed setting mutations (e.g. removeScopePermission, removeScopeRule)")
     fun removeSettingScope(player: ServerPlayer, region: Region, scopeName: String, keyString: String, targetPlayerStr: String?) = removeScopeSetting(player, region, region.getScopeByName(scopeName), keyString, targetPlayerStr)
-    fun getDefaultPermissionValue(keyString: String): Boolean {
-        val key = PermissionKey.entries.firstOrNull { it.name == keyString }
-        if (key != null) return getDefaultValueForPermission(key)
-        if (ExtensionSettingRegistry.isRegisteredPermissionKey(keyString)) {
-            return getDefaultValueForPermission(ExtensionSettingRegistry.permissionKey(keyString))
-        }
-        throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
-    }
+    fun getDefaultPermissionValue(keyString: String): Boolean =
+        defaultPermissionValue(requireRegisteredPermissionKey(keyString))
+
     fun getRegionPermissionValue(player: ServerPlayer, region: Region, keyString: String): Boolean =
-        onCertificatePermissionValue(player, region, null, null, keyString)
+        getEffectiveRegionGlobalPermissionValue(region, requireRegisteredPermissionKey(keyString))
+
     fun getRegionPlayerPermissionValue(
         player: ServerPlayer,
         region: Region,
         targetPlayerName: String,
         keyString: String
-    ): Boolean = onCertificatePermissionValue(player, region, null, targetPlayerName, keyString)
+    ): Boolean {
+        val key = requireRegisteredPermissionKey(keyString)
+        val targetPlayerUUID = requireTargetPlayerUUID(player, targetPlayerName)
+        return getEffectiveRegionPlayerPermissionValue(region, targetPlayerUUID, key)
+    }
+
     fun getScopePermissionValue(player: ServerPlayer, region: Region, scope: GeoScope, keyString: String): Boolean =
-        onCertificatePermissionValue(player, region, scope, null, keyString)
+        getEffectiveScopeGlobalPermissionValue(region, scope, requireRegisteredPermissionKey(keyString))
+
     fun getScopePlayerPermissionValue(
         player: ServerPlayer,
         region: Region,
         scope: GeoScope,
         targetPlayerName: String,
         keyString: String
-    ): Boolean = onCertificatePermissionValue(player, region, scope, targetPlayerName, keyString)
+    ): Boolean {
+        val key = requireRegisteredPermissionKey(keyString)
+        val targetPlayerUUID = requireTargetPlayerUUID(player, targetPlayerName)
+        return getEffectiveScopePlayerPermissionValue(region, scope, targetPlayerUUID, key)
+    }
 
     /**
      * Compatibility dispatcher for the former nullable permission API.

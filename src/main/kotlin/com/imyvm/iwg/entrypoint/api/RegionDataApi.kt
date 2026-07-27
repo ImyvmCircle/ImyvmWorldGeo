@@ -1,14 +1,15 @@
 package com.imyvm.iwg.inter.api
 
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
-import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
-import com.imyvm.iwg.application.interaction.getDefaultValueForRule
-import com.imyvm.iwg.application.interaction.getRegionPermissionValue
-import com.imyvm.iwg.application.interaction.getScopePermissionValue
-import com.imyvm.iwg.application.interaction.onCertificateExtensionPermissionValue
-import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveRegionGlobalPermissionValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveRegionPlayerPermissionValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveScopeGlobalPermissionValue
+import com.imyvm.iwg.application.region.permission.helper.getEffectiveScopePlayerPermissionValue
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveRegionRuleValue
 import com.imyvm.iwg.application.region.rule.helper.getEffectiveScopeRuleValue
+import com.imyvm.iwg.application.region.setting.defaultPermissionValue
+import com.imyvm.iwg.application.region.setting.defaultRuleValue
+import com.imyvm.iwg.application.interaction.getEffectiveExtensionRuleValue
 import com.imyvm.iwg.application.interaction.onGettingTeleportPointAccessibility
 import com.imyvm.iwg.application.region.filterRegionsByMark
 import com.imyvm.iwg.application.region.parseFoundingTimeFromRegionId
@@ -134,23 +135,23 @@ object RegionDataApi {
         filterSettingsByType(scope.settings, settingTypes, isPersonal = true, playerUUID = playerUUID)
 
     fun getDefaultPermissionValue(permissionKey: PermissionKey): Boolean =
-        getDefaultValueForPermission(permissionKey)
+        defaultPermissionValue(permissionKey)
 
     fun getRegionGlobalPermissionValue(region: Region, permissionKey: PermissionKey): Boolean =
-        getRegionPermissionValue(region, permissionKey)
+        getEffectiveRegionGlobalPermissionValue(region, permissionKey)
 
     fun getRegionPlayerPermissionValue(region: Region, playerUUID: UUID, permissionKey: PermissionKey): Boolean =
-        getRegionPermissionValue(region, playerUUID, permissionKey)
+        getEffectiveRegionPlayerPermissionValue(region, playerUUID, permissionKey)
 
     fun getScopeGlobalPermissionValue(region: Region, scope: GeoScope, permissionKey: PermissionKey): Boolean =
-        getScopePermissionValue(region, scope, permissionKey)
+        getEffectiveScopeGlobalPermissionValue(region, scope, permissionKey)
 
     fun getScopePlayerPermissionValue(
         region: Region,
         scope: GeoScope,
         playerUUID: UUID,
         permissionKey: PermissionKey
-    ): Boolean = getScopePermissionValue(region, scope, playerUUID, permissionKey)
+    ): Boolean = getEffectiveScopePlayerPermissionValue(region, scope, playerUUID, permissionKey)
 
     /**
      * Compatibility dispatcher for the former nullable permission API.
@@ -174,23 +175,28 @@ object RegionDataApi {
     }
 
     fun getDefaultExtensionPermissionValue(key: String): Boolean =
-        onCertificateExtensionPermissionValue(null, null, null, key)
+        defaultPermissionValue(requireExtensionPermissionKey(key))
 
     fun getRegionGlobalExtensionPermissionValue(region: Region, key: String): Boolean =
-        onCertificateExtensionPermissionValue(region, null, null, key)
+        getEffectiveRegionGlobalPermissionValue(region, requireExtensionPermissionKey(key))
 
     fun getRegionPlayerExtensionPermissionValue(region: Region, playerUUID: UUID, key: String): Boolean =
-        onCertificateExtensionPermissionValue(region, null, playerUUID, key)
+        getEffectiveRegionPlayerPermissionValue(region, playerUUID, requireExtensionPermissionKey(key))
 
     fun getScopeGlobalExtensionPermissionValue(region: Region, scope: GeoScope, key: String): Boolean =
-        onCertificateExtensionPermissionValue(region, scope, null, key)
+        getEffectiveScopeGlobalPermissionValue(region, scope, requireExtensionPermissionKey(key))
 
     fun getScopePlayerExtensionPermissionValue(
         region: Region,
         scope: GeoScope,
         playerUUID: UUID,
         key: String
-    ): Boolean = onCertificateExtensionPermissionValue(region, scope, playerUUID, key)
+    ): Boolean = getEffectiveScopePlayerPermissionValue(
+        region,
+        scope,
+        playerUUID,
+        requireExtensionPermissionKey(key)
+    )
 
     /**
      * Compatibility dispatcher for extension permissions.
@@ -212,7 +218,7 @@ object RegionDataApi {
         }
     }
 
-    fun getDefaultRuleValue(ruleKey: RuleKey): Boolean = getDefaultValueForRule(ruleKey)
+    fun getDefaultRuleValue(ruleKey: RuleKey): Boolean = defaultRuleValue(ruleKey)
 
     fun getRegionRuleValue(region: Region, ruleKey: RuleKey): Boolean =
         getEffectiveRegionRuleValue(region, ruleKey)
@@ -237,14 +243,14 @@ object RegionDataApi {
     }
 
     fun getDefaultExtensionRuleValue(key: String): Boolean =
-        getEffectiveExtensionRuleValue(null, null, key)
+        defaultRuleValue(requireExtensionRuleKey(key))
 
     fun getRegionExtensionRuleValue(region: Region, key: String): Boolean =
-        getEffectiveExtensionRuleValue(region, null, key)
+        getEffectiveRegionRuleValue(region, requireExtensionRuleKey(key))
 
     fun getScopeExtensionRuleValue(region: Region, scope: GeoScope, key: String): Boolean {
         require(region.containsScope(scope)) { "scope does not belong to region" }
-        return getEffectiveExtensionRuleValue(region, scope, key)
+        return getEffectiveScopeRuleValue(region, scope, requireExtensionRuleKey(key))
     }
 
     /**
@@ -498,5 +504,19 @@ object RegionDataApi {
 
     private fun requireAssignedScopeIdRaw(scopeIdRaw: Long): AssignedScopeId =
         AssignedScopeId.fromRaw(scopeIdRaw) ?: throw IllegalArgumentException("scope id is not assigned")
+
+    private fun requireExtensionPermissionKey(key: String): ExtensionPermissionKey {
+        if (!ExtensionSettingRegistry.isRegisteredPermissionKey(key)) {
+            throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+        }
+        return ExtensionSettingRegistry.permissionKey(key)
+    }
+
+    private fun requireExtensionRuleKey(key: String): ExtensionRuleKey {
+        if (!ExtensionSettingRegistry.isRegisteredRuleKey(key)) {
+            throw IllegalArgumentException("interaction.meta.setting.error.invalid_key")
+        }
+        return ExtensionSettingRegistry.ruleKey(key)
+    }
 
 }

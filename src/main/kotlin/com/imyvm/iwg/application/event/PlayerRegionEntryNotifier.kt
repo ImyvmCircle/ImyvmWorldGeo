@@ -1,9 +1,9 @@
 package com.imyvm.iwg.application.event
 
 import com.imyvm.iwg.application.region.PlayerRegionChecker
-import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.application.region.permission.helper.hasRegionPermission
 import com.imyvm.iwg.application.region.permission.helper.hasScopePermission
+import com.imyvm.iwg.application.region.setting.defaultPermissionValue
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.EntryExitMessageKey
@@ -277,7 +277,7 @@ internal fun hasEntryPermission(
     playerUuid: UUID,
     key: PermissionKey
 ): Boolean {
-    val default = getDefaultValueForPermission(key)
+    val default = defaultPermissionValue(key)
     return when (target) {
         is EntryPermissionTarget.RegionTarget -> hasRegionPermission(target.region, playerUuid, key, default)
         is EntryPermissionTarget.ScopeTarget ->

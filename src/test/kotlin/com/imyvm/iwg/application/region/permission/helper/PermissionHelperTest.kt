@@ -1,7 +1,5 @@
 package com.imyvm.iwg.application.region.permission.helper
 
-import com.imyvm.iwg.application.interaction.getRegionPermissionValue
-import com.imyvm.iwg.application.interaction.getScopePermissionValue
 import com.imyvm.iwg.inter.api.RegionDataApi
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.GeoScope
@@ -83,14 +81,14 @@ class PermissionHelperTest {
     fun `API resolver falls back to global setting for a player`() {
         region.settingStore.put(PermissionSetting(PermissionKey.PVP, false))
 
-        assertFalse(getRegionPermissionValue(region, player, PermissionKey.PVP))
+        assertFalse(getEffectiveRegionPlayerPermissionValue(region, player, PermissionKey.PVP))
     }
 
     @Test
     fun `API resolver uses the same parent inheritance as runtime checks`() {
         region.settingStore.put(PermissionSetting(PermissionKey.BUILD, false))
 
-        assertFalse(getRegionPermissionValue(region, player, PermissionKey.BUCKET_BUILD))
+        assertFalse(getEffectiveRegionPlayerPermissionValue(region, player, PermissionKey.BUCKET_BUILD))
     }
 
     @Test
@@ -127,10 +125,22 @@ class PermissionHelperTest {
         scope.settingStore.put(PermissionSetting(PermissionKey.PVP, true))
         scope.settingStore.put(PermissionSetting(PermissionKey.PVP, false, player))
 
-        assertFalse(getRegionPermissionValue(region, PermissionKey.PVP))
-        assertTrue(getRegionPermissionValue(region, player, PermissionKey.PVP))
-        assertTrue(getScopePermissionValue(region, scope, PermissionKey.PVP))
-        assertFalse(getScopePermissionValue(region, scope, player, PermissionKey.PVP))
+        assertFalse(getEffectiveRegionGlobalPermissionValue(region, PermissionKey.PVP))
+        assertTrue(getEffectiveRegionPlayerPermissionValue(region, player, PermissionKey.PVP))
+        assertTrue(getEffectiveScopeGlobalPermissionValue(region, scope, PermissionKey.PVP))
+        assertFalse(getEffectiveScopePlayerPermissionValue(region, scope, player, PermissionKey.PVP))
+    }
+
+    @Test
+    fun `effective extension query uses exact key and registered default`() {
+        ExtensionSettingRegistry.registerPermissionKey("test:effective_permission", false)
+        val key = ExtensionSettingRegistry.permissionKey("test:effective_permission")
+        region.settingStore.put(PermissionSetting(PermissionKey.BUILD_BREAK, true))
+
+        assertFalse(getEffectiveRegionGlobalPermissionValue(region, key))
+
+        region.settingStore.put(ExtensionPermissionSetting(key, true))
+        assertTrue(getEffectiveRegionGlobalPermissionValue(region, key))
     }
 
     @Suppress("DEPRECATION")
@@ -154,6 +164,9 @@ class PermissionHelperTest {
 
         assertFailsWith<IllegalArgumentException> {
             getScopePermissionDenialSource(otherRegion, scope, player, PermissionKey.PVP)
+        }
+        assertFailsWith<IllegalArgumentException> {
+            getEffectiveScopeGlobalPermissionValue(otherRegion, scope, PermissionKey.PVP)
         }
     }
 

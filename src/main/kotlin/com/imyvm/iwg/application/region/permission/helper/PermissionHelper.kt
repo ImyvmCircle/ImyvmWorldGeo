@@ -1,5 +1,6 @@
 package com.imyvm.iwg.application.region.permission.helper
 
+import com.imyvm.iwg.application.region.setting.defaultPermissionValue
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.component.*
 import java.util.UUID
@@ -82,6 +83,30 @@ internal fun resolveScopePlayerPermission(
     PermissionSubject.Player(playerUUID),
     key
 )
+
+internal fun getEffectiveRegionGlobalPermissionValue(
+    region: Region,
+    key: PermissionKeyLike
+): Boolean = resolveRegionGlobalPermission(region, key)?.value ?: defaultPermissionValue(key)
+
+internal fun getEffectiveRegionPlayerPermissionValue(
+    region: Region,
+    playerUUID: UUID,
+    key: PermissionKeyLike
+): Boolean = resolveRegionPlayerPermission(region, playerUUID, key)?.value ?: defaultPermissionValue(key)
+
+internal fun getEffectiveScopeGlobalPermissionValue(
+    region: Region,
+    scope: GeoScope,
+    key: PermissionKeyLike
+): Boolean = resolveScopeGlobalPermission(region, scope, key)?.value ?: defaultPermissionValue(key)
+
+internal fun getEffectiveScopePlayerPermissionValue(
+    region: Region,
+    scope: GeoScope,
+    playerUUID: UUID,
+    key: PermissionKeyLike
+): Boolean = resolveScopePlayerPermission(region, scope, playerUUID, key)?.value ?: defaultPermissionValue(key)
 
 @Deprecated("Use hasRegionPermission or hasScopePermission")
 fun hasPermission(

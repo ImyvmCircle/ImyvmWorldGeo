@@ -1,6 +1,6 @@
 package com.imyvm.iwg.domain.component
 
-import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
+import com.imyvm.iwg.application.region.setting.defaultPermissionValue
 import com.imyvm.iwg.util.text.Translator
 import kotlin.test.Test
 import kotlin.test.assertEquals
@@ -74,7 +74,7 @@ class PermissionKeyMetadataTest {
 
     @Test
     fun `default resolver and legacy getters cover every permission`() {
-        PermissionKey.entries.forEach(::getDefaultValueForPermission)
+        PermissionKey.entries.forEach(::defaultPermissionValue)
         assertSame(PermissionKey.BUILD_BREAK, PermissionKey.BUILD.parent)
         assertIs<PermissionEntryNotification.None>(PermissionKey.BUILD.entryNotification)
 

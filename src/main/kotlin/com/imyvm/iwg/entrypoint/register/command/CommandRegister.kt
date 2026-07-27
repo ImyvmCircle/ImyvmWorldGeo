@@ -659,13 +659,13 @@ private fun runAddDeleteSetting(context: CommandContext<CommandSourceStack>): In
     return identifierHandler(regionIdentifier, player) { region ->
         val scope = scopeName?.let { getScopeOrNotify(player, region, it) ?: return@identifierHandler }
         if (scope != null && valueString != null) {
-            addScopeSetting(player, region, scope, keyString, valueString, targetPlayer)
+            addScopeSettingFromCommand(player, region, scope, keyString, valueString, targetPlayer)
         } else if (scope != null) {
-            removeScopeSetting(player, region, scope, keyString, targetPlayer)
+            removeScopeSettingFromCommand(player, region, scope, keyString, targetPlayer)
         } else if (valueString != null) {
-            addRegionSetting(player, region, keyString, valueString, targetPlayer)
+            addRegionSettingFromCommand(player, region, keyString, valueString, targetPlayer)
         } else {
-            removeRegionSetting(player, region, keyString, targetPlayer)
+            removeRegionSettingFromCommand(player, region, keyString, targetPlayer)
         }
     }
 }
@@ -677,7 +677,11 @@ private fun runQuerySettingValue(context: CommandContext<CommandSourceStack>): I
     val targetPlayer = getOptionalArgument(context, "playerName")
     return identifierHandler(regionIdentifier, player) { region ->
         val scope = scopeName?.let { getScopeOrNotify(player, region, it) ?: return@identifierHandler }
-        onQuerySettingValue(player, region, scope, keyString, targetPlayer)
+        if (scope == null) {
+            queryRegionSettingFromCommand(player, region, keyString, targetPlayer)
+        } else {
+            queryScopeSettingFromCommand(player, region, scope, keyString, targetPlayer)
+        }
     }
 }
 
