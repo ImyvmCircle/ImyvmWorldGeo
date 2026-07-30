@@ -71,11 +71,13 @@ object BehaviorStatsStore {
         warningActive = false
         cleanCloseAllowed = true
         sessionWorldRoot = root
+        BehaviorStatsPageStreamService.startSession()
     }
 
     internal fun unbindSession(nowMillis: Long = System.currentTimeMillis()) {
         counts.clear()
         warnedCapacityActions.clear()
+        BehaviorStatsPageStreamService.closeAllHandles()
         if (cleanCloseAllowed) {
             BehaviorCaptureControlStore.closeSession(nowMillis)
         } else {
@@ -446,6 +448,7 @@ object BehaviorStatsStore {
 
     internal fun abandonSessionForTest() {
         counts.clear()
+        BehaviorStatsPageStreamService.closeAllHandles()
         SegmentedBehaviorStatsStore.unbindSession()
         BehaviorCaptureControlStore.abandonSession()
         nextWriteSequence = 1L
@@ -461,6 +464,7 @@ object BehaviorStatsStore {
     internal fun clearForTest() {
         counts.clear()
         warnedCapacityActions.clear()
+        BehaviorStatsPageStreamService.closeAllHandles()
         SegmentedBehaviorStatsStore.unbindSession()
         BehaviorCaptureControlStore.resetForTest()
         nextWriteSequence = 1L

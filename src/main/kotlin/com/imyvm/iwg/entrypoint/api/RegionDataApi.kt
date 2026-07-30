@@ -31,6 +31,7 @@ import com.imyvm.iwg.application.region.effect.helper.getSubSpaceEffectValue as 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.BehaviorStatsStore
+import com.imyvm.iwg.infra.BehaviorStatsPageStreamService
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
 import com.imyvm.iwg.inter.api.helper.filterSettingsByType
@@ -42,6 +43,7 @@ import net.minecraft.server.level.ServerLevel
 import net.minecraft.world.level.Level
 import java.util.*
 import java.util.function.Consumer
+import java.util.concurrent.CompletableFuture
 /**
  * Supported read/query API for addons.
  *
@@ -597,6 +599,30 @@ object RegionDataApi {
 
     fun getRecentBehaviorEvents(limit: Int): List<WorldGeoBehaviorEvent> =
         WorldGeoBehaviorEventBus.getRecentEvents(limit)
+
+    fun openBehaviorStatsPageStream(
+        query: WorldGeoBehaviorStatsPageQuery
+    ): CompletableFuture<WorldGeoBehaviorStatsStreamOpenResult> =
+        BehaviorStatsPageStreamService.open(query)
+
+    fun openBehaviorStatsPageStream(
+        query: WorldGeoBehaviorStatsPageQuery,
+        pageSize: Int
+    ): CompletableFuture<WorldGeoBehaviorStatsStreamOpenResult> =
+        BehaviorStatsPageStreamService.open(query, pageSize)
+
+    fun readBehaviorStatsPage(
+        handleId: UUID
+    ): CompletableFuture<WorldGeoBehaviorStatsPageReadResult> =
+        BehaviorStatsPageStreamService.nextPage(handleId)
+
+    fun closeBehaviorStatsPageStream(handleId: UUID): CompletableFuture<Boolean> =
+        BehaviorStatsPageStreamService.close(handleId)
+
+    fun queryBlockDeltaBatchAsync(
+        query: WorldGeoBehaviorStatsPageQuery
+    ): CompletableFuture<WorldGeoBatchBlockDeltaStats> =
+        BehaviorStatsPageStreamService.queryBlockDeltaBatch(query)
 
     fun queryBehaviorStats(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> =
         BehaviorStatsStore.query(query)

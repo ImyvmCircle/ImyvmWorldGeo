@@ -3,17 +3,22 @@ package com.imyvm.iwg.infra
 import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
+import com.google.gson.stream.JsonReader
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsPageQuery
 import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
 import java.util.Base64
 import java.util.UUID
+import java.util.TreeMap
+import java.util.concurrent.CompletableFuture
 import java.util.concurrent.Executors
 
-private data class BehaviorSegment(
+internal data class BehaviorSegment(
     val id: Long,
     val relativePath: String,
     val timelineId: String,
@@ -34,6 +39,28 @@ private data class BehaviorManifest(
     val segments: List<BehaviorSegment>
 )
 
+internal data class BehaviorStatsReadSnapshot(
+    val manifestVersion: Long,
+    val root: Path,
+    val segments: List<BehaviorSegment>
+)
+
+internal data class BehaviorStatsPageSlice(
+    val entries: List<WorldGeoBehaviorStatsEntry>,
+    val nextCursor: BehaviorStatsKey?,
+    val hasMore: Boolean
+)
+
+internal data class BehaviorBlockDeltaAggregate(
+    val blocks: Map<String, BehaviorBlockDeltaBucket>
+)
+
+internal data class BehaviorBlockDeltaBucket(
+    var placedCount: Long = 0L,
+    var brokenCount: Long = 0L,
+    val playerContributions: MutableMap<UUID, Long> = linkedMapOf()
+)
+
 internal object SegmentedBehaviorStatsStore {
     private const val FORMAT_VERSION = 1
     private const val MANIFEST_FILE = "manifest.json"
@@ -42,9 +69,14 @@ internal object SegmentedBehaviorStatsStore {
         Thread(runnable, "worldgeo-stats-io").apply { isDaemon = true }
     }
     private var root: Path? = null
+    @Volatile
     private var manifest = BehaviorManifest(0L, 1L, 0L, emptyList())
     internal var failureInjector: ((String) -> Unit)? = null
+    internal var scanInjector: (() -> Unit)? = null
     private var lastHistoricalReadThreadName: String? = null
+    private val pinnedSegments = mutableMapOf<Long, Int>()
+    private val deferredDeletes = mutableMapOf<Long, Path>()
+    private var lastPageCandidateCount = 0
 
     fun bindSession(worldRoot: Path, legacyPath: Path) {
         check(root == null) { "Segmented behavior stats session is already active" }
@@ -71,14 +103,71 @@ internal object SegmentedBehaviorStatsStore {
         root = null
         manifest = BehaviorManifest(0L, 1L, 0L, emptyList())
         failureInjector = null
+        scanInjector = null
         lastHistoricalReadThreadName = null
+        pinnedSegments.clear()
+        deferredDeletes.clear()
+        lastPageCandidateCount = 0
     }
 
     fun publishedSequence(): Long = manifest.publishedSequence
 
+    fun awaitIdle() {
+        io { Unit }
+    }
+
     internal fun historicalEntryCountInMemory(): Int = 0
 
     internal fun lastHistoricalReadThread(): String? = lastHistoricalReadThreadName
+
+    internal fun lastPageCandidateCount(): Int = lastPageCandidateCount
+
+    fun <T> submit(operation: () -> T): CompletableFuture<T> =
+        CompletableFuture.supplyAsync(operation, executor)
+
+    fun openSnapshot(query: WorldGeoBehaviorStatsPageQuery): BehaviorStatsReadSnapshot {
+        val target = requireRoot()
+        val current = manifest
+        val selected = current.segments.filter { segment ->
+            segment.timelineId == query.periodKey.timelineId &&
+                segment.periodKind == query.periodKey.kind &&
+                segment.periodId == query.periodKey.periodId &&
+                segment.regionId == query.regionId
+        }
+        synchronized(this) {
+            selected.forEach { segment ->
+                pinnedSegments[segment.id] = (pinnedSegments[segment.id] ?: 0) + 1
+            }
+        }
+        return BehaviorStatsReadSnapshot(current.generation, target, selected)
+    }
+
+    fun closeSnapshot(snapshot: BehaviorStatsReadSnapshot) {
+        val deletions = mutableListOf<Path>()
+        synchronized(this) {
+            snapshot.segments.forEach { segment ->
+                val remaining = (pinnedSegments[segment.id] ?: 1) - 1
+                if (remaining <= 0) {
+                    pinnedSegments.remove(segment.id)
+                    deferredDeletes.remove(segment.id)?.let(deletions::add)
+                } else {
+                    pinnedSegments[segment.id] = remaining
+                }
+            }
+        }
+        if (deletions.isNotEmpty()) {
+            executor.execute { deletions.forEach(Files::deleteIfExists) }
+        }
+    }
+
+    fun readPageAsync(
+        snapshot: BehaviorStatsReadSnapshot,
+        query: WorldGeoBehaviorStatsPageQuery,
+        cursor: BehaviorStatsKey?,
+        pageSize: Int
+    ): CompletableFuture<BehaviorStatsPageSlice> = submit {
+        readPage(snapshot, query, cursor, pageSize)
+    }
 
     fun append(stats: Map<BehaviorStatsKey, Long>, sequenceStart: Long, sequenceEnd: Long) {
         if (stats.isEmpty()) return
@@ -118,7 +207,7 @@ internal object SegmentedBehaviorStatsStore {
             )
         }
         manifest = next
-        io { selected.forEach { Files.deleteIfExists(target.resolve(it.relativePath)) } }
+        selected.forEach { scheduleDelete(target, it) }
     }
 
     fun readAll(): Map<BehaviorStatsKey, Long> {
@@ -134,6 +223,120 @@ internal object SegmentedBehaviorStatsStore {
             result
         }
     }
+
+    private fun readPage(
+        snapshot: BehaviorStatsReadSnapshot,
+        query: WorldGeoBehaviorStatsPageQuery,
+        cursor: BehaviorStatsKey?,
+        pageSize: Int
+    ): BehaviorStatsPageSlice {
+        val candidates = TreeMap<BehaviorStatsKey, Long>(Comparator(::compareKeys))
+        val candidateLimit = pageSize + 1
+        snapshot.segments.forEach { segment ->
+            scanSegment(snapshot.root, segment) { key, count ->
+                if (!matchesQuery(key, query) || (cursor != null && compareKeys(key, cursor) <= 0)) {
+                    return@scanSegment
+                }
+                val existing = candidates[key]
+                if (existing != null) {
+                    candidates[key] = Math.addExact(existing, count)
+                } else if (candidates.size < candidateLimit) {
+                    candidates[key] = count
+                } else if (compareKeys(key, candidates.lastKey()) < 0) {
+                    candidates.pollLastEntry()
+                    candidates[key] = count
+                }
+            }
+        }
+        lastPageCandidateCount = candidates.size
+        val selected = candidates.entries.take(pageSize)
+        return BehaviorStatsPageSlice(
+            selected.map { (key, count) -> key.toEntry(count) },
+            selected.lastOrNull()?.key ?: cursor,
+            candidates.size > pageSize
+        )
+    }
+
+    internal fun scanBlockDelta(
+        snapshot: BehaviorStatsReadSnapshot,
+        query: WorldGeoBehaviorStatsPageQuery
+    ): BehaviorBlockDeltaAggregate {
+        val blocks = linkedMapOf<String, BehaviorBlockDeltaBucket>()
+        snapshot.segments.forEach { segment ->
+            scanSegment(snapshot.root, segment) { key, count ->
+                if (!matchesQuery(key, query, ignoreBehaviorType = true)) return@scanSegment
+                if (key.behaviorType != WorldGeoBehaviorType.BLOCK_PLACE &&
+                    key.behaviorType != WorldGeoBehaviorType.BLOCK_BREAK
+                ) return@scanSegment
+                val objectId = key.objectId ?: return@scanSegment
+                val block = blocks.getOrPut(objectId) { BehaviorBlockDeltaBucket() }
+                if (key.behaviorType == WorldGeoBehaviorType.BLOCK_PLACE) {
+                    block.placedCount = Math.addExact(block.placedCount, count)
+                    block.playerContributions[key.playerUuid] = Math.addExact(
+                        block.playerContributions[key.playerUuid] ?: 0L,
+                        count
+                    )
+                } else {
+                    block.brokenCount = Math.addExact(block.brokenCount, count)
+                    block.playerContributions[key.playerUuid] = Math.subtractExact(
+                        block.playerContributions[key.playerUuid] ?: 0L,
+                        count
+                    )
+                }
+            }
+        }
+        return BehaviorBlockDeltaAggregate(blocks)
+    }
+
+    private fun matchesQuery(
+        key: BehaviorStatsKey,
+        query: WorldGeoBehaviorStatsPageQuery,
+        ignoreBehaviorType: Boolean = false
+    ): Boolean =
+        key.timelineId == query.periodKey.timelineId &&
+            key.periodKind == query.periodKey.kind &&
+            key.periodId == query.periodKey.periodId &&
+            key.regionId == query.regionId &&
+            (query.scopeId == null || key.scopeId == query.scopeId) &&
+            (query.subSpaceId == null || key.subSpaceId == query.subSpaceId) &&
+            (ignoreBehaviorType || query.behaviorType == null || key.behaviorType == query.behaviorType) &&
+            (query.objectIds == null || key.objectId in query.objectIds) &&
+            (query.playerUuids == null || key.playerUuid in query.playerUuids)
+
+    private fun compareKeys(left: BehaviorStatsKey, right: BehaviorStatsKey): Int {
+        var result = left.timelineId.compareTo(right.timelineId)
+        if (result != 0) return result
+        result = left.periodKind.ordinal.compareTo(right.periodKind.ordinal)
+        if (result != 0) return result
+        result = left.periodId.compareTo(right.periodId)
+        if (result != 0) return result
+        result = left.regionId.compareTo(right.regionId)
+        if (result != 0) return result
+        result = compareValues(left.scopeId, right.scopeId)
+        if (result != 0) return result
+        result = compareValues(left.subSpaceId, right.subSpaceId)
+        if (result != 0) return result
+        result = left.behaviorType.ordinal.compareTo(right.behaviorType.ordinal)
+        if (result != 0) return result
+        result = compareValues(left.objectId, right.objectId)
+        if (result != 0) return result
+        result = left.playerUuid.compareTo(right.playerUuid)
+        if (result != 0) return result
+        return compareValues(left.targetId, right.targetId)
+    }
+
+    private fun BehaviorStatsKey.toEntry(count: Long) = WorldGeoBehaviorStatsEntry(
+        periodKind,
+        periodId,
+        behaviorType,
+        regionId,
+        scopeId,
+        subSpaceId,
+        playerUuid,
+        objectId,
+        targetId,
+        count
+    )
 
     private fun append(
         target: Path,
@@ -181,33 +384,71 @@ internal object SegmentedBehaviorStatsStore {
     }
 
     private fun readSegment(target: Path, descriptor: BehaviorSegment): Map<BehaviorStatsKey, Long> {
+        val result = linkedMapOf<BehaviorStatsKey, Long>()
+        scanSegment(target, descriptor) { key, count ->
+            result[key] = Math.addExact(result[key] ?: 0L, count)
+        }
+        return result
+    }
+
+    private fun scanSegment(
+        target: Path,
+        descriptor: BehaviorSegment,
+        visitor: (BehaviorStatsKey, Long) -> Unit
+    ) {
         lastHistoricalReadThreadName = Thread.currentThread().name
+        scanInjector?.invoke()
         val path = target.resolve(descriptor.relativePath)
-        val bytes = Files.readAllBytes(path)
-        if (bytes.size.toLong() != descriptor.byteLength || sha256(bytes) != descriptor.checksum) {
-            throw IOException("Behavior stats segment checksum mismatch: ${descriptor.id}")
+        if (Files.size(path) != descriptor.byteLength || sha256(path) != descriptor.checksum) {
+            throw IOException("Behavior stats segment checksum mismatch: " + descriptor.id)
         }
         try {
-            val array = JsonParser.parseString(bytes.toString(Charsets.UTF_8)).asJsonArray
-            require(array.size() == descriptor.entryCount) { "segment entry count mismatch" }
-            return array.associate { element ->
-                val obj = element.asJsonObject
-                BehaviorStatsKey(
-                    enumValueOf(obj.get("periodKind").asString),
-                    obj.get("periodId").asString,
-                    enumValueOf<WorldGeoBehaviorType>(obj.get("behaviorType").asString),
-                    obj.get("regionId").asInt,
-                    obj.get("scopeId")?.takeUnless { it.isJsonNull }?.asLong,
-                    obj.get("subSpaceId")?.takeUnless { it.isJsonNull }?.asLong,
-                    UUID.fromString(obj.get("playerUuid").asString),
-                    obj.get("objectId")?.takeUnless { it.isJsonNull }?.asString,
-                    obj.get("targetId")?.takeUnless { it.isJsonNull }?.asString,
-                    obj.get("timelineId").asString
-                ) to obj.get("count").asLong
+            var entryCount = 0
+            Files.newBufferedReader(path, Charsets.UTF_8).use { input ->
+                val reader = JsonReader(input)
+                reader.beginArray()
+                while (reader.hasNext()) {
+                    val obj = JsonParser.parseReader(reader).asJsonObject
+                    val key = BehaviorStatsKey(
+                        enumValueOf(obj.get("periodKind").asString),
+                        obj.get("periodId").asString,
+                        enumValueOf<WorldGeoBehaviorType>(obj.get("behaviorType").asString),
+                        obj.get("regionId").asInt,
+                        obj.get("scopeId")?.takeUnless { it.isJsonNull }?.asLong,
+                        obj.get("subSpaceId")?.takeUnless { it.isJsonNull }?.asLong,
+                        UUID.fromString(obj.get("playerUuid").asString),
+                        obj.get("objectId")?.takeUnless { it.isJsonNull }?.asString,
+                        obj.get("targetId")?.takeUnless { it.isJsonNull }?.asString,
+                        obj.get("timelineId").asString
+                    )
+                    val count = obj.get("count").asLong
+                    require(key.timelineId == descriptor.timelineId)
+                    require(key.periodKind == descriptor.periodKind)
+                    require(key.periodId == descriptor.periodId)
+                    require(key.regionId == descriptor.regionId)
+                    require(count > 0L)
+                    visitor(key, count)
+                    entryCount++
+                }
+                reader.endArray()
             }
+            require(entryCount == descriptor.entryCount) { "segment entry count mismatch" }
         } catch (error: RuntimeException) {
-            throw IOException("Invalid behavior stats segment: ${descriptor.id}", error)
+            throw IOException("Invalid behavior stats segment: " + descriptor.id, error)
         }
+    }
+
+    private fun scheduleDelete(target: Path, descriptor: BehaviorSegment) {
+        val path = target.resolve(descriptor.relativePath)
+        val deferred = synchronized(this) {
+            if ((pinnedSegments[descriptor.id] ?: 0) > 0) {
+                deferredDeletes[descriptor.id] = path
+                true
+            } else {
+                false
+            }
+        }
+        if (!deferred) io { Files.deleteIfExists(path) }
     }
 
     private fun segmentJson(entries: List<Map.Entry<BehaviorStatsKey, Long>>) = JsonArray().also { array ->
@@ -320,6 +561,19 @@ internal object SegmentedBehaviorStatsStore {
 
     private fun sha256(bytes: ByteArray): String =
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
+
+    private fun sha256(path: Path): String {
+        val digest = MessageDigest.getInstance("SHA-256")
+        Files.newInputStream(path).use { input ->
+            val buffer = ByteArray(DEFAULT_BUFFER_SIZE)
+            while (true) {
+                val length = input.read(buffer)
+                if (length < 0) break
+                digest.update(buffer, 0, length)
+            }
+        }
+        return digest.digest().joinToString("") { "%02x".format(it) }
+    }
 
     private fun requireRoot(): Path = root ?: error("Segmented behavior stats session is not active")
 

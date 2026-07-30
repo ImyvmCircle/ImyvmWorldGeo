@@ -9,6 +9,7 @@ import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.BehaviorStatsPageStreamService
 import com.imyvm.iwg.inter.register.event.registerLocationDisplay
 import com.imyvm.iwg.inter.register.event.registerPlayerGeographyPair
 import com.imyvm.iwg.inter.register.event.registerPointSelection
@@ -44,6 +45,7 @@ ImyvmWorldGeo : ModInitializer {
 		LazyTicker.registerTask { WorldGeoPeriodTracker.process() }
 		LazyTicker.registerTask { server ->
 			BehaviorStorageAlertService.notifyOnlineOperators(server)
+			BehaviorStatsPageStreamService.expireIdleHandles()
 			if (refreshGeographicProfiles) {
 				refreshGeographicProfiles = false
 				WorldGeoGeographicProfileSupport.scheduleRefreshAll(RegionDatabase.getRegionList())
