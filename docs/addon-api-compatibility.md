@@ -323,3 +323,19 @@ rejection, and atomic writes matching the Region database persistence model.
 `RegionDataApi.sendRegionSpaceMessage`, `sendScopeSpaceMessage`, and `sendSubSpaceMessage` broadcast a caller-provided Minecraft `Component` to online players whose current resolved WorldGeo location is inside the target Region, GeoScope, or SubSpace. WorldGeo treats the message as neutral transport and does not interpret upper-layer semantics.
 
 In-game validation commands are OP-only under `/imyvmWorldGeo debug`: `spaceSnapshot`, `settingSummaries`, and `sendSpaceMessage` each provide Region, Scope, and SubSpace targets. These commands are the server-side test points for the V3 mechanisms.
+
+## 26.2-1.5.6 additive addon contract
+
+Version 26.2-1.5.6 is additive at the supported `com.imyvm.iwg.inter.api` boundary. Existing `RegionDataApi` and `PlayerInteractionApi` JVM descriptors remain available. Permanent Region, Scope, and SubSpace allocation changes identity reuse behavior without changing existing ID field types or method descriptors.
+
+New period APIs use `NaturalPeriodKey(timelineId, kind, periodId)`. Production and compressed-test timelines are isolated. The former short-period methods remain compatibility views and keep their descriptors. Addons that persist period facts should store the complete key.
+
+Behavior statistics page streams and checkpoints return `CompletableFuture` results fixed to a manifest version. Callers must close streams they abandon, handle structured busy/closed/incomplete/version-conflict results, and must not treat numeric zero as proof that capture was complete. Existing synchronous behavior queries remain linkable.
+
+`PlayerInteractionApi.applyStructuredSpaceMutation` is the recovery-safe SubSpace write boundary. The caller namespace and external key form durable idempotency evidence. Reusing a key for a different expected state returns `CONFLICT`; persistence failure rolls back the live mutation. Existing player mutation methods retain their descriptors and delegate to the same controlled mutation path where their legacy behavior permits.
+
+`RegionDataApi.queryNativeInhabitedTimeBatchAsync` reads at most 4096 unique dimension/chunk keys. Loaded chunks are sampled on the server thread; unloaded chunks are scanned from native persisted chunk storage without forced loading. Each reading reports source, collection time, input version, and completeness. Negative tick values and exact tick-to-millisecond overflow are failures, not normalized values. Player residence statistics are not native `InhabitedTime`.
+
+Use `getRegionGeometryFacts`, `getScopeGeometryFact`, and `getSubSpaceGeometryFact` for stable centroid chunks, per-chunk column coverage ratios, and geometry versions. Region facts are separated by dimension. `NO_COVERAGE` and `CHUNK_LIMIT_EXCEEDED` are explicit states and must not be interpreted as zero coverage data. `queryNativeInhabitedTimeForSpacesAsync` deduplicates overlapping space coverage by dimension and chunk.
+
+No application or infra declaration is promoted to supported addon API by these capabilities. Formal release publication and tags remain separate maintainer actions.

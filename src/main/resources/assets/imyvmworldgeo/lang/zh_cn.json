@@ -548,6 +548,13 @@
   "imyvmworldgeo.structured_mutation.conflict": "此外部键已绑定到其他期望状态。",
   "imyvmworldgeo.structured_mutation.persistence_failed": "无法持久保存空间状态。",
   "imyvmworldgeo.structured_mutation.invalid_namespace": "调用方命名空间无效。",
-  "imyvmworldgeo.structured_mutation.invalid_external_key": "外部键无效。"
+  "imyvmworldgeo.structured_mutation.invalid_external_key": "外部键无效。",
+  "interaction.meta.command.help.debug.behavior_storage": "§6/imyvmWorldGeo debug behavior storage\n  §f显示时间线、存储健康、捕获、队列、分段、缓存和可用范围事实。",
+  "interaction.meta.debug.behavior.storage.header": "&6行为存储诊断&r 操作员=&e{0}",
+  "interaction.meta.debug.behavior.storage.refresh": "[刷新]",
+  "interaction.meta.debug.behavior.storage.refresh.hover": "执行 {0}",
+  "interaction.meta.debug.behavior.storage.timeline": "&7时间线：&f{0}&r\n&7最早可用周期：&f{1}",
+  "interaction.meta.debug.behavior.storage.health": "&7健康=&e{0}&7 捕获=&e{1}&7 待写条目=&e{2}&7 待写字节=&e{3}&r\n&7阈值：&f{4}",
+  "interaction.meta.debug.behavior.storage.io": "&7丢弃区间：&f{0}&r\n&7IO 队列=&e{1}&7 活动=&e{2}&7 清单=&e{3}&7 分段=&e{4}&r\n&7缓存上限：&f{5}"
 
 }

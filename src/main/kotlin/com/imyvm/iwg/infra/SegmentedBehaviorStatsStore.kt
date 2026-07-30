@@ -16,7 +16,9 @@ import java.util.Base64
 import java.util.UUID
 import java.util.TreeMap
 import java.util.concurrent.CompletableFuture
-import java.util.concurrent.Executors
+import java.util.concurrent.LinkedBlockingQueue
+import java.util.concurrent.ThreadPoolExecutor
+import java.util.concurrent.TimeUnit
 
 internal data class BehaviorSegment(
     val id: Long,
@@ -65,9 +67,14 @@ internal object SegmentedBehaviorStatsStore {
     private const val FORMAT_VERSION = 1
     private const val MANIFEST_FILE = "manifest.json"
     private const val ROOT_DIRECTORY = "iwg_behavior_stats"
-    private val executor = Executors.newSingleThreadExecutor { runnable ->
-        Thread(runnable, "worldgeo-stats-io").apply { isDaemon = true }
-    }
+    private val executor = ThreadPoolExecutor(
+        1,
+        1,
+        0L,
+        TimeUnit.MILLISECONDS,
+        LinkedBlockingQueue(),
+        { runnable -> Thread(runnable, "worldgeo-stats-io").apply { isDaemon = true } }
+    )
     private var root: Path? = null
     @Volatile
     private var manifest = BehaviorManifest(0L, 1L, 0L, emptyList())
@@ -111,6 +118,14 @@ internal object SegmentedBehaviorStatsStore {
     }
 
     fun publishedSequence(): Long = manifest.publishedSequence
+
+    internal fun segmentCount(): Int = manifest.segments.size
+
+    internal fun manifestVersion(): Long = manifest.generation
+
+    internal fun queuedIoOperationCount(): Int = executor.queue.size
+
+    internal fun activeIoOperationCount(): Int = executor.activeCount
 
     fun awaitIdle() {
         io { Unit }

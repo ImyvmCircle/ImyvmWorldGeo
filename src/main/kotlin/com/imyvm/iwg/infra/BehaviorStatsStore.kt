@@ -419,6 +419,8 @@ object BehaviorStatsStore {
 
     internal fun pendingEntryCount(): Int = counts.size
 
+    internal fun warningActive(): Boolean = warningActive
+
     internal fun readStats(path: Path): Map<BehaviorStatsKey, Long> {
         if (!Files.exists(path)) return emptyMap()
         try {

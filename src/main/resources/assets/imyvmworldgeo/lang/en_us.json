@@ -549,6 +549,13 @@
   "imyvmworldgeo.structured_mutation.conflict": "The external key is already bound to another expected state.",
   "imyvmworldgeo.structured_mutation.persistence_failed": "The space state could not be persisted.",
   "imyvmworldgeo.structured_mutation.invalid_namespace": "The caller namespace is invalid.",
-  "imyvmworldgeo.structured_mutation.invalid_external_key": "The external key is invalid."
+  "imyvmworldgeo.structured_mutation.invalid_external_key": "The external key is invalid.",
+  "interaction.meta.command.help.debug.behavior_storage": "§6/imyvmWorldGeo debug behavior storage\n  §fShow timeline, storage health, capture, queue, segment, cache, and availability facts.",
+  "interaction.meta.debug.behavior.storage.header": "&6Behavior storage diagnostics&r operator=&e{0}",
+  "interaction.meta.debug.behavior.storage.refresh": "[refresh]",
+  "interaction.meta.debug.behavior.storage.refresh.hover": "Run {0}",
+  "interaction.meta.debug.behavior.storage.timeline": "&7Timeline: &f{0}&r\n&7Earliest available periods: &f{1}",
+  "interaction.meta.debug.behavior.storage.health": "&7Health=&e{0}&7 capture=&e{1}&7 pendingEntries=&e{2}&7 pendingBytes=&e{3}&r\n&7Thresholds: &f{4}",
+  "interaction.meta.debug.behavior.storage.io": "&7Dropped interval: &f{0}&r\n&7IO queue=&e{1}&7 active=&e{2}&7 manifest=&e{3}&7 segments=&e{4}&r\n&7Cache limits: &f{5}"
 
 }
