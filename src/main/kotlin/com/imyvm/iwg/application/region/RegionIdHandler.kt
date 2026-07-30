@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.region
 
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.SpaceIdentityAllocationStore
 
 
 /**
@@ -18,13 +19,7 @@ class RegionIdCapacityExceededException : IllegalStateException()
 
 fun generateNewRegionId(mark: Int): Int {
     require(mark in 0..9) { "region mark must be between 0 and 9" }
-    val existingIds = RegionDatabase.getRegionList().map { it.numberID }.toSet()
-    return allocateRegionId(
-        mark = mark,
-        hoursFromEpoch = getHoursFromEpoch(),
-        existingIds = existingIds,
-        initialDiscriminator = kotlin.random.Random.nextInt(DISCRIMINATOR_COUNT)
-    )
+    return SpaceIdentityAllocationStore.reserveRegion(mark).regionId
 }
 
 internal fun allocateRegionId(
@@ -45,9 +40,10 @@ internal fun allocateRegionId(
 }
 
 fun parseFoundingTimeFromRegionId(regionId: Int): Long {
-    val hoursFromEpoch = (regionId ushr 11) and 0x1FFFFF
-    return EPOCH_MILLIS + (hoursFromEpoch.toLong() * 3600000L)
+    return EPOCH_MILLIS + (parseRegionCreationHours(regionId).toLong() * 3600000L)
 }
+
+internal fun parseRegionCreationHours(regionId: Int): Int = (regionId ushr 11) and 0x1FFFFF
 
 fun parseMarkFromRegionId(regionId: Int): Int {
     return (regionId ushr 7) and 0xF
@@ -58,7 +54,7 @@ fun filterRegionsByMark(mark: Int): List<Region> {
     return RegionDatabase.getRegionList().filter { parseMarkFromRegionId(it.numberID) == mark }
 }
 
-private fun getHoursFromEpoch(): Int {
+internal fun currentRegionCreationHours(): Int {
     val millisFromEpoch = System.currentTimeMillis() - EPOCH_MILLIS
     return (millisFromEpoch / 3600000L).toInt()
 }

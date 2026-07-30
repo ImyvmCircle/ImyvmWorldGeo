@@ -22,6 +22,7 @@ import com.imyvm.iwg.util.geo.subSpaceGeometrySizeLimits
 import com.imyvm.iwg.util.text.TextParser
 import com.imyvm.iwg.util.text.Translator
 import net.minecraft.server.level.ServerPlayer
+import java.io.IOException
 
 fun onSubSpaceCreationFromSelection(
     player: ServerPlayer,
@@ -108,22 +109,26 @@ fun onSubSpaceCreation(
     keyedTags: Map<String, String> = emptyMap()
 ): SubSpace? {
     RegionDatabase.requireCanonicalScope(region, parentScope)
-    val subSpace = SubSpace(
-        RegionDatabase.nextSubSpaceId(),
-        name,
-        parentScope.requireAssignedScopeId(),
-        parentScope.worldId,
-        shape,
-        entryMessage,
-        stringTags = stringTags,
-        keyedTags = keyedTags
-    )
     return try {
+        val subSpace = SubSpace(
+            RegionDatabase.nextSubSpaceId(),
+            name,
+            parentScope.requireAssignedScopeId(),
+            parentScope.worldId,
+            shape,
+            entryMessage,
+            stringTags = stringTags,
+            keyedTags = keyedTags
+        )
         region.addSubSpaceFromOwner(subSpace)
         if (!saveRegionData(player)) {
             region.removeSubSpaceFromOwner(subSpace)
             null
         } else subSpace
+    } catch (error: IOException) {
+        ImyvmWorldGeo.logger.error("Failed to reserve subspace identity: ${error.message}", error)
+        player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
+        null
     } catch (error: IllegalArgumentException) {
         player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.invalid", error.message ?: "invalid")!!)
         null

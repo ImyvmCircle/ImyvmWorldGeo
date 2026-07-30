@@ -5,12 +5,12 @@ import com.imyvm.iwg.application.interaction.helper.*
 import com.imyvm.iwg.application.selection.display.clearSelectionDisplay
 import com.imyvm.iwg.application.selection.getEffectiveShapeType
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.SpaceIdentityAllocationStore
 import com.imyvm.iwg.domain.CreationError
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.application.region.RegionFactory
 import com.imyvm.iwg.application.region.Result
 import com.imyvm.iwg.util.text.Translator
-import com.imyvm.iwg.application.region.generateNewRegionId
 import com.imyvm.iwg.application.region.RegionIdCapacityExceededException
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
@@ -19,6 +19,7 @@ import com.imyvm.iwg.domain.component.ScopeIdCapacityExceededException
 import com.imyvm.iwg.domain.component.SelectionState
 import net.minecraft.server.level.ServerPlayer
 import net.minecraft.core.BlockPos
+import java.io.IOException
 
 fun onRegionCreation(
     player: ServerPlayer,
@@ -54,6 +55,13 @@ fun onTryingRegionCreationWithReturn(
     } catch (_: RegionIdCapacityExceededException) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
         return null
+    } catch (_: ScopeIdCapacityExceededException) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
+        return null
+    } catch (error: IOException) {
+        ImyvmWorldGeo.logger.error("Failed to reserve region identity: ${error.message}", error)
+        player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
+        return null
     }
     return when (creationResult) {
         is Result.Ok -> {
@@ -79,6 +87,13 @@ fun onTryingRegionCreationWithShape(
         tryRegionCreationFromShape(player, name, idMark, shape)
     } catch (_: RegionIdCapacityExceededException) {
         player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
+        return null
+    } catch (_: ScopeIdCapacityExceededException) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.create.error.id_capacity")!!)
+        return null
+    } catch (error: IOException) {
+        ImyvmWorldGeo.logger.error("Failed to reserve region identity: ${error.message}", error)
+        player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
         return null
     }
     return when (creationResult) {
@@ -110,6 +125,10 @@ fun onTryingScopeCreationWithShape(
                 newScope.assignScopeId(RegionDatabase.nextScopeIdForNewScope(region))
             } catch (_: ScopeIdCapacityExceededException) {
                 player.sendSystemMessage(Translator.tr("interaction.meta.scope.create.error.id_capacity")!!)
+                return null
+            } catch (error: IOException) {
+                ImyvmWorldGeo.logger.error("Failed to reserve scope identity: ${error.message}", error)
+                player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
                 return null
             }
             region.addScopeFromOwner(newScope)
@@ -210,10 +229,11 @@ private fun tryRegionCreation(
     idMark: Int,
     selectedPositions: MutableList<BlockPos>
 ): Result<Region, CreationError> {
-    val newID = generateNewRegionId(idMark)
+    val identity = SpaceIdentityAllocationStore.reserveRegion(idMark)
     val regionResult = RegionFactory.createRegion(
         name = regionName,
-        numberID = newID,
+        numberID = identity.regionId,
+        mainScopeId = identity.mainScopeId,
         playerExecutor = player,
         selectedPositions = selectedPositions,
         shapeType = shapeType
@@ -231,8 +251,8 @@ private fun tryRegionCreationFromShape(
     idMark: Int,
     shape: GeoShape
 ): Result<Region, CreationError> {
-    val newID = generateNewRegionId(idMark)
-    return RegionFactory.createRegionFromShape(regionName, newID, player, shape)
+    val identity = SpaceIdentityAllocationStore.reserveRegion(idMark)
+    return RegionFactory.createRegionFromShape(regionName, identity.regionId, identity.mainScopeId, player, shape)
 }
 
 private fun tryScopeCreation(
@@ -281,6 +301,10 @@ private fun handleScopeCreateSuccess(
             newScope.assignScopeId(RegionDatabase.nextScopeIdForNewScope(region))
         } catch (_: ScopeIdCapacityExceededException) {
             player.sendSystemMessage(Translator.tr("interaction.meta.scope.create.error.id_capacity")!!)
+            return false
+        } catch (error: IOException) {
+            ImyvmWorldGeo.logger.error("Failed to reserve scope identity: ${error.message}", error)
+            player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
             return false
         }
     }

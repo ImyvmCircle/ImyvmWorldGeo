@@ -52,6 +52,21 @@ object RegionFactory {
         return Result.Ok(newRegion)
     }
 
+    internal fun createRegion(
+        name: String,
+        numberID: Int,
+        mainScopeId: AssignedScopeId,
+        playerExecutor: ServerPlayer,
+        selectedPositions: MutableList<BlockPos>,
+        shapeType: GeoShapeType
+    ): Result<Region, CreationError> {
+        val mainScopeResult = createScopeForPlayer("main_scope", playerExecutor, selectedPositions, shapeType)
+        if (mainScopeResult is Result.Err) return mainScopeResult
+        val mainScope = (mainScopeResult as Result.Ok).value
+        mainScope.assignScopeId(mainScopeId)
+        return Result.Ok(Region(name, numberID, mutableListOf(mainScope)))
+    }
+
     fun createScopeForPlayer(
         scopeName: String,
         playerExecutor: ServerPlayer,
@@ -105,6 +120,21 @@ object RegionFactory {
         )
         val newRegion = Region(name, numberID, mutableListOf(mainScope))
         return Result.Ok(newRegion)
+    }
+
+    internal fun createRegionFromShape(
+        name: String,
+        numberID: Int,
+        mainScopeId: AssignedScopeId,
+        player: ServerPlayer,
+        shape: GeoShape
+    ): Result<Region, CreationError> {
+        val worldId = player.level().dimension().identifier()
+        validateGeoShapeSize(shape)?.let { return Result.Err(it) }
+        validateGeoShapePlacement(shape, worldId, null)?.let { return Result.Err(it) }
+        val mainScope = GeoScope("main_scope", worldId, getTeleportPoint(player, shape), false, shape)
+        mainScope.assignScopeId(mainScopeId)
+        return Result.Ok(Region(name, numberID, mutableListOf(mainScope)))
     }
 
     fun createScopeFromShape(

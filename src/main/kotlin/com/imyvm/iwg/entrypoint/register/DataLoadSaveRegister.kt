@@ -8,6 +8,7 @@ import com.imyvm.iwg.application.region.permission.clearFlySessionState
 import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.PeriodProcessingStore
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.SpaceIdentityAllocationStore
 import com.imyvm.iwg.infra.TestPeriodModeStore
 import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents
 import net.minecraft.world.level.storage.LevelResource
@@ -41,6 +42,7 @@ internal fun openRegionSession(worldRoot: Path) {
         WorldGeoGeographicProfileSupport.invalidateAll("session_opened")
         RegionDatabase.bindSession(worldRoot)
         try {
+            SpaceIdentityAllocationStore.bindSession(worldRoot)
             PeriodProcessingStore.bindSession(worldRoot)
             TestPeriodModeStore.bindSession(worldRoot)
             BehaviorStatsStore.bindSession(worldRoot)
@@ -48,6 +50,7 @@ internal fun openRegionSession(worldRoot: Path) {
             PeriodProcessingStore.unbindSession()
             TestPeriodModeStore.unbindSession()
             BehaviorStatsStore.unbindSession()
+            SpaceIdentityAllocationStore.unbindSession()
             RegionDatabase.unbindSession()
             throw error
         }
@@ -57,6 +60,7 @@ internal fun openRegionSession(worldRoot: Path) {
 internal fun closeRegionSession() {
     EffectOverlayService.withScopeLifecycle {
         WorldGeoGeographicProfileSupport.invalidateAll("session_closed")
+        SpaceIdentityAllocationStore.unbindSession()
         RegionDatabase.unbindSession()
         PeriodProcessingStore.unbindSession()
         TestPeriodModeStore.unbindSession()

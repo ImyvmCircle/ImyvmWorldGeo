@@ -462,11 +462,7 @@ object RegionDatabase {
     }
 
     fun nextSubSpaceId(): Long {
-        var max = 0L
-        regions.forEach { region ->
-            region.subSpaces.forEach { subSpace -> if (subSpace.subSpaceId > max) max = subSpace.subSpaceId }
-        }
-        return Math.addExact(max, 1L)
+        return SpaceIdentityAllocationStore.reserveSubSpaceId()
     }
 
     fun getScopeById(scopeId: ScopeId): Pair<Region, GeoScope>? =
@@ -481,12 +477,7 @@ object RegionDatabase {
     }
 
     fun nextScopeIdForNewScope(region: Region): AssignedScopeId {
-        return nextScopeIdForNewScope(
-            region,
-            regions,
-            kotlin.random.Random.nextInt(64),
-            currentScopeCreationHours()
-        )
+        return SpaceIdentityAllocationStore.reserveScope(region)
     }
 
     internal fun nextScopeIdForNewScope(

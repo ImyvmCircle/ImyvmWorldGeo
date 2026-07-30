@@ -94,6 +94,9 @@ private fun scopeCreationHoursPart(raw: Long): Long = (scopeHighPart(raw) ushr 1
 private fun isCompatibilityScopeIdRaw(raw: Long): Boolean =
     raw and COMPATIBILITY_BIT != 0L || scopeCreationHoursPart(raw) == 0L
 
+internal fun parseScopeCreationHoursOrNull(raw: Long): Long? =
+    if (isCompatibilityScopeIdRaw(raw)) null else scopeCreationHoursPart(raw)
+
 fun parseScopeCreationTimeMillisOrNull(raw: Long): Long? {
     if (isCompatibilityScopeIdRaw(raw)) return null
     val hours = scopeCreationHoursPart(raw)
