@@ -45,6 +45,5 @@ replay_*.log
 
 # agent
 
-docs/plan
+docs/
 logs/
-docs/test-checklists/
