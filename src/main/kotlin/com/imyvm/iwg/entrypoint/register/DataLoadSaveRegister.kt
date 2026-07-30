@@ -7,6 +7,7 @@ import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.application.region.permission.clearFlySessionState
 import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.PeriodProcessingStore
+import com.imyvm.iwg.infra.PeriodTimelineStore
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.SpaceIdentityAllocationStore
 import com.imyvm.iwg.infra.TestPeriodModeStore
@@ -45,10 +46,12 @@ internal fun openRegionSession(worldRoot: Path) {
             SpaceIdentityAllocationStore.bindSession(worldRoot)
             PeriodProcessingStore.bindSession(worldRoot)
             TestPeriodModeStore.bindSession(worldRoot)
+            PeriodTimelineStore.bindSession(worldRoot)
             BehaviorStatsStore.bindSession(worldRoot)
         } catch (error: Throwable) {
             PeriodProcessingStore.unbindSession()
             TestPeriodModeStore.unbindSession()
+            PeriodTimelineStore.unbindSession()
             BehaviorStatsStore.unbindSession()
             SpaceIdentityAllocationStore.unbindSession()
             RegionDatabase.unbindSession()
@@ -64,6 +67,7 @@ internal fun closeRegionSession() {
         RegionDatabase.unbindSession()
         PeriodProcessingStore.unbindSession()
         TestPeriodModeStore.unbindSession()
+        PeriodTimelineStore.unbindSession()
         BehaviorStatsStore.unbindSession()
         EffectOverlayService.clearAll()
     }

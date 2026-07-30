@@ -7,6 +7,7 @@ import com.imyvm.iwg.application.region.PlayerRegionChecker
 import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
+import com.imyvm.iwg.application.time.WorldGeoPeriodTimelineService
 import com.imyvm.iwg.application.time.WorldGeoTimeService
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.application.interaction.getDefaultValueForRule
@@ -563,6 +564,24 @@ object RegionDataApi {
 
     fun registerNaturalPeriodTransitionCallback(callback: Consumer<NaturalPeriodTransition>) {
         WorldGeoPeriodTracker.registerCallback { callback.accept(it) }
+    }
+
+    fun getCurrentNaturalPeriodKeys(): Map<NaturalPeriodKind, NaturalPeriodKey> =
+        WorldGeoPeriodTracker.currentPeriodKeys()
+
+    fun getNaturalPeriodBounds(key: NaturalPeriodKey): NaturalPeriodBounds? =
+        WorldGeoPeriodTimelineService.periodBounds(key)
+
+    fun getAvailableNaturalPeriodTimelines(): List<NaturalPeriodTimeline> =
+        WorldGeoPeriodTimelineService.availableTimelines()
+
+    fun getAvailableNaturalPeriodRange(
+        timelineId: String,
+        kind: NaturalPeriodKind
+    ): NaturalPeriodRange? = WorldGeoPeriodTimelineService.availablePeriodRange(timelineId, kind)
+
+    fun registerCompleteNaturalPeriodTransitionCallback(callback: Consumer<CompleteNaturalPeriodTransition>) {
+        WorldGeoPeriodTracker.registerCompleteCallback { callback.accept(it) }
     }
 
     fun registerBehaviorEventCallback(callback: Consumer<WorldGeoBehaviorEvent>) {

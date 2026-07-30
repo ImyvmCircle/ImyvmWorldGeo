@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.time
 
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.infra.TestPeriodModeStore
+import com.imyvm.iwg.infra.PeriodTimelineStore
 import java.nio.file.Files
 import java.nio.file.Path
 import java.time.Clock
@@ -14,12 +15,14 @@ import kotlin.test.assertEquals
 class TestPeriodModeServiceTest {
     @AfterTest
     fun tearDown() {
+        PeriodTimelineStore.unbindSession()
         TestPeriodModeStore.unbindSession()
     }
 
     @Test
     fun `active mode replaces every natural period kind with test periods`() = withTempDirectory { directory ->
         TestPeriodModeStore.bindSession(directory)
+        PeriodTimelineStore.bindSession(directory, nowMillis = 0L)
         TestPeriodModeService.start(clock = clock(0L))
 
         val ids = WorldGeoTimeService.currentNaturalPeriodIds(clock(840_000L))
@@ -33,6 +36,7 @@ class TestPeriodModeServiceTest {
     @Test
     fun `default test hour lasts five seconds`() = withTempDirectory { directory ->
         TestPeriodModeStore.bindSession(directory)
+        PeriodTimelineStore.bindSession(directory, nowMillis = 0L)
         TestPeriodModeService.start(clock = clock(0L))
 
         assertEquals("test:hour:0", WorldGeoTimeService.currentNaturalPeriodIds(clock(4_999L))[NaturalPeriodKind.HOUR])
@@ -42,6 +46,7 @@ class TestPeriodModeServiceTest {
     @Test
     fun `status reports configured mode bounds and remaining time`() = withTempDirectory { directory ->
         TestPeriodModeStore.bindSession(directory)
+        PeriodTimelineStore.bindSession(directory, nowMillis = 0L)
         TestPeriodModeService.start(weekCount = 5, clock = clock(1_000L))
 
         val status = TestPeriodModeService.status(clock(841_000L))

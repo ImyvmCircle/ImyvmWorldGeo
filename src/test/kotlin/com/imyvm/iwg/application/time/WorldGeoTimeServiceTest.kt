@@ -38,6 +38,21 @@ class WorldGeoTimeServiceTest {
     }
 
     @Test
+    fun `missed ISO week transitions cross week years continuously`() {
+        val transitions = WorldGeoTimeService.missedPeriodTransitions(
+            NaturalPeriodKind.WEEK,
+            "2026-W53",
+            "2027-W02",
+            0L
+        )
+
+        assertEquals(
+            listOf("2026-W53->2027-W01", "2027-W01->2027-W02"),
+            transitions.map { "${it.previousId}->${it.currentId}" }
+        )
+    }
+
+    @Test
     fun `moon phase follows minecraft day cycle`() {
         assertEquals(0, WorldGeoTimeService.moonPhase(0L))
         assertEquals(1, WorldGeoTimeService.moonPhase(24_000L))

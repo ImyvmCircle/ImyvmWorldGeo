@@ -28,6 +28,7 @@ class BehaviorStatsStoreTest {
     fun tearDown() {
         WorldGeoBehaviorEventBus.clearForTest()
         WorldGeoPeriodTracker.resetForTest()
+        PeriodTimelineStore.unbindSession()
         TestPeriodModeStore.unbindSession()
         BehaviorStatsStore.clearForTest()
         CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(defaultMaxEntryCount)
@@ -120,6 +121,7 @@ class BehaviorStatsStoreTest {
     @Test
     fun `records behavior stats against active test mode periods`() = withTempDirectory { directory ->
         TestPeriodModeStore.bindSession(directory)
+        PeriodTimelineStore.bindSession(directory, nowMillis = 0L)
         BehaviorStatsStore.bindSession(directory)
         val clock = java.time.Clock.fixed(java.time.Instant.ofEpochMilli(event(WorldGeoBehaviorType.DEBUG_TEST, "id").unixMillis), java.time.ZoneOffset.UTC)
 

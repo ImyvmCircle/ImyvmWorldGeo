@@ -62,6 +62,9 @@ object WorldGeoTimeService {
     fun currentNaturalPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
         TestPeriodModeService.currentPeriodIds(clock) ?: naturalPeriodIds(clock)
 
+    fun currentNaturalPeriodKeys(clock: Clock = Clock.systemUTC()) =
+        WorldGeoPeriodTimelineService.currentPeriodKeys(clock)
+
     internal fun naturalPeriodIds(clock: Clock = Clock.systemUTC()): Map<NaturalPeriodKind, String> =
         naturalPeriodIds(realSnapshot(clock.instant(), DEFAULT_ZONE))
 

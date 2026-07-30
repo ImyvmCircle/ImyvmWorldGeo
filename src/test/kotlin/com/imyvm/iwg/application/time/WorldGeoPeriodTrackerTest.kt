@@ -2,6 +2,7 @@ package com.imyvm.iwg.application.time
 
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.infra.PeriodProcessingStore
+import com.imyvm.iwg.infra.PeriodTimelineStore
 import com.imyvm.iwg.infra.TestPeriodModeStore
 import java.nio.file.Files
 import java.nio.file.Path
@@ -17,6 +18,7 @@ class WorldGeoPeriodTrackerTest {
     fun tearDown() {
         WorldGeoPeriodTracker.resetForTest()
         PeriodProcessingStore.unbindSession()
+        PeriodTimelineStore.unbindSession()
         TestPeriodModeStore.unbindSession()
     }
 
@@ -96,23 +98,26 @@ class WorldGeoPeriodTrackerTest {
     @Test
     fun `test mode emits test period transitions without changing production store`() = withTempDirectory { directory ->
         PeriodProcessingStore.bindSession(directory)
-        TestPeriodModeStore.bindSession(directory)
         TestPeriodModeService.start(clock = clock("2026-07-20T15:59:00Z"))
         val transitions = mutableListOf<String>()
+        val completeTransitions = mutableListOf<String>()
         WorldGeoPeriodTracker.registerCallback { transitions.add("${it.kind}:${it.previousId}->${it.currentId}") }
+        WorldGeoPeriodTracker.registerCompleteCallback {
+            completeTransitions.add("${it.current.timelineId}:${it.previous.periodId}->${it.current.periodId}")
+        }
 
         WorldGeoPeriodTracker.process(clock("2026-07-20T15:59:00Z"))
         WorldGeoPeriodTracker.process(Clock.fixed(Instant.parse("2026-07-20T15:59:05Z"), ZoneOffset.UTC))
         WorldGeoPeriodTracker.awaitCallbacksForTest()
 
         assertEquals(listOf("HOUR:test:hour:0->test:hour:1"), transitions)
+        assertEquals(listOf("test-1:test:hour:0->test:hour:1"), completeTransitions)
         assertEquals(emptyMap(), PeriodProcessingStore.getProcessedPeriodIds())
     }
 
     @Test
     fun `expired test mode resumes natural periods without production backfill`() = withTempDirectory { directory ->
         PeriodProcessingStore.bindSession(directory)
-        TestPeriodModeStore.bindSession(directory)
         TestPeriodModeService.start(clock = clock("2026-07-20T15:59:00Z"))
         val transitions = mutableListOf<NaturalPeriodKind>()
         WorldGeoPeriodTracker.registerCallback { transitions.add(it.kind) }
@@ -140,6 +145,8 @@ class WorldGeoPeriodTrackerTest {
     private fun withTempDirectory(block: (Path) -> Unit) {
         val directory = Files.createTempDirectory("iwg-period-tracker")
         try {
+            TestPeriodModeStore.bindSession(directory)
+            PeriodTimelineStore.bindSession(directory)
             block(directory)
         } finally {
             directory.toFile().deleteRecursively()

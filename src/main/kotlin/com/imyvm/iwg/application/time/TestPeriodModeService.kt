@@ -4,6 +4,7 @@ import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.NaturalPeriodTransition
 import com.imyvm.iwg.infra.TestPeriodModeState
 import com.imyvm.iwg.infra.TestPeriodModeStore
+import com.imyvm.iwg.infra.PeriodTimelineStore
 import com.imyvm.iwg.infra.config.TestPeriodConfig
 import java.time.Clock
 import java.time.Instant
@@ -33,12 +34,23 @@ object TestPeriodModeService {
             weekLengthMillis = TestPeriodConfig.TEST_WEEK_LENGTH_SECONDS.value * 1000L
         )
         val ids = periodIds(state, clock.millis())
-        TestPeriodModeStore.replaceState(state, ids)
+        PeriodTimelineStore.startTestTimeline(state)
+        try {
+            TestPeriodModeStore.replaceState(state, ids)
+        } catch (error: Throwable) {
+            PeriodTimelineStore.closeActiveTestTimeline(state.startedAtMillis)
+            throw error
+        }
         return status(clock)
     }
 
     fun stop() {
+        stop(Clock.systemUTC())
+    }
+
+    internal fun stop(clock: Clock) {
         TestPeriodModeStore.clear()
+        PeriodTimelineStore.closeActiveTestTimeline(clock.millis())
     }
 
     fun activeState(clock: Clock = Clock.systemUTC()): TestPeriodModeState? {
