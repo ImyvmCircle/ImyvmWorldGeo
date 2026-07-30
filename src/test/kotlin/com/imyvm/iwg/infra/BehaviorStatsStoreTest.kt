@@ -23,6 +23,9 @@ class BehaviorStatsStoreTest {
     private val targetPlayerUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000002")
     private val otherTargetUuid: UUID = UUID.fromString("00000000-0000-0000-0000-000000000003")
     private val defaultMaxEntryCount: Int = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
+    private val defaultWarningEntryCount = CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.value
+    private val defaultMaxEstimatedBytes = CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.value
+    private val defaultWarningEstimatedBytes = CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.value
 
     @AfterTest
     fun tearDown() {
@@ -32,6 +35,9 @@ class BehaviorStatsStoreTest {
         TestPeriodModeStore.unbindSession()
         BehaviorStatsStore.clearForTest()
         CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(defaultMaxEntryCount)
+        CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.setValue(defaultWarningEntryCount)
+        CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.setValue(defaultMaxEstimatedBytes)
+        CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.setValue(defaultWarningEstimatedBytes)
     }
 
     @Test
@@ -253,33 +259,6 @@ class BehaviorStatsStoreTest {
 
         assertFailsWith<IllegalArgumentException> { BehaviorStatsStore.writeStats(path, mapOf(key to 0L)) }
         assertEquals(original, Files.readString(path))
-    }
-
-    @Test
-    fun `evicts oldest hour period before dropping new stats keys`() = withTempDirectory { directory ->
-        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(6)
-        BehaviorStatsStore.bindSession(directory)
-
-        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_563_200_000L))
-        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_566_800_000L))
-        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "debug", 1_784_570_400_000L))
-
-        assertEquals(0, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7)).size)
-        assertEquals(1L, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T01", regionId = 7)).single().count)
-        assertEquals(1L, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T02", regionId = 7)).single().count)
-        assertEquals(3L, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.DAY, "2026-07-21", regionId = 7)).single().count)
-    }
-
-    @Test
-    fun `drops new current-period keys without throwing when cap is exhausted`() = withTempDirectory { directory ->
-        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(4)
-        BehaviorStatsStore.bindSession(directory)
-
-        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "first"))
-        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "second"))
-
-        assertEquals(1, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7)).size)
-        assertEquals(0, BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, objectId = "second")).size)
     }
 
     @Test

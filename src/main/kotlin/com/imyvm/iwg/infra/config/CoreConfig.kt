@@ -26,7 +26,34 @@ object CoreConfig {
     val BEHAVIOR_STATS_MAX_ENTRY_COUNT = Option(
         "core.behavior_stats.max_entry_count",
         1_000_000,
-        "the maximum number of behavior stat entries retained before old periods are evicted."
+        "the hard limit for pending behavior stat entries before capture is suspended."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
+    val BEHAVIOR_STATS_WARNING_ENTRY_COUNT = Option(
+        "core.behavior_stats.warning_entry_count",
+        750_000,
+        "the pending behavior stat entry count that triggers a storage warning."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
+    val BEHAVIOR_STATS_MAX_ESTIMATED_BYTES = Option(
+        "core.behavior_stats.max_estimated_bytes",
+        134_217_728,
+        "the hard estimated byte limit for pending behavior stats before capture is suspended."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
+    val BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES = Option(
+        "core.behavior_stats.warning_estimated_bytes",
+        100_663_296,
+        "the pending behavior stat estimated bytes that trigger a storage warning."
     ) { obj: Config, path: String? ->
         positiveInt(path, obj.getInt(path))
     }

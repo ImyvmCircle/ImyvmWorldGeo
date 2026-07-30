@@ -1,6 +1,7 @@
 package com.imyvm.iwg.entrypoint.register
 
 import com.imyvm.iwg.application.event.PlayerRegionEntryExitTracker
+import com.imyvm.iwg.application.event.BehaviorStorageAlertService
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
@@ -24,16 +25,22 @@ fun registerDataLoadSave(){
         saveForShutdown("region database") { RegionDatabase.saveForShutdown() }
         saveForShutdown("period processing store") { PeriodProcessingStore.save() }
         saveForShutdown("test period processing store") { TestPeriodModeStore.save() }
-        saveForShutdown("behavior stats store") { BehaviorStatsStore.save() }
+        saveForShutdown(
+            "behavior stats store",
+            { BehaviorStatsStore.markSessionUnclean() }
+        ) { BehaviorStatsStore.save() }
     }
     ServerLifecycleEvents.SERVER_STOPPED.register { _ ->
         closeRegionSession()
     }
 }
 
-private fun saveForShutdown(label: String, save: () -> Unit) {
+private fun saveForShutdown(label: String, onFailure: () -> Unit = {}, save: () -> Unit) {
     runCatching(save)
-        .onFailure { ImyvmWorldGeo.logger.error("Failed to save WorldGeo $label: ${it.message}", it) }
+        .onFailure {
+            onFailure()
+            ImyvmWorldGeo.logger.error("Failed to save WorldGeo $label: ${it.message}", it)
+        }
 }
 
 internal fun openRegionSession(worldRoot: Path) {
@@ -48,11 +55,12 @@ internal fun openRegionSession(worldRoot: Path) {
             TestPeriodModeStore.bindSession(worldRoot)
             PeriodTimelineStore.bindSession(worldRoot)
             BehaviorStatsStore.bindSession(worldRoot)
+            BehaviorStorageAlertService.resetForSession()
         } catch (error: Throwable) {
-            PeriodProcessingStore.unbindSession()
-            TestPeriodModeStore.unbindSession()
-            PeriodTimelineStore.unbindSession()
             BehaviorStatsStore.unbindSession()
+            PeriodTimelineStore.unbindSession()
+            TestPeriodModeStore.unbindSession()
+            PeriodProcessingStore.unbindSession()
             SpaceIdentityAllocationStore.unbindSession()
             RegionDatabase.unbindSession()
             throw error
@@ -63,12 +71,12 @@ internal fun openRegionSession(worldRoot: Path) {
 internal fun closeRegionSession() {
     EffectOverlayService.withScopeLifecycle {
         WorldGeoGeographicProfileSupport.invalidateAll("session_closed")
+        BehaviorStatsStore.unbindSession()
+        PeriodTimelineStore.unbindSession()
+        TestPeriodModeStore.unbindSession()
+        PeriodProcessingStore.unbindSession()
         SpaceIdentityAllocationStore.unbindSession()
         RegionDatabase.unbindSession()
-        PeriodProcessingStore.unbindSession()
-        TestPeriodModeStore.unbindSession()
-        PeriodTimelineStore.unbindSession()
-        BehaviorStatsStore.unbindSession()
         EffectOverlayService.clearAll()
     }
     clearFlySessionState()

@@ -6,6 +6,7 @@ import com.google.gson.JsonParser
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.time.TestPeriodModeService
 import com.imyvm.iwg.application.time.WorldGeoTimeService
+import com.imyvm.iwg.application.time.WorldGeoPeriodTimelineService
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
@@ -18,6 +19,10 @@ import com.imyvm.iwg.domain.WorldGeoPlayerOnlineTimeStats
 import com.imyvm.iwg.domain.WorldGeoResidenceStats
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.domain.NaturalPeriodKey
+import com.imyvm.iwg.domain.WorldGeoBehaviorCaptureState
+import com.imyvm.iwg.domain.WorldGeoPeriodCompleteness
+import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.infra.config.CoreConfig
 import java.io.IOException
 import java.nio.file.Files
@@ -39,27 +44,52 @@ object BehaviorStatsStore {
     private var nextWriteSequence = 1L
     private var dirtySequenceStart: Long? = null
     private var dirtySequenceEnd = 0L
+    private var estimatedPendingBytes = 0L
+    private var captureState = WorldGeoBehaviorCaptureState.ACTIVE
+    private var warningActive = false
+    private var cleanCloseAllowed = true
 
-    internal fun bindSession(worldRoot: Path) {
+    internal fun bindSession(worldRoot: Path, nowMillis: Long = System.currentTimeMillis()) {
         check(sessionWorldRoot == null) { "Behavior stats store session is already active" }
         val root = worldRoot.toAbsolutePath().normalize()
         Files.createDirectories(root)
         counts.clear()
         warnedCapacityActions.clear()
         SegmentedBehaviorStatsStore.bindSession(root, root.resolve(FILE_NAME))
+        try {
+            BehaviorCaptureControlStore.bindSession(root, nowMillis)
+        } catch (error: Throwable) {
+            SegmentedBehaviorStatsStore.unbindSession()
+            BehaviorCaptureControlStore.resetForTest()
+            throw error
+        }
         nextWriteSequence = Math.addExact(SegmentedBehaviorStatsStore.publishedSequence(), 1L)
         dirtySequenceStart = null
         dirtySequenceEnd = 0L
+        estimatedPendingBytes = 0L
+        captureState = WorldGeoBehaviorCaptureState.ACTIVE
+        warningActive = false
+        cleanCloseAllowed = true
         sessionWorldRoot = root
     }
 
-    internal fun unbindSession() {
+    internal fun unbindSession(nowMillis: Long = System.currentTimeMillis()) {
         counts.clear()
         warnedCapacityActions.clear()
+        if (cleanCloseAllowed) {
+            BehaviorCaptureControlStore.closeSession(nowMillis)
+        } else {
+            BehaviorCaptureControlStore.abandonSession()
+        }
         SegmentedBehaviorStatsStore.unbindSession()
+        BehaviorCaptureControlStore.resetForTest()
         nextWriteSequence = 1L
         dirtySequenceStart = null
         dirtySequenceEnd = 0L
+        estimatedPendingBytes = 0L
+        captureState = WorldGeoBehaviorCaptureState.ACTIVE
+        warningActive = false
+        cleanCloseAllowed = true
         sessionWorldRoot = null
     }
 
@@ -118,18 +148,10 @@ object BehaviorStatsStore {
         }
         val clock = Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC)
         val periodKeys = WorldGeoTimeService.currentNaturalPeriodKeys(clock)
-        val sequence = nextWriteSequence
-        nextWriteSequence = Math.addExact(sequence, 1L)
-        if (dirtySequenceStart == null) dirtySequenceStart = sequence
-        dirtySequenceEnd = sequence
-        val currentBuckets = periodKeys.values.mapTo(linkedSetOf()) { key ->
-            PeriodBucket(key.timelineId, key.kind, key.periodId)
-        }
-        for ((periodKind, completeKey) in periodKeys) {
-            val periodId = completeKey.periodId
-            val key = BehaviorStatsKey(
+        val keys = periodKeys.map { (periodKind, completeKey) ->
+            BehaviorStatsKey(
                 periodKind = periodKind,
-                periodId = periodId,
+                periodId = completeKey.periodId,
                 behaviorType = event.type,
                 regionId = regionId,
                 scopeId = scopeId,
@@ -139,9 +161,33 @@ object BehaviorStatsStore {
                 targetId = event.targetId,
                 timelineId = completeKey.timelineId
             )
-            recordKey(key, count, currentBuckets)
         }
+        recordKeys(keys, count, event.unixMillis)
     }
+
+    fun captureState(): WorldGeoBehaviorCaptureState = captureState
+
+    fun storageAlert(): String? = when {
+        captureState == WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED ->
+            "[IMYVMWorldGeo] Behavior statistics capture is suspended; affected periods are incomplete."
+        warningActive ->
+            "[IMYVMWorldGeo] Behavior statistics pending storage is above its warning threshold."
+        else -> null
+    }
+
+    fun queryCompleteness(key: NaturalPeriodKey): WorldGeoPeriodCompleteness {
+        val bounds = requireNotNull(WorldGeoPeriodTimelineService.periodBounds(key)) { "Unknown natural period: $key" }
+        val missing = BehaviorCaptureControlStore.intersecting(bounds)
+        return WorldGeoPeriodCompleteness(
+            key,
+            if (missing.isEmpty()) WorldGeoPeriodDataStatus.COMPLETE else WorldGeoPeriodDataStatus.INCOMPLETE,
+            missing
+        )
+    }
+
+    internal fun estimatedPendingBytes(): Long = estimatedPendingBytes
+
+    internal fun activeMissingInterval() = BehaviorCaptureControlStore.activeMissingInterval()
 
     fun query(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> {
         require(query.periodId.isNotBlank()) { "period id must not be blank" }
@@ -307,12 +353,25 @@ object BehaviorStatsStore {
             .onFailure { ImyvmWorldGeo.logger.error("Failed to save behavior stats: ${it.message}", it) }
     }
 
-    internal fun save() {
+    internal fun save(nowMillis: Long = System.currentTimeMillis()) {
         sessionWorldRoot ?: error("Behavior stats store session is not active")
-        val start = dirtySequenceStart ?: return
-        SegmentedBehaviorStatsStore.append(counts.toMap(), start, dirtySequenceEnd)
-        counts.clear()
-        dirtySequenceStart = null
+        val start = dirtySequenceStart
+        var wrotePending = false
+        if (start != null) {
+            SegmentedBehaviorStatsStore.append(counts.toMap(), start, dirtySequenceEnd)
+            counts.clear()
+            dirtySequenceStart = null
+            estimatedPendingBytes = 0L
+            wrotePending = true
+        }
+        if (wrotePending && captureState == WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED && belowRecoveryWatermark()) {
+            BehaviorCaptureControlStore.finishMissing(nowMillis)
+            captureState = WorldGeoBehaviorCaptureState.ACTIVE
+            warningActive = false
+            ImyvmWorldGeo.logger.warn("Behavior stats capture resumed after pending storage recovered below the 75% watermark.")
+        } else if (belowWarningThreshold()) {
+            warningActive = false
+        }
     }
 
     internal fun readStats(path: Path): Map<BehaviorStatsKey, Long> {
@@ -337,7 +396,7 @@ object BehaviorStatsStore {
                 validateEntry(key, count)
                 result[key] = Math.addExact(result[key] ?: 0L, count)
             }
-            return snapshotWithinCapacity(result, allowCurrentPeriodDrops = true)
+            return result
         } catch (error: IllegalArgumentException) {
             throw IOException("Invalid behavior stats store", error)
         } catch (error: IllegalStateException) {
@@ -348,7 +407,7 @@ object BehaviorStatsStore {
     }
 
     internal fun writeStats(path: Path, stats: Map<BehaviorStatsKey, Long>) {
-        val snapshot = snapshotWithinCapacity(stats, allowCurrentPeriodDrops = true)
+        val snapshot = stats
         val array = JsonArray()
         var skippedCount = 0
         var firstSkipped: BehaviorStatsKey? = null
@@ -381,138 +440,107 @@ object BehaviorStatsStore {
         RegionDatabase.atomicWrite(path) { output -> output.write(array.toString().toByteArray(Charsets.UTF_8)) }
     }
 
+    internal fun markSessionUnclean() {
+        if (sessionWorldRoot != null) cleanCloseAllowed = false
+    }
+
+    internal fun abandonSessionForTest() {
+        counts.clear()
+        SegmentedBehaviorStatsStore.unbindSession()
+        BehaviorCaptureControlStore.abandonSession()
+        nextWriteSequence = 1L
+        dirtySequenceStart = null
+        dirtySequenceEnd = 0L
+        estimatedPendingBytes = 0L
+        captureState = WorldGeoBehaviorCaptureState.ACTIVE
+        warningActive = false
+        cleanCloseAllowed = true
+        sessionWorldRoot = null
+    }
+
     internal fun clearForTest() {
         counts.clear()
         warnedCapacityActions.clear()
         SegmentedBehaviorStatsStore.unbindSession()
+        BehaviorCaptureControlStore.resetForTest()
         nextWriteSequence = 1L
         dirtySequenceStart = null
         dirtySequenceEnd = 0L
+        estimatedPendingBytes = 0L
+        captureState = WorldGeoBehaviorCaptureState.ACTIVE
+        warningActive = false
+        cleanCloseAllowed = true
         sessionWorldRoot = null
     }
 
-    private fun recordKey(
-        key: BehaviorStatsKey,
-        count: Long,
-        currentBuckets: Set<PeriodBucket>
-    ) {
-        val current = counts[key]
-        val nextCount = try {
-            Math.addExact(current ?: 0L, count)
+    private fun recordKeys(keys: List<BehaviorStatsKey>, count: Long, eventMillis: Long) {
+        if (captureState == WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED) {
+            BehaviorCaptureControlStore.noteMissing(eventMillis)
+            return
+        }
+        val updates = linkedMapOf<BehaviorStatsKey, Long>()
+        try {
+            keys.forEach { key ->
+                updates[key] = Math.addExact(counts[key] ?: 0L, count)
+            }
         } catch (error: ArithmeticException) {
-            warnOnce(
-                "overflow:${key.periodKind}:${key.periodId}:${key.behaviorType}",
-                "Dropped behavior stats update because count overflowed for ${key.behaviorType} in ${key.periodKind}:${key.periodId}."
+            warnOnce("overflow", "Dropped a behavior stats event because a counter overflowed.")
+            return
+        }
+        val newKeys = updates.keys.filterNot(counts::containsKey)
+        val nextBytes = try {
+            newKeys.fold(estimatedPendingBytes) { total, key -> Math.addExact(total, estimatedBytes(key)) }
+        } catch (error: ArithmeticException) {
+            Long.MAX_VALUE
+        }
+        if (counts.size + newKeys.size > hardEntryLimit() || nextBytes > hardByteLimit()) {
+            captureState = WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED
+            warningActive = true
+            BehaviorCaptureControlStore.startMissing(eventMillis)
+            ImyvmWorldGeo.logger.error(
+                "Behavior stats capture suspended at the pending storage hard limit: entries=${counts.size}, estimatedBytes=$estimatedPendingBytes."
             )
             return
         }
-        if (current == null && counts.size >= maxEntryCount()) {
-            pruneToCapacity(
-                counts,
-                excludedBuckets = currentBuckets,
-                targetSize = maxEntryCount() - 1
-            )
-            if (counts.size >= maxEntryCount()) {
-                warnOnce(
-                    "drop:${key.periodKind}:${key.periodId}",
-                    "Dropped new behavior stats keys for ${key.periodKind}:${key.periodId} because the entry cap ${maxEntryCount()} is exhausted."
-                )
-                return
-            }
-        }
-        counts[key] = nextCount
-    }
-
-    private fun snapshotWithinCapacity(
-        stats: Map<BehaviorStatsKey, Long>,
-        allowCurrentPeriodDrops: Boolean
-    ): Map<BehaviorStatsKey, Long> {
-        if (stats.size <= maxEntryCount()) return stats
-        val snapshot = LinkedHashMap(stats)
-        pruneToCapacity(snapshot, emptySet(), maxEntryCount())
-        if (allowCurrentPeriodDrops && snapshot.size > maxEntryCount()) {
-            val dropCount = snapshot.size - maxEntryCount()
-            repeat(dropCount) {
-                val oldestKey = snapshot.entries.firstOrNull()?.key ?: return@repeat
-                snapshot.remove(oldestKey)
-            }
-            warnOnce(
-                "snapshot-drop:${maxEntryCount()}",
-                "Dropped $dropCount oldest behavior stats keys while trimming a snapshot to the entry cap ${maxEntryCount()}."
-            )
-        }
-        require(snapshot.size <= maxEntryCount()) { "too many behavior stats entries" }
-        return snapshot
-    }
-
-    private fun pruneToCapacity(
-        stats: MutableMap<BehaviorStatsKey, Long>,
-        excludedBuckets: Set<PeriodBucket>,
-        targetSize: Int
-    ) {
-        while (stats.size > targetSize) {
-            val bucket = oldestEvictableBucket(stats.keys, excludedBuckets) ?: return
-            val removed = removeBucket(stats, bucket)
-            if (removed == 0) return
-            warnOnce(
-                "evict:${bucket.kind}:${bucket.periodId}",
-                "Evicted $removed behavior stats keys from ${bucket.kind}:${bucket.periodId} to stay under the entry cap ${maxEntryCount()}."
+        val sequence = nextWriteSequence
+        nextWriteSequence = Math.addExact(sequence, 1L)
+        if (dirtySequenceStart == null) dirtySequenceStart = sequence
+        dirtySequenceEnd = sequence
+        updates.forEach { (key, nextCount) -> counts[key] = nextCount }
+        estimatedPendingBytes = nextBytes
+        if (!warningActive && !belowWarningThreshold()) {
+            warningActive = true
+            ImyvmWorldGeo.logger.warn(
+                "Behavior stats pending storage crossed its warning threshold: entries=${counts.size}, estimatedBytes=$estimatedPendingBytes."
             )
         }
     }
 
-    private fun oldestEvictableBucket(
-        keys: Set<BehaviorStatsKey>,
-        excludedBuckets: Set<PeriodBucket>
-    ): PeriodBucket? = keys
-        .groupBy { it.timelineId to it.periodKind }
-        .mapNotNull { (timelineAndKind, entries) ->
-            val (timelineId, kind) = timelineAndKind
-            val periods = entries.mapTo(linkedSetOf()) { it.periodId }
-            val oldestPeriod = periods
-                .asSequence()
-                .filter { PeriodBucket(timelineId, kind, it) !in excludedBuckets }
-                .minWithOrNull(periodIdComparator(kind))
-                ?: return@mapNotNull null
-            CandidateBucket(PeriodBucket(timelineId, kind, oldestPeriod), periods.size)
-        }
-        .maxByOrNull { it.periodCount }
-        ?.bucket
+    private fun estimatedBytes(key: BehaviorStatsKey): Long = 96L +
+        key.timelineId.toByteArray(Charsets.UTF_8).size +
+        key.periodId.toByteArray(Charsets.UTF_8).size +
+        key.behaviorType.name.length +
+        (key.objectId?.toByteArray(Charsets.UTF_8)?.size ?: 0) +
+        (key.targetId?.toByteArray(Charsets.UTF_8)?.size ?: 0)
 
-    private fun removeBucket(stats: MutableMap<BehaviorStatsKey, Long>, bucket: PeriodBucket): Int {
-        val toRemove = stats.keys
-            .filter { it.timelineId == bucket.timelineId && it.periodKind == bucket.kind && it.periodId == bucket.periodId }
-            .toList()
-        toRemove.forEach(stats::remove)
-        return toRemove.size
-    }
+    private fun hardEntryLimit(): Int = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
 
-    private fun periodIdComparator(kind: NaturalPeriodKind): Comparator<String> = Comparator { left, right ->
-        comparePeriodIds(kind, left, right)
-    }
+    private fun hardByteLimit(): Long = CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.value.toLong()
 
-    private fun comparePeriodIds(kind: NaturalPeriodKind, left: String, right: String): Int {
-        if (left == right) return 0
-        if (TestPeriodModeService.isTestPeriodId(left) && TestPeriodModeService.isTestPeriodId(right)) {
-            val leftIndex = left.substringAfterLast(':').toLongOrNull()
-            val rightIndex = right.substringAfterLast(':').toLongOrNull()
-            if (leftIndex != null && rightIndex != null) return leftIndex.compareTo(rightIndex)
-        }
-        return left.compareTo(right)
-    }
+    private fun belowWarningThreshold(): Boolean =
+        counts.size < CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.value &&
+            estimatedPendingBytes < CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.value.toLong()
 
-    private fun maxEntryCount(): Int = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
+    private fun belowRecoveryWatermark(): Boolean =
+        counts.size.toLong() * 4L <= hardEntryLimit().toLong() * 3L &&
+            estimatedPendingBytes * 4L <= hardByteLimit() * 3L
 
     private fun warnOnce(key: String, message: String) {
-        if (warnedCapacityActions.add(key)) {
-            ImyvmWorldGeo.logger.warn(message)
-        }
+        if (warnedCapacityActions.add(key)) ImyvmWorldGeo.logger.warn(message)
     }
 
     private fun errorOnce(key: String, message: String) {
-        if (warnedCapacityActions.add(key)) {
-            ImyvmWorldGeo.logger.error(message)
-        }
+        if (warnedCapacityActions.add(key)) ImyvmWorldGeo.logger.error(message)
     }
 
     private fun BehaviorStatsKey.matches(query: WorldGeoBehaviorStatsQuery): Boolean =
@@ -575,15 +603,4 @@ internal data class BehaviorStatsKey(
     val objectId: String?,
     val targetId: String? = null,
     val timelineId: String = PeriodTimelineStore.PRODUCTION_TIMELINE_ID
-)
-
-private data class PeriodBucket(
-    val timelineId: String,
-    val kind: NaturalPeriodKind,
-    val periodId: String
-)
-
-private data class CandidateBucket(
-    val bucket: PeriodBucket,
-    val periodCount: Int
 )

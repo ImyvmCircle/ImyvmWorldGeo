@@ -18,6 +18,9 @@ class ConfigValidationTest {
     fun `relations reject short effects`() {
         assertFailsWith<IllegalArgumentException> { validateConfigRelations(1, 1) }
         validateConfigRelations(2, 1)
+        assertFailsWith<IllegalArgumentException> { validateBehaviorStatsLimits(2, 1, 1, 1) }
+        assertFailsWith<IllegalArgumentException> { validateBehaviorStatsLimits(1, 1, 2, 1) }
+        validateBehaviorStatsLimits(1, 1, 1, 1)
     }
 
     @Test
@@ -25,6 +28,9 @@ class ConfigValidationTest {
         initializeConfigValidation()
         val oldTicker = CoreConfig.LAZY_TICKER_SECONDS.value
         val oldBehaviorStatsLimit = CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value
+        val oldBehaviorStatsWarning = CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.value
+        val oldBehaviorStatsMaxBytes = CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.value
+        val oldBehaviorStatsWarningBytes = CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.value
         val oldAsyncCallbackCapacity = CoreConfig.ASYNC_CALLBACK_QUEUE_CAPACITY.value
         val oldEffect = EffectConfig.EFFECT_DURATION_SECONDS.value
         val oldGeographyBatchSize = GeoConfig.GEOGRAPHIC_REFRESH_BATCH_SIZE.value
@@ -35,6 +41,16 @@ class ConfigValidationTest {
 
         assertFailsWith<IllegalArgumentException> { CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(0) }
         assertEquals(oldBehaviorStatsLimit, CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value)
+
+        assertFailsWith<IllegalArgumentException> {
+            CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.setValue(oldBehaviorStatsLimit + 1)
+        }
+        assertEquals(oldBehaviorStatsWarning, CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.value)
+
+        assertFailsWith<IllegalArgumentException> {
+            CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.setValue(oldBehaviorStatsMaxBytes + 1)
+        }
+        assertEquals(oldBehaviorStatsWarningBytes, CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.value)
 
         assertFailsWith<IllegalArgumentException> { CoreConfig.ASYNC_CALLBACK_QUEUE_CAPACITY.setValue(0) }
         assertEquals(oldAsyncCallbackCapacity, CoreConfig.ASYNC_CALLBACK_QUEUE_CAPACITY.value)

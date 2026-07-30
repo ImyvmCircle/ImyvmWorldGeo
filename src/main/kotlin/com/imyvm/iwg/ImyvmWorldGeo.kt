@@ -4,6 +4,7 @@ import com.imyvm.iwg.infra.LazyTicker
 import com.imyvm.iwg.infra.LazyTicker.registerLazyTicker
 import com.imyvm.iwg.infra.config.initializeConfigValidation
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
+import com.imyvm.iwg.application.event.BehaviorStorageAlertService
 import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.region.effect.EffectOverlayService
 import com.imyvm.iwg.domain.NaturalPeriodKind
@@ -33,6 +34,7 @@ ImyvmWorldGeo : ModInitializer {
 	override fun onInitialize() {
 		initializeConfigValidation()
 		registerDataLoadSave()
+		BehaviorStorageAlertService.register()
 
 		registerLazyTicker()
 		var refreshGeographicProfiles = false
@@ -41,6 +43,7 @@ ImyvmWorldGeo : ModInitializer {
 		}
 		LazyTicker.registerTask { WorldGeoPeriodTracker.process() }
 		LazyTicker.registerTask { server ->
+			BehaviorStorageAlertService.notifyOnlineOperators(server)
 			if (refreshGeographicProfiles) {
 				refreshGeographicProfiles = false
 				WorldGeoGeographicProfileSupport.scheduleRefreshAll(RegionDatabase.getRegionList())

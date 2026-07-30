@@ -18,6 +18,9 @@ private var revertingInvalidUpdate = false
 private val positiveOptions by lazy { listOf(
     CoreConfig.LAZY_TICKER_SECONDS,
     CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT,
+    CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT,
+    CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES,
+    CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES,
     CoreConfig.ASYNC_CALLBACK_QUEUE_CAPACITY,
     EffectConfig.EFFECT_DURATION_SECONDS,
     GeoConfig.GEOGRAPHIC_REFRESH_BATCH_SIZE,
@@ -45,7 +48,11 @@ fun initializeConfigValidation() {
 
     listOf(
         CoreConfig.LAZY_TICKER_SECONDS,
-        EffectConfig.EFFECT_DURATION_SECONDS
+        EffectConfig.EFFECT_DURATION_SECONDS,
+        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT,
+        CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT,
+        CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES,
+        CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES
     ).forEach { validateRelationsOnChange(it) }
 
     validateCurrentConfig()
@@ -90,10 +97,31 @@ private fun rollbackInvalidUpdate(option: Option<Int>, oldValue: Int?, validate:
 private fun validateCurrentRelations() = validateConfigRelations(
     EffectConfig.EFFECT_DURATION_SECONDS.value,
     CoreConfig.LAZY_TICKER_SECONDS.value
-)
+).also {
+    validateBehaviorStatsLimits(
+        CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.value,
+        CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.value,
+        CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.value,
+        CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.value
+    )
+}
 
 internal fun validateConfigRelations(effectSeconds: Int, lazySeconds: Int) {
     require(effectSeconds > lazySeconds) {
         "core.effect.duration_seconds must be greater than core.lazy_ticker_seconds"
+    }
+}
+
+internal fun validateBehaviorStatsLimits(
+    warningEntryCount: Int,
+    maxEntryCount: Int,
+    warningEstimatedBytes: Int,
+    maxEstimatedBytes: Int
+) {
+    require(warningEntryCount <= maxEntryCount) {
+        "core.behavior_stats.warning_entry_count must not exceed max_entry_count"
+    }
+    require(warningEstimatedBytes <= maxEstimatedBytes) {
+        "core.behavior_stats.warning_estimated_bytes must not exceed max_estimated_bytes"
     }
 }
