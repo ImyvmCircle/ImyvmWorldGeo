@@ -3,6 +3,8 @@ package com.imyvm.iwg.inter.api
 import com.imyvm.iwg.ImyvmWorldGeo
 import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
 import com.imyvm.iwg.application.region.RegionNaturalStatsCollector
+import com.imyvm.iwg.application.region.NativeInhabitedTimeService
+import com.imyvm.iwg.application.region.WorldGeoSpaceGeometrySupport
 import com.imyvm.iwg.application.region.PlayerRegionChecker
 import com.imyvm.iwg.application.region.WorldGeoGeographicProfileSupport
 import com.imyvm.iwg.application.space.WorldGeoSpaceSupport
@@ -636,6 +638,34 @@ object RegionDataApi {
         query: WorldGeoBehaviorStatsPageQuery
     ): CompletableFuture<WorldGeoBatchBlockDeltaStats> =
         BehaviorStatsPageStreamService.queryBlockDeltaBatch(query)
+
+    fun getRegionGeometryFacts(region: Region): List<WorldGeoSpaceGeometryFact> =
+        WorldGeoSpaceGeometrySupport.region(region)
+
+    fun getScopeGeometryFact(scope: GeoScope): WorldGeoSpaceGeometryFact =
+        WorldGeoSpaceGeometrySupport.scope(scope)
+
+    fun getSubSpaceGeometryFact(subSpace: SubSpace): WorldGeoSpaceGeometryFact =
+        WorldGeoSpaceGeometrySupport.subSpace(subSpace)
+
+    fun queryNativeInhabitedTimeBatchAsync(
+        server: MinecraftServer,
+        request: WorldGeoNativeInhabitedTimeBatchRequest
+    ): CompletableFuture<WorldGeoNativeInhabitedTimeBatchResult> =
+        NativeInhabitedTimeService.query(server, request)
+
+    fun queryNativeInhabitedTimeForSpacesAsync(
+        server: MinecraftServer,
+        geometryFacts: List<WorldGeoSpaceGeometryFact>,
+        inputVersion: String
+    ): CompletableFuture<WorldGeoNativeInhabitedTimeBatchResult> =
+        NativeInhabitedTimeService.query(
+            server,
+            WorldGeoNativeInhabitedTimeBatchRequest(
+                WorldGeoSpaceGeometrySupport.coveredChunks(geometryFacts),
+                inputVersion
+            )
+        )
 
     fun queryBehaviorStats(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> =
         BehaviorStatsStore.query(query)
