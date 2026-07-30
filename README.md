@@ -1,4 +1,4 @@
-# IMYVMWorldGeo 26.2 1.5.5
+# IMYVMWorldGeo 26.2 1.5.6
 
 ## Changelog
 
@@ -6,7 +6,7 @@
 
 The 1.5.x line expands WorldGeo from region settings into a neutral infrastructure layer for addons. It adds RPG permission and rule keys, namespaced extension settings, stable Scope IDs, ownership history, SubSpace, neutral time and behavior events, periodic statistics, and menu-facing space snapshots.
 
-#### 1.5.5
+#### 1.5.6
 
 - feat: land the V1-V3 WorldGeo infrastructure path for SubSpace, neutral time, behavior events, periodic stats, geography snapshots, setting summaries, space messages, and OP debug views.
 - feat: add typed statistics queries for block deltas, residence time, entity combat, and online or AFK time on top of the persisted behavior statistics store.
