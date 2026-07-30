@@ -116,6 +116,7 @@ object RegionDatabase {
     private const val DATABASE_FILENAME = "iwg_regions.db"
     private const val DYNMAP_CONFIG_FILENAME = "iwg_dynmap.json"
     private const val PLAYER_STATS_FILENAME = "iwg_player_stats.json"
+    private const val STRUCTURED_MUTATIONS_FILENAME = "iwg_structured_space_mutations.json"
     private const val DB_V1_SENTINEL: Int = -1
     private const val DB_V2_SENTINEL: Int = -2
     private const val MAX_COLLECTION_SIZE = 100_000
@@ -134,6 +135,19 @@ object RegionDatabase {
 
     internal fun saveForShutdown() {
         persistFiles()
+    }
+
+    internal fun saveWithCompanion(companionPath: Path, saveCompanion: () -> Unit) {
+        withFileRollback(
+            listOf(getDatabasePath(), getDynmapConfigPath(), getPlayerStatsPath(), companionPath)
+        ) {
+            writeRegions(getDatabasePath(), regions)
+            saveDynmapVisibility()
+            savePlayerStats()
+            saveCompanion()
+        }
+        runCatching { onSave?.invoke() }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to update persisted region projections: " + it.message, it) }
     }
 
     private fun persistFiles() {
@@ -192,7 +206,9 @@ object RegionDatabase {
             val loadedRegions = if (Files.exists(databasePath)) {
                 readRegions(databasePath)
             } else {
-                rejectOrphanCompanionFiles(listOf(dynmapPath, playerStatsPath))
+                rejectOrphanCompanionFiles(
+                    listOf(dynmapPath, playerStatsPath, normalizedRoot.resolve(STRUCTURED_MUTATIONS_FILENAME))
+                )
                 mutableListOf()
             }
             applyDynmapVisibility(loadedRegions, dynmapPath)

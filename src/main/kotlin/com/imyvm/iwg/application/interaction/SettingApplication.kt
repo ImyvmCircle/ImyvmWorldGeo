@@ -57,6 +57,7 @@ import java.util.*
 private sealed interface SettingTarget {
     val store: SettingStore
     val scopeName: String?
+    val canonicalId: WorldGeoCanonicalSpaceId
 
     data class RegionTarget(val region: Region) : SettingTarget {
         init {
@@ -65,6 +66,7 @@ private sealed interface SettingTarget {
 
         override val store get() = region.settingStore
         override val scopeName: String? = null
+        override val canonicalId get() = WorldGeoCanonicalSpaceId(region.numberID)
     }
 
     data class ScopeTarget(val region: Region, val scope: GeoScope) : SettingTarget {
@@ -74,6 +76,9 @@ private sealed interface SettingTarget {
 
         override val store get() = scope.settingStore
         override val scopeName get() = scope.scopeName
+        override val canonicalId get() = WorldGeoCanonicalSpaceId(
+            region.numberID, scope.requireAssignedScopeId().raw
+        )
     }
 
     data class SubSpaceTarget(val region: Region, val scope: GeoScope, val subSpace: SubSpace) : SettingTarget {
@@ -83,6 +88,9 @@ private sealed interface SettingTarget {
 
         override val store get() = subSpace.settingStore
         override val scopeName get() = subSpace.name
+        override val canonicalId get() = WorldGeoCanonicalSpaceId(
+            region.numberID, scope.requireAssignedScopeId().raw, subSpace.subSpaceId
+        )
     }
 }
 
@@ -141,10 +149,16 @@ private fun addSetting(
         }
 
         val setting = buildSetting(player, key, valueString, targetPlayerUUID) ?: return
-        val previous = target.store.toLegacyList()
-        target.store.put(setting)
-        if (!saveRegionData(player)) {
-            target.store.replaceAll(previous)
+        val expected = if (key is PermissionKeyLike) {
+            WorldGeoExpectedPermission(target.canonicalId, keyString, valueString.toBooleanStrict(), targetPlayerUUID)
+        } else {
+            WorldGeoExpectedSetting(target.canonicalId, keyString, valueString, targetPlayerUUID)
+        }
+        val result = StructuredSpaceMutationService.mutateExpected(expected)
+        if (result.status != WorldGeoStructuredSpaceMutationStatus.APPLIED) {
+            if (result.status == WorldGeoStructuredSpaceMutationStatus.PERSISTENCE_FAILED) {
+                player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
+            }
             return
         }
         player.sendSystemMessage(Translator.tr("interaction.meta.setting.add.success", key.toString(), setting.value.toString())!!)
@@ -190,14 +204,21 @@ private fun removeSetting(
             resolveTargetPlayerUUID(player, targetPlayerStr) ?: return
         } else null
         val subject = targetPlayerUUID?.let(SettingSubject::Player) ?: SettingSubject.Global
-        val previous = target.store.toLegacyList()
-        val removed = target.store.remove(key, subject)
+        val removed = target.store.contains(key, subject)
         if (!removed) {
             player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.error.no_such_setting", key.toString())!!)
             return
         }
-        if (!saveRegionData(player)) {
-            target.store.replaceAll(previous)
+        val expected = if (key is PermissionKeyLike) {
+            WorldGeoExpectedPermission(target.canonicalId, keyString, null, targetPlayerUUID)
+        } else {
+            WorldGeoExpectedSetting(target.canonicalId, keyString, null, targetPlayerUUID)
+        }
+        val result = StructuredSpaceMutationService.mutateExpected(expected)
+        if (result.status != WorldGeoStructuredSpaceMutationStatus.APPLIED) {
+            if (result.status == WorldGeoStructuredSpaceMutationStatus.PERSISTENCE_FAILED) {
+                player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
+            }
             return
         }
         player.sendSystemMessage(Translator.tr("interaction.meta.setting.delete.success", key.toString())!!)

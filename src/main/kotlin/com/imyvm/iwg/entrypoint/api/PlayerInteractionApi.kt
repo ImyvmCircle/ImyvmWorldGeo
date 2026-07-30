@@ -6,6 +6,8 @@ import com.imyvm.iwg.application.interaction.scope.onReplacingScopeShape
 import com.imyvm.iwg.application.interaction.getDefaultValueForPermission
 import com.imyvm.iwg.domain.Region
 import com.imyvm.iwg.domain.ScopeNotFoundException
+import com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationRequest
+import com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationResult
 import com.imyvm.iwg.domain.component.GeoScope
 import com.imyvm.iwg.domain.component.GeoShape
 import com.imyvm.iwg.domain.component.GeoShapeType
@@ -22,6 +24,9 @@ import net.minecraft.core.BlockPos
  */
 @Suppress("unused")
 object PlayerInteractionApi {
+    fun applyStructuredSpaceMutation(
+        request: WorldGeoStructuredSpaceMutationRequest
+    ): WorldGeoStructuredSpaceMutationResult = StructuredSpaceMutationService.mutate(request)
     /** Starts a normal creation selection. Call selection operations on the Minecraft server thread. */
     fun startSelection(player: ServerPlayer, shapeType: GeoShapeType? = null) = onStartSelection(player, shapeType)
     fun stopSelection(player: ServerPlayer) = onStopSelection(player)

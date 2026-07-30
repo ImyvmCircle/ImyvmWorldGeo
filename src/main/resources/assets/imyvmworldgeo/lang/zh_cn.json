@@ -541,6 +541,13 @@
   "interaction.meta.debug.behavior.page.prev": "[◀]",
   "interaction.meta.debug.behavior.page.next": "[▶]",
   "interaction.meta.debug.behavior.page.prev.hover": "第 {0} 页",
-  "interaction.meta.debug.behavior.page.next.hover": "第 {0} 页"
+  "interaction.meta.debug.behavior.page.next.hover": "第 {0} 页",
+  "imyvmworldgeo.structured_mutation.applied": "已应用请求的空间状态。",
+  "imyvmworldgeo.structured_mutation.already_matched": "请求的空间状态已经匹配。",
+  "imyvmworldgeo.structured_mutation.rejected": "请求的空间状态被拒绝。",
+  "imyvmworldgeo.structured_mutation.conflict": "此外部键已绑定到其他期望状态。",
+  "imyvmworldgeo.structured_mutation.persistence_failed": "无法持久保存空间状态。",
+  "imyvmworldgeo.structured_mutation.invalid_namespace": "调用方命名空间无效。",
+  "imyvmworldgeo.structured_mutation.invalid_external_key": "外部键无效。"
 
 }

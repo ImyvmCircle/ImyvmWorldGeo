@@ -542,6 +542,13 @@
   "interaction.meta.debug.behavior.page.prev": "[◀]",
   "interaction.meta.debug.behavior.page.next": "[▶]",
   "interaction.meta.debug.behavior.page.prev.hover": "Page {0}",
-  "interaction.meta.debug.behavior.page.next.hover": "Page {0}"
+  "interaction.meta.debug.behavior.page.next.hover": "Page {0}",
+  "imyvmworldgeo.structured_mutation.applied": "The requested space state was applied.",
+  "imyvmworldgeo.structured_mutation.already_matched": "The requested space state already matches.",
+  "imyvmworldgeo.structured_mutation.rejected": "The requested space state was rejected.",
+  "imyvmworldgeo.structured_mutation.conflict": "The external key is already bound to another expected state.",
+  "imyvmworldgeo.structured_mutation.persistence_failed": "The space state could not be persisted.",
+  "imyvmworldgeo.structured_mutation.invalid_namespace": "The caller namespace is invalid.",
+  "imyvmworldgeo.structured_mutation.invalid_external_key": "The external key is invalid."
 
 }

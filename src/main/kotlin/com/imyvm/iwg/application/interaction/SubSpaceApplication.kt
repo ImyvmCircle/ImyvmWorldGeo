@@ -109,37 +109,42 @@ fun onSubSpaceCreation(
     keyedTags: Map<String, String> = emptyMap()
 ): SubSpace? {
     RegionDatabase.requireCanonicalScope(region, parentScope)
-    return try {
-        val subSpace = SubSpace(
-            RegionDatabase.nextSubSpaceId(),
+    val result = StructuredSpaceMutationService.mutateExpected(
+        com.imyvm.iwg.domain.WorldGeoExpectedSubSpaceCreation(
+            com.imyvm.iwg.domain.WorldGeoCanonicalSpaceId(
+                region.numberID,
+                parentScope.requireAssignedScopeId().raw
+            ),
             name,
-            parentScope.requireAssignedScopeId(),
-            parentScope.worldId,
             shape,
             entryMessage,
-            stringTags = stringTags,
-            keyedTags = keyedTags
+            stringTags,
+            keyedTags
         )
-        region.addSubSpaceFromOwner(subSpace)
-        if (!saveRegionData(player)) {
-            region.removeSubSpaceFromOwner(subSpace)
-            null
-        } else subSpace
-    } catch (error: IOException) {
-        ImyvmWorldGeo.logger.error("Failed to reserve subspace identity: ${error.message}", error)
+    )
+    val id = result.canonicalSpaceId?.subSpaceId
+    if (result.status == com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.PERSISTENCE_FAILED) {
         player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
-        null
-    } catch (error: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.invalid", error.message ?: "invalid")!!)
-        null
     }
+    if (result.status != com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.APPLIED) return null
+    return id?.let { RegionDatabase.getSubSpaceById(it)?.third }
 }
 
 fun onSubSpaceDelete(player: ServerPlayer, region: Region, parentScope: GeoScope, subSpace: SubSpace): Int {
     RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
-    val index = region.removeSubSpaceFromOwner(subSpace)
-    if (!saveRegionData(player)) {
-        region.restoreSubSpaceFromOwner(index, subSpace)
+    val result = StructuredSpaceMutationService.mutateExpected(
+        com.imyvm.iwg.domain.WorldGeoExpectedSubSpaceDeletion(
+            com.imyvm.iwg.domain.WorldGeoCanonicalSpaceId(
+                region.numberID,
+                parentScope.requireAssignedScopeId().raw,
+                subSpace.subSpaceId
+            )
+        )
+    )
+    if (result.status != com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.APPLIED) {
+        if (result.status == com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.PERSISTENCE_FAILED) {
+            player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
+        }
         return 0
     }
     player.sendSystemMessage(Translator.tr("interaction.meta.subspace.delete.success", subSpace.name, parentScope.scopeName, region.name)!!)
@@ -172,17 +177,22 @@ fun onReplacingSubSpaceShape(
     newShape: GeoShape
 ): Int {
     RegionDatabase.requireCanonicalSubSpace(region, parentScope, subSpace)
-    val oldShape = subSpace.geoShape
-    return try {
-        region.replaceSubSpaceGeometryFromOwner(subSpace, newShape)
-        if (!saveRegionData(player)) {
-            region.replaceSubSpaceGeometryFromOwner(subSpace, oldShape)
-            0
-        } else 1
-    } catch (error: IllegalArgumentException) {
-        player.sendSystemMessage(Translator.tr("interaction.meta.subspace.error.invalid", error.message ?: "invalid")!!)
-        0
+    val result = StructuredSpaceMutationService.mutateExpected(
+        com.imyvm.iwg.domain.WorldGeoExpectedSubSpaceRange(
+            com.imyvm.iwg.domain.WorldGeoCanonicalSpaceId(
+                region.numberID,
+                parentScope.requireAssignedScopeId().raw,
+                subSpace.subSpaceId
+            ),
+            newShape
+        )
+    )
+    if (result.status == com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.PERSISTENCE_FAILED) {
+        player.sendSystemMessage(Translator.tr("interaction.meta.persistence.save_failed")!!)
     }
+    return if (result.status == com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.APPLIED ||
+        result.status == com.imyvm.iwg.domain.WorldGeoStructuredSpaceMutationStatus.ALREADY_MATCHED
+    ) 1 else 0
 }
 
 fun onSettingSubSpaceEntryMessage(
