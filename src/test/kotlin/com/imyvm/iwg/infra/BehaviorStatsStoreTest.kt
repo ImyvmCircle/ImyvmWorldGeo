@@ -6,6 +6,7 @@ import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
 import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
+import com.imyvm.iwg.domain.WorldGeoBehaviorCaptureState
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointRequest
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointStatus
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsPageQuery
@@ -177,6 +178,27 @@ class BehaviorStatsStoreTest {
             WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, objectId = "retry")
         )
         assertEquals(1L, entries.single().count)
+    }
+
+    @Test
+    fun `period close save failure marks closed period incomplete`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "close-failure"))
+        SegmentedBehaviorStatsStore.failureInjector = { point ->
+            if (point == "append:manifest") throw IOException("period close storage failure")
+        }
+
+        BehaviorStatsStore.closePeriod(
+            NaturalPeriodKey(PeriodTimelineStore.PRODUCTION_TIMELINE_ID, NaturalPeriodKind.HOUR, "2026-07-21T00"),
+            millis(2026, 7, 21, 1, 0)
+        )
+
+        val completeness = BehaviorStatsStore.queryCompleteness(
+            NaturalPeriodKey(PeriodTimelineStore.PRODUCTION_TIMELINE_ID, NaturalPeriodKind.HOUR, "2026-07-21T00"),
+            millis(2026, 7, 21, 1, 0)
+        )
+        assertEquals(WorldGeoPeriodDataStatus.INCOMPLETE, completeness.status)
+        assertEquals(WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED, BehaviorStatsStore.captureState())
     }
 
     @Test

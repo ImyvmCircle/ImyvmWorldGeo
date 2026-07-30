@@ -395,7 +395,12 @@ object BehaviorStatsStore {
 
     internal fun closePeriod(key: NaturalPeriodKey, nowMillis: Long = System.currentTimeMillis()) {
         if (sessionWorldRoot == null) return
-        saveSnapshot(nowMillis)
+        val flushed = saveSnapshot(nowMillis)
+        if (!flushed && captureState != WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED) {
+            captureState = WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED
+            warningActive = true
+            BehaviorCaptureControlStore.startMissing((nowMillis - 1L).coerceAtLeast(0L))
+        }
         runCatching { SegmentedBehaviorStatsStore.compactPeriod(key.timelineId, key.kind, key.periodId) }
             .onFailure { ImyvmWorldGeo.logger.error("Failed to compact behavior stats for closed period: " + it.message, it) }
         runCatching { enforceRetention(nowMillis) }
