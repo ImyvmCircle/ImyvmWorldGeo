@@ -27,7 +27,17 @@ internal data class BehaviorStatsCheckpointBatch(
     val sequenceStart: Long?,
     val sequenceEnd: Long,
     val cutoffSequence: Long,
+    @Volatile
     var published: Boolean = false
+)
+
+private class ActiveCheckpoint(
+    val checkpointId: UUID,
+    val batch: BehaviorStatsCheckpointBatch,
+    val result: CompletableFuture<WorldGeoBehaviorStatsCheckpointResult>,
+    @Volatile var value: WorldGeoBehaviorStatsCheckpointResult? = null,
+    @Volatile var error: Throwable? = null,
+    var settled: Boolean = false
 )
 
 internal object BehaviorStatsCheckpointService {
@@ -36,6 +46,8 @@ internal object BehaviorStatsCheckpointService {
     private const val MANIFEST_FILE = "manifest.json"
     private var root: Path? = null
     private val active = mutableSetOf<UUID>()
+    private val inFlight = mutableSetOf<ActiveCheckpoint>()
+    private var accepting = false
     internal var failureInjector: ((String) -> Unit)? = null
 
     fun bindSession(worldRoot: Path) {
@@ -43,13 +55,30 @@ internal object BehaviorStatsCheckpointService {
         val target = worldRoot.toAbsolutePath().normalize().resolve(ROOT_DIRECTORY)
         Files.createDirectories(target)
         root = target
+        synchronized(this) { accepting = true }
     }
 
     fun unbindSession() {
-        SegmentedBehaviorStatsStore.awaitIdle()
-        synchronized(this) { active.clear() }
+        quiesceForShutdown()
+        synchronized(this) {
+            active.clear()
+            inFlight.clear()
+        }
         failureInjector = null
         root = null
+    }
+
+    internal fun quiesceForShutdown() {
+        if (root == null) return
+        synchronized(this) { accepting = false }
+        try {
+            SegmentedBehaviorStatsStore.awaitIdle()
+            val pending = synchronized(this) { inFlight.toList() }
+            pending.forEach(::settle)
+        } catch (error: Throwable) {
+            BehaviorStatsStore.markSessionUnclean()
+            throw error
+        }
     }
 
     fun request(
@@ -70,8 +99,16 @@ internal object BehaviorStatsCheckpointService {
         )
         validate(fixed)
         val result = CompletableFuture<WorldGeoBehaviorStatsCheckpointResult>()
+        if (!synchronized(this) { accepting }) {
+            result.completeExceptionally(IllegalStateException("Checkpoint service is stopping"))
+            return result
+        }
         dispatch {
             try {
+                if (!synchronized(this) { accepting }) {
+                    result.completeExceptionally(IllegalStateException("Checkpoint service is stopping"))
+                    return@dispatch
+                }
                 val completeness = BehaviorStatsStore.queryCompleteness(fixed.query.periodKey)
                 if (completeness.status == WorldGeoPeriodDataStatus.INCOMPLETE) {
                     result.complete(
@@ -93,20 +130,12 @@ internal object BehaviorStatsCheckpointService {
                 }
                 failureInjector?.invoke("checkpoint:exchange")
                 val batch = BehaviorStatsStore.exchangePendingForCheckpoint()
+                val checkpoint = ActiveCheckpoint(fixed.checkpointId, batch, result)
+                synchronized(this) { inFlight.add(checkpoint) }
                 publish(fixed, completeness, batch).whenComplete { value, error ->
-                    dispatch {
-                        synchronized(this) { active.remove(fixed.checkpointId) }
-                        if (batch.published) {
-                            BehaviorStatsStore.completeCheckpointBatch()
-                        } else {
-                            BehaviorStatsStore.restoreCheckpointBatch(batch)
-                        }
-                        if (error != null) {
-                            result.completeExceptionally(error)
-                        } else {
-                            result.complete(value)
-                        }
-                    }
+                    checkpoint.value = value
+                    checkpoint.error = error
+                    dispatch { settle(checkpoint) }
                 }
             } catch (error: Throwable) {
                 synchronized(this) { active.remove(fixed.checkpointId) }
@@ -114,6 +143,38 @@ internal object BehaviorStatsCheckpointService {
             }
         }
         return result
+    }
+
+    private fun settle(checkpoint: ActiveCheckpoint) {
+        val claimed = synchronized(this) {
+            if (checkpoint.settled) {
+                false
+            } else {
+                checkpoint.settled = true
+                active.remove(checkpoint.checkpointId)
+                inFlight.remove(checkpoint)
+                true
+            }
+        }
+        if (!claimed) return
+        try {
+            if (checkpoint.batch.published) {
+                BehaviorStatsStore.completeCheckpointBatch()
+            } else {
+                BehaviorStatsStore.restoreCheckpointBatch(checkpoint.batch)
+            }
+            val error = checkpoint.error
+            if (error != null) {
+                BehaviorStatsStore.markSessionUnclean()
+                checkpoint.result.completeExceptionally(error)
+            } else {
+                checkpoint.result.complete(requireNotNull(checkpoint.value))
+            }
+        } catch (error: Throwable) {
+            BehaviorStatsStore.markSessionUnclean()
+            checkpoint.result.completeExceptionally(error)
+            throw error
+        }
     }
 
     internal fun publishedCheckpointSequence(checkpointId: UUID): Long? =

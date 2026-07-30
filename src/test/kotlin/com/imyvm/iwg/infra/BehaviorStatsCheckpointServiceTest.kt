@@ -149,6 +149,53 @@ class BehaviorStatsCheckpointServiceTest {
     }
 
     @Test
+    fun `shutdown settles published batch before delayed server callback exactly once`() = withSessionDirectory {
+        BehaviorStatsStore.record(event("published"))
+        val dispatcher = TestServerDispatcher()
+        val future = BehaviorStatsCheckpointService.request(request(), dispatcher::dispatch)
+        dispatcher.runNext()
+        SegmentedBehaviorStatsStore.awaitIdle()
+
+        BehaviorStatsStore.saveForShutdown()
+
+        assertEquals(WorldGeoBehaviorStatsCheckpointStatus.PUBLISHED, future.join().status)
+        assertEquals(0, BehaviorStatsStore.pendingEntryCount())
+        assertEquals(1L, BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, PERIOD_ID, regionId = 7, objectId = "published")
+        ).single().count)
+        dispatcher.runNext()
+        assertEquals(0, BehaviorStatsStore.pendingEntryCount())
+
+        val rejected = BehaviorStatsCheckpointService.request(request(), dispatcher::dispatch)
+        assertFails { rejected.join() }
+    }
+
+    @Test
+    fun `shutdown restores unpublished batch before delayed server callback exactly once`() = withSessionDirectory {
+        BehaviorStatsStore.record(event("restored"))
+        val dispatcher = TestServerDispatcher()
+        SegmentedBehaviorStatsStore.failureInjector = { point ->
+            if (point == "checkpoint:segment") throw IOException("failed before publish")
+        }
+        val future = BehaviorStatsCheckpointService.request(request(), dispatcher::dispatch)
+        dispatcher.runNext()
+        SegmentedBehaviorStatsStore.awaitIdle()
+
+        BehaviorStatsStore.saveForShutdown()
+
+        assertFails { future.join() }
+        assertEquals(0, BehaviorStatsStore.pendingEntryCount())
+        assertEquals(1L, BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, PERIOD_ID, regionId = 7, objectId = "restored")
+        ).single().count)
+        dispatcher.runNext()
+        assertEquals(0, BehaviorStatsStore.pendingEntryCount())
+        assertEquals(1L, BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, PERIOD_ID, regionId = 7, objectId = "restored")
+        ).single().count)
+    }
+
+    @Test
     fun `incomplete period is rejected without exchanging dirty stats`() = withSessionDirectory {
         BehaviorStatsStore.record(event("kept-dirty"))
         BehaviorCaptureControlStore.startMissing(EVENT_MILLIS)

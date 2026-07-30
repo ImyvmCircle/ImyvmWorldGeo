@@ -29,7 +29,7 @@ fun registerDataLoadSave(){
         saveForShutdown(
             "behavior stats store",
             { BehaviorStatsStore.markSessionUnclean() }
-        ) { BehaviorStatsStore.save() }
+        ) { BehaviorStatsStore.saveForShutdown() }
     }
     ServerLifecycleEvents.SERVER_STOPPED.register { _ ->
         closeRegionSession()

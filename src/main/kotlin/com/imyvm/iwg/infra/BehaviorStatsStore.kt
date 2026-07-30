@@ -77,10 +77,10 @@ object BehaviorStatsStore {
     }
 
     internal fun unbindSession(nowMillis: Long = System.currentTimeMillis()) {
+        BehaviorStatsCheckpointService.unbindSession()
         counts.clear()
         warnedCapacityActions.clear()
         BehaviorStatsPageStreamService.closeAllHandles()
-        BehaviorStatsCheckpointService.unbindSession()
         if (cleanCloseAllowed) {
             BehaviorCaptureControlStore.closeSession(nowMillis)
         } else {
@@ -377,6 +377,11 @@ object BehaviorStatsStore {
         } else if (belowWarningThreshold()) {
             warningActive = false
         }
+    }
+
+    internal fun saveForShutdown(nowMillis: Long = System.currentTimeMillis()) {
+        BehaviorStatsCheckpointService.quiesceForShutdown()
+        save(nowMillis)
     }
 
     internal fun exchangePendingForCheckpoint(): BehaviorStatsCheckpointBatch {
