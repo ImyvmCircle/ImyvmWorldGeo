@@ -3,10 +3,16 @@ package com.imyvm.iwg.infra
 import com.imyvm.iwg.application.event.WorldGeoBehaviorEventBus
 import com.imyvm.iwg.application.time.TestPeriodModeService
 import com.imyvm.iwg.application.time.WorldGeoPeriodTracker
+import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorEvent
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointRequest
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsCheckpointStatus
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsPageQuery
+import com.imyvm.iwg.domain.WorldGeoBehaviorStatsStreamOpenStatus
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsQuery
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
+import com.imyvm.iwg.domain.WorldGeoPeriodDataStatus
 import com.imyvm.iwg.infra.config.CoreConfig
 import net.minecraft.resources.Identifier
 import java.io.IOException
@@ -16,6 +22,8 @@ import java.util.UUID
 import kotlin.test.AfterTest
 import kotlin.test.Test
 import kotlin.test.assertEquals
+import kotlin.test.assertNotNull
+import kotlin.test.assertNull
 import kotlin.test.assertFailsWith
 
 class BehaviorStatsStoreTest {
@@ -26,6 +34,10 @@ class BehaviorStatsStoreTest {
     private val defaultWarningEntryCount = CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.value
     private val defaultMaxEstimatedBytes = CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.value
     private val defaultWarningEstimatedBytes = CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.value
+    private val defaultSaveIntervalMillis = CoreConfig.BEHAVIOR_STATS_SAVE_INTERVAL_MILLIS.value
+    private val defaultFailedSaveRetryMillis = CoreConfig.BEHAVIOR_STATS_FAILED_SAVE_RETRY_MILLIS.value
+    private val defaultShortPeriodRetentionMonths = CoreConfig.BEHAVIOR_STATS_SHORT_PERIOD_RETENTION_MONTHS.value
+    private val defaultMonthRetentionYears = CoreConfig.BEHAVIOR_STATS_MONTH_RETENTION_YEARS.value
 
     @AfterTest
     fun tearDown() {
@@ -38,6 +50,10 @@ class BehaviorStatsStoreTest {
         CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.setValue(defaultWarningEntryCount)
         CoreConfig.BEHAVIOR_STATS_MAX_ESTIMATED_BYTES.setValue(defaultMaxEstimatedBytes)
         CoreConfig.BEHAVIOR_STATS_WARNING_ESTIMATED_BYTES.setValue(defaultWarningEstimatedBytes)
+        CoreConfig.BEHAVIOR_STATS_SAVE_INTERVAL_MILLIS.setValue(defaultSaveIntervalMillis)
+        CoreConfig.BEHAVIOR_STATS_FAILED_SAVE_RETRY_MILLIS.setValue(defaultFailedSaveRetryMillis)
+        CoreConfig.BEHAVIOR_STATS_SHORT_PERIOD_RETENTION_MONTHS.setValue(defaultShortPeriodRetentionMonths)
+        CoreConfig.BEHAVIOR_STATS_MONTH_RETENTION_YEARS.setValue(defaultMonthRetentionYears)
     }
 
     @Test
@@ -322,7 +338,74 @@ class BehaviorStatsStoreTest {
         assertEquals("valid", entries.single().objectId)
     }
 
-        private fun event(type: WorldGeoBehaviorType, objectId: String?, targetId: String? = null) = WorldGeoBehaviorEvent(
+
+    @Test
+    fun `period close saves pending behavior stats before callbacks consume the period`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "closed"))
+
+        BehaviorStatsStore.closePeriod(
+            NaturalPeriodKey(PeriodTimelineStore.PRODUCTION_TIMELINE_ID, NaturalPeriodKind.HOUR, "2026-07-21T00"),
+            millis(2026, 7, 21, 1, 0)
+        )
+        BehaviorStatsStore.unbindSession()
+        BehaviorStatsStore.bindSession(directory)
+
+        val entries = BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, objectId = "closed")
+        )
+        assertEquals(1L, entries.single().count)
+    }
+
+
+    @Test
+    fun `expired periods are unavailable while year stats remain retained`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(eventAt(WorldGeoBehaviorType.DEBUG_TEST, "old", millis(2024, 1, 15, 0, 0)))
+        BehaviorStatsStore.save()
+
+        val nowMillis = millis(2026, 7, 30, 0, 0)
+        BehaviorStatsStore.enforceRetention(nowMillis)
+        val oldHour = NaturalPeriodKey(PeriodTimelineStore.PRODUCTION_TIMELINE_ID, NaturalPeriodKind.HOUR, "2024-01-15T00")
+        val oldMonth = NaturalPeriodKey(PeriodTimelineStore.PRODUCTION_TIMELINE_ID, NaturalPeriodKind.MONTH, "2024-01")
+
+        assertEquals(WorldGeoPeriodDataStatus.UNAVAILABLE, BehaviorStatsStore.queryCompleteness(oldHour, nowMillis).status)
+        assertEquals(WorldGeoPeriodDataStatus.UNAVAILABLE, BehaviorStatsStore.queryCompleteness(oldMonth, nowMillis).status)
+        assertFailsWith<IllegalArgumentException> {
+            BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2024-01-15T00", regionId = 7))
+        }
+        assertEquals(
+            WorldGeoBehaviorStatsStreamOpenStatus.UNAVAILABLE,
+            BehaviorStatsPageStreamService.open(WorldGeoBehaviorStatsPageQuery(oldHour, regionId = 7), 16, nowMillis).join().status
+        )
+        val retained = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.YEAR, "2024", regionId = 7))
+        assertEquals(1L, retained.single().count)
+        assertEquals(setOf(NaturalPeriodKind.YEAR), SegmentedBehaviorStatsStore.readAll().keys.map { it.periodKind }.toSet())
+    }
+
+
+    @Test
+    fun `checkpoint files follow source period retention`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "checkpoint-retention"))
+        val checkpointId = UUID.fromString("00000000-0000-0000-0000-00000000cafe")
+        val query = WorldGeoBehaviorStatsPageQuery(
+            NaturalPeriodKey(PeriodTimelineStore.PRODUCTION_TIMELINE_ID, NaturalPeriodKind.HOUR, "2026-07-21T00"),
+            regionId = 7
+        )
+
+        val result = BehaviorStatsCheckpointService.request(
+            WorldGeoBehaviorStatsCheckpointRequest(checkpointId, query, 16)
+        ) { operation -> operation() }.join()
+        assertEquals(WorldGeoBehaviorStatsCheckpointStatus.PUBLISHED, result.status)
+        assertNotNull(BehaviorStatsCheckpointService.readPage(checkpointId, 0).join())
+
+        BehaviorStatsStore.enforceRetention(millis(2026, 10, 1, 0, 0))
+
+        assertNull(BehaviorStatsCheckpointService.readPage(checkpointId, 0).join())
+    }
+
+    private fun event(type: WorldGeoBehaviorType, objectId: String?, targetId: String? = null) = WorldGeoBehaviorEvent(
         type = type,
         playerUuid = playerUuid,
         playerName = "tester",
@@ -343,6 +426,12 @@ class BehaviorStatsStoreTest {
 
     private fun eventAt(type: WorldGeoBehaviorType, objectId: String?, unixMillis: Long, targetId: String? = null) = event(type, objectId, targetId)
         .copy(unixMillis = unixMillis)
+
+    private fun millis(year: Int, month: Int, day: Int, hour: Int, minute: Int): Long =
+        java.time.LocalDateTime.of(year, month, day, hour, minute)
+            .atZone(com.imyvm.iwg.application.time.WorldGeoTimeService.DEFAULT_ZONE)
+            .toInstant()
+            .toEpochMilli()
 
     private fun withTempDirectory(block: (Path) -> Unit) {
         val directory = Files.createTempDirectory("iwg-behavior-stats-test")

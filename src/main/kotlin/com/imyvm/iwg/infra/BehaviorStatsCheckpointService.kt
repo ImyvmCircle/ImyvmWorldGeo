@@ -19,6 +19,7 @@ import java.io.IOException
 import java.nio.file.Files
 import java.nio.file.Path
 import java.security.MessageDigest
+import java.util.Comparator
 import java.util.UUID
 import java.util.concurrent.CompletableFuture
 
@@ -110,10 +111,15 @@ internal object BehaviorStatsCheckpointService {
                     return@dispatch
                 }
                 val completeness = BehaviorStatsStore.queryCompleteness(fixed.query.periodKey)
-                if (completeness.status == WorldGeoPeriodDataStatus.INCOMPLETE) {
+                if (completeness.status != WorldGeoPeriodDataStatus.COMPLETE) {
+                    val status = if (completeness.status == WorldGeoPeriodDataStatus.INCOMPLETE) {
+                        WorldGeoBehaviorStatsCheckpointStatus.INCOMPLETE
+                    } else {
+                        WorldGeoBehaviorStatsCheckpointStatus.UNAVAILABLE
+                    }
                     result.complete(
                         WorldGeoBehaviorStatsCheckpointResult(
-                            WorldGeoBehaviorStatsCheckpointStatus.INCOMPLETE,
+                            status,
                             fixed.checkpointId,
                             null,
                             null,
@@ -198,6 +204,21 @@ internal object BehaviorStatsCheckpointService {
                 pageIndex + 1 < manifest.pages.size
             )
         }
+    }
+
+    internal fun deleteUnavailable(unavailable: (com.imyvm.iwg.domain.NaturalPeriodKey) -> Boolean) {
+        val target = root ?: return
+        SegmentedBehaviorStatsStore.submit {
+            if (!Files.exists(target)) return@submit
+            Files.list(target).use { paths ->
+                paths.filter(Files::isDirectory).forEach { directory ->
+                    val checkpointId = runCatching { UUID.fromString(directory.fileName.toString()) }.getOrNull()
+                        ?: return@forEach
+                    val manifest = readManifest(checkpointId) ?: return@forEach
+                    if (unavailable(manifest.query.periodKey)) deleteDirectory(directory)
+                }
+            }
+        }.join()
     }
 
     private fun publish(
@@ -517,6 +538,12 @@ internal object BehaviorStatsCheckpointService {
 
     private fun JsonObject.optionalString(name: String): String? =
         get(name)?.takeUnless { it.isJsonNull }?.asString
+
+    private fun deleteDirectory(directory: Path) {
+        Files.walk(directory).use { paths ->
+            paths.sorted(Comparator.reverseOrder()).forEach(Files::deleteIfExists)
+        }
+    }
 
     private fun sha256(bytes: ByteArray): String =
         MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }

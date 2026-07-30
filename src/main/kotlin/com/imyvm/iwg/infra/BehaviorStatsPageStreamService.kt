@@ -85,9 +85,17 @@ internal object BehaviorStatsPageStreamService {
         SegmentedBehaviorStatsStore.submit {
             var snapshot: BehaviorStatsReadSnapshot? = null
             try {
+                val completeness = BehaviorStatsStore.queryCompleteness(fixedQuery.periodKey)
+                if (completeness.status == com.imyvm.iwg.domain.WorldGeoPeriodDataStatus.UNAVAILABLE) {
+                    synchronized(this) { openingCount-- }
+                    return@submit WorldGeoBehaviorStatsStreamOpenResult(
+                        WorldGeoBehaviorStatsStreamOpenStatus.UNAVAILABLE,
+                        null,
+                        null
+                    )
+                }
                 val fixedSnapshot = SegmentedBehaviorStatsStore.openSnapshot(fixedQuery)
                 snapshot = fixedSnapshot
-                val completeness = BehaviorStatsStore.queryCompleteness(fixedQuery.periodKey)
                 val handleId = UUID.randomUUID()
                 synchronized(this) {
                     openingCount--
@@ -191,9 +199,20 @@ internal object BehaviorStatsPageStreamService {
                 )
             }
             SegmentedBehaviorStatsStore.submit {
-                val snapshot = SegmentedBehaviorStatsStore.openSnapshot(fixedQuery)
-            try {
                 val completeness = BehaviorStatsStore.queryCompleteness(fixedQuery.periodKey)
+                if (completeness.status == com.imyvm.iwg.domain.WorldGeoPeriodDataStatus.UNAVAILABLE) {
+                    return@submit WorldGeoBatchBlockDeltaStats(
+                        fixedQuery.periodKey,
+                        fixedQuery.regionId,
+                        fixedQuery.scopeId,
+                        fixedQuery.subSpaceId,
+                        emptyMap(),
+                        completeness,
+                        SegmentedBehaviorStatsStore.manifestVersion()
+                    )
+                }
+                val snapshot = SegmentedBehaviorStatsStore.openSnapshot(fixedQuery)
+                try {
                 val aggregate = SegmentedBehaviorStatsStore.scanBlockDelta(snapshot, fixedQuery)
                 WorldGeoBatchBlockDeltaStats(
                     fixedQuery.periodKey,

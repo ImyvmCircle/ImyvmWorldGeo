@@ -43,12 +43,12 @@ class BehaviorCaptureReliabilityTest {
             CoreConfig.BEHAVIOR_STATS_WARNING_ENTRY_COUNT.setValue(5)
             CoreConfig.BEHAVIOR_STATS_MAX_ENTRY_COUNT.setValue(5)
             BehaviorStatsStore.bindSession(directory, nowMillis = EVENT_MILLIS - 1_000L)
-            BehaviorStatsStore.record(event("first"))
-            assertEquals(WorldGeoBehaviorCaptureState.ACTIVE, BehaviorStatsStore.captureState())
-            assertNotNull(BehaviorStatsStore.storageAlert())
             SegmentedBehaviorStatsStore.failureInjector = { point ->
                 if (point == "append:manifest") throw IOException("storage unavailable")
             }
+            BehaviorStatsStore.record(event("first"))
+            assertEquals(WorldGeoBehaviorCaptureState.ACTIVE, BehaviorStatsStore.captureState())
+            assertNotNull(BehaviorStatsStore.storageAlert())
             assertFailsWith<IOException> { BehaviorStatsStore.save() }
 
             BehaviorStatsStore.record(event("missing"))
@@ -141,7 +141,8 @@ class BehaviorCaptureReliabilityTest {
     }
 
     private fun epochHourCompleteness() = BehaviorStatsStore.queryCompleteness(
-        NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "1970-01-01T08")
+        NaturalPeriodKey("production", NaturalPeriodKind.HOUR, "1970-01-01T08"),
+        3_000L
     )
 
     private fun hourQuery(objectId: String) = WorldGeoBehaviorStatsQuery(

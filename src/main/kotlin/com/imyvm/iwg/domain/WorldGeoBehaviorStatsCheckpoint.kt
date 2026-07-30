@@ -12,7 +12,8 @@ enum class WorldGeoBehaviorStatsCheckpointStatus {
     PUBLISHED,
     ALREADY_PUBLISHED,
     INCOMPLETE,
-    VERSION_CONFLICT
+    VERSION_CONFLICT,
+    UNAVAILABLE
 }
 
 data class WorldGeoBehaviorStatsCheckpointResult(

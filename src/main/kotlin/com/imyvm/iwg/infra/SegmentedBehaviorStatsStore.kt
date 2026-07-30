@@ -4,6 +4,7 @@ import com.google.gson.JsonArray
 import com.google.gson.JsonObject
 import com.google.gson.JsonParser
 import com.google.gson.stream.JsonReader
+import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodKind
 import com.imyvm.iwg.domain.WorldGeoBehaviorType
 import com.imyvm.iwg.domain.WorldGeoBehaviorStatsEntry
@@ -229,15 +230,46 @@ internal object SegmentedBehaviorStatsStore {
         periodId: String,
         regionId: Int
     ) {
-        val selected = manifest.segments.filter {
+        compactSelected(manifest.segments.filter {
             it.timelineId == timelineId && it.periodKind == periodKind &&
                 it.periodId == periodId && it.regionId == regionId
+        })
+    }
+
+    internal fun compactPeriod(timelineId: String, periodKind: NaturalPeriodKind, periodId: String) {
+        manifest.segments
+            .filter { it.timelineId == timelineId && it.periodKind == periodKind && it.periodId == periodId }
+            .groupBy { it.regionId }
+            .values
+            .forEach(::compactSelected)
+    }
+
+    internal fun deleteUnavailable(unavailable: (NaturalPeriodKey) -> Boolean) {
+        val selected = manifest.segments.filter { segment ->
+            unavailable(NaturalPeriodKey(segment.timelineId, segment.periodKind, segment.periodId))
         }
+        if (selected.isEmpty()) return
+        val target = requireRoot()
+        val current = manifest
+        val remove = selected.toSet()
+        val next = current.copy(
+            generation = current.generation + 1L,
+            segments = current.segments.filterNot(remove::contains)
+        )
+        io {
+            validateManifest(next)
+            writeManifest(target.resolve(MANIFEST_FILE), next)
+        }
+        manifest = next
+        selected.forEach { scheduleDelete(target, it) }
+    }
+
+    private fun compactSelected(selected: List<BehaviorSegment>) {
         if (selected.size < 2) return
         val target = requireRoot()
         val current = manifest
+        val aggregate = linkedMapOf<BehaviorStatsKey, Long>()
         val next = io {
-            val aggregate = linkedMapOf<BehaviorStatsKey, Long>()
             selected.forEach { segment ->
                 readSegment(target, segment).forEach { (key, count) ->
                     aggregate[key] = Math.addExact(aggregate[key] ?: 0L, count)

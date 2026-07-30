@@ -7,6 +7,7 @@ import com.imyvm.iwg.domain.CompleteNaturalPeriodTransition
 import com.imyvm.iwg.domain.NaturalPeriodKey
 import com.imyvm.iwg.domain.NaturalPeriodTransition
 import com.imyvm.iwg.infra.config.CoreConfig
+import com.imyvm.iwg.infra.BehaviorStatsStore
 import com.imyvm.iwg.infra.PeriodProcessingStore
 import com.imyvm.iwg.infra.TestPeriodModeStore
 import com.imyvm.iwg.infra.PeriodTimelineStore
@@ -107,8 +108,10 @@ object WorldGeoPeriodTracker {
 
     private fun emit(transition: NaturalPeriodTransition) {
         val timelineId = PeriodTimelineStore.activeTimeline().timelineId
+        val previousKey = NaturalPeriodKey(timelineId, transition.kind, transition.previousId)
+        BehaviorStatsStore.closePeriod(previousKey, transition.unixMillis)
         completeDispatcher.dispatch(CompleteNaturalPeriodTransition(
-            NaturalPeriodKey(timelineId, transition.kind, transition.previousId),
+            previousKey,
             NaturalPeriodKey(timelineId, transition.kind, transition.currentId),
             transition.unixMillis
         ))

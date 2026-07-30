@@ -59,6 +59,42 @@ object CoreConfig {
     }
 
     @JvmField
+    val BEHAVIOR_STATS_SAVE_INTERVAL_MILLIS = Option(
+        "core.behavior_stats.save_interval_millis",
+        3_600_000,
+        "the normal interval in milliseconds for behavior stats snapshots."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
+    val BEHAVIOR_STATS_FAILED_SAVE_RETRY_MILLIS = Option(
+        "core.behavior_stats.failed_save_retry_millis",
+        60_000,
+        "the retry interval in milliseconds after a behavior stats snapshot fails."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
+    val BEHAVIOR_STATS_SHORT_PERIOD_RETENTION_MONTHS = Option(
+        "core.behavior_stats.short_period_retention_months",
+        2,
+        "the calendar-month retention for hour, day and week behavior stats after period end."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
+    val BEHAVIOR_STATS_MONTH_RETENTION_YEARS = Option(
+        "core.behavior_stats.month_retention_years",
+        1,
+        "the calendar-year retention for month behavior stats after period end."
+    ) { obj: Config, path: String? ->
+        positiveInt(path, obj.getInt(path))
+    }
+
+    @JvmField
     val ASYNC_CALLBACK_QUEUE_CAPACITY = Option(
         "core.async_callback_queue_capacity",
         1024,

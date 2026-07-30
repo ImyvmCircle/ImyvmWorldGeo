@@ -13,7 +13,8 @@ data class WorldGeoMissingCaptureInterval(
 
 enum class WorldGeoPeriodDataStatus {
     COMPLETE,
-    INCOMPLETE
+    INCOMPLETE,
+    UNAVAILABLE
 }
 
 data class WorldGeoPeriodCompleteness(

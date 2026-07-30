@@ -15,7 +15,8 @@ data class WorldGeoBehaviorStatsPageQuery(
 enum class WorldGeoBehaviorStatsStreamOpenStatus {
     OPENED,
     BUSY,
-    CLOSED
+    CLOSED,
+    UNAVAILABLE
 }
 
 data class WorldGeoBehaviorStatsStreamOpenResult(

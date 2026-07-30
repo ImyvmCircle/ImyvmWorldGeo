@@ -74,6 +74,8 @@ object BehaviorStatsStore {
         cleanCloseAllowed = true
         sessionWorldRoot = root
         BehaviorStatsPageStreamService.startSession()
+        runCatching { enforceRetention(nowMillis) }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to enforce behavior stats retention at startup: " + it.message, it) }
     }
 
     internal fun unbindSession(nowMillis: Long = System.currentTimeMillis()) {
@@ -180,8 +182,14 @@ object BehaviorStatsStore {
         else -> null
     }
 
-    fun queryCompleteness(key: NaturalPeriodKey): WorldGeoPeriodCompleteness {
-        val bounds = requireNotNull(WorldGeoPeriodTimelineService.periodBounds(key)) { "Unknown natural period: $key" }
+    fun queryCompleteness(key: NaturalPeriodKey): WorldGeoPeriodCompleteness =
+        queryCompleteness(key, System.currentTimeMillis())
+
+    internal fun queryCompleteness(key: NaturalPeriodKey, nowMillis: Long): WorldGeoPeriodCompleteness {
+        val bounds = requireNotNull(WorldGeoPeriodTimelineService.periodBounds(key)) { "Unknown natural period: " + key }
+        if (isPeriodUnavailable(key, bounds.endMillis, nowMillis)) {
+            return WorldGeoPeriodCompleteness(key, WorldGeoPeriodDataStatus.UNAVAILABLE, emptyList())
+        }
         val missing = BehaviorCaptureControlStore.intersecting(bounds)
         return WorldGeoPeriodCompleteness(
             key,
@@ -196,12 +204,12 @@ object BehaviorStatsStore {
 
     fun query(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> {
         require(query.periodId.isNotBlank()) { "period id must not be blank" }
+        val expectedTimeline = expectedTimelineId(query.periodId) ?: return emptyList()
+        val periodKey = NaturalPeriodKey(expectedTimeline, query.periodKind, query.periodId)
+        requirePeriodAvailable(periodKey)
         val persisted = SegmentedBehaviorStatsStore.readAll()
         val merged = LinkedHashMap(persisted)
         counts.forEach { (key, count) -> merged[key] = Math.addExact(merged[key] ?: 0L, count) }
-        val expectedTimeline = if (TestPeriodModeService.isTestPeriodId(query.periodId)) {
-            runCatching { PeriodTimelineStore.activeTimeline().timelineId }.getOrNull()
-        } else PeriodTimelineStore.PRODUCTION_TIMELINE_ID
         return merged.asSequence()
             .filter { (key, _) -> key.matches(query) && key.timelineId == expectedTimeline }
             .map { (key, count) -> key.toEntry(count) }
@@ -352,10 +360,11 @@ object BehaviorStatsStore {
         )
     }
 
-    fun saveSnapshot() {
-        if (sessionWorldRoot == null) return
-        runCatching { save() }
-            .onFailure { ImyvmWorldGeo.logger.error("Failed to save behavior stats: ${it.message}", it) }
+    fun saveSnapshot(nowMillis: Long = System.currentTimeMillis()): Boolean {
+        if (sessionWorldRoot == null) return true
+        return runCatching { save(nowMillis) }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to save behavior stats: " + it.message, it) }
+            .isSuccess
     }
 
     internal fun save(nowMillis: Long = System.currentTimeMillis()) {
@@ -382,6 +391,26 @@ object BehaviorStatsStore {
     internal fun saveForShutdown(nowMillis: Long = System.currentTimeMillis()) {
         BehaviorStatsCheckpointService.quiesceForShutdown()
         save(nowMillis)
+    }
+
+    internal fun closePeriod(key: NaturalPeriodKey, nowMillis: Long = System.currentTimeMillis()) {
+        if (sessionWorldRoot == null) return
+        saveSnapshot(nowMillis)
+        runCatching { SegmentedBehaviorStatsStore.compactPeriod(key.timelineId, key.kind, key.periodId) }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to compact behavior stats for closed period: " + it.message, it) }
+        runCatching { enforceRetention(nowMillis) }
+            .onFailure { ImyvmWorldGeo.logger.error("Failed to enforce behavior stats retention: " + it.message, it) }
+    }
+
+    internal fun enforceRetention(nowMillis: Long = System.currentTimeMillis()) {
+        SegmentedBehaviorStatsStore.deleteUnavailable { key ->
+            val bounds = WorldGeoPeriodTimelineService.periodBounds(key)
+            bounds != null && isPeriodUnavailable(key, bounds.endMillis, nowMillis)
+        }
+        BehaviorStatsCheckpointService.deleteUnavailable { key ->
+            val bounds = WorldGeoPeriodTimelineService.periodBounds(key)
+            bounds != null && isPeriodUnavailable(key, bounds.endMillis, nowMillis)
+        }
     }
 
     internal fun exchangePendingForCheckpoint(): BehaviorStatsCheckpointBatch {
@@ -567,8 +596,9 @@ object BehaviorStatsStore {
         if (!warningActive && !belowWarningThreshold()) {
             warningActive = true
             ImyvmWorldGeo.logger.warn(
-                "Behavior stats pending storage crossed its warning threshold: entries=${counts.size}, estimatedBytes=$estimatedPendingBytes."
+                "Behavior stats pending storage crossed its warning threshold: entries=" + counts.size + ", estimatedBytes=" + estimatedPendingBytes + "."
             )
+            saveSnapshot(eventMillis)
         }
     }
 
@@ -590,6 +620,38 @@ object BehaviorStatsStore {
     private fun belowRecoveryWatermark(): Boolean =
         counts.size.toLong() * 4L <= hardEntryLimit().toLong() * 3L &&
             estimatedPendingBytes * 4L <= hardByteLimit() * 3L
+
+    private fun requirePeriodAvailable(key: NaturalPeriodKey) {
+        val bounds = requireNotNull(WorldGeoPeriodTimelineService.periodBounds(key)) { "Unknown natural period: " + key }
+        require(!isPeriodUnavailable(key, bounds.endMillis, System.currentTimeMillis())) {
+            "Behavior stats period is unavailable: " + key
+        }
+    }
+
+    private fun isPeriodUnavailable(key: NaturalPeriodKey, periodEndMillis: Long, nowMillis: Long): Boolean {
+        val expiresAt = retentionExpiresAt(key.kind, periodEndMillis) ?: return false
+        return nowMillis >= expiresAt
+    }
+
+    private fun retentionExpiresAt(kind: NaturalPeriodKind, periodEndMillis: Long): Long? {
+        val endedAt = Instant.ofEpochMilli(periodEndMillis).atZone(WorldGeoTimeService.DEFAULT_ZONE).toLocalDateTime()
+        val expiresAt = when (kind) {
+            NaturalPeriodKind.HOUR, NaturalPeriodKind.DAY, NaturalPeriodKind.WEEK ->
+                endedAt.plusMonths(CoreConfig.BEHAVIOR_STATS_SHORT_PERIOD_RETENTION_MONTHS.value.toLong())
+            NaturalPeriodKind.MONTH ->
+                endedAt.plusYears(CoreConfig.BEHAVIOR_STATS_MONTH_RETENTION_YEARS.value.toLong())
+            NaturalPeriodKind.YEAR -> return null
+        }
+        return expiresAt.atZone(WorldGeoTimeService.DEFAULT_ZONE).toInstant().toEpochMilli()
+    }
+
+    private fun expectedTimelineId(periodId: String): String? =
+        if (TestPeriodModeService.isTestPeriodId(periodId)) {
+            runCatching { PeriodTimelineStore.activeTimeline().timelineId }.getOrNull()
+                ?.takeIf { it != PeriodTimelineStore.PRODUCTION_TIMELINE_ID }
+        } else {
+            PeriodTimelineStore.PRODUCTION_TIMELINE_ID
+        }
 
     private fun warnOnce(key: String, message: String) {
         if (warnedCapacityActions.add(key)) ImyvmWorldGeo.logger.warn(message)
