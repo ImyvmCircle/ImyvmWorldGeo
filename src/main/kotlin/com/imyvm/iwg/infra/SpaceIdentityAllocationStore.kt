@@ -60,8 +60,14 @@ object SpaceIdentityAllocationStore {
         val root = worldRoot.toAbsolutePath().normalize()
         Files.createDirectories(root)
         val path = root.resolve(FILE_NAME)
-        val evidence = stateFromEvidence(root, RegionDatabase.getRegionList(), regionHours, scopeHours)
         val loaded = if (Files.exists(path)) read(path) else null
+        val evidence = stateFromEvidence(
+            root,
+            RegionDatabase.getRegionList(),
+            regionHours,
+            scopeHours,
+            scanLegacyBehaviorStats = loaded == null
+        )
         val merged = loaded?.let { merge(it, evidence) } ?: evidence
         if (loaded != merged) write(path, merged)
         sessionWorldRoot = root
@@ -156,7 +162,8 @@ object SpaceIdentityAllocationStore {
         root: Path,
         regions: List<Region>,
         currentRegionHours: Int,
-        currentScopeHours: Long
+        currentScopeHours: Long,
+        scanLegacyBehaviorStats: Boolean
     ): SpaceIdentityAllocationState {
         require(currentRegionHours in 0..MAX_REGION_HOURS) { "region creation time is out of range" }
         require(currentScopeHours in 0..MAX_SCOPE_HOURS) { "scope creation time is out of range" }
@@ -176,7 +183,7 @@ object SpaceIdentityAllocationStore {
             }
         }
         val behaviorStatsPath = root.resolve(BEHAVIOR_STATS_FILE_NAME)
-        if (Files.exists(behaviorStatsPath)) {
+        if (scanLegacyBehaviorStats && Files.exists(behaviorStatsPath)) {
             BehaviorStatsStore.readStats(behaviorStatsPath).keys.forEach {
                 regionIds.add(it.regionId)
                 it.scopeId?.let(scopeIds::add)

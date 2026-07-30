@@ -36,6 +36,9 @@ object BehaviorStatsStore {
     private var sessionWorldRoot: Path? = null
     private val counts = linkedMapOf<BehaviorStatsKey, Long>()
     private val warnedCapacityActions = linkedSetOf<String>()
+    private var nextWriteSequence = 1L
+    private var dirtySequenceStart: Long? = null
+    private var dirtySequenceEnd = 0L
 
     internal fun bindSession(worldRoot: Path) {
         check(sessionWorldRoot == null) { "Behavior stats store session is already active" }
@@ -43,13 +46,20 @@ object BehaviorStatsStore {
         Files.createDirectories(root)
         counts.clear()
         warnedCapacityActions.clear()
-        counts.putAll(readStats(root.resolve(FILE_NAME)))
+        SegmentedBehaviorStatsStore.bindSession(root, root.resolve(FILE_NAME))
+        nextWriteSequence = Math.addExact(SegmentedBehaviorStatsStore.publishedSequence(), 1L)
+        dirtySequenceStart = null
+        dirtySequenceEnd = 0L
         sessionWorldRoot = root
     }
 
     internal fun unbindSession() {
         counts.clear()
         warnedCapacityActions.clear()
+        SegmentedBehaviorStatsStore.unbindSession()
+        nextWriteSequence = 1L
+        dirtySequenceStart = null
+        dirtySequenceEnd = 0L
         sessionWorldRoot = null
     }
 
@@ -106,11 +116,17 @@ object BehaviorStatsStore {
             )
             return
         }
-        val periodIds = WorldGeoTimeService.currentNaturalPeriodIds(Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC))
-        val currentBuckets = periodIds.mapTo(linkedSetOf()) { (periodKind, periodId) ->
-            PeriodBucket(periodKind, periodId)
+        val clock = Clock.fixed(Instant.ofEpochMilli(event.unixMillis), ZoneOffset.UTC)
+        val periodKeys = WorldGeoTimeService.currentNaturalPeriodKeys(clock)
+        val sequence = nextWriteSequence
+        nextWriteSequence = Math.addExact(sequence, 1L)
+        if (dirtySequenceStart == null) dirtySequenceStart = sequence
+        dirtySequenceEnd = sequence
+        val currentBuckets = periodKeys.values.mapTo(linkedSetOf()) { key ->
+            PeriodBucket(key.timelineId, key.kind, key.periodId)
         }
-        for ((periodKind, periodId) in periodIds) {
+        for ((periodKind, completeKey) in periodKeys) {
+            val periodId = completeKey.periodId
             val key = BehaviorStatsKey(
                 periodKind = periodKind,
                 periodId = periodId,
@@ -120,7 +136,8 @@ object BehaviorStatsStore {
                 subSpaceId = event.subSpaceId,
                 playerUuid = event.playerUuid,
                 objectId = event.objectId,
-                targetId = event.targetId
+                targetId = event.targetId,
+                timelineId = completeKey.timelineId
             )
             recordKey(key, count, currentBuckets)
         }
@@ -128,8 +145,14 @@ object BehaviorStatsStore {
 
     fun query(query: WorldGeoBehaviorStatsQuery): List<WorldGeoBehaviorStatsEntry> {
         require(query.periodId.isNotBlank()) { "period id must not be blank" }
-        return counts.asSequence()
-            .filter { (key, _) -> key.matches(query) }
+        val persisted = SegmentedBehaviorStatsStore.readAll()
+        val merged = LinkedHashMap(persisted)
+        counts.forEach { (key, count) -> merged[key] = Math.addExact(merged[key] ?: 0L, count) }
+        val expectedTimeline = if (TestPeriodModeService.isTestPeriodId(query.periodId)) {
+            runCatching { PeriodTimelineStore.activeTimeline().timelineId }.getOrNull()
+        } else PeriodTimelineStore.PRODUCTION_TIMELINE_ID
+        return merged.asSequence()
+            .filter { (key, _) -> key.matches(query) && key.timelineId == expectedTimeline }
             .map { (key, count) -> key.toEntry(count) }
             .toList()
     }
@@ -285,8 +308,11 @@ object BehaviorStatsStore {
     }
 
     internal fun save() {
-        val root = sessionWorldRoot ?: error("Behavior stats store session is not active")
-        writeStats(root.resolve(FILE_NAME), counts)
+        sessionWorldRoot ?: error("Behavior stats store session is not active")
+        val start = dirtySequenceStart ?: return
+        SegmentedBehaviorStatsStore.append(counts.toMap(), start, dirtySequenceEnd)
+        counts.clear()
+        dirtySequenceStart = null
     }
 
     internal fun readStats(path: Path): Map<BehaviorStatsKey, Long> {
@@ -358,6 +384,10 @@ object BehaviorStatsStore {
     internal fun clearForTest() {
         counts.clear()
         warnedCapacityActions.clear()
+        SegmentedBehaviorStatsStore.unbindSession()
+        nextWriteSequence = 1L
+        dirtySequenceStart = null
+        dirtySequenceEnd = 0L
         sessionWorldRoot = null
     }
 
@@ -435,22 +465,23 @@ object BehaviorStatsStore {
         keys: Set<BehaviorStatsKey>,
         excludedBuckets: Set<PeriodBucket>
     ): PeriodBucket? = keys
-        .groupBy { it.periodKind }
-        .mapNotNull { (kind, entries) ->
+        .groupBy { it.timelineId to it.periodKind }
+        .mapNotNull { (timelineAndKind, entries) ->
+            val (timelineId, kind) = timelineAndKind
             val periods = entries.mapTo(linkedSetOf()) { it.periodId }
             val oldestPeriod = periods
                 .asSequence()
-                .filter { PeriodBucket(kind, it) !in excludedBuckets }
+                .filter { PeriodBucket(timelineId, kind, it) !in excludedBuckets }
                 .minWithOrNull(periodIdComparator(kind))
                 ?: return@mapNotNull null
-            CandidateBucket(PeriodBucket(kind, oldestPeriod), periods.size)
+            CandidateBucket(PeriodBucket(timelineId, kind, oldestPeriod), periods.size)
         }
         .maxByOrNull { it.periodCount }
         ?.bucket
 
     private fun removeBucket(stats: MutableMap<BehaviorStatsKey, Long>, bucket: PeriodBucket): Int {
         val toRemove = stats.keys
-            .filter { it.periodKind == bucket.kind && it.periodId == bucket.periodId }
+            .filter { it.timelineId == bucket.timelineId && it.periodKind == bucket.kind && it.periodId == bucket.periodId }
             .toList()
         toRemove.forEach(stats::remove)
         return toRemove.size
@@ -542,10 +573,12 @@ internal data class BehaviorStatsKey(
     val subSpaceId: Long?,
     val playerUuid: UUID,
     val objectId: String?,
-    val targetId: String? = null
+    val targetId: String? = null,
+    val timelineId: String = PeriodTimelineStore.PRODUCTION_TIMELINE_ID
 )
 
 private data class PeriodBucket(
+    val timelineId: String,
     val kind: NaturalPeriodKind,
     val periodId: String
 )

@@ -120,8 +120,6 @@ class BehaviorStatsStoreTest {
 
     @Test
     fun `records behavior stats against active test mode periods`() = withTempDirectory { directory ->
-        TestPeriodModeStore.bindSession(directory)
-        PeriodTimelineStore.bindSession(directory, nowMillis = 0L)
         BehaviorStatsStore.bindSession(directory)
         val clock = java.time.Clock.fixed(java.time.Instant.ofEpochMilli(event(WorldGeoBehaviorType.DEBUG_TEST, "id").unixMillis), java.time.ZoneOffset.UTC)
 
@@ -137,6 +135,26 @@ class BehaviorStatsStoreTest {
         val entries = BehaviorStatsStore.query(WorldGeoBehaviorStatsQuery(NaturalPeriodKind.WEEK, "test:week:0", regionId = 7))
         assertEquals(1, entries.size)
         assertEquals("after", entries.single().objectId)
+    }
+
+    @Test
+    fun `manifest failure keeps dirty batch for exact retry`() = withTempDirectory { directory ->
+        BehaviorStatsStore.bindSession(directory)
+        BehaviorStatsStore.record(event(WorldGeoBehaviorType.DEBUG_TEST, objectId = "retry"))
+        SegmentedBehaviorStatsStore.failureInjector = { point ->
+            if (point == "append:manifest") throw IOException("manifest interrupted")
+        }
+
+        assertFailsWith<IOException> { BehaviorStatsStore.save() }
+        SegmentedBehaviorStatsStore.failureInjector = null
+        BehaviorStatsStore.save()
+        BehaviorStatsStore.unbindSession()
+        BehaviorStatsStore.bindSession(directory)
+
+        val entries = BehaviorStatsStore.query(
+            WorldGeoBehaviorStatsQuery(NaturalPeriodKind.HOUR, "2026-07-21T00", regionId = 7, objectId = "retry")
+        )
+        assertEquals(1L, entries.single().count)
     }
 
     @Test
@@ -350,10 +368,14 @@ class BehaviorStatsStoreTest {
     private fun withTempDirectory(block: (Path) -> Unit) {
         val directory = Files.createTempDirectory("iwg-behavior-stats-test")
         try {
+            TestPeriodModeStore.bindSession(directory)
+            PeriodTimelineStore.bindSession(directory, nowMillis = 0L)
             block(directory)
         } finally {
             WorldGeoBehaviorEventBus.clearForTest()
             BehaviorStatsStore.clearForTest()
+            PeriodTimelineStore.unbindSession()
+            TestPeriodModeStore.unbindSession()
             directory.toFile().deleteRecursively()
         }
     }
