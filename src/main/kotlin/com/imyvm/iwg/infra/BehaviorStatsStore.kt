@@ -57,8 +57,10 @@ object BehaviorStatsStore {
         warnedCapacityActions.clear()
         SegmentedBehaviorStatsStore.bindSession(root, root.resolve(FILE_NAME))
         try {
+            BehaviorStatsCheckpointService.bindSession(root)
             BehaviorCaptureControlStore.bindSession(root, nowMillis)
         } catch (error: Throwable) {
+            BehaviorStatsCheckpointService.unbindSession()
             SegmentedBehaviorStatsStore.unbindSession()
             BehaviorCaptureControlStore.resetForTest()
             throw error
@@ -78,6 +80,7 @@ object BehaviorStatsStore {
         counts.clear()
         warnedCapacityActions.clear()
         BehaviorStatsPageStreamService.closeAllHandles()
+        BehaviorStatsCheckpointService.unbindSession()
         if (cleanCloseAllowed) {
             BehaviorCaptureControlStore.closeSession(nowMillis)
         } else {
@@ -376,6 +379,46 @@ object BehaviorStatsStore {
         }
     }
 
+    internal fun exchangePendingForCheckpoint(): BehaviorStatsCheckpointBatch {
+        sessionWorldRoot ?: error("Behavior stats store session is not active")
+        val batch = BehaviorStatsCheckpointBatch(
+            counts.toMap(),
+            dirtySequenceStart,
+            dirtySequenceEnd,
+            Math.subtractExact(nextWriteSequence, 1L)
+        )
+        counts.clear()
+        dirtySequenceStart = null
+        dirtySequenceEnd = 0L
+        estimatedPendingBytes = 0L
+        return batch
+    }
+
+    internal fun restoreCheckpointBatch(batch: BehaviorStatsCheckpointBatch) {
+        batch.stats.forEach { (key, count) ->
+            counts[key] = Math.addExact(counts[key] ?: 0L, count)
+        }
+        batch.sequenceStart?.let { start ->
+            dirtySequenceStart = minOf(dirtySequenceStart ?: start, start)
+            dirtySequenceEnd = maxOf(dirtySequenceEnd, batch.sequenceEnd)
+        }
+        estimatedPendingBytes = counts.keys.fold(0L) { total, key ->
+            Math.addExact(total, estimatedBytes(key))
+        }
+    }
+
+    internal fun completeCheckpointBatch(nowMillis: Long = System.currentTimeMillis()) {
+        if (captureState == WorldGeoBehaviorCaptureState.CAPTURE_SUSPENDED && belowRecoveryWatermark()) {
+            BehaviorCaptureControlStore.finishMissing(nowMillis)
+            captureState = WorldGeoBehaviorCaptureState.ACTIVE
+            warningActive = false
+        } else if (belowWarningThreshold()) {
+            warningActive = false
+        }
+    }
+
+    internal fun pendingEntryCount(): Int = counts.size
+
     internal fun readStats(path: Path): Map<BehaviorStatsKey, Long> {
         if (!Files.exists(path)) return emptyMap()
         try {
@@ -449,6 +492,7 @@ object BehaviorStatsStore {
     internal fun abandonSessionForTest() {
         counts.clear()
         BehaviorStatsPageStreamService.closeAllHandles()
+        BehaviorStatsCheckpointService.unbindSession()
         SegmentedBehaviorStatsStore.unbindSession()
         BehaviorCaptureControlStore.abandonSession()
         nextWriteSequence = 1L
@@ -465,6 +509,7 @@ object BehaviorStatsStore {
         counts.clear()
         warnedCapacityActions.clear()
         BehaviorStatsPageStreamService.closeAllHandles()
+        BehaviorStatsCheckpointService.unbindSession()
         SegmentedBehaviorStatsStore.unbindSession()
         BehaviorCaptureControlStore.resetForTest()
         nextWriteSequence = 1L

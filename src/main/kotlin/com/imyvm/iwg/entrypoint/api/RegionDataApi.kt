@@ -31,6 +31,7 @@ import com.imyvm.iwg.application.region.effect.helper.getSubSpaceEffectValue as 
 import com.imyvm.iwg.domain.*
 import com.imyvm.iwg.domain.component.*
 import com.imyvm.iwg.infra.BehaviorStatsStore
+import com.imyvm.iwg.infra.BehaviorStatsCheckpointService
 import com.imyvm.iwg.infra.BehaviorStatsPageStreamService
 import com.imyvm.iwg.infra.RegionDatabase
 import com.imyvm.iwg.infra.RegionNotFoundException
@@ -599,6 +600,18 @@ object RegionDataApi {
 
     fun getRecentBehaviorEvents(limit: Int): List<WorldGeoBehaviorEvent> =
         WorldGeoBehaviorEventBus.getRecentEvents(limit)
+
+    fun createBehaviorStatsCheckpoint(
+        server: MinecraftServer,
+        request: WorldGeoBehaviorStatsCheckpointRequest
+    ): CompletableFuture<WorldGeoBehaviorStatsCheckpointResult> =
+        BehaviorStatsCheckpointService.request(server, request)
+
+    fun readBehaviorStatsCheckpointPage(
+        checkpointId: UUID,
+        pageIndex: Int
+    ): CompletableFuture<WorldGeoBehaviorStatsCheckpointPage?> =
+        BehaviorStatsCheckpointService.readPage(checkpointId, pageIndex)
 
     fun openBehaviorStatsPageStream(
         query: WorldGeoBehaviorStatsPageQuery

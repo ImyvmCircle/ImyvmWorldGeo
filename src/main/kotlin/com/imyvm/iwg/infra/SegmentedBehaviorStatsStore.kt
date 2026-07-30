@@ -125,14 +125,18 @@ internal object SegmentedBehaviorStatsStore {
     fun <T> submit(operation: () -> T): CompletableFuture<T> =
         CompletableFuture.supplyAsync(operation, executor)
 
-    fun openSnapshot(query: WorldGeoBehaviorStatsPageQuery): BehaviorStatsReadSnapshot {
+    fun openSnapshot(
+        query: WorldGeoBehaviorStatsPageQuery,
+        maximumSequence: Long = Long.MAX_VALUE
+    ): BehaviorStatsReadSnapshot {
         val target = requireRoot()
         val current = manifest
         val selected = current.segments.filter { segment ->
             segment.timelineId == query.periodKey.timelineId &&
                 segment.periodKind == query.periodKey.kind &&
                 segment.periodId == query.periodKey.periodId &&
-                segment.regionId == query.regionId
+                segment.regionId == query.regionId &&
+                segment.sequenceEnd <= maximumSequence
         }
         synchronized(this) {
             selected.forEach { segment ->
@@ -174,6 +178,34 @@ internal object SegmentedBehaviorStatsStore {
         val target = requireRoot()
         val next = io { append(target, manifest, stats, sequenceStart, sequenceEnd, "append") }
         manifest = next
+    }
+
+    fun publishCheckpointBatch(
+        stats: Map<BehaviorStatsKey, Long>,
+        sequenceStart: Long,
+        sequenceEnd: Long
+    ): Long {
+        if (stats.isEmpty()) return manifest.generation
+        val next = append(requireRoot(), manifest, stats, sequenceStart, sequenceEnd, "checkpoint")
+        manifest = next
+        return next.generation
+    }
+
+    internal fun readCounts(
+        snapshot: BehaviorStatsReadSnapshot,
+        query: WorldGeoBehaviorStatsPageQuery,
+        keys: Set<BehaviorStatsKey>
+    ): Map<BehaviorStatsKey, Long> {
+        if (keys.isEmpty()) return emptyMap()
+        val result = linkedMapOf<BehaviorStatsKey, Long>()
+        snapshot.segments.forEach { segment ->
+            scanSegment(snapshot.root, segment) { key, count ->
+                if (key in keys && matchesQuery(key, query)) {
+                    result[key] = Math.addExact(result[key] ?: 0L, count)
+                }
+            }
+        }
+        return result
     }
 
     internal fun compact(
@@ -224,7 +256,7 @@ internal object SegmentedBehaviorStatsStore {
         }
     }
 
-    private fun readPage(
+    internal fun readPage(
         snapshot: BehaviorStatsReadSnapshot,
         query: WorldGeoBehaviorStatsPageQuery,
         cursor: BehaviorStatsKey?,
@@ -369,6 +401,7 @@ internal object SegmentedBehaviorStatsStore {
                 sequenceStart, sequenceEnd, entries.size, bytes.size.toLong(), sha256(bytes)
             )
             readSegment(target, descriptor)
+            failureInjector?.invoke("$phase:validation")
             written.add(descriptor)
         }
         val next = BehaviorManifest(
