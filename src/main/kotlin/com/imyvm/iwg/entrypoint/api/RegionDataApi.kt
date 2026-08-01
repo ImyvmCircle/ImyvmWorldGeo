@@ -639,6 +639,41 @@ object RegionDataApi {
     ): CompletableFuture<WorldGeoBatchBlockDeltaStats> =
         BehaviorStatsPageStreamService.queryBlockDeltaBatch(query)
 
+    fun queryBlockDeltaBatchAsync(
+        timelineId: String,
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int,
+        blockIds: Set<String>,
+        scopeId: Long? = null,
+        subSpaceId: Long? = null
+    ): CompletableFuture<WorldGeoBatchBlockDeltaStats> = queryBlockDeltaBatchAsync(
+        WorldGeoBehaviorStatsPageQuery(
+            NaturalPeriodKey(timelineId, periodKind, periodId),
+            regionId,
+            scopeId,
+            subSpaceId,
+            objectIds = blockIds
+        )
+    )
+
+    fun queryProductionBlockDeltaBatchAsync(
+        periodKind: NaturalPeriodKind,
+        periodId: String,
+        regionId: Int,
+        blockIds: Set<String>,
+        scopeId: Long? = null,
+        subSpaceId: Long? = null
+    ): CompletableFuture<WorldGeoBatchBlockDeltaStats> = queryBlockDeltaBatchAsync(
+        "production",
+        periodKind,
+        periodId,
+        regionId,
+        blockIds,
+        scopeId,
+        subSpaceId
+    )
+
     fun getRegionGeometryFacts(region: Region): List<WorldGeoSpaceGeometryFact> =
         WorldGeoSpaceGeometrySupport.region(region)
 

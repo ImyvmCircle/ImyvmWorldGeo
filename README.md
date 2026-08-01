@@ -383,7 +383,7 @@ Time, events, and statistics:
 - `getRecentBehaviorEvents()` and `getRecentBehaviorEvents(limit: Int)` expose the in-memory behavior debug window.
 - `WorldGeoBehaviorEvent` contains event ID, behavior type, player UUID and name, dimension, coordinates, UNIX time, Region, Scope, SubSpace, space level, object ID, target ID, quantity, and source.
 - `queryBehaviorStats(WorldGeoBehaviorStatsQuery)` and explicit overloads return persisted neutral behavior counts filtered by period, space, player, behavior type, object ID, and target ID.
-- `queryBlockDelta`, `queryResidence`, `queryEntityCombat`, and `queryOnlineTime` return typed statistics for block net delta, chunk residence millis, combat facts, and online or AFK millis.
+- `queryBlockDelta`, `queryProductionBlockDeltaBatchAsync`, `queryBlockDeltaBatchAsync`, `queryResidence`, `queryEntityCombat`, and `queryOnlineTime` return typed statistics for block net delta, batched block deltas, chunk residence millis, combat facts, and online or AFK millis.
 
 Natural geography and player stats:
 

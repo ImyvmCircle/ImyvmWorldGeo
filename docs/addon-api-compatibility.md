@@ -48,6 +48,7 @@ Before removing an API, verify that its replacement covers every old use case, i
 | `PlayerInteractionApi.startSelectionForModifySubSpace` | — (new in 26.2-1.5.5) | — | New API | — | Starts a SubSpace shape selection for an existing canonical SubSpace |
 | `PlayerInteractionApi.modifySubSpace` | — (new in 26.2-1.5.5) | — | New API | — | Applies the current selection to replace an existing SubSpace shape; `replaceSubSpaceShape` remains the direct `GeoShape` replacement API |
 | `PlayerInteractionApi.createRegion/createAndGetRegion/addScope/createAndGetRegionScopePair` with `GeoShape` | — (new in 26.2-1.5.5) | — | New API | — | Direct shape creation bypasses selection session; existing selection-based methods unchanged |
+| `RegionDataApi.queryProductionBlockDeltaBatchAsync` / `queryBlockDeltaBatchAsync` convenience overload | — (new in 26.2-1.5.7) | — | New API | — | Addons can request batched block delta stats by period, Region, block IDs, and optional Scope/SubSpace without constructing `WorldGeoBehaviorStatsPageQuery` directly |
 
 Deprecated helpers under implementation packages are retained only to avoid immediate linkage failures. Addons should migrate to `com.imyvm.iwg.inter.api`; those helpers are not promoted to supported API by this ledger.
 

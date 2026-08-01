@@ -192,6 +192,26 @@ class BehaviorStatsPageStreamServiceTest {
     }
 
     @Test
+    fun `supported addon API delegates production block delta batch`() = withSessionDirectory {
+        BehaviorStatsStore.record(event("stone", type = WorldGeoBehaviorType.BLOCK_PLACE))
+        BehaviorStatsStore.record(event("stone", type = WorldGeoBehaviorType.BLOCK_BREAK))
+        BehaviorStatsStore.record(event("dirt", PLAYER_TWO, type = WorldGeoBehaviorType.BLOCK_PLACE))
+        BehaviorStatsStore.save()
+
+        val result = RegionDataApi.queryProductionBlockDeltaBatchAsync(
+            NaturalPeriodKind.HOUR,
+            PERIOD_ID,
+            7,
+            setOf("stone", "dirt")
+        ).join()
+
+        assertEquals(1L, result.blocks.getValue("stone").placedCount)
+        assertEquals(1L, result.blocks.getValue("stone").brokenCount)
+        assertEquals(0L, result.blocks.getValue("stone").netDelta)
+        assertEquals(1L, result.blocks.getValue("dirt").playerContributions[PLAYER_TWO])
+    }
+
+    @Test
     fun `supported addon API delegates asynchronous open read and close`() = withSessionDirectory {
         BehaviorStatsStore.record(event("api-a"))
         BehaviorStatsStore.record(event("api-b"))
