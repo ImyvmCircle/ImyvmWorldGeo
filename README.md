@@ -1,10 +1,18 @@
-# IMYVMWorldGeo 26.2 1.5.6
+# IMYVMWorldGeo 26.2 1.5.8
 
 ## Changelog
 
 ### 1.5.x
 
 The 1.5.x line expands WorldGeo from region settings into a neutral infrastructure layer for addons. It adds RPG permission and rule keys, namespaced extension settings, stable Scope IDs, ownership history, SubSpace, neutral time and behavior events, periodic statistics, and menu-facing space snapshots.
+
+#### 1.5.8
+
+- fix: rebuild the spatial lookup index on every region data commit, so newly created, removed, transferred, or merged regions and scopes take effect immediately without a server restart.
+
+#### 1.5.7
+
+- feat: add `RegionDataApi.queryProductionBlockDeltaBatchAsync` and a `queryBlockDeltaBatchAsync` convenience overload for batched block delta stats by period, region, block IDs, and optional scope or subspace.
 
 #### 1.5.6
 
