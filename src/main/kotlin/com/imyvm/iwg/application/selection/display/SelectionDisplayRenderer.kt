@@ -15,11 +15,14 @@ import com.imyvm.iwg.domain.component.ShapeGeometry
 import com.imyvm.iwg.domain.component.SubSpace
 import com.imyvm.iwg.domain.component.UnknownGeometry
 import com.imyvm.iwg.infra.RegionDatabase
+import com.imyvm.iwg.infra.config.SelectionConfig.SELECTION_DISPLAY_RADIUS
 import com.imyvm.iwg.util.geo.checkPolygonSize
+import com.imyvm.iwg.util.geo.squaredDistanceToBox
 import com.imyvm.iwg.util.geo.subSpaceGeometrySizeLimits
 import com.imyvm.iwg.util.geo.isConvex
 import com.imyvm.iwg.domain.component.isPolygonVertexCountSupported
 import net.minecraft.core.BlockPos
+import net.minecraft.resources.Identifier
 import net.minecraft.server.MinecraftServer
 import net.minecraft.server.level.ServerPlayer
 
@@ -62,18 +65,69 @@ private fun displayActionBarScopes(
     val modifyingScope = (hypotheticalShape as? HypotheticalShape.ModifyExisting)?.scope
     val modifyingSubSpace = (hypotheticalShape as? HypotheticalShape.ModifySubSpace)?.subSpace
     val playerWorldId = player.level().dimension().identifier()
-    val regions = RegionDatabase.getRegionList()
-    displayRegionScopeCandidates(regions, session) { scope ->
-        if (scope !== modifyingScope && scope.geoShape != null && scope.worldId == playerWorldId) {
-            displayOriginalScope(player, scope, session)
-        }
-    }
-    displayRegionSubSpaceCandidates(regions, session) { subSpace ->
-        if (subSpace.worldId == playerWorldId) {
-            displaySubSpace(player, subSpace, session)
-        }
-    }
+    val (scopes, subSpaces) = collectDisplayCandidates(
+        RegionDatabase.getRegionList(),
+        playerWorldId,
+        player.blockPosition(),
+        modifyingScope,
+        modifyingSubSpace
+    )
+    displayScopeCandidates(scopes, session) { displayOriginalScope(player, it, session) }
+    displaySubSpaceCandidates(subSpaces, session) { displaySubSpace(player, it, session) }
     commitPillars(player, session)
+}
+
+internal fun collectDisplayCandidates(
+    regions: Iterable<Region>,
+    playerWorldId: Identifier,
+    playerPos: BlockPos,
+    excludedScope: GeoScope?,
+    excludedSubSpace: SubSpace?
+): Pair<List<GeoScope>, List<SubSpace>> {
+    val radius = SELECTION_DISPLAY_RADIUS.value
+    val radiusSq = radius.toLong() * radius
+    val scopes = mutableListOf<GeoScope>()
+    val subSpaces = mutableListOf<SubSpace>()
+    for (region in regions) {
+        for (scope in region.scopes) {
+            if (scope === excludedScope || scope.worldId != playerWorldId) continue
+            val geometry = scope.geoShape?.typedGeometry ?: continue
+            if (squaredDistanceToGeometry(geometry, playerPos.x, playerPos.z) > radiusSq) continue
+            scopes += scope
+        }
+        for (subSpace in region.subSpaces) {
+            if (subSpace === excludedSubSpace || subSpace.worldId != playerWorldId) continue
+            if (squaredDistanceToGeometry(subSpace.geoShape.typedGeometry, playerPos.x, playerPos.z) > radiusSq) continue
+            subSpaces += subSpace
+        }
+    }
+    return scopes to subSpaces
+}
+
+private fun squaredDistanceToGeometry(geometry: ShapeGeometry, x: Int, z: Int): Long = when (geometry) {
+    is RectangleGeometry -> squaredDistanceToBox(x, z, geometry.west, geometry.north, geometry.east, geometry.south)
+    is CircleGeometry -> squaredDistanceToBox(
+        x,
+        z,
+        geometry.centerX - geometry.radius,
+        geometry.centerZ - geometry.radius,
+        geometry.centerX + geometry.radius,
+        geometry.centerZ + geometry.radius
+    )
+    is PolygonGeometry -> {
+        var west = Int.MAX_VALUE
+        var north = Int.MAX_VALUE
+        var east = Int.MIN_VALUE
+        var south = Int.MIN_VALUE
+        for (index in 0 until geometry.vertexCount) {
+            west = minOf(west, geometry.x(index))
+            east = maxOf(east, geometry.x(index))
+            north = minOf(north, geometry.z(index))
+            south = maxOf(south, geometry.z(index))
+        }
+        squaredDistanceToBox(x, z, west, north, east, south)
+    }
+    UnknownGeometry -> Long.MAX_VALUE
 }
 
 internal fun displayScopeCandidates(
@@ -88,35 +142,15 @@ internal fun displayScopeCandidates(
     }
 }
 
-internal fun displayRegionScopeCandidates(
-    regions: Iterable<Region>,
-    session: SelectionDisplaySession,
-    display: (GeoScope) -> Unit
-) {
-    val regionIterator = regions.iterator()
-    while (session.tryUseSurface()) {
-        if (!regionIterator.hasNext()) return
-        val scopeIterator = regionIterator.next().scopes.iterator()
-        while (session.tryUseSurface()) {
-            if (!scopeIterator.hasNext()) break
-            display(scopeIterator.next())
-        }
-    }
-}
-
-internal fun displayRegionSubSpaceCandidates(
-    regions: Iterable<Region>,
+internal fun displaySubSpaceCandidates(
+    subSpaces: Iterable<SubSpace>,
     session: SelectionDisplaySession,
     display: (SubSpace) -> Unit
 ) {
-    val regionIterator = regions.iterator()
+    val iterator = subSpaces.iterator()
     while (session.tryUseSurface()) {
-        if (!regionIterator.hasNext()) return
-        val subSpaceIterator = regionIterator.next().subSpaces.iterator()
-        while (session.tryUseSurface()) {
-            if (!subSpaceIterator.hasNext()) break
-            display(subSpaceIterator.next())
-        }
+        if (!iterator.hasNext()) return
+        display(iterator.next())
     }
 }
 
@@ -312,16 +346,9 @@ fun displayScopeBoundariesForPlayer(player: ServerPlayer, scopes: List<GeoScope>
 internal fun displayRegionScopeBoundariesForPlayer(player: ServerPlayer, regions: List<Region>) {
     val session = SelectionDisplaySession()
     val playerWorldId = player.level().dimension().identifier()
-    displayRegionScopeCandidates(regions, session) { scope ->
-        if (scope.geoShape != null && scope.worldId == playerWorldId) {
-            displayOriginalScope(player, scope, session)
-        }
-    }
-    displayRegionSubSpaceCandidates(regions, session) { subSpace ->
-        if (subSpace.worldId == playerWorldId) {
-            displaySubSpace(player, subSpace, session)
-        }
-    }
+    val (scopes, subSpaces) = collectDisplayCandidates(regions, playerWorldId, player.blockPosition(), null, null)
+    displayScopeCandidates(scopes, session) { displayOriginalScope(player, it, session) }
+    displaySubSpaceCandidates(subSpaces, session) { displaySubSpace(player, it, session) }
     commitPillars(player, session)
 }
 

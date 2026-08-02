@@ -25,6 +25,23 @@ fun findNearestAdjacentPoints(
     return Pair(blockPosList[nearestEdgeIndex], blockPosList[(nearestEdgeIndex + 1) % n])
 }
 
+private const val MAX_SQUARABLE_DISTANCE = 3_037_000_499L
+
+fun squaredDistanceToBox(px: Int, pz: Int, west: Int, north: Int, east: Int, south: Int): Long {
+    val dx = when {
+        px < west -> west.toLong() - px
+        px > east -> px.toLong() - east
+        else -> 0L
+    }
+    val dz = when {
+        pz < north -> north.toLong() - pz
+        pz > south -> pz.toLong() - south
+        else -> 0L
+    }
+    if (dx > MAX_SQUARABLE_DISTANCE || dz > MAX_SQUARABLE_DISTANCE) return Long.MAX_VALUE
+    return dx * dx + dz * dz
+}
+
 fun distanceToSegment(point: BlockPos, segmentStart: BlockPos, segmentEnd: BlockPos): Double {
     val px = point.x.toDouble()
     val pz = point.z.toDouble()

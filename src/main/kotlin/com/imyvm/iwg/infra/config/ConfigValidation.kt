@@ -31,6 +31,7 @@ private val positiveOptions by lazy { listOf(
     SelectionConfig.SELECTION_MAX_POINTS,
     SelectionConfig.SELECTION_DISPLAY_LINE_STEP,
     SelectionConfig.SELECTION_DISPLAY_PILLAR_STEP,
+    SelectionConfig.SELECTION_DISPLAY_RADIUS,
     TestPeriodConfig.TEST_WEEK_LENGTH_SECONDS
 ) }
 @Suppress("DEPRECATION")

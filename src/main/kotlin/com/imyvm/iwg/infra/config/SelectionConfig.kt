@@ -15,4 +15,8 @@ object SelectionConfig {
     @JvmField
     val SELECTION_DISPLAY_PILLAR_STEP = Option("core.selection.display_pillar_step", 8,
         "the step in blocks between pillar particle markers during selection display.") { obj: Config, path: String? -> positiveInt(path, obj.getInt(path)) }
+
+    @JvmField
+    val SELECTION_DISPLAY_RADIUS = Option("core.selection.display_radius", 160,
+        "the radius in blocks around each player within which region scope and subspace boundaries are displayed.") { obj: Config, path: String? -> positiveInt(path, obj.getInt(path)) }
 }
