@@ -1,10 +1,15 @@
-# IMYVMWorldGeo 26.2 1.5.8
+# IMYVMWorldGeo 26.2 1.5.9
 
 ## Changelog
 
 ### 1.5.x
 
 The 1.5.x line expands WorldGeo from region settings into a neutral infrastructure layer for addons. It adds RPG permission and rule keys, namespaced extension settings, stable Scope IDs, ownership history, SubSpace, neutral time and behavior events, periodic statistics, and menu-facing space snapshots.
+
+#### 1.5.9
+
+- fix: limit action bar boundary display to scopes and subspaces within `core.selection.display_radius` (default 160 blocks) of each player, so large or early-created regions can no longer exhaust the shared particle budget and hide the boundaries of newer regions.
+- fix: restore boundary particle visibility beyond 32 blocks from the player.
 
 #### 1.5.8
 
