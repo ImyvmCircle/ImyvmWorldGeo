@@ -8,6 +8,8 @@ import com.imyvm.iwg.domain.component.GeoShapeType
 import com.imyvm.iwg.domain.component.*
 import net.minecraft.core.BlockPos
 import net.minecraft.resources.Identifier
+import net.minecraft.resources.ResourceKey
+import net.minecraft.world.level.Level
 import java.io.DataOutputStream
 import java.io.IOException
 import java.nio.file.Files
@@ -16,9 +18,17 @@ import kotlin.test.Test
 import kotlin.test.assertEquals
 import kotlin.test.assertFalse
 import kotlin.test.assertFailsWith
+import kotlin.test.assertNull
 import kotlin.test.assertTrue
 
 class RegionDatabaseTest {
+    companion object {
+        private val OVERWORLD_DIMENSION: ResourceKey<Level> = ResourceKey.create(
+            ResourceKey.createRegistryKey(Identifier.parse("minecraft:dimension")),
+            Identifier.parse("minecraft:overworld")
+        )
+    }
+
     @Test
     fun `binds data to one world root at a time`() = withTempDirectory { directory ->
         val firstRoot = directory.resolve("first")
@@ -103,6 +113,51 @@ class RegionDatabaseTest {
         RegionDatabase.save()
         assertEquals(2, projectionCalls)
         assertTrue(Files.exists(directory.resolve("iwg_regions.db")))
+    }
+
+    @Test
+    fun `spatial lookups track committed region additions`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        val region = shapedRegion("region", 7, 0, 0, 10)
+
+        RegionDatabase.addRegion(region)
+        RegionDatabase.save()
+
+        val resolved = RegionDatabase.getRegionAndScopeAt(OVERWORLD_DIMENSION, 5, 5)
+        assertEquals(region, resolved?.first)
+        assertEquals(region.scopes.single(), resolved?.second)
+    }
+
+    @Test
+    fun `spatial lookups drop removed regions after commit`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        val region = shapedRegion("region", 7, 0, 0, 10)
+        RegionDatabase.addRegion(region)
+        RegionDatabase.save()
+        assertEquals(region, RegionDatabase.getRegionAndScopeAt(OVERWORLD_DIMENSION, 5, 5)?.first)
+
+        RegionDatabase.removeRegionReversibly(region)
+        RegionDatabase.save()
+
+        assertNull(RegionDatabase.getRegionAndScopeAt(OVERWORLD_DIMENSION, 5, 5))
+    }
+
+    @Test
+    fun `spatial lookups track committed scope changes`() = withTempDirectory { directory ->
+        RegionDatabase.bindSession(directory)
+        val region = shapedRegion("region", 7, 0, 0, 10)
+        val extraScope = shapedScope("far", ScopeId(generateCompatScopeIdRaw(7, 1)), 1000, 1000, 10)
+        RegionDatabase.addRegion(region)
+        RegionDatabase.save()
+
+        region.addScopeFromOwner(extraScope)
+        RegionDatabase.save()
+        assertEquals(extraScope, RegionDatabase.getRegionAndScopeAt(OVERWORLD_DIMENSION, 1005, 1005)?.second)
+
+        region.removeScopeFromOwner(extraScope)
+        RegionDatabase.save()
+        assertNull(RegionDatabase.getRegionAndScopeAt(OVERWORLD_DIMENSION, 1005, 1005))
+        assertEquals(region.scopes.single(), RegionDatabase.getRegionAndScopeAt(OVERWORLD_DIMENSION, 5, 5)?.second)
     }
 
     @Test
@@ -918,6 +973,20 @@ class RegionDatabaseTest {
         name,
         regionId,
         mutableListOf(scope("scope", ScopeId(generateCompatScopeIdRaw(regionId, 0))))
+    )
+
+    private fun shapedRegion(name: String, regionId: Int, centerX: Int, centerZ: Int, radius: Int): Region = Region(
+        name,
+        regionId,
+        mutableListOf(shapedScope("scope", ScopeId(generateCompatScopeIdRaw(regionId, 0)), centerX, centerZ, radius))
+    )
+
+    private fun shapedScope(name: String, scopeId: ScopeId, centerX: Int, centerZ: Int, radius: Int) = GeoScope(
+        name,
+        Identifier.parse("minecraft:overworld"),
+        null,
+        geoShape = GeoShape.circle(GeoPoint(centerX, centerZ), radius),
+        scopeId = scopeId
     )
 
     private fun writeMinimalRegion(

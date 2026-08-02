@@ -129,6 +129,7 @@ object RegionDatabase {
     @Throws(IOException::class)
     fun save() {
         persistFiles()
+        rebuildDimensionIndex()
         runCatching { onSave?.invoke() }
             .onFailure { ImyvmWorldGeo.logger.error("Failed to update persisted region projections: ${it.message}", it) }
     }
@@ -287,7 +288,6 @@ object RegionDatabase {
         require(region.scopes.none { it.requireAssignedScopeId() in existingScopeIds }) { "duplicate scope id" }
         require(region.subSpaces.none { it.subSpaceId in existingSubSpaceIds }) { "duplicate subspace id" }
         regions.add(region)
-        dimensionIndex.clear()
     }
 
     fun removeRegion(regionToDelete: Region) {
@@ -441,8 +441,15 @@ object RegionDatabase {
         return Pair(region, scope)
     }
 
-    fun getRegionAndScopeAt(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? {
-        val candidates = dimensionIndex[world.dimension()] ?: return null
+    fun getRegionAndScopeAt(world: Level, x: Int, z: Int): Pair<Region, GeoScope>? =
+        getRegionAndScopeAt(world.dimension(), x, z)
+
+    internal fun getRegionAndScopeAt(
+        dimension: net.minecraft.resources.ResourceKey<net.minecraft.world.level.Level>,
+        x: Int,
+        z: Int
+    ): Pair<Region, GeoScope>? {
+        val candidates = dimensionIndex[dimension] ?: return null
         for ((region, scope) in candidates) {
             val geoShape = scope.geoShape
             if (geoShape != null && geoShape.containsPoint(x, z)) {
