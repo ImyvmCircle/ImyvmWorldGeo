@@ -136,7 +136,7 @@ private fun emitLineSurface(
         if (!session.tryUseSurface()) return@sampleLineCoordinates
         if (!world.chunkSource.hasChunk(x shr 4, z shr 4)) return@sampleLineCoordinates
         val y = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
-        world.sendParticles(player, particle, true, false, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
+        world.sendParticles(player, particle, true, true, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
     }
 }
 
@@ -160,7 +160,7 @@ private fun drawCircleOutline(
         if (!session.tryUseSurface()) return@sampleCircleCoordinates
         if (!world.chunkSource.hasChunk(x shr 4, z shr 4)) return@sampleCircleCoordinates
         val y = world.getHeight(Heightmap.Types.MOTION_BLOCKING, x, z)
-        world.sendParticles(player, particle, true, false, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
+        world.sendParticles(player, particle, true, true, x + 0.5, y.toDouble(), z + 0.5, 1, 0.0, 0.0, 0.0, 0.0)
     }
 }
 

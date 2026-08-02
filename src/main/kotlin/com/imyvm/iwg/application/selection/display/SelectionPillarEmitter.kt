@@ -28,7 +28,7 @@ internal fun commitPillars(player: ServerPlayer, session: SelectionDisplaySessio
             maxSamples
         ) { y ->
             if (!session.tryUse()) return@sampleVerticalCoordinates
-            world.sendParticles(player, PILLAR_PARTICLE, true, false, x + 0.5, y.toDouble(), z + 0.5, 2, 0.0, 0.0, 0.0, 0.0)
+            world.sendParticles(player, PILLAR_PARTICLE, true, true, x + 0.5, y.toDouble(), z + 0.5, 2, 0.0, 0.0, 0.0, 0.0)
         }
     }
     session.clearPillars()
